@@ -1,5 +1,6 @@
 #pragma once
 
+#include "textdelta.h"
 #include "mmap.h"
 #include "utils.h"
 #include <string>
@@ -50,18 +51,6 @@ typedef enum {
 	PGEncodingVietnameseWindows1258
 } PGFileEncoding;
 
-class TextLine {
-	friend class TextFile;
-public:
-	size_t GetLength();
-	char* GetLine();
-	TextLine(char* line, int length) : line(line), length(length) { }
-private:
-	size_t length;
-	char* line;
-
-};
-
 class TextFile {
 public:
 	TextFile(std::string filename);
@@ -75,12 +64,16 @@ public:
 
 	void SetLineEnding(PGLineEnding lineending);
 
+	void Undo();
+	void Redo();
+
 	void Flush();
 
 	ssize_t GetLineCount();
 private:
 	PGMemoryMappedFileHandle file;
 	std::vector<TextLine> lines;
+	std::vector<TextDelta*> deltas;
 	char* base;
 	PGLineEnding lineending;
 };

@@ -30,6 +30,12 @@
     <ClCompile Include="mmap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="textdelta.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="textline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -51,6 +57,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textdelta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textline.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

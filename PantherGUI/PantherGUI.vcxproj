@@ -115,6 +115,8 @@
     <ClCompile Include="mmap.cpp" />
     <ClCompile Include="textfield.cpp" />
     <ClCompile Include="textfile.cpp" />
+    <ClCompile Include="textdelta.cpp" />
+    <ClCompile Include="textline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="control.h" />
@@ -122,6 +124,8 @@
     <ClInclude Include="mmap.h" />
     <ClInclude Include="textfield.h" />
     <ClInclude Include="textfile.h" />
+    <ClInclude Include="textdelta.h" />
+    <ClInclude Include="textline.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />
   </ItemGroup>

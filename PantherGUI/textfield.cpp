@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 
+
 TextField::TextField(PGWindowHandle window) : Control(window), textfile("C:\\Users\\wieis\\Desktop\\syntaxtest.py") {
 	RegisterRefresh(window, this);
 }

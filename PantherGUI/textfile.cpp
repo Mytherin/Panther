@@ -66,54 +66,70 @@ TextFile::~TextFile() {
 std::string TextFile::GetText() {
 	return std::string(base);
 }
+
 // FIXME: "file has been modified without us being the one that modified it"
 // FIXME: use memory mapping on big files and only parse initial lines
 TextLine* TextFile::GetLine(int linenumber) {
+	// FIXME: account for deltas
 	if (linenumber < 0 || linenumber >= lines.size())
 		return NULL;
 	return &lines[linenumber];
 }
 
-// FIXME: if file has not been entirely loaded (i.e. READONLY) then read 
 ssize_t TextFile::GetLineCount() {
+	// FIXME: account for deltas
+	// FIXME: if file has not been entirely loaded (i.e. READONLY) then read 
 	return lines.size();
 }
 
 void TextFile::InsertText(char character, int linenumber, int characternumber) {
+	// FIXME: delta
+	// FIXME: merge delta if it already exists
 	// FIXME: check if MemoryMapped file size is too high after write
+
+	this->deltas.push_back(new AddText(linenumber, characternumber, std::string(1, character)));
+	lines[linenumber].AddDelta(this->deltas.back());
+	/*
 	char *start = &lines[linenumber].line[characternumber];
 	char* end = lines.back().line + lines.back().length + 1;
 	memmove(start + 1, start, (end - start));
 	lines[linenumber].line[characternumber] = character;
-	lines[linenumber].length++;
+	lines[linenumber].length++;*/
 }
 
 void TextFile::DeleteCharacter(int linenumber, int characternumber) {
-	char *start = &lines[linenumber].line[characternumber];
+	/*char *start = &lines[linenumber].line[characternumber];
 	char* end = lines.back().line + lines.back().length + 1;
-	memmove(start - 1, start, (end - start));
+	memmove(start - 1, start, (end - start));*/
+
 	if (characternumber == 0) {
 		// remove the line
+		this->deltas.push_back(new RemoveLine(linenumber, lines[linenumber]));
 		lines.erase(lines.begin() + linenumber);
+	} else {
+		// FIXME: add delta to line number
+		// FIXME: merge delta if it already exists
+		this->deltas.push_back(new RemoveText(linenumber, characternumber, 1));
+		lines[linenumber].AddDelta(this->deltas.back());
 	}
-	else {
-		lines[linenumber].length--;
-	}
+}
+
+void TextFile::Undo() {
+	assert(0);
+	// FIXME
+}
+
+void TextFile::Redo() {
+	assert(0);
+	// FIXME
 }
 
 void TextFile::Flush() {
 	FlushMemoryMappedFile(this->base);
 }
 
-size_t TextLine::GetLength() {
-	return this->length;
-}
-
-char* TextLine::GetLine() {
-	return this->line;
-}
-
 void TextFile::SetLineEnding(PGLineEnding lineending) {
 	assert(0);
 	// FIXME
 }
+
