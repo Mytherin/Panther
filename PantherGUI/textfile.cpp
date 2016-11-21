@@ -5,19 +5,43 @@
 
 TextFile::TextFile(std::string path) {
 	file = MemoryMapFile(path);
-	base = (char*) OpenMemoryMappedFile(file);
+	base = (char*)OpenMemoryMappedFile(file);
 
-	// FIXME: determine lineending of file while scanning
-
+	this->lineending = PGLineEndingUnknown;
 	char* ptr = base;
 	lines.push_back(TextLine(base, 0));
 	TextLine* current_line = &lines[0];
 	int offset = 0;
 	while (*ptr) {
+		if (*ptr == '\n') {
+			// Unix line ending: \n
+			if (this->lineending == PGLineEndingUnknown) {
+				this->lineending = PGLineEndingUnix;
+			}
+			else if (this->lineending != PGLineEndingUnix) {
+				this->lineending = PGLineEndingMixed;
+			}
+		}
 		if (*ptr == '\r') {
 			if (*(ptr + 1) == '\n') {
 				offset = 1;
 				ptr++;
+				// Windows line ending: \r\n
+				if (this->lineending == PGLineEndingUnknown) {
+					this->lineending = PGLineEndingWindows;
+				}
+				else if (this->lineending != PGLineEndingWindows) {
+					this->lineending = PGLineEndingMixed;
+				}
+			}
+			else {
+				// OSX line ending: \r
+				if (this->lineending == PGLineEndingUnknown) {
+					this->lineending = PGLineEndingMacOS;
+				}
+				else if (this->lineending != PGLineEndingMacOS) {
+					this->lineending = PGLineEndingMixed;
+				}
 			}
 		}
 		if (*ptr == '\r' || *ptr == '\n') {
@@ -45,7 +69,7 @@ std::string TextFile::GetText() {
 // FIXME: "file has been modified without us being the one that modified it"
 // FIXME: use memory mapping on big files and only parse initial lines
 TextLine* TextFile::GetLine(int linenumber) {
-	if (linenumber < 0 || linenumber >= lines.size()) 
+	if (linenumber < 0 || linenumber >= lines.size())
 		return NULL;
 	return &lines[linenumber];
 }
@@ -71,7 +95,8 @@ void TextFile::DeleteCharacter(int linenumber, int characternumber) {
 	if (characternumber == 0) {
 		// remove the line
 		lines.erase(lines.begin() + linenumber);
-	} else {
+	}
+	else {
 		lines[linenumber].length--;
 	}
 }
@@ -86,4 +111,9 @@ size_t TextLine::GetLength() {
 
 char* TextLine::GetLine() {
 	return this->line;
+}
+
+void TextFile::SetLineEnding(PGLineEnding lineending) {
+	assert(0);
+	// FIXME
 }

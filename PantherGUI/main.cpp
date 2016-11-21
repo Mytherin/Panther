@@ -6,7 +6,6 @@
 #include "textfield.h"
 
 #include <malloc.h>
-#include <assert.h>
 
 #include <vector>
 #include <gdiplus.h>
