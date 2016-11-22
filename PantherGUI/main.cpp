@@ -367,6 +367,11 @@ PGSize GetWindowSize(PGWindowHandle window) {
 	return size;
 }
 
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color) {
+	SolidBrush solidBrush(Color(color.a, color.r, color.g, color.b));
+	handle->graphics.FillRectangle(&solidBrush, rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+}
+
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color) {
 	Pen pen(Color(color.a, color.r, color.g, color.b));
 	handle->graphics.DrawLine(&pen, line.start.x, line.start.y, line.end.x, line.end.y);
@@ -390,6 +395,14 @@ void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x,
 	ssize_t line_height = 19;
 	int width = GetRenderWidth(renderer, text, characternr);
 	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(0, 0, 0));
+}
+
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end) {
+	if (start == end) return;
+	ssize_t line_height = 19;
+	int selection_start = GetRenderWidth(renderer, text, start);
+	int selection_width = GetRenderWidth(renderer, text, end);
+	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, line_height), PGColor(20, 20, 180, 125));
 }
 
 int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) {

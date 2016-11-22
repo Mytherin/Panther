@@ -28,8 +28,9 @@ public:
 class CursorDelta : public TextDelta {
 public:
 	Cursor* cursor;
+	Cursor stored_cursor;
 
-	CursorDelta(Cursor* cursor) : cursor(cursor) { }
+	CursorDelta(Cursor* cursor) : cursor(cursor), stored_cursor(*cursor) { }
 
 	virtual PGTextType TextDeltaType() { return PGTextUnknown; }
 };

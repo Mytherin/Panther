@@ -97,7 +97,7 @@ void TextFile::InsertText(char character, std::vector<Cursor>& cursors) {
 	// FIXME: insert with selection
 	MultipleDelta* delta = new MultipleDelta();
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		AddText* text = new AddText(&*it, it->selected_line, it->selected_character, std::string(1, character));
+		AddText* text = new AddText(&*it, it->SelectedLine(), it->SelectedCharacter(), std::string(1, character));
 		//lines[it->selected_line].AddDelta(text);
 		//it->selected_character++;
 		delta->AddDelta(text);
@@ -107,28 +107,41 @@ void TextFile::InsertText(char character, std::vector<Cursor>& cursors) {
 }
 
 void TextFile::DeleteCharacter(std::vector<Cursor>& cursors) {
+	bool delete_selection = false;
 	MultipleDelta* delta = new MultipleDelta();
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		// FIXME: delete with selection
-		// FIXME: merge delta if it already exists
-		ssize_t characternumber = it->SelectedCharacter();
-		ssize_t linenumber = it->SelectedLine();
-		//it->OffsetCharacter(-1);
-		if (characternumber == 0) {
-			if (linenumber > 0) {
-				// merge the line with the previous line
-				std::string line = std::string(lines[linenumber].GetLine(), lines[linenumber].GetLength());
-				delta->AddDelta(new RemoveLine(&*it, linenumber, lines[linenumber]));
-				//lines.erase(lines.begin() + linenumber);
-				TextDelta *addText = new AddText(NULL, linenumber - 1, lines[linenumber - 1].GetLength(), line);
-				//lines[linenumber - 1].AddDelta(addText);
-				delta->AddDelta(addText);
-			}
+		if (!it->SelectionIsEmpty()) {
+			delete_selection = true;
+			break;
 		}
-		else {
-			RemoveText* remove = new RemoveText(&*it, linenumber, characternumber, 1);
-			delta->AddDelta(remove);
-			//lines[linenumber].AddDelta(remove);
+	}
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		// FIXME: merge delta if it already exists
+		if (delete_selection) {
+			if (!it->SelectionIsEmpty()) {
+				// FIXME: delete with selection
+
+			}
+		} else {
+			ssize_t characternumber = it->SelectedCharacter();
+			ssize_t linenumber = it->SelectedLine();
+			//it->OffsetCharacter(-1);
+			if (characternumber == 0) {
+				if (linenumber > 0) {
+					// merge the line with the previous line
+					std::string line = std::string(lines[linenumber].GetLine(), lines[linenumber].GetLength());
+					delta->AddDelta(new RemoveLine(&*it, linenumber, lines[linenumber]));
+					//lines.erase(lines.begin() + linenumber);
+					TextDelta *addText = new AddText(NULL, linenumber - 1, lines[linenumber - 1].GetLength(), line);
+					//lines[linenumber - 1].AddDelta(addText);
+					delta->AddDelta(addText);
+				}
+			}
+			else {
+				RemoveText* remove = new RemoveText(&*it, linenumber, characternumber, 1);
+				delta->AddDelta(remove);
+				//lines[linenumber].AddDelta(remove);
+			}
 		}
 	}
 	this->AddDelta(delta);
@@ -187,38 +200,28 @@ void TextFile::AddDelta(TextDelta* delta) {
 
 void TextFile::Undo(TextDelta* delta) {
 	assert(delta);
+	CursorDelta* cursor_delta = dynamic_cast<CursorDelta*>(delta);
+	if (cursor_delta && cursor_delta->cursor) {
+		cursor_delta->cursor->RestoreCursor(cursor_delta->stored_cursor);
+	}
 	switch (delta->TextDeltaType()) {
 	case PGDeltaAddText: {
 		AddText* add = (AddText*)delta;
-		if (add->cursor) {
-			add->cursor->selected_character -= add->text.size();
-		}
 		this->lines[add->linenr].PopDelta();
 		break;
 	}
 	case PGDeltaRemoveText: {
 		RemoveText* remove = (RemoveText*)delta;
-		if (remove->cursor) {
-			remove->cursor->selected_character += remove->charactercount;
-		}
 		this->lines[remove->linenr].PopDelta();
 		break;
 	}
 	case PGDeltaAddLine: {
 		AddLine* add = (AddLine*)delta;
-		if (add->cursor) {
-			add->cursor->selected_character = this->lines[add->linenr].GetLength();
-			add->cursor->selected_line--;
-		}
 		this->lines.erase(this->lines.begin() + (add->linenr + 1));
 		break;
 	}
 	case PGDeltaRemoveLine: {
 		RemoveLine* remove = (RemoveLine*)delta;
-		if (remove->cursor) {
-			remove->cursor->selected_line++;
-			remove->cursor->selected_character = 0;
-		}
 		this->lines.insert(this->lines.begin() + remove->linenr, remove->line);
 		break;
 	}
@@ -240,7 +243,7 @@ void TextFile::Redo(TextDelta* delta) {
 		AddText* add = (AddText*)delta;
 		this->lines[add->linenr].AddDelta(delta);
 		if (add->cursor) {
-			add->cursor->selected_character += add->text.size();
+			add->cursor->end_character = (add->cursor->start_character += add->text.size());
 		}
 		break;
 	}
@@ -248,7 +251,7 @@ void TextFile::Redo(TextDelta* delta) {
 		RemoveText* remove = (RemoveText*)delta;
 		this->lines[remove->linenr].AddDelta(delta);
 		if (remove->cursor) {
-			remove->cursor->selected_character -= remove->charactercount;
+			remove->cursor->end_character = (remove->cursor->start_character -= remove->charactercount);
 		}
 		break;
 	}
@@ -256,16 +259,16 @@ void TextFile::Redo(TextDelta* delta) {
 		AddLine* add = (AddLine*)delta;
 		lines.insert(lines.begin() + (add->linenr + 1), TextLine("", 0));
 		if (add->cursor) {
-			add->cursor->selected_line += 1;
-			add->cursor->selected_character = 0;
+			add->cursor->end_line = (add->cursor->start_line += 1);
+			add->cursor->end_character = add->cursor->start_character = 0;
 		}
 		break;
 	}
 	case PGDeltaRemoveLine: {
 		RemoveLine* remove = (RemoveLine*)delta;
 		if (remove->cursor) {
-			remove->cursor->selected_line -= 1;
-			remove->cursor->selected_character = this->lines[remove->linenr].GetLength();
+			remove->cursor->end_line = (remove->cursor->start_line -= 1);
+			remove->cursor->end_character = remove->cursor->start_character = this->lines[remove->linenr].GetLength();
 		}
 		this->lines.erase(this->lines.begin() + remove->linenr);
 		break;

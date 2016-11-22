@@ -10,7 +10,6 @@ Control::Control(PGWindowHandle handle) {
 void Control::Draw(PGRendererHandle handle, PGRect* rectangle) {
 }
 
-
 void Control::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 
 }

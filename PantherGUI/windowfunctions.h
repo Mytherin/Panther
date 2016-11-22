@@ -142,11 +142,13 @@ void RefreshWindow(PGWindowHandle window, PGRect);
 PGSize GetWindowSize(PGWindowHandle window);
 
 
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);
 // Render text at the specified location; returns the width and height of the rendered text
 PGSize RenderText(PGRendererHandle window, const char* text, size_t length, int x, int y);
 void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t characternr);
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end);
 // Sets the color of the text rendered with the RenderText method
 void SetTextColor(PGRendererHandle window, PGColor color);
 // Sets the font used by the RenderText method
