@@ -1,6 +1,7 @@
 #pragma once
 
 #include "control.h"
+#include "cursor.h"
 #include "textfile.h"
 
 struct TextSelection {
@@ -21,14 +22,16 @@ public:
 	void KeyboardCharacter(char character, PGModifier modifier);
 	void KeyboardUnicode(char *character, PGModifier modifier);
 
+	void SelectLine(ssize_t linenr);
+	void SelectCharacter(ssize_t characternr);
+
 	void InvalidateLine(int line);
 	void InvalidateBeforeLine(int line);
 	void InvalidateAfterLine(int line);
 private:
 	int offset_x;
 	ssize_t lineoffset_y;
-	ssize_t selected_line;
-	ssize_t selected_character;
+	std::vector<Cursor> cursors;
 	int line_height;
 
 	TextFile textfile;

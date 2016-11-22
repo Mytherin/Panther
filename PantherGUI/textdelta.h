@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cursor.h"
 #include "textline.h"
 #include "utils.h"
 
@@ -24,43 +25,52 @@ public:
 	virtual PGTextType TextDeltaType() { return PGTextUnknown; }
 };
 
-class AddText : public TextDelta {
+class CursorDelta : public TextDelta {
+public:
+	Cursor* cursor;
+
+	CursorDelta(Cursor* cursor) : cursor(cursor) { }
+
+	virtual PGTextType TextDeltaType() { return PGTextUnknown; }
+};
+
+class AddText : public CursorDelta {
 public:
 	int linenr;
 	int characternr;
 	std::string text;
 
 	PGTextType TextDeltaType() { return PGDeltaAddText; }
-	AddText(int linenr, int characternr, std::string text) : linenr(linenr), characternr(characternr), text(text) { }
+	AddText(Cursor* cursor, int linenr, int characternr, std::string text) : CursorDelta(cursor), linenr(linenr), characternr(characternr), text(text) { }
 };
 
-class RemoveText : public TextDelta {
+class RemoveText : public CursorDelta {
 public:
 	int linenr;
 	int characternr;
 	int charactercount;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveText; }
-	RemoveText(int linenr, int characternr, int charactercount) : linenr(linenr), characternr(characternr), charactercount(charactercount) { }
+	RemoveText(Cursor* cursor, int linenr, int characternr, int charactercount) : CursorDelta(cursor), linenr(linenr), characternr(characternr), charactercount(charactercount) { }
 };
 
-class RemoveLine : public TextDelta {
+class RemoveLine : public CursorDelta {
 public:
 	int linenr;
 	TextLine line;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveLine; }
-	RemoveLine(int linenr, TextLine line) : linenr(linenr), line(line) { }
+	RemoveLine(Cursor* cursor, int linenr, TextLine line) : CursorDelta(cursor), linenr(linenr), line(line) { }
 
 };
 
-class AddLine : public TextDelta {
+class AddLine : public CursorDelta {
 public:
 	int linenr;
 	int characternr;
 
 	PGTextType TextDeltaType() { return PGDeltaAddLine; }
-	AddLine(int linenr, int characternr) : linenr(linenr), characternr(characternr) { }
+	AddLine(Cursor* cursor, int linenr, int characternr) : CursorDelta(cursor), linenr(linenr), characternr(characternr) { }
 
 };
 

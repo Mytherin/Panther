@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cursor.h"
 #include "encoding.h"
 #include "textdelta.h"
 #include "mmap.h"
@@ -15,19 +16,31 @@ typedef enum {
 	PGLineEndingUnknown
 } PGLineEnding;
 
+typedef enum {
+	PGIndentionSpaces,
+	PGIndentionTabs,
+	PGIndentionMixed
+} PGLineIndentation;
+
+class TextField;
+
 class TextFile {
 public:
 	TextFile(std::string filename);
+	TextFile(std::string filename, TextField* textfield);
 	~TextFile();
 
 	std::string GetText();
 
 	TextLine* GetLine(int linenumber);
-	void InsertText(char character, int linenumber, int characternumber);
-	void DeleteCharacter(int linenumber, int characternumber);
-	void AddNewLine(int linenumber, int characternumber);
+	void InsertText(char character, std::vector<Cursor>& cursors);
+	void DeleteCharacter(std::vector<Cursor>& cursors);
+	void AddNewLine(std::vector<Cursor>& cursors);
 
-	void SetLineEnding(PGLineEnding lineending);
+	void ChangeLineEnding(PGLineEnding lineending);
+	void ChangeFileEncoding(PGFileEncoding encoding);
+	void ChangeIndentation(PGLineIndentation indentation);
+	void RemoveTrailingWhitespace();
 
 	void Undo();
 	void Redo();
@@ -36,15 +49,19 @@ public:
 
 	ssize_t GetLineCount();
 private:
+	void OpenFile(std::string filename);
+
 	void AddDelta(TextDelta* delta);
 
 	void Undo(TextDelta* delta);
 	void Redo(TextDelta* delta);
 
+	TextField* textfield;
 	PGMemoryMappedFileHandle file;
 	std::vector<TextLine> lines;
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
 	char* base;
 	PGLineEnding lineending;
+	PGLineIndentation indentation;
 };

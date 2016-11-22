@@ -111,6 +111,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="control.cpp" />
+    <ClCompile Include="cursor.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
     <ClCompile Include="textfield.cpp" />
@@ -119,6 +120,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="control.h" />
+    <ClInclude Include="cursor.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
