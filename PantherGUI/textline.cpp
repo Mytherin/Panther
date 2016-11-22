@@ -3,7 +3,7 @@
 #include "textdelta.h"
 
 
-size_t TextLine::GetLength(void) {
+ssize_t TextLine::GetLength(void) {
 	if (!deltas) return length; // no deltas, return original length
 	if (modified_line) return strlen(modified_line); // deltas have already been computed
 	ApplyDeltas();
@@ -19,7 +19,7 @@ char* TextLine::GetLine(void) {
 
 void TextLine::ApplyDeltas() {
 	TextDelta* delta = this->deltas;
-	size_t length = this->length;
+	ssize_t length = this->length;
 	while (delta) {
 		if (delta->TextDeltaType() == PGDeltaAddText) {
 			length += ((AddText*)delta)->text.size();
@@ -60,16 +60,8 @@ void TextLine::ApplyDeltas() {
 }
 
 void TextLine::AddDelta(TextDelta* delta) {
-	if (delta->TextDeltaType() == PGDeltaAddText) {
-		((AddText*)delta)->line = this;
-	}
-	else if (delta->TextDeltaType() == PGDeltaRemoveText) {
-		((RemoveText*)delta)->line = this;
-	}
-	else {
-		// invalid delta to add to a line
-		assert(0);
-	}
+	// check for invalid delta
+	assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
 	if (this->deltas == NULL) {
 		this->deltas = delta;
 	} else {
@@ -82,3 +74,19 @@ void TextLine::AddDelta(TextDelta* delta) {
 	modified_line = NULL;
 }
 
+void TextLine::PopDelta() {
+	TextDelta *linedelta = this->deltas;
+	TextDelta *prev = NULL;
+	assert(linedelta);
+	while (linedelta->next) {
+		prev = linedelta;
+		linedelta = linedelta->next;
+	}
+	if (!prev)
+		this->deltas = NULL;
+	else
+		prev->next = NULL;
+
+	if (this->modified_line) free(this->modified_line);
+	this->modified_line = NULL;
+}

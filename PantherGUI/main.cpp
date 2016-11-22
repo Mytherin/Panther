@@ -14,9 +14,13 @@
 using namespace Gdiplus;
 
 struct PGWindow {
+public:
+	PGModifier modifier;
 	HWND hwnd;
 	std::vector<Control*> registered_refresh;
 	Control *focused_control;
+
+	PGWindow() : modifier(PGModifierNone) { }
 };
 
 struct PGRenderer {
@@ -167,8 +171,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_KEYDOWN: {
+		char character = '\0';
 		PGButton button = PGButtonNone;
 		switch (wParam) {
+		case VK_SHIFT:
+			global_handle->modifier |= PGModifierShift;
+			break;
+		case VK_CONTROL:
+			global_handle->modifier |= PGModifierCtrl;
+			break;
+		case VK_MENU:
+			global_handle->modifier |= PGModifierAlt;
+			break;
 		case VK_LEFT:
 			button = PGButtonLeft;
 			break;
@@ -240,10 +254,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		}
 		if (button != PGButtonNone) {
 			// FIXME modifier
-			global_handle->focused_control->KeyboardButton(button, PGModifierNone);
+			global_handle->focused_control->KeyboardButton(button, global_handle->modifier);
+		} else if (wParam >= 0x41 && wParam <= 0x5A) {
+			character = wParam;
+			if (global_handle->modifier != PGModifierNone) {
+				global_handle->focused_control->KeyboardCharacter((char)wParam, global_handle->modifier);
+			}
 		}
 		break;
 	}
+	case WM_KEYUP:
+		switch (wParam) {
+		case VK_SHIFT:
+			global_handle->modifier &= ~PGModifierShift;
+			break;
+		case VK_CONTROL:
+			global_handle->modifier &= ~PGModifierCtrl;
+			break;
+		case VK_MENU:
+			global_handle->modifier &= ~PGModifierAlt;
+			break;
+		}
+		break;
+
 	case WM_CHAR:
 		if (wParam < 0x20) break;
 		global_handle->focused_control->KeyboardCharacter((char)wParam, PGModifierNone);

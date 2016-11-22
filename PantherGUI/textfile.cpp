@@ -77,66 +77,140 @@ TextLine* TextFile::GetLine(int linenumber) {
 }
 
 ssize_t TextFile::GetLineCount() {
-	// FIXME: account for deltas
 	// FIXME: if file has not been entirely loaded (i.e. READONLY) then read 
 	return lines.size();
 }
 
 void TextFile::InsertText(char character, int linenumber, int characternumber) {
-	// FIXME: delta
+	assert(linenumber >= 0 && linenumber < lines.size());
 	// FIXME: merge delta if it already exists
 	// FIXME: check if MemoryMapped file size is too high after write
 
-	this->deltas.push_back(new AddText(linenumber, characternumber, std::string(1, character)));
+	this->AddDelta(new AddText(linenumber, characternumber, std::string(1, character)));
 	lines[linenumber].AddDelta(this->deltas.back());
-	/*
-	char *start = &lines[linenumber].line[characternumber];
-	char* end = lines.back().line + lines.back().length + 1;
-	memmove(start + 1, start, (end - start));
-	lines[linenumber].line[characternumber] = character;
-	lines[linenumber].length++;*/
 }
 
 void TextFile::DeleteCharacter(int linenumber, int characternumber) {
-	/*char *start = &lines[linenumber].line[characternumber];
-	char* end = lines.back().line + lines.back().length + 1;
-	memmove(start - 1, start, (end - start));*/
-
 	if (characternumber == 0) {
-		// remove the line
-		this->deltas.push_back(new RemoveLine(linenumber, lines[linenumber]));
-		lines.erase(lines.begin() + linenumber);
-	} else {
-		// FIXME: add delta to line number
+		if (linenumber > 0) {
+			// merge the line with the previous line
+			MultipleDelta* delta = new MultipleDelta();
+			std::string line = std::string(lines[linenumber].GetLine(), lines[linenumber].GetLength());
+			delta->AddDelta(new RemoveLine(linenumber, lines[linenumber]));
+			lines.erase(lines.begin() + linenumber);
+			TextDelta *addText = new AddText(linenumber - 1, lines[linenumber - 1].GetLength(), line);
+			lines[linenumber - 1].AddDelta(addText);
+			delta->AddDelta(addText);
+			this->AddDelta(delta);
+		}
+	}
+	else {
 		// FIXME: merge delta if it already exists
-		this->deltas.push_back(new RemoveText(linenumber, characternumber, 1));
+		this->AddDelta(new RemoveText(linenumber, characternumber, 1));
 		lines[linenumber].AddDelta(this->deltas.back());
 	}
 }
 
 void TextFile::AddNewLine(int linenumber, int characternumber) {
 	MultipleDelta* delta = new MultipleDelta();
-	lines[linenumber].ApplyDeltas();
-	std::string line = std::string(lines[linenumber].modified_line).substr(characternumber, std::string::npos);
-	TextDelta* removeText = new RemoveText(linenumber, lines[linenumber].GetLength(), lines[linenumber].GetLength() - characternumber);
-	delta->AddDelta(removeText);
-	lines[linenumber].AddDelta(removeText);
+	ssize_t length = lines[linenumber].GetLength();
+	std::string line = std::string(lines[linenumber].GetLine(), length).substr(characternumber, std::string::npos);
+	if (length > characternumber) {
+		TextDelta* removeText = new RemoveText(linenumber, length, length - characternumber);
+		delta->AddDelta(removeText);
+		lines[linenumber].AddDelta(removeText);
+	}
 	delta->AddDelta(new AddLine(linenumber, characternumber));
 	lines.insert(lines.begin() + (linenumber + 1), TextLine("", 0));
-	TextDelta* addText = new AddText(linenumber + 1, 0, line);
-	delta->AddDelta(addText);
-	lines[linenumber + 1].AddDelta(addText);
-	this->deltas.push_back(delta);
+	if (length > characternumber) {
+		TextDelta* addText = new AddText(linenumber + 1, 0, line);
+		delta->AddDelta(addText);
+		lines[linenumber + 1].AddDelta(addText);
+	}
+	this->AddDelta(delta);
 }
 
 void TextFile::Undo() {
-	assert(0);
-	// FIXME
+	if (this->deltas.size() == 0) return;
+	TextDelta* delta = this->deltas.back();
+	this->Undo(delta);
+	this->deltas.pop_back();
+	this->redos.push_back(delta);
 }
 
 void TextFile::Redo() {
-	assert(0);
-	// FIXME
+	if (this->redos.size() == 0) return;
+	TextDelta* delta = this->redos.back();
+	this->Redo(delta);
+	this->redos.pop_back();
+	this->deltas.push_back(delta);
+}
+
+void TextFile::AddDelta(TextDelta* delta) {
+	for (auto it = redos.begin(); it != redos.end(); it++) {
+		delete *it;
+	}
+	redos.clear();
+	this->deltas.push_back(delta);
+}
+
+void TextFile::Undo(TextDelta* delta) {
+	assert(delta);
+	switch (delta->TextDeltaType()) {
+	case PGDeltaAddText:
+		this->lines[((AddText*)delta)->linenr].PopDelta();
+		break;
+	case PGDeltaRemoveText:
+		this->lines[((RemoveText*)delta)->linenr].PopDelta();
+		break;
+	case PGDeltaAddLine: {
+		AddLine* add = (AddLine*)delta;
+		this->lines.erase(this->lines.begin() + (add->linenr + 1));
+		break;
+	}
+	case PGDeltaRemoveLine: {
+		RemoveLine* remove = (RemoveLine*)delta;
+		this->lines.insert(this->lines.begin() + remove->linenr, remove->line);
+		break;
+	}
+	case PGDeltaMultiple: {
+		MultipleDelta* multi = (MultipleDelta*)delta;
+		for (auto it = multi->deltas.begin() + multi->deltas.size() - 1; ; it--) {
+			Undo(*it);
+			if (it == multi->deltas.begin()) break;
+		}
+		break;
+	}
+	}
+}
+
+void TextFile::Redo(TextDelta* delta) {
+	assert(delta);
+	switch (delta->TextDeltaType()) {
+	case PGDeltaAddText:
+		this->lines[((AddText*)delta)->linenr].AddDelta(delta);
+		break;
+	case PGDeltaRemoveText:
+		this->lines[((RemoveText*)delta)->linenr].AddDelta(delta);
+		break;
+	case PGDeltaAddLine: {
+		AddLine* add = (AddLine*)delta;
+		lines.insert(lines.begin() + (add->linenr + 1), TextLine("", 0));
+		break;
+	}
+	case PGDeltaRemoveLine: {
+		RemoveLine* remove = (RemoveLine*)delta;
+		this->lines.erase(this->lines.begin() + remove->linenr);
+		break;
+	}
+	case PGDeltaMultiple: {
+		MultipleDelta* multi = (MultipleDelta*)delta;
+		for (auto it = multi->deltas.begin(); it != multi->deltas.end(); it++) {
+			Redo(*it);
+		}
+		break;
+	}
+	}
 }
 
 void TextFile::Flush() {
@@ -145,6 +219,5 @@ void TextFile::Flush() {
 
 void TextFile::SetLineEnding(PGLineEnding lineending) {
 	assert(0);
-	// FIXME
 }
 

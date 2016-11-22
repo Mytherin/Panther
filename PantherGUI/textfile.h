@@ -36,9 +36,15 @@ public:
 
 	ssize_t GetLineCount();
 private:
+	void AddDelta(TextDelta* delta);
+
+	void Undo(TextDelta* delta);
+	void Redo(TextDelta* delta);
+
 	PGMemoryMappedFileHandle file;
 	std::vector<TextLine> lines;
 	std::vector<TextDelta*> deltas;
+	std::vector<TextDelta*> redos;
 	char* base;
 	PGLineEnding lineending;
 };

@@ -26,24 +26,22 @@ public:
 
 class AddText : public TextDelta {
 public:
-	TextLine *line;
 	int linenr;
 	int characternr;
 	std::string text;
 
 	PGTextType TextDeltaType() { return PGDeltaAddText; }
-	AddText(int linenr, int characternr, std::string text) : linenr(linenr), characternr(characternr), text(text), line(NULL) { }
+	AddText(int linenr, int characternr, std::string text) : linenr(linenr), characternr(characternr), text(text) { }
 };
 
 class RemoveText : public TextDelta {
 public:
-	TextLine *line;
 	int linenr;
 	int characternr;
 	int charactercount;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveText; }
-	RemoveText(int linenr, int characternr, int charactercount) : linenr(linenr), characternr(characternr), charactercount(charactercount), line(NULL) { }
+	RemoveText(int linenr, int characternr, int charactercount) : linenr(linenr), characternr(characternr), charactercount(charactercount) { }
 };
 
 class RemoveLine : public TextDelta {
@@ -61,7 +59,7 @@ public:
 	int linenr;
 	int characternr;
 
-	PGTextType TextDeltaType() { return PGDeltaRemoveLine; }
+	PGTextType TextDeltaType() { return PGDeltaAddLine; }
 	AddLine(int linenr, int characternr) : linenr(linenr), characternr(characternr) { }
 
 };

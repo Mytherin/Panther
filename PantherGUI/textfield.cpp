@@ -87,16 +87,24 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				this->selected_character == textfile.GetLine(this->textfile.GetLineCount() - 1)->GetLength()) break;
 			if (this->selected_character == textfile.GetLine(this->selected_line)->GetLength()) {
 				this->textfile.DeleteCharacter(this->selected_line + 1, 0);
+				this->InvalidateAfterLine(selected_line);
 			} else {
 				this->textfile.DeleteCharacter(this->selected_line, this->selected_character + 1);
+				this->InvalidateLine(selected_line);
 			}
-			this->InvalidateLine(selected_line);
 			break;
 		case PGButtonBackspace:
 			if (this->selected_line == 0 && this->selected_character == 0) break;
 			this->textfile.DeleteCharacter(this->selected_line, this->selected_character);
-			this->selected_character--;
-			this->InvalidateLine(selected_line);
+			if (this->selected_character == 0) {
+				this->selected_line--;
+				this->selected_character = this->textfile.GetLine(this->selected_line)->GetLength();
+				this->InvalidateAfterLine(selected_line);
+			}
+			else {
+				this->selected_character--;
+				this->InvalidateLine(selected_line);
+			}
 			break;
 		case PGButtonEnter:
 			this->textfile.AddNewLine(this->selected_line, this->selected_character);
@@ -110,9 +118,27 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 }
 
 void TextField::KeyboardCharacter(char character, PGModifier modifier) {
-	this->textfile.InsertText(character, this->selected_line, this->selected_character);
-	this->selected_character += 1;
-	this->InvalidateLine(selected_line);
+	if (modifier == PGModifierNone) {
+		this->textfile.InsertText(character, this->selected_line, this->selected_character);
+		this->selected_character += 1;
+		this->InvalidateLine(selected_line);
+	}
+	else {
+		if (modifier == PGModifierCtrl) {
+			switch (character) {
+			case 'Z':
+				// FIXME: adjust selected line/character after Undo
+				this->textfile.Undo();
+				this->Invalidate();
+				break;
+			case 'Y':
+				// FIXME: adjust selected line/character after Redo
+				this->textfile.Redo();
+				this->Invalidate();
+				break;
+			}
+		}
+	}
 }
 
 void TextField::KeyboardUnicode(char *character, PGModifier modifier) {
