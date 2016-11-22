@@ -19,8 +19,10 @@ public:
 
 	ssize_t SelectedCharacter() { return start_character; }
 	ssize_t SelectedLine() { return start_line; }
-	ssize_t EndCharacter() { return end_character; }
-	ssize_t EndLine() { return end_line; }
+	ssize_t BeginCharacter();
+	ssize_t BeginLine();
+	ssize_t EndCharacter();
+	ssize_t EndLine();
 
 	bool SelectionIsEmpty();
 

@@ -12,6 +12,7 @@ typedef enum {
 	PGDeltaRemoveText,
 	PGDeltaAddLine,
 	PGDeltaRemoveLine,
+	PGDeltaRemoveManyLines,
 	PGDeltaMultiple,
 	PGTextUnknown
 } PGTextType;
@@ -30,7 +31,9 @@ public:
 	Cursor* cursor;
 	Cursor stored_cursor;
 
-	CursorDelta(Cursor* cursor) : cursor(cursor), stored_cursor(*cursor) { }
+	CursorDelta(Cursor* cursor) : cursor(cursor), stored_cursor(NULL) { 
+		if (cursor) stored_cursor = Cursor(*cursor);
+	}
 
 	virtual PGTextType TextDeltaType() { return PGTextUnknown; }
 };
@@ -62,7 +65,18 @@ public:
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveLine; }
 	RemoveLine(Cursor* cursor, int linenr, TextLine line) : CursorDelta(cursor), linenr(linenr), line(line) { }
+};
 
+class RemoveLines : public CursorDelta {
+public:
+	int start;
+	std::vector<TextLine> lines;
+
+	PGTextType TextDeltaType() { return PGDeltaRemoveManyLines; }
+	RemoveLines(Cursor* cursor, int start) : CursorDelta(cursor), start(start) { }
+	void AddLine(TextLine line) {
+		lines.push_back(line);
+	}
 };
 
 class AddLine : public CursorDelta {

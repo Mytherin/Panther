@@ -3,8 +3,8 @@
 #include <sstream>
 #include <algorithm>
 
-
-TextField::TextField(PGWindowHandle window) : Control(window), textfile("C:\\Users\\wieis\\Desktop\\syntaxtest.py") {
+//"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
+TextField::TextField(PGWindowHandle window) : Control(window), textfile("E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml") {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
 }
@@ -31,42 +31,35 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 		position_y += line_height;
 	}
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		ssize_t startline = std::max(std::min(it->SelectedLine(), it->EndLine()), lineoffset_y);
-		ssize_t endline = std::min(std::max(it->SelectedLine(), it->EndLine()), linenr);
+		ssize_t startline = std::max(it->BeginLine(), lineoffset_y);
+		ssize_t endline = std::min(it->EndLine(), linenr);
 		position_y = (startline - lineoffset_y) * line_height;
 		for (; startline <= endline; startline++) {
 			current_line = textfile.GetLine(startline);
 			assert(current_line);
 			ssize_t start, end;
-			if (startline == it->SelectedLine()) {
+			if (startline == it->BeginLine()) {
 				if (startline == it->EndLine()) {
 					// start and end are on the same line
-					start = std::min(it->SelectedCharacter(), it->EndCharacter());
-					end = std::max(it->SelectedCharacter(), it->EndCharacter());
-				} else if (it->EndLine() < it->SelectedLine()) {
-					// start occurs after end
-					start = 0;
-					end = it->SelectedCharacter();
-				} else {
-					// end occurs after start
-					start = it->SelectedCharacter();
-					end = current_line->GetLength();
-				}
-				RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x, position_y, it->SelectedCharacter());
-			} else if (startline == it->EndLine()) {
-				if (it->EndLine() < it->SelectedLine()) {
-					// start occurs after end
-					start = it->EndCharacter();
-					end = current_line->GetLength();
-				} else {
-					// end occurs after start
-					start = 0;
+					start = it->BeginCharacter();
 					end = it->EndCharacter();
+				} else {
+					start = it->BeginCharacter();
+					end = current_line->GetLength();
 				}
+			} else if (startline == it->EndLine()) {
+				start = 0;
+				end = it->EndCharacter();
 			} else {
 				start = 0;
 				end = current_line->GetLength();
 			}
+
+			if (startline == it->SelectedLine()) {
+				// render the caret on the selected line
+				RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x, position_y, it->SelectedCharacter());
+			}
+
 			RenderSelection(renderer,
 				current_line->GetLine(),
 				current_line->GetLength(),
@@ -121,12 +114,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				if (it->SelectionIsEmpty()) {
 					(*it).OffsetCharacter(-1);
 				} else {
-					if (it->SelectedLine() < it->EndLine() ||
-						(it->SelectedLine() == it->EndLine() && it->SelectedCharacter() < it->EndCharacter())) {
-						it->SetCursorLocation(it->SelectedLine(), it->SelectedCharacter());
-					} else {
-						it->SetCursorLocation(it->EndLine(), it->EndCharacter());
-					}
+					it->SetCursorLocation(it->BeginLine(), it->BeginCharacter());
 				}
 			} else if (modifier == PGModifierShift) {
 				(*it).OffsetSelectionCharacter(-1);
@@ -140,12 +128,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				if (it->SelectionIsEmpty()) {
 					(*it).OffsetCharacter(1);
 				} else {
-					if (it->SelectedLine() > it->EndLine() ||
-						(it->SelectedLine() == it->EndLine() && it->SelectedCharacter() > it->EndCharacter())) {
-						it->SetCursorLocation(it->SelectedLine(), it->SelectedCharacter());
-					} else {
-						it->SetCursorLocation(it->EndLine(), it->EndCharacter());
-					}
+					it->SetCursorLocation(it->EndLine(), it->EndCharacter());
 				}
 			} else if (modifier == PGModifierShift) {
 				(*it).OffsetSelectionCharacter(1);
@@ -209,6 +192,9 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		if (modifier == PGModifierNone) {
 			this->textfile.DeleteCharacter(cursors);
 			this->Invalidate();
+		} else if (modifier == PGModifierCtrl) {
+			// FIXME: delete word
+			this->Invalidate();
 		}
 		break;
 	case PGButtonEnter:
@@ -217,6 +203,8 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			this->Invalidate();
 		} else if (modifier == PGModifierCtrl) {
 			// FIXME: new line at end of every cursor's line
+		} else if (modifier == PGModifierCtrlShift) {
+			// FIXME: new line before every cursor's line
 		}
 	default:
 		break;
@@ -231,13 +219,18 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 		if (modifier == PGModifierCtrl) {
 			switch (character) {
 			case 'Z':
-				// FIXME: adjust selected line/character after Undo
 				this->textfile.Undo();
 				this->Invalidate();
 				break;
 			case 'Y':
-				// FIXME: adjust selected line/character after Redo
 				this->textfile.Redo();
+				this->Invalidate();
+				break;
+			case 'A':
+				this->cursors.clear();
+				this->cursors.push_back(Cursor(&textfile, textfile.GetLineCount() - 1, textfile.GetLine(textfile.GetLineCount() - 1)->GetLength()));
+				this->cursors.back().end_character = 0;
+				this->cursors.back().end_line = 0;
 				this->Invalidate();
 				break;
 			}
@@ -260,12 +253,11 @@ void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 }
 
 void TextField::InvalidateLine(int line) {
-	// FIXME: compute line rectangle
 	this->Invalidate(PGRect(0, (line - this->lineoffset_y) * line_height, this->width, line_height));
 }
 
 void TextField::InvalidateBeforeLine(int line) {
-	// FIXME: 
+	this->Invalidate(PGRect(0, 0, this->width, (line - this->lineoffset_y) * line_height));
 }
 
 void TextField::InvalidateAfterLine(int line) {

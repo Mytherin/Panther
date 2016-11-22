@@ -22,6 +22,8 @@ void Cursor::OffsetLine(ssize_t offset) {
 void Cursor::OffsetSelectionLine(ssize_t offset) {
 	start_line = std::min(std::max(start_line + offset, (ssize_t)0), this->file->GetLineCount() - 1);
 	start_character = std::min(start_character, file->GetLine(start_line)->GetLength());
+	if (offset < 0 && start_line == 0) start_character = 0;
+	if (offset > 0 && start_line == (this->file->GetLineCount() - 1)) start_character = file->GetLine(start_line)->GetLength();
 }
 
 void Cursor::OffsetCharacter(ssize_t offset) {
@@ -48,7 +50,7 @@ void Cursor::OffsetSelectionCharacter(ssize_t offset) {
 			start_line++;
 		}
 		else {
-			start_character = this->file->GetLine(start_line)->GetLength() - 1;
+			start_character = this->file->GetLine(start_line)->GetLength();
 			break;
 		}
 	}
@@ -94,4 +96,24 @@ void Cursor::RestoreCursor(Cursor cursor) {
 
 bool Cursor::SelectionIsEmpty() {
 	return this->start_character == this->end_character && this->start_line == this->end_line;
+}
+
+ssize_t Cursor::BeginCharacter() {
+	if (start_line < end_line) return start_character;
+	if (end_line < start_line) return end_character;
+	return std::min(start_character, end_character);
+}
+
+ssize_t Cursor::BeginLine() {
+	return std::min(start_line, end_line);
+}
+
+ssize_t Cursor::EndCharacter() {
+	if (start_line < end_line) return end_character;
+	if (end_line < start_line) return start_character;
+	return std::max(start_character, end_character);
+}
+
+ssize_t Cursor::EndLine() {
+	return std::max(start_line, end_line);
 }

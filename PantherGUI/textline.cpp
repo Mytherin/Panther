@@ -41,7 +41,8 @@ void TextLine::ApplyDeltas() {
 	while (delta) {
 		if (delta->TextDeltaType() == PGDeltaAddText) {
 			AddText* add = (AddText*) delta;
-			if (current_length - add->characternr + add->text.size() > 0) {			
+			if (current_length > add->characternr) {
+				// if the character is inserted in the middle of a line, we have to move the end of the line around
 				memmove(modified_line + add->characternr + add->text.size(), 
 					modified_line + add->characternr, 
 					current_length + 1 - (add->characternr + add->text.size()));

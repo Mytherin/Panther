@@ -49,6 +49,8 @@ public:
 
 	ssize_t GetLineCount();
 private:
+	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor>& cursors);
+
 	void OpenFile(std::string filename);
 
 	void AddDelta(TextDelta* delta);
