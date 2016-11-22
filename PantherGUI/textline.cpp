@@ -27,10 +27,6 @@ void TextLine::ApplyDeltas() {
 		else if (delta->TextDeltaType() == PGDeltaRemoveText) {
 			//length -= ((RemoveText*)delta)->charactercount;
 		}
-		else {
-			// FIXME incorrect delta type for line
-			assert(0);
-		}
 		delta = delta->next;
 	}
 	modified_line = (char*) malloc(length * sizeof(char) + 1);
@@ -43,13 +39,12 @@ void TextLine::ApplyDeltas() {
 	memcpy(modified_line, line, this->length);
 	delta = this->deltas;
 	while (delta) {
-		// FIXME: apply delta
 		if (delta->TextDeltaType() == PGDeltaAddText) {
 			AddText* add = (AddText*) delta;
 			if (current_length - (add->characternr + add->text.size()) > 0) {			
 				memmove(modified_line + add->characternr + add->text.size(), 
 					modified_line + add->characternr, 
-					current_length - (add->characternr + add->text.size()));
+					current_length + 1 - (add->characternr + add->text.size()));
 			}
 			memcpy(modified_line + add->characternr, add->text.c_str(), add->text.size());
 			current_length += add->text.size();
@@ -65,11 +60,22 @@ void TextLine::ApplyDeltas() {
 }
 
 void TextLine::AddDelta(TextDelta* delta) {
+	if (delta->TextDeltaType() == PGDeltaAddText) {
+		((AddText*)delta)->line = this;
+	}
+	else if (delta->TextDeltaType() == PGDeltaRemoveText) {
+		((RemoveText*)delta)->line = this;
+	}
+	else {
+		// invalid delta to add to a line
+		assert(0);
+	}
 	if (this->deltas == NULL) {
 		this->deltas = delta;
 	} else {
 		TextDelta* current = this->deltas;
 		while (current->next) current = current->next;
+		assert(current != delta);
 		current->next = delta;
 	}
 	if (modified_line) free(modified_line);

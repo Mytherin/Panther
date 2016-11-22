@@ -97,7 +97,8 @@ typedef enum {
 	PGButtonUp,
 	PGButtonLeft,
 	PGButtonRight,
-	PGButtonBackspace
+	PGButtonBackspace,
+	PGButtonEnter
 } PGButton;
 
 typedef byte PGModifier;

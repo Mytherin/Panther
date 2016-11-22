@@ -98,6 +98,11 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			this->selected_character--;
 			this->InvalidateLine(selected_line);
 			break;
+		case PGButtonEnter:
+			this->textfile.AddNewLine(this->selected_line, this->selected_character);
+			this->selected_line++;
+			this->selected_character = 0;
+			this->InvalidateAfterLine(this->selected_line - 1);
 		default:
 			break;
 		}
@@ -133,6 +138,6 @@ void TextField::InvalidateBeforeLine(int line) {
 	// FIXME: 
 }
 
-void TextField::InvalidateAfterLine(int line) {
-	// FIXME: 
+void TextField::InvalidateAfterLine(int line) {	
+	this->Invalidate(PGRect(0, (line - this->lineoffset_y) * line_height, this->width, this->height));
 }

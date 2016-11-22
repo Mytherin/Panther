@@ -115,11 +115,11 @@
     <ClCompile Include="mmap.cpp" />
     <ClCompile Include="textfield.cpp" />
     <ClCompile Include="textfile.cpp" />
-    <ClCompile Include="textdelta.cpp" />
     <ClCompile Include="textline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="control.h" />
+    <ClInclude Include="encoding.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
     <ClInclude Include="textfield.h" />

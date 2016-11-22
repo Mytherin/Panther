@@ -232,6 +232,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case VK_BACK:
 			button = PGButtonBackspace;
 			break;
+		case VK_RETURN:
+			button = PGButtonEnter;
+			break;
 		default:
 			break;
 		}
@@ -242,7 +245,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_CHAR:
-		if (wParam < 0x20) break; // ignore control characters
+		if (wParam < 0x20) break;
 		global_handle->focused_control->KeyboardCharacter((char)wParam, PGModifierNone);
 		break;
 	case WM_UNICHAR:

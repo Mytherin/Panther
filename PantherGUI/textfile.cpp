@@ -114,6 +114,21 @@ void TextFile::DeleteCharacter(int linenumber, int characternumber) {
 	}
 }
 
+void TextFile::AddNewLine(int linenumber, int characternumber) {
+	MultipleDelta* delta = new MultipleDelta();
+	lines[linenumber].ApplyDeltas();
+	std::string line = std::string(lines[linenumber].modified_line).substr(characternumber, std::string::npos);
+	TextDelta* removeText = new RemoveText(linenumber, lines[linenumber].GetLength(), lines[linenumber].GetLength() - characternumber);
+	delta->AddDelta(removeText);
+	lines[linenumber].AddDelta(removeText);
+	delta->AddDelta(new AddLine(linenumber, characternumber));
+	lines.insert(lines.begin() + (linenumber + 1), TextLine("", 0));
+	TextDelta* addText = new AddText(linenumber + 1, 0, line);
+	delta->AddDelta(addText);
+	lines[linenumber + 1].AddDelta(addText);
+	this->deltas.push_back(delta);
+}
+
 void TextFile::Undo() {
 	assert(0);
 	// FIXME
