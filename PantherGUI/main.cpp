@@ -386,6 +386,23 @@ PGSize RenderText(PGRendererHandle renderer, const char *text, size_t len, int x
 	return PGSize{ LOWORD(return_value), HIWORD(return_value) };
 }
 
+void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t characternr) {
+	ssize_t line_height = 19;
+	int width = GetRenderWidth(renderer, text, characternr);
+	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(0, 0, 0));
+}
+
+int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) {
+	int width = 0;
+	for (int i = 0; i < length; i++) {	
+		int result;
+		UINT val = text[i];
+		GetCharWidth(renderer->hdc, val, val, &result);
+		width += result;
+	}
+	return width;
+}
+
 void SetTextColor(PGRendererHandle renderer, PGColor color) {
 	SetTextColor(renderer->hdc, RGB(color.r, color.g, color.b));
 }

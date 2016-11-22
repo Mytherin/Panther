@@ -23,7 +23,7 @@ void Cursor::OffsetCharacter(ssize_t offset) {
 	while (selected_character < 0) {
 		if (selected_line > 0) {
 			selected_line--;
-			selected_character += this->file->GetLine(selected_line)->GetLength();
+			selected_character += this->file->GetLine(selected_line)->GetLength() + 1;
 		}
 		else {
 			selected_character = 0;
@@ -32,7 +32,7 @@ void Cursor::OffsetCharacter(ssize_t offset) {
 	}
 	while (selected_character > this->file->GetLine(selected_line)->GetLength()) {
 		if (selected_line < this->file->GetLineCount() - 1) {
-			selected_character -= this->file->GetLine(selected_line)->GetLength();
+			selected_character -= this->file->GetLine(selected_line)->GetLength() + 1;
 			selected_line++;
 		}
 		else {

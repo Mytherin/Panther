@@ -143,7 +143,7 @@ void TextFile::AddNewLine(std::vector<Cursor>& cursors) {
 		ssize_t length = lines[linenumber].GetLength();
 		std::string line = std::string(lines[linenumber].GetLine(), length).substr(characternumber, std::string::npos);
 		if (length > characternumber) {
-			TextDelta* removeText = new RemoveText(&*it, linenumber, length, length - characternumber);
+			TextDelta* removeText = new RemoveText(NULL, linenumber, length, length - characternumber);
 			delta->AddDelta(removeText);
 			//lines[linenumber].AddDelta(removeText);
 		}

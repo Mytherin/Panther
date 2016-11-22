@@ -41,7 +41,7 @@ void TextLine::ApplyDeltas() {
 	while (delta) {
 		if (delta->TextDeltaType() == PGDeltaAddText) {
 			AddText* add = (AddText*) delta;
-			if (current_length - (add->characternr + add->text.size()) > 0) {			
+			if (current_length - add->characternr + add->text.size() > 0) {			
 				memmove(modified_line + add->characternr + add->text.size(), 
 					modified_line + add->characternr, 
 					current_length + 1 - (add->characternr + add->text.size()));

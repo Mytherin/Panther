@@ -16,7 +16,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	// FIXME: draw background of textfield
 
 	SetTextFont(renderer, NULL);
-	int position_x = this->x + this->offset_x;
+	int position_x = this->x + this->offset_x + 5;
 	int position_y = 0;
 	ssize_t linenr = lineoffset_y;
 	TextLine *current_line;
@@ -30,6 +30,15 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 		}
 		linenr++;
 		position_y += line_height;
+	}
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		ssize_t linenr = it->SelectedLine();
+		ssize_t characternr = it->SelectedCharacter();
+		position_y = (linenr - lineoffset_y) * line_height;
+		if (!(position_y + line_height < rectangle->y && position_y > rectangle->y + rectangle->height)) {
+			current_line = textfile.GetLine(linenr);
+			RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x, position_y, characternr);
+		}
 	}
 }
 
@@ -46,6 +55,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it).OffsetLine(1);
 			}
+			Invalidate();
 			/*
 			this->selected_line = std::min(this->selected_line + 1, textfile.GetLineCount() - 1);
 			this->selected_character = std::min(this->selected_character, (ssize_t) textfile.GetLine(this->selected_line)->GetLength());*/
@@ -54,39 +64,46 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it).OffsetLine(-1);
 			}
+			Invalidate();
 			//this->selected_line = std::max(this->selected_line - 1, (ssize_t) 0);
 			break;
 		case PGButtonLeft:
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it).OffsetCharacter(-1);
 			}
+			Invalidate();
 			break;
 		case PGButtonRight:
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it).OffsetCharacter(1);
 			}
+			Invalidate();
 			break;
 		case PGButtonEnd:
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it).SelectEndOfLine();
 			}
+						Invalidate();
 			break;
 		case PGButtonHome:
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it).SelectStartOfLine();
 			}
+			Invalidate();
 			break;
 		case PGButtonPageUp:
 			// FIXME: amount of lines in textfield
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it).OffsetLine(-47);
 			}
+			Invalidate();
 			break;
 		case PGButtonPageDown:
 			// FIXME: amount of lines in textfield
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it).OffsetLine(47);
 			}
+			Invalidate();
 			break;
 		case PGButtonDelete:
 			// FIXME
