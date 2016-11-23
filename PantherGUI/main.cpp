@@ -41,22 +41,30 @@ PGTextAlign PGTextAlignRight = 0x08;
 PGTextAlign PGTextAlignHorizontalCenter = 0x10;
 PGTextAlign PGTextAlignVerticalCenter = 0x20;
 
-PGModifier PGModifierNone = 0x00;
-PGModifier PGModifierCmd = 0x01;
-PGModifier PGModifierCtrl = 0x02;
-PGModifier PGModifierShift = 0x04;
-PGModifier PGModifierAlt = 0x08;
-PGModifier PGModifierCtrlShift = PGModifierCtrl | PGModifierShift;
-PGModifier PGModifierCtrlAlt = PGModifierCtrl | PGModifierAlt;
-PGModifier PGModifierShiftAlt = PGModifierShift | PGModifierAlt;
-PGModifier PGModifierCtrlShiftAlt = PGModifierCtrl | PGModifierShift | PGModifierAlt;
-PGModifier PGModifierCmdCtrl = PGModifierCmd | PGModifierCtrl;
-PGModifier PGModifierCmdShift = PGModifierCmd | PGModifierShift;
-PGModifier PGModifierCmdAlt = PGModifierCmd | PGModifierAlt;
-PGModifier PGModifierCmdCtrlShift = PGModifierCmd | PGModifierCtrl | PGModifierShift;
-PGModifier PGModifierCmdShiftAlt = PGModifierCmd | PGModifierShift | PGModifierAlt;
-PGModifier PGModifierCmdCtrlAlt = PGModifierCmd | PGModifierCtrl | PGModifierAlt;
-PGModifier PGModifierCmdCtrlShiftAlt = PGModifierCmd | PGModifierCtrl | PGModifierShift | PGModifierAlt;
+const PGModifier PGModifierNone = 0x00;
+const PGModifier PGModifierCmd = 0x01;
+const PGModifier PGModifierCtrl = 0x02;
+const PGModifier PGModifierShift = 0x04;
+const PGModifier PGModifierAlt = 0x08;
+const PGModifier PGModifierCtrlShift = PGModifierCtrl | PGModifierShift;
+const PGModifier PGModifierCtrlAlt = PGModifierCtrl | PGModifierAlt;
+const PGModifier PGModifierShiftAlt = PGModifierShift | PGModifierAlt;
+const PGModifier PGModifierCtrlShiftAlt = PGModifierCtrl | PGModifierShift | PGModifierAlt;
+const PGModifier PGModifierCmdCtrl = PGModifierCmd | PGModifierCtrl;
+const PGModifier PGModifierCmdShift = PGModifierCmd | PGModifierShift;
+const PGModifier PGModifierCmdAlt = PGModifierCmd | PGModifierAlt;
+const PGModifier PGModifierCmdCtrlShift = PGModifierCmd | PGModifierCtrl | PGModifierShift;
+const PGModifier PGModifierCmdShiftAlt = PGModifierCmd | PGModifierShift | PGModifierAlt;
+const PGModifier PGModifierCmdCtrlAlt = PGModifierCmd | PGModifierCtrl | PGModifierAlt;
+const PGModifier PGModifierCmdCtrlShiftAlt = PGModifierCmd | PGModifierCtrl | PGModifierShift | PGModifierAlt;
+
+
+const PGMouseButton PGMouseButtonNone = 0x00;
+const PGMouseButton PGLeftMouseButton = 0x01;
+const PGMouseButton PGRightMouseButton = 0x02;
+const PGMouseButton PGMiddleMouseButton = 0x04;
+const PGMouseButton PGXButton1 = 0x08;
+const PGMouseButton PGXButton2 = 0x10;
 
 PGWindowHandle global_handle;
 
@@ -304,7 +312,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->focused_control->MouseClick(x, y, PGLeftMouseButton, modifier);
+		global_handle->focused_control->MouseDown(x, y, PGLeftMouseButton, modifier);
+		break;
+	}
+	case WM_LBUTTONUP: {
+		int x = LOWORD(lParam);
+		int y = HIWORD(lParam);
+		PGModifier modifier = 0;
+		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+		global_handle->focused_control->MouseUp(x, y, PGLeftMouseButton, modifier);
+		break;
+	}
+	case WM_MOUSEMOVE: {
+		int x = LOWORD(lParam);
+		int y = HIWORD(lParam);
+		PGModifier modifier = 0;
+		PGMouseButton buttons = PGMouseButtonNone;
+		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+		if (wParam & MK_LBUTTON) buttons |= PGLeftMouseButton;
+		if (wParam & MK_RBUTTON) buttons |= PGRightMouseButton;
+		if (wParam & MK_MBUTTON) buttons |= PGMiddleMouseButton;
+		if (wParam & MK_XBUTTON1) buttons |= PGXButton1;
+		if (wParam & MK_XBUTTON2) buttons |= PGXButton2;
+		global_handle->focused_control->MouseMove(x, y, buttons);
 		break;
 	}
 	case WM_DESTROY:

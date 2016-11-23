@@ -106,27 +106,31 @@ typedef enum {
 
 typedef byte PGModifier;
 
-extern PGModifier PGModifierNone;
-extern PGModifier PGModifierCmd;
-extern PGModifier PGModifierCtrl;
-extern PGModifier PGModifierShift;
-extern PGModifier PGModifierAlt;
-extern PGModifier PGModifierCtrlShift;
-extern PGModifier PGModifierCtrlAlt;
-extern PGModifier PGModifierShiftAlt;
-extern PGModifier PGModifierCtrlShiftAlt;
-extern PGModifier PGModifierCmdCtrl;
-extern PGModifier PGModifierCmdShift;
-extern PGModifier PGModifierCmdAlt;
-extern PGModifier PGModifierCmdCtrlShift;
-extern PGModifier PGModifierCmdShiftAlt;
-extern PGModifier PGModifierCmdCtrlAlt;
-extern PGModifier PGModifierCmdCtrlShiftAlt;
+extern const PGModifier PGModifierNone;
+extern const PGModifier PGModifierCmd;
+extern const PGModifier PGModifierCtrl;
+extern const PGModifier PGModifierShift;
+extern const PGModifier PGModifierAlt;
+extern const PGModifier PGModifierCtrlShift;
+extern const PGModifier PGModifierCtrlAlt;
+extern const PGModifier PGModifierShiftAlt;
+extern const PGModifier PGModifierCtrlShiftAlt;
+extern const PGModifier PGModifierCmdCtrl;
+extern const PGModifier PGModifierCmdShift;
+extern const PGModifier PGModifierCmdAlt;
+extern const PGModifier PGModifierCmdCtrlShift;
+extern const PGModifier PGModifierCmdShiftAlt;
+extern const PGModifier PGModifierCmdCtrlAlt;
+extern const PGModifier PGModifierCmdCtrlShiftAlt;
 
-typedef enum {
-	PGLeftMouseButton,
-	PGRightMouseButton
-} PGMouseButton;
+typedef byte PGMouseButton;
+
+extern const PGMouseButton PGMouseButtonNone;
+extern const PGMouseButton PGLeftMouseButton;
+extern const PGMouseButton PGRightMouseButton;
+extern const PGMouseButton PGMiddleMouseButton;
+extern const PGMouseButton PGXButton1;
+extern const PGMouseButton PGXButton2;
 
 typedef void (*PGClickFunction)(int x, int y, PGMouseButton button, PGModifier modifier);
 typedef void (*PGScrollFunction)(int x, int y, int distance, PGModifier modifier);

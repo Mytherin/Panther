@@ -5,7 +5,7 @@
 //"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
 //"C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 TextField::TextField(PGWindowHandle window) : 
-	Control(window), textfile("E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml") {
+	Control(window), textfile("C:\\Users\\wieis\\Desktop\\syntaxtest.py") {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
 	text_offset = 25;
@@ -18,7 +18,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 
 	// determine the width of the line numbers 
 	ssize_t line_count = textfile.GetLineCount();
-	auto line_number = std::to_string(textfile.GetLineCount() + 1);
+	auto line_number = std::to_string(std::max((ssize_t) 10, textfile.GetLineCount() + 1));
 	text_offset = 10 + GetRenderWidth(renderer, line_number.c_str(), line_number.size());
 	// determine the render position
 	int position_x = this->x + this->offset_x;
@@ -95,28 +95,56 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 }
 
 void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
+}
+
+void TextField::GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character) {
+	// find the line position of the mouse
+	ssize_t line_offset = std::min((ssize_t) y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1);
+	line = this->lineoffset_y + line_offset;
+	// find the character position within the line
+	x = x - this->text_offset - this->offset_x;
+	ssize_t width = 0;
+	character = textfile.GetLine(line)->GetLength();
+	for (int i = 0; i < this->offsets[line_offset].size(); i++) {
+		if (width <= x && width + offsets[line_offset][i] > x) {
+			character = i;
+			break;
+		}
+		width += offsets[line_offset][i];
+	}
+}
+
+void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
 	x = x - this->x;
 	y = y - this->y;
-	switch (button) {
-	case PGLeftMouseButton: {
-		// find the line position of the mouse
-		ssize_t line_offset = std::min((ssize_t) y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1);
-		ssize_t line = this->lineoffset_y + line_offset;
-		// find the character position within the line
-		x = x - this->text_offset - this->offset_x;
-		ssize_t width = 0;
-		ssize_t character = textfile.GetLine(line)->GetLength();
-		for (int i = 0; i < this->offsets[line_offset].size(); i++) {
-			if (width <= x && width + offsets[line_offset][i] > x) {
-				character = i;
-				break;
-			}
-			width += offsets[line_offset][i];
+	if (button == PGLeftMouseButton) {
+		ssize_t line, character;
+		GetLineCharacterFromPosition(x, y, line, character);
+		if (cursors.size() > 1) {
+			cursors.erase(cursors.begin() + 1, cursors.end());
 		}
 		cursors[0].SetCursorLocation(line, character);
 		this->Invalidate();
-		break;
 	}
+}
+
+void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+
+}
+
+void TextField::MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier) {
+
+}
+
+void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
+	if (buttons & PGLeftMouseButton) {
+		ssize_t line, character;
+		GetLineCharacterFromPosition(x, y, line, character);
+		if (cursors[0].start_line != line || cursors[0].start_character != character) {
+			ssize_t old_line = cursors[0].start_line;
+			cursors[0].SetCursorStartLocation(line, character);
+			this->InvalidateBetweenLines(old_line, cursors[0].start_line);
+		}
 	}
 }
 
@@ -328,4 +356,13 @@ void TextField::InvalidateBeforeLine(int line) {
 
 void TextField::InvalidateAfterLine(int line) {
 	this->Invalidate(PGRect(0, (line - this->lineoffset_y) * line_height, this->width, this->height));
+}
+
+void TextField::InvalidateBetweenLines(int start, int end) {
+	if (start > end) {
+		InvalidateBetweenLines(end, start);
+		return;
+	}
+	this->Invalidate(PGRect(0, (start - this->lineoffset_y) * line_height, this->width, 
+		(end - this->lineoffset_y) * line_height - (start - this->lineoffset_y) * line_height + line_height));
 }

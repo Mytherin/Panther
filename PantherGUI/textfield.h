@@ -18,6 +18,10 @@ public:
 	void Draw(PGRendererHandle, PGRect*);
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseMove(int x, int y, PGMouseButton buttons);
 	void KeyboardButton(PGButton button, PGModifier modifier);
 	void KeyboardCharacter(char character, PGModifier modifier);
 	void KeyboardUnicode(char *character, PGModifier modifier);
@@ -25,6 +29,7 @@ public:
 	void InvalidateLine(int line);
 	void InvalidateBeforeLine(int line);
 	void InvalidateAfterLine(int line);
+	void InvalidateBetweenLines(int start, int end);
 private:
 	ssize_t text_offset;
 	int offset_x;
@@ -35,5 +40,6 @@ private:
 
 	TextFile textfile;
 
+	void GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character);
 	bool SetScrollOffset(ssize_t offset);
 };

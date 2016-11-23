@@ -107,6 +107,16 @@ void Cursor::SetCursorLocation(int linenr, int characternr) {
 	this->start_line = this->end_line = linenr;
 }
 
+void Cursor::SetCursorStartLocation(int linenr, int characternr) {
+	this->start_character = characternr;
+	this->start_line = linenr;
+}
+
+void Cursor::SetCursorEndLocation(int linenr, int characternr) {
+	this->end_character = characternr;
+	this->end_line = linenr;
+}
+
 void Cursor::SetCursorLine(int linenr) {
 	this->start_line = this->end_line = linenr;
 }

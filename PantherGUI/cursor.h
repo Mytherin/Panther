@@ -39,6 +39,8 @@ private:
 	ssize_t end_line;
 	ssize_t end_character;
 
+	void SetCursorStartLocation(int linenr, int characternr);
+	void SetCursorEndLocation(int linenr, int characternr);
 	void SetCursorLocation(int linenr, int characternr);
 	void SetCursorLine(int linenr);
 	void SetCursorCharacter(int characternr);
