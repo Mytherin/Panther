@@ -109,6 +109,16 @@ void Cursor::SelectWord() {
 	end_line = start_line;
 }
 
+void Cursor::SelectLine() {
+	this->end_character = this->start_character = 0;
+	this->end_line = this->start_line;
+	if (this->start_line != file->GetLineCount() - 1) {
+		this->start_line++;
+	} else {
+		this->start_character = file->GetLine(this->start_line)->GetLength();
+	}
+}
+
 void Cursor::OffsetWord(PGDirection direction) {
 	OffsetSelectionWord(direction);
 	end_character = start_character;

@@ -8,3 +8,5 @@ typedef enum {
 } PGDirection;
 
 typedef long long ssize_t;
+
+#define DOUBLE_CLICK_TIME 200

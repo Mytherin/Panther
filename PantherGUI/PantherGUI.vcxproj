@@ -130,6 +130,7 @@
     <ClInclude Include="textfile.h" />
     <ClInclude Include="textdelta.h" />
     <ClInclude Include="textline.h" />
+    <ClInclude Include="time.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />
   </ItemGroup>

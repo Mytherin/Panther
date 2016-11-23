@@ -1,3 +1,4 @@
+
 #include "textfield.h"
 #include <sstream>
 #include <algorithm>
@@ -8,13 +9,13 @@ TextField::TextField(PGWindowHandle window) :
 	Control(window), textfile("C:\\Users\\wieis\\Desktop\\syntaxtest.py") {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
-	text_offset = 25;
 }
 
 void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	// FIXME: get line height from renderer without drawing
 	// FIXME: mouse = caret over textfield
 	// FIXME: draw background of textfield
+	// FIXME: animate caret
 
 	// determine the width of the line numbers 
 	ssize_t line_count = textfile.GetLineCount();
@@ -123,23 +124,34 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		if (cursors.size() > 1) {
 			cursors.erase(cursors.begin() + 1, cursors.end());
 		}
-		if (modifier == PGModifierNone) {
+
+		time_t time = GetTime();
+		if (time - last_click.time < DOUBLE_CLICK_TIME && 
+			std::abs(x - last_click.x) < 2 && 
+			std::abs(y - last_click.y) < 2) {
+			last_click.clicks++;
+		} else {
+			last_click.clicks = 0;
+		}
+		last_click.time = time;
+		last_click.x = x;
+		last_click.y = y;
+		
+		if (modifier == PGModifierNone && last_click.clicks == 0) {
 			cursors[0].SetCursorLocation(line, character);
 		} else if (modifier == PGModifierShift) {
 			cursors[0].SetCursorStartLocation(line, character);
-		} else if (modifier == PGModifierCtrl) {
+		} else if (modifier == PGModifierCtrl || last_click.clicks == 1) {
 			cursors[0].SetCursorLocation(line, character);
 			cursors[0].SelectWord();
+		} else if (last_click.clicks == 2) {
+			cursors[0].SelectLine();
 		}
 		this->Invalidate();
 	}
 }
 
 void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
-
-}
-
-void TextField::MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier) {
 
 }
 

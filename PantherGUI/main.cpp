@@ -4,6 +4,7 @@
 #include "windowfunctions.h"
 #include "control.h"
 #include "textfield.h"
+#include "time.h"
 
 #include <malloc.h>
 
@@ -555,3 +556,6 @@ void RegisterMouseScroll(PGWindowHandle window, PGScrollFunction callback) {
 
 }
 
+time_t GetTime() {
+	return GetTickCount();
+}

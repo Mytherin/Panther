@@ -3,6 +3,7 @@
 #include "control.h"
 #include "cursor.h"
 #include "textfile.h"
+#include "time.h"
 
 struct TextSelection {
 	int line_start;
@@ -20,7 +21,6 @@ public:
 	void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
-	void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	void KeyboardButton(PGButton button, PGModifier modifier);
 	void KeyboardCharacter(char character, PGModifier modifier);
@@ -39,6 +39,8 @@ private:
 	int line_height;
 
 	TextFile textfile;
+
+	MouseClickInstance last_click;
 
 	void GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character);
 	bool SetScrollOffset(ssize_t offset);
