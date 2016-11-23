@@ -297,6 +297,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		}
 		break;
 	}
+	case WM_LBUTTONDOWN: {
+		// FIXME: control over which the mouse is
+		int x = LOWORD(lParam);
+		int y = HIWORD(lParam);
+		PGModifier modifier = 0;
+		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+		global_handle->focused_control->MouseClick(x, y, PGLeftMouseButton, modifier);
+		break;
+	}
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -387,6 +397,7 @@ PGSize RenderText(PGRendererHandle renderer, const char *text, size_t len, int x
 		len = 1;
 		text = " ";
 	}
+
 	LONG return_value = TabbedTextOut(renderer->hdc, x, y, text, len, 0, NULL, 0);
 	return PGSize{ LOWORD(return_value), HIWORD(return_value) };
 }
@@ -409,6 +420,16 @@ void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, in
 	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, line_height), PGColor(20, 20, 180, 125));
 }
 
+void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t length, std::vector<short>& offsets) {
+	offsets.clear();
+	for (int i = 0; i < length; i++) {	
+		int result;
+		UINT val = text[i];
+		GetCharWidth(renderer->hdc, val, val, &result);
+		offsets.push_back((short)result);
+	}
+}
+
 int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) {
 	int width = 0;
 	for (int i = 0; i < length; i++) {	
@@ -418,6 +439,25 @@ int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) 
 		width += result;
 	}
 	return width;
+}
+
+int GetCharacterPosition(PGWindowHandle window, const char* text, ssize_t length, ssize_t x_position) {
+	HDC hdc = GetDC(window->hwnd);
+	int width = 0;
+	int position = 0;
+	for (int i = 0; i < length; i++) {	
+		int result;
+		UINT val = text[i];
+		GetCharWidth(hdc, val, val, &result);
+		if (width < x_position && width + result > x_position) {
+			goto end;
+		}
+		width += result;
+		position++;
+	}
+end:
+	ReleaseDC(window->hwnd, hdc);
+	return position;
 }
 
 void SetTextColor(PGRendererHandle renderer, PGColor color) {

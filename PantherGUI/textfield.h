@@ -26,9 +26,11 @@ public:
 	void InvalidateBeforeLine(int line);
 	void InvalidateAfterLine(int line);
 private:
+	ssize_t text_offset;
 	int offset_x;
 	ssize_t lineoffset_y;
 	std::vector<Cursor> cursors;
+	std::vector<std::vector<short>> offsets;
 	int line_height;
 
 	TextFile textfile;

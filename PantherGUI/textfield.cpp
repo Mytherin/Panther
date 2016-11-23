@@ -5,9 +5,10 @@
 //"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
 //"C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 TextField::TextField(PGWindowHandle window) : 
-	Control(window), textfile("C:\\Users\\wieis\\Desktop\\syntaxtest.py") {
+	Control(window), textfile("E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml") {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
+	text_offset = 25;
 }
 
 void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
@@ -15,22 +16,41 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	// FIXME: mouse = caret over textfield
 	// FIXME: draw background of textfield
 
-	SetTextFont(renderer, NULL);
-	int position_x = this->x + this->offset_x + 5;
+	// determine the width of the line numbers 
+	ssize_t line_count = textfile.GetLineCount();
+	auto line_number = std::to_string(textfile.GetLineCount() + 1);
+	text_offset = 10 + GetRenderWidth(renderer, line_number.c_str(), line_number.size());
+	// determine the render position
+	int position_x = this->x + this->offset_x;
+	int position_x_text = position_x + text_offset;
 	int position_y = 0;
 	ssize_t linenr = lineoffset_y;
 	TextLine *current_line;
-
+	SetTextFont(renderer, NULL);
 	SetTextColor(renderer, PGColor(0, 0, 255));
 	while ((current_line = textfile.GetLine(linenr)) != NULL) {
+		// only render lines that fall within the render rectangle
+		if (this->offsets.size() <= linenr - lineoffset_y) {
+			this->offsets.push_back(std::vector<short>());
+		}
 		if (position_y > rectangle->y + rectangle->height) break;
 		if (!(position_y + line_height < rectangle->y)) {
-			PGSize size = RenderText(renderer, current_line->GetLine(), current_line->GetLength(), position_x, position_y);
+			// determine render offsets for mouse selection
+			GetRenderOffsets(renderer, current_line->GetLine(), current_line->GetLength(), this->offsets[linenr - lineoffset_y]);
+			// render the actual text
+			PGSize size = RenderText(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y);
 			line_height = size.height;
+			
+			// render the line number
+			auto line_number = std::to_string(linenr + 1);
+			SetTextAlign(renderer, PGTextAlignRight);
+			RenderText(renderer, line_number.c_str(), line_number.size(), position_x, position_y);
 		}
+
 		linenr++;
 		position_y += line_height;
 	}
+	// render the selection and carets
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		ssize_t startline = std::max(it->BeginLine(), lineoffset_y);
 		ssize_t endline = std::min(it->EndLine(), linenr);
@@ -58,31 +78,46 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 
 			if (startline == it->SelectedLine()) {
 				// render the caret on the selected line
-				RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x, position_y, it->SelectedCharacter());
+				RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, it->SelectedCharacter());
 			}
 
 			RenderSelection(renderer,
 				current_line->GetLine(),
 				current_line->GetLength(),
-				position_x,
+				position_x_text,
 				position_y,
 				start,
 				end);
 
 			position_y += line_height;
 		}
-		/*
-		ssize_t characternr = it->SelectedCharacter();
-		position_y = (linenr - lineoffset_y) * line_height;
-		if (!(position_y + line_height < rectangle->y && position_y > rectangle->y + rectangle->height)) {
-			current_line = textfile.GetLine(linenr);
-			RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x, position_y, characternr);
-		}*/
 	}
 }
 
 void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
-
+	x = x - this->x;
+	y = y - this->y;
+	switch (button) {
+	case PGLeftMouseButton: {
+		// find the line position of the mouse
+		ssize_t line_offset = std::min((ssize_t) y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1);
+		ssize_t line = this->lineoffset_y + line_offset;
+		// find the character position within the line
+		x = x - this->text_offset - this->offset_x;
+		ssize_t width = 0;
+		ssize_t character = textfile.GetLine(line)->GetLength();
+		for (int i = 0; i < this->offsets[line_offset].size(); i++) {
+			if (width <= x && width + offsets[line_offset][i] > x) {
+				character = i;
+				break;
+			}
+			width += offsets[line_offset][i];
+		}
+		cursors[0].SetCursorLocation(line, character);
+		this->Invalidate();
+		break;
+	}
+	}
 }
 
 void TextField::KeyboardButton(PGButton button, PGModifier modifier) {

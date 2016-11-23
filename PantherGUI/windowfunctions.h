@@ -4,6 +4,7 @@
 #pragma once
 
 #include "utils.h"
+#include <vector>
 
 struct PGWindow;
 typedef struct PGWindow* PGWindowHandle;
@@ -156,6 +157,7 @@ void SetTextFont(PGRendererHandle window, PGFontHandle font);
 // Sets the text-alignment of text rendered with the RenderText method
 void SetTextAlign(PGRendererHandle window, PGTextAlign alignment);
 
+void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t length, std::vector<short>& offsets);
 int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length);
 
 Control* GetFocusedControl(PGWindowHandle window);
