@@ -45,7 +45,7 @@ void TextLine::ApplyDeltas() {
 				// if the character is inserted in the middle of a line, we have to move the end of the line around
 				memmove(modified_line + add->characternr + add->text.size(), 
 					modified_line + add->characternr, 
-					current_length + 1 - (add->characternr + add->text.size()));
+					current_length - add->characternr);
 			}
 			memcpy(modified_line + add->characternr, add->text.c_str(), add->text.size());
 			current_length += add->text.size();
