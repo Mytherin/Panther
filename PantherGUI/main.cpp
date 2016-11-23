@@ -7,6 +7,7 @@
 
 #include <malloc.h>
 
+#include <windowsx.h>
 #include <vector>
 #include <gdiplus.h>
 #pragma comment (lib, "Gdiplus.lib")
@@ -296,8 +297,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	case WM_MOUSEWHEEL: {
 		// FIXME: control over which the mouse is
-		int x = LOWORD(lParam);
-		int y = HIWORD(lParam);
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
@@ -309,8 +310,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	}
 	case WM_LBUTTONDOWN: {
 		// FIXME: control over which the mouse is
-		int x = LOWORD(lParam);
-		int y = HIWORD(lParam);
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
@@ -318,8 +319,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_LBUTTONUP: {
-		int x = LOWORD(lParam);
-		int y = HIWORD(lParam);
+		// FIXME: control over which the mouse is
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
@@ -327,8 +329,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_MOUSEMOVE: {
-		int x = LOWORD(lParam);
-		int y = HIWORD(lParam);
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
 		PGModifier modifier = 0;
 		PGMouseButton buttons = PGMouseButtonNone;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;

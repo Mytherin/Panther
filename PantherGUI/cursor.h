@@ -18,6 +18,7 @@ public:
 	void SelectEndOfLine();
 	void OffsetWord(PGDirection direction);
 	void OffsetSelectionWord(PGDirection direction);
+	void SelectWord();
 
 	ssize_t SelectedCharacter() { return start_character; }
 	ssize_t SelectedLine() { return start_line; }

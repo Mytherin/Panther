@@ -87,6 +87,28 @@ void Cursor::OffsetSelectionWord(PGDirection direction) {
 	}
 }
 
+void Cursor::SelectWord() {
+	TextLine* textline = this->file->GetLine(start_line);
+	char* line = textline->GetLine();
+	ssize_t start_index = start_character - 1;
+	ssize_t end_index = start_index + 1;
+	PGCharacterClass type = GetCharacterClass(line[start_index]);
+	for (end_index = start_index + 1; end_index < textline->GetLength(); end_index++) {
+		if (GetCharacterClass(line[end_index]) != type) {
+			break;
+		}
+	}
+	for (start_index--; start_index >= 0; start_index--) {
+		if (GetCharacterClass(line[start_index]) != type) {
+			start_index++;
+			break;
+		}
+	}
+	end_character = std::max(start_index, (ssize_t) 0);
+	start_character = std::min(end_index, textline->GetLength());
+	end_line = start_line;
+}
+
 void Cursor::OffsetWord(PGDirection direction) {
 	OffsetSelectionWord(direction);
 	end_character = start_character;

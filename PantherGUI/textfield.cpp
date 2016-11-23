@@ -4,7 +4,7 @@
 
 //"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
 //"C:\\Users\\wieis\\Desktop\\syntaxtest.py"
-TextField::TextField(PGWindowHandle window) : 
+TextField::TextField(PGWindowHandle window) :
 	Control(window), textfile("C:\\Users\\wieis\\Desktop\\syntaxtest.py") {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
@@ -18,7 +18,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 
 	// determine the width of the line numbers 
 	ssize_t line_count = textfile.GetLineCount();
-	auto line_number = std::to_string(std::max((ssize_t) 10, textfile.GetLineCount() + 1));
+	auto line_number = std::to_string(std::max((ssize_t)10, textfile.GetLineCount() + 1));
 	text_offset = 10 + GetRenderWidth(renderer, line_number.c_str(), line_number.size());
 	// determine the render position
 	int position_x = this->x + this->offset_x;
@@ -40,7 +40,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 			// render the actual text
 			PGSize size = RenderText(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y);
 			line_height = size.height;
-			
+
 			// render the line number
 			auto line_number = std::to_string(linenr + 1);
 			SetTextAlign(renderer, PGTextAlignRight);
@@ -99,7 +99,7 @@ void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifi
 
 void TextField::GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character) {
 	// find the line position of the mouse
-	ssize_t line_offset = std::min((ssize_t) y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1);
+	ssize_t line_offset = std::min((ssize_t)y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1);
 	line = this->lineoffset_y + line_offset;
 	// find the character position within the line
 	x = x - this->text_offset - this->offset_x;
@@ -123,7 +123,14 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		if (cursors.size() > 1) {
 			cursors.erase(cursors.begin() + 1, cursors.end());
 		}
-		cursors[0].SetCursorLocation(line, character);
+		if (modifier == PGModifierNone) {
+			cursors[0].SetCursorLocation(line, character);
+		} else if (modifier == PGModifierShift) {
+			cursors[0].SetCursorStartLocation(line, character);
+		} else if (modifier == PGModifierCtrl) {
+			cursors[0].SetCursorLocation(line, character);
+			cursors[0].SelectWord();
+		}
 		this->Invalidate();
 	}
 }
@@ -137,6 +144,8 @@ void TextField::MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier 
 }
 
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
+	// FIXME: mouse move with initial selection always keeps initial selection
+	// FIXME: mouse move with word selection always keeps word in selection
 	if (buttons & PGLeftMouseButton) {
 		ssize_t line, character;
 		GetLineCharacterFromPosition(x, y, line, character);
@@ -336,7 +345,7 @@ void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 	}
 }
 
-bool 
+bool
 TextField::SetScrollOffset(ssize_t offset) {
 	ssize_t new_y = std::min(std::max(offset, (ssize_t)0), (ssize_t)(textfile.GetLineCount() - 1));
 	if (new_y != this->lineoffset_y) {
@@ -363,6 +372,6 @@ void TextField::InvalidateBetweenLines(int start, int end) {
 		InvalidateBetweenLines(end, start);
 		return;
 	}
-	this->Invalidate(PGRect(0, (start - this->lineoffset_y) * line_height, this->width, 
+	this->Invalidate(PGRect(0, (start - this->lineoffset_y) * line_height, this->width,
 		(end - this->lineoffset_y) * line_height - (start - this->lineoffset_y) * line_height + line_height));
 }
