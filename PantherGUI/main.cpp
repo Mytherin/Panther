@@ -133,6 +133,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 1;
 	}
 
+	SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_COMPOSITED);
+
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
 	global_handle = res;
