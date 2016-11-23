@@ -114,6 +114,7 @@
     <ClCompile Include="cursor.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
+    <ClCompile Include="text.cpp" />
     <ClCompile Include="textfield.cpp" />
     <ClCompile Include="textfile.cpp" />
     <ClCompile Include="textline.cpp" />
@@ -124,6 +125,7 @@
     <ClInclude Include="encoding.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
+    <ClInclude Include="text.h" />
     <ClInclude Include="textfield.h" />
     <ClInclude Include="textfile.h" />
     <ClInclude Include="textdelta.h" />

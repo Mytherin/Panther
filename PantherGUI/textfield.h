@@ -21,10 +21,7 @@ public:
 	void KeyboardButton(PGButton button, PGModifier modifier);
 	void KeyboardCharacter(char character, PGModifier modifier);
 	void KeyboardUnicode(char *character, PGModifier modifier);
-
-	void SelectLine(ssize_t linenr);
-	void SelectCharacter(ssize_t characternr);
-
+	
 	void InvalidateLine(int line);
 	void InvalidateBeforeLine(int line);
 	void InvalidateAfterLine(int line);
@@ -35,4 +32,6 @@ private:
 	int line_height;
 
 	TextFile textfile;
+
+	bool SetScrollOffset(ssize_t offset);
 };

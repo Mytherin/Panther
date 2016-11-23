@@ -1,4 +1,3 @@
-
 #include "textfield.h"
 #include <sstream>
 #include <algorithm>
@@ -47,14 +46,14 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 					end = it->EndCharacter();
 				} else {
 					start = it->BeginCharacter();
-					end = current_line->GetLength();
+					end = current_line->GetLength() + 1;
 				}
 			} else if (startline == it->EndLine()) {
 				start = 0;
 				end = it->EndCharacter();
 			} else {
 				start = 0;
-				end = current_line->GetLength();
+				end = current_line->GetLength() + 1;
 			}
 
 			if (startline == it->SelectedLine()) {
@@ -89,13 +88,16 @@ void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifi
 void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	switch (button) {
 		// FIXME: when moving up/down, count \t as multiple characters (equal to tab size)
-		// FIXME: Up/Down on last line = move to first (or last) character
 	case PGButtonDown:
 		for (auto it = cursors.begin(); it != cursors.end(); it++) {
 			if (modifier == PGModifierNone) {
 				(*it).OffsetLine(1);
 			} else if (modifier == PGModifierShift) {
 				(*it).OffsetSelectionLine(1);
+			} else if (modifier == PGModifierCtrl) {
+				SetScrollOffset(this->lineoffset_y + 1);
+			} else if (modifier == PGModifierCtrlShift) {
+				// FIXME move line down
 			}
 		}
 		Invalidate();
@@ -106,6 +108,10 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				(*it).OffsetLine(-1);
 			} else if (modifier == PGModifierShift) {
 				(*it).OffsetSelectionLine(-1);
+			} else if (modifier == PGModifierCtrl) {
+				SetScrollOffset(this->lineoffset_y - 1);
+			} else if (modifier == PGModifierCtrlShift) {
+				// FIXME move line up
 			}
 		}
 		Invalidate();
@@ -120,6 +126,10 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				}
 			} else if (modifier == PGModifierShift) {
 				(*it).OffsetSelectionCharacter(-1);
+			} else if (modifier == PGModifierCtrl) {
+				it->OffsetWord(PGDirectionLeft);
+			} else if (modifier == PGModifierCtrlShift) {
+				it->OffsetSelectionWord(PGDirectionLeft);
 			}
 		}
 		Invalidate();
@@ -134,6 +144,10 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				}
 			} else if (modifier == PGModifierShift) {
 				(*it).OffsetSelectionCharacter(1);
+			} else if (modifier == PGModifierCtrl) {
+				it->OffsetWord(PGDirectionRight);
+			} else if (modifier == PGModifierCtrlShift) {
+				it->OffsetSelectionWord(PGDirectionRight);
 			}
 		}
 		Invalidate();
@@ -144,6 +158,10 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				(*it).OffsetEndOfLine();
 			} else if (modifier == PGModifierShift) {
 				(*it).SelectEndOfLine();
+			} else if (modifier == PGModifierCtrl) {
+				// FIXME go to end of file
+			} else if (modifier == PGModifierCtrlShift) {
+				// FIXME select until end of file
 			}
 		}
 		Invalidate();
@@ -154,6 +172,10 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				(*it).OffsetStartOfLine();
 			} else if (modifier == PGModifierShift) {
 				(*it).SelectStartOfLine();
+			} else if (modifier == PGModifierCtrl) {
+				// FIXME go to start of file
+			} else if (modifier == PGModifierCtrlShift) {
+				// FIXME select until start of file
 			}
 		}
 		Invalidate();
@@ -177,37 +199,36 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		}
 		break;
 	case PGButtonDelete:
-		// FIXME
-		/*
-		if (this->selected_line == this->textfile.GetLineCount() - 1 &&
-			this->selected_character == textfile.GetLine(this->textfile.GetLineCount() - 1)->GetLength()) break;
-		if (this->selected_character == textfile.GetLine(this->selected_line)->GetLength()) {
-			this->textfile.DeleteCharacter(this->selected_line + 1, 0);
-			this->InvalidateAfterLine(selected_line);
+		if (modifier == PGModifierNone) {
+			this->textfile.DeleteCharacter(cursors, PGDirectionRight);
+		} else if (modifier == PGModifierCtrl) {
+			this->textfile.DeleteWord(cursors, PGDirectionRight);
+		} else if (modifier == PGModifierShift) {
+			//FIXME Shift+Delete = delete current line
+		} else if (modifier == PGModifierCtrlShift) {
+			//FIXME Shift+Backspace = normal backspace
 		}
-		else {
-			this->textfile.DeleteCharacter(this->selected_line, this->selected_character + 1);
-			this->InvalidateLine(selected_line);
-		}*/
+		this->Invalidate();
 		break;
 	case PGButtonBackspace:
-		if (modifier == PGModifierNone) {
-			this->textfile.DeleteCharacter(cursors);
-			this->Invalidate();
+		if (modifier == PGModifierNone || modifier == PGModifierShift) {
+			this->textfile.DeleteCharacter(cursors, PGDirectionLeft);
 		} else if (modifier == PGModifierCtrl) {
-			// FIXME: delete word
-			this->Invalidate();
+			this->textfile.DeleteWord(cursors, PGDirectionLeft);
+		} else if (modifier == PGModifierCtrlShift) {
+			// FIXME Ctrl+Shift+Backspace = delete everything on the line before the END SELECTED character (NOT the cursor)
 		}
+		this->Invalidate();
 		break;
 	case PGButtonEnter:
 		if (modifier == PGModifierNone) {
 			this->textfile.AddNewLine(cursors);
-			this->Invalidate();
 		} else if (modifier == PGModifierCtrl) {
 			// FIXME: new line at end of every cursor's line
 		} else if (modifier == PGModifierCtrlShift) {
 			// FIXME: new line before every cursor's line
 		}
+		this->Invalidate();
 	default:
 		break;
 	}
@@ -246,12 +267,20 @@ void TextField::KeyboardUnicode(char *character, PGModifier modifier) {
 
 void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
-		size_t new_y = std::min(std::max(this->lineoffset_y - (distance / 120) * 2, (ssize_t)0), (ssize_t)(textfile.GetLineCount() - 1));
-		if (new_y != this->lineoffset_y) {
-			this->lineoffset_y = new_y;
+		if (SetScrollOffset(this->lineoffset_y - (distance / 120) * 2)) {
 			this->Invalidate();
 		}
 	}
+}
+
+bool 
+TextField::SetScrollOffset(ssize_t offset) {
+	ssize_t new_y = std::min(std::max(offset, (ssize_t)0), (ssize_t)(textfile.GetLineCount() - 1));
+	if (new_y != this->lineoffset_y) {
+		this->lineoffset_y = new_y;
+		return true;
+	}
+	return false;
 }
 
 void TextField::InvalidateLine(int line) {

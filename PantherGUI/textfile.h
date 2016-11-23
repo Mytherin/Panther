@@ -34,7 +34,8 @@ public:
 
 	TextLine* GetLine(int linenumber);
 	void InsertText(char character, std::vector<Cursor>& cursors);
-	void DeleteCharacter(std::vector<Cursor>& cursors);
+	void DeleteCharacter(std::vector<Cursor>& cursors, PGDirection direction);
+	void DeleteWord(std::vector<Cursor>& cursors, PGDirection direction);
 	void AddNewLine(std::vector<Cursor>& cursors);
 
 	void ChangeLineEnding(PGLineEnding lineending);
@@ -49,7 +50,8 @@ public:
 
 	ssize_t GetLineCount();
 private:
-	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor>& cursors);
+	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor>& cursors, PGDirection direction);
+	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection);
 
 	void OpenFile(std::string filename);
 

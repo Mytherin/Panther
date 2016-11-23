@@ -1,6 +1,7 @@
 
 #include "cursor.h"
 #include "textfile.h"
+#include "text.h"
 
 #include <algorithm>
 
@@ -22,8 +23,6 @@ void Cursor::OffsetLine(ssize_t offset) {
 void Cursor::OffsetSelectionLine(ssize_t offset) {
 	start_line = std::min(std::max(start_line + offset, (ssize_t)0), this->file->GetLineCount() - 1);
 	start_character = std::min(start_character, file->GetLine(start_line)->GetLength());
-	if (offset < 0 && start_line == 0) start_character = 0;
-	if (offset > 0 && start_line == (this->file->GetLineCount() - 1)) start_character = file->GetLine(start_line)->GetLength();
 }
 
 void Cursor::OffsetCharacter(ssize_t offset) {
@@ -63,6 +62,35 @@ void Cursor::OffsetStartOfLine() {
 
 void Cursor::OffsetEndOfLine() {
 	SetCursorLocation(this->start_line, this->file->GetLine(start_line)->GetLength());
+}
+
+void Cursor::OffsetSelectionWord(PGDirection direction) {
+	if (direction == PGDirectionLeft && this->SelectedCharacter() == 0) {
+		OffsetSelectionCharacter(-1);
+	} else if (direction == PGDirectionRight && start_character == this->file->GetLine(start_line)->GetLength()) {
+		OffsetSelectionCharacter(1);
+	} else {
+		TextLine* textline = this->file->GetLine(start_line);
+		char* line = textline->GetLine();
+		ssize_t length = textline->GetLength();
+		int offset = direction == PGDirectionLeft ? -1 : 1;
+		ssize_t index = direction == PGDirectionLeft ? start_character + offset : start_character;
+		PGCharacterClass type = GetCharacterClass(line[index]);
+		for (index += offset; index >= 0 && index < length; index += offset) {
+			if (GetCharacterClass(line[index]) != type) {
+				index -= direction == PGDirectionLeft ? offset : 0;
+				break;
+			}
+		}
+		index = std::min(std::max(index, (ssize_t)0), textline->GetLength());
+		start_character = index;
+	}
+}
+
+void Cursor::OffsetWord(PGDirection direction) {
+	OffsetSelectionWord(direction);
+	end_character = start_character;
+	end_line = start_line;
 }
 
 void Cursor::SelectStartOfLine() {

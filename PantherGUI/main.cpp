@@ -278,7 +278,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 
 	case WM_CHAR:
-		if (wParam < 0x20) break;
+		if (wParam < 0x20 || wParam >= 0x7F) break;
 		global_handle->focused_control->KeyboardCharacter((char)wParam, PGModifierNone);
 		break;
 	case WM_UNICHAR:
@@ -401,7 +401,11 @@ void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, in
 	if (start == end) return;
 	ssize_t line_height = 19;
 	int selection_start = GetRenderWidth(renderer, text, start);
-	int selection_width = GetRenderWidth(renderer, text, end);
+	int selection_width = GetRenderWidth(renderer, text, end > len ? len : end);
+	if (end > len) {
+		assert(end == len + 1);
+		selection_width += GetRenderWidth(renderer, " ", 1);
+	}
 	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, line_height), PGColor(20, 20, 180, 125));
 }
 
