@@ -6,18 +6,19 @@
 #include <algorithm>
 
 Cursor::Cursor(TextFile* file) : 
-	file(file), start_line(0), start_character(0), end_line(0), end_character(0) {
+	file(file), start_line(0), start_character(0), end_line(0), end_character(0), min_character(-1) {
 
 }
 
 Cursor::Cursor(TextFile* file, ssize_t line, ssize_t character) : 
-	file(file), start_line(line), start_character(character), end_line(line), end_character(character) {
+	file(file), start_line(line), start_character(character), end_line(line), end_character(character), min_character(-1) {
 }
 
 void Cursor::OffsetLine(ssize_t offset) {
 	OffsetSelectionLine(offset);
 	end_line = start_line;
 	end_character = start_character;
+	min_character = -1;
 }
 
 void Cursor::OffsetSelectionLine(ssize_t offset) {
@@ -29,6 +30,7 @@ void Cursor::OffsetCharacter(ssize_t offset) {
 	OffsetSelectionCharacter(offset);
 	end_character = start_character;
 	end_line = start_line;
+	min_character = -1;
 }
 
 void Cursor::OffsetSelectionCharacter(ssize_t offset) {
@@ -107,6 +109,10 @@ void Cursor::SelectWord() {
 	end_character = std::max(start_index, (ssize_t) 0);
 	start_character = std::min(end_index, textline->GetLength());
 	end_line = start_line;
+	min_character = this->BeginCharacter();
+	min_line = this->BeginLine();
+	max_character = this->EndCharacter();
+	max_line = this->EndLine();
 }
 
 void Cursor::SelectLine() {
@@ -117,6 +123,10 @@ void Cursor::SelectLine() {
 	} else {
 		this->start_character = file->GetLine(this->start_line)->GetLength();
 	}
+	min_character = this->BeginCharacter();
+	min_line = this->BeginLine();
+	max_character = this->EndCharacter();
+	max_line = this->EndLine();
 }
 
 void Cursor::OffsetWord(PGDirection direction) {
@@ -137,9 +147,34 @@ void Cursor::SelectEndOfLine() {
 void Cursor::SetCursorLocation(int linenr, int characternr) {
 	this->start_character = this->end_character = characternr;
 	this->start_line = this->end_line = linenr;
+	min_character = -1;
 }
 
 void Cursor::SetCursorStartLocation(int linenr, int characternr) {
+	if (min_character >= 0) {
+		if (linenr < min_line ||
+			(linenr == min_line && characternr < min_character)) {
+			this->end_character = max_character;
+			this->end_line = max_line;
+		} else if (linenr > max_line ||
+			(linenr == max_line && characternr > max_character)) {
+			this->end_character = min_character;
+			this->end_line = min_line;
+		} else if (linenr == min_line && characternr > min_character) {
+			if (characternr > min_character + (max_character - min_character) / 2) {
+				this->start_line = max_line;
+				this->start_character = max_character;
+				this->end_line = min_line;
+				this->end_character = min_character;
+			} else {
+				this->start_line = min_line;
+				this->start_character = min_character;
+				this->end_line = max_line;
+				this->end_character = max_character;
+			}
+			return;
+		}
+	}
 	this->start_character = characternr;
 	this->start_line = linenr;
 }

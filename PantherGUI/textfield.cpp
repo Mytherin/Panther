@@ -129,7 +129,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		if (time - last_click.time < DOUBLE_CLICK_TIME && 
 			std::abs(x - last_click.x) < 2 && 
 			std::abs(y - last_click.y) < 2) {
-			last_click.clicks++;
+			last_click.clicks = last_click.clicks == 2 ? 0 : last_click.clicks + 1;
 		} else {
 			last_click.clicks = 0;
 		}

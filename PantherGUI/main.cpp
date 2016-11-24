@@ -21,6 +21,8 @@ public:
 	HWND hwnd;
 	std::vector<Control*> registered_refresh;
 	Control *focused_control;
+	bool skipped_refresh;
+	time_t last_refresh;
 
 	PGWindow() : modifier(PGModifierNone) { }
 };
@@ -395,11 +397,30 @@ void HideWindow(PGWindowHandle window) {
 
 }
 
+// FIXME: smarter way of limiting refresh rate
+#define MAX_REFRESH_FREQUENCY 20
+
 void RefreshWindow(PGWindowHandle window) {
+	time_t current_time = GetTime();
+	if (current_time - window->last_refresh < MAX_REFRESH_FREQUENCY) {
+		window->skipped_refresh = true;
+		return;
+	}
+	window->last_refresh = current_time;
 	InvalidateRect(window->hwnd, NULL, true);
 }
 
 void RefreshWindow(PGWindowHandle window, PGRect rectangle) {
+	time_t current_time = GetTime();
+	if (current_time - window->last_refresh < MAX_REFRESH_FREQUENCY) {
+		window->skipped_refresh = true;
+		return;
+	}
+	if (window->skipped_refresh) {
+		RefreshWindow(window);
+		return;
+	}
+	window->last_refresh = current_time;
 	RECT rect;
 	rect.top = rectangle.y;
 	rect.left = rectangle.x;
@@ -558,4 +579,8 @@ void RegisterMouseScroll(PGWindowHandle window, PGScrollFunction callback) {
 
 time_t GetTime() {
 	return GetTickCount();
+}
+
+void SetWindowTitle(PGWindowHandle window, char* title) {
+	SetWindowText(window->hwnd, title);
 }

@@ -40,6 +40,10 @@ private:
 	ssize_t start_character;
 	ssize_t end_line;
 	ssize_t end_character;
+	ssize_t min_character;
+	ssize_t min_line;
+	ssize_t max_character;
+	ssize_t max_line;
 
 	void SetCursorStartLocation(int linenr, int characternr);
 	void SetCursorEndLocation(int linenr, int characternr);
