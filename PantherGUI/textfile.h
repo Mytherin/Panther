@@ -37,6 +37,11 @@ public:
 	void DeleteCharacter(std::vector<Cursor>& cursors, PGDirection direction);
 	void DeleteWord(std::vector<Cursor>& cursors, PGDirection direction);
 	void AddNewLine(std::vector<Cursor>& cursors);
+	void AddNewLine(std::vector<Cursor>& cursors, std::string text);
+	void AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string>& lines);
+
+	std::string CopyText(std::vector<Cursor>& cursors);
+	void PasteText(std::vector<Cursor>& cursors, std::string text);
 
 	void ChangeLineEnding(PGLineEnding lineending);
 	void ChangeFileEncoding(PGFileEncoding encoding);

@@ -144,25 +144,25 @@ public:
 				switch (delta->TextDeltaType()) {
 				case PGDeltaRemoveLine:
 					assert(((RemoveLine*)delta)->linenr < deleted_lines_start || ((RemoveLine*)delta)->linenr > deleted_lines_end);
-					if (((RemoveLine*)delta)->linenr > shift_lines_start) {
+					if (((RemoveLine*)delta)->linenr >= shift_lines_start) {
 						((RemoveLine*)delta)->linenr += shift_lines;
 					}
 					break;
 				case PGDeltaRemoveManyLines:
 					assert(((RemoveLines*)delta)->start < deleted_lines_start || ((RemoveLines*)delta)->start > deleted_lines_end);
-					if (((RemoveLines*)delta)->start > shift_lines_start) {
+					if (((RemoveLines*)delta)->start >= shift_lines_start) {
 						((RemoveLines*)delta)->start += shift_lines;
 					}
 					break;
 				case PGDeltaAddLine:
 					assert(((RemoveLine*)delta)->linenr < deleted_lines_start || ((RemoveLine*)delta)->linenr > deleted_lines_end);
-					if (((AddLine*)delta)->linenr > shift_lines_start) {
+					if (((AddLine*)delta)->linenr >= shift_lines_start) {
 						((AddLine*)delta)->linenr += shift_lines;
 					}
 					break;
 				case PGDeltaAddText:
 					assert(((AddText*)delta)->linenr < deleted_lines_start || ((AddText*)delta)->linenr > deleted_lines_end);
-					if (((AddText*)delta)->linenr > shift_lines_start) {
+					if (((AddText*)delta)->linenr >= shift_lines_start) {
 						((AddText*)delta)->linenr += shift_lines;
 					}
 					if (((AddText*)delta)->linenr == shift_characters_line &&
@@ -172,7 +172,7 @@ public:
 					break;
 				case PGDeltaRemoveText:
 					assert(((RemoveText*)delta)->linenr < deleted_lines_start || ((RemoveText*)delta)->linenr > deleted_lines_end);
-					if (((RemoveText*)delta)->linenr > shift_lines_start) {
+					if (((RemoveText*)delta)->linenr >= shift_lines_start) {
 						((RemoveText*)delta)->linenr += shift_lines;
 					}
 					if (((RemoveText*)delta)->linenr == shift_characters_line &&

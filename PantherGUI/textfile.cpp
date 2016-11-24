@@ -117,6 +117,49 @@ void TextFile::InsertText(char character, std::vector<Cursor>& cursors) {
 	Redo(delta);
 }
 
+std::string TextFile::CopyText(std::vector<Cursor>& cursors) {
+	std::string text = "";
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		if (it != cursors.begin()) {
+			text += NEWLINE_CHARACTER;
+		}
+		text += it->GetText();
+	}
+	return text;
+}
+
+void TextFile::PasteText(std::vector<Cursor>& cursors, std::string text) {
+	std::vector<std::string> pasted_lines;
+	ssize_t start = 0;
+	ssize_t current = 0;
+	for (auto it = text.begin(); it != text.end(); it++) {
+		if (*it == '\r') {
+			if (*(it + 1) == '\n') {
+				it++;
+			} else {
+				pasted_lines.push_back(text.substr(start, current - start));
+				start = current + 2;
+				current = start;
+				continue;
+			}
+		}
+		if (*it == '\n') {
+			pasted_lines.push_back(text.substr(start, current - start));
+			start = current + 2;
+			current = start;
+			continue;
+		}
+		current++;
+	}
+	if (current > start) {
+		pasted_lines.push_back(text.substr(start, current - start));
+	}
+	// FIXME: don't add newline before first line
+	// FIXME: cursor position should not be start of final line but end of it
+	AddNewLines(cursors, pasted_lines);
+}
+
+
 void
 TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection direction, bool delete_selection) {
 	if (delete_selection) {
@@ -201,7 +244,7 @@ void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
 					index -= direction == PGDirectionLeft ? offset : 0;
 					break;
 				}
-			}
+		}	
 			index = std::min(std::max(index, (ssize_t)0), length);
 			delta->AddDelta(new RemoveText(&*it, it->SelectedLine(), std::max(index, it->SelectedCharacter()), std::abs(it->SelectedCharacter() - index)));
 		} else {
@@ -213,6 +256,16 @@ void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
 }
 
 void TextFile::AddNewLine(std::vector<Cursor>& cursors) {
+	AddNewLine(cursors, "");
+}
+
+void TextFile::AddNewLine(std::vector<Cursor>& cursors, std::string text) {
+	std::vector<std::string> lines;
+	lines.push_back(text);
+	AddNewLines(cursors, lines);
+}
+
+void TextFile::AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string>& added_text) {
 	MultipleDelta* delta = new MultipleDelta();
 	if (CursorsContainSelection(cursors)) {
 		// if any of the cursors select text, we delete that text before inserting the characters
@@ -228,15 +281,21 @@ void TextFile::AddNewLine(std::vector<Cursor>& cursors) {
 		ssize_t characternumber = it->EndCharacter();
 		ssize_t linenumber = it->EndLine();
 		ssize_t length = lines[linenumber].GetLength();
+		ssize_t current_line = it->BeginLine();
 		std::string line = std::string(lines[linenumber].GetLine(), length).substr(characternumber, std::string::npos);
 		if (it->BeginLine() == it->EndLine() && length > characternumber) {
 			TextDelta* removeText = new RemoveText(NULL, linenumber, length, length - characternumber);
 			delta->AddDelta(removeText);
 		}
-		delta->AddDelta(new AddLine(&*it, it->BeginLine(), it->BeginCharacter(), line));
+		for (auto it2 = added_text.begin(); (it2 + 1) != added_text.end(); it2++) {		
+			delta->AddDelta(new AddLine(NULL, current_line, 0, *it2));
+		}
+		delta->AddDelta(new AddLine(&*it, current_line, 0, added_text.back() + line));
+
 	}
 	this->AddDelta(delta);
 	Redo(delta);
+
 }
 
 void TextFile::Undo() {

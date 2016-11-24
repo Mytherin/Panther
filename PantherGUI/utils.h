@@ -9,4 +9,6 @@ typedef enum {
 
 typedef long long ssize_t;
 
+#define NEWLINE_CHARACTER "\r\n"
+
 #define DOUBLE_CLICK_TIME 200

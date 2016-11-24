@@ -222,3 +222,20 @@ ssize_t Cursor::EndCharacter() {
 ssize_t Cursor::EndLine() {
 	return std::max(start_line, end_line);
 }
+
+std::string Cursor::GetText() {
+	ssize_t beginline = BeginLine();
+	ssize_t endline = EndLine();
+	std::string text = "";
+	for (ssize_t linenr = beginline; linenr <= endline; linenr++) {
+		TextLine* line = file->GetLine(linenr);
+		ssize_t start = linenr == beginline ? BeginCharacter() : 0;
+		ssize_t end = linenr == endline ? EndCharacter() : line->GetLength();
+
+		if (linenr != beginline) {
+			text += NEWLINE_CHARACTER;
+		}
+		text += std::string(line->GetLine() + start, end - start);
+	}
+	return text;
+}

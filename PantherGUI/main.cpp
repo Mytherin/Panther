@@ -401,26 +401,10 @@ void HideWindow(PGWindowHandle window) {
 #define MAX_REFRESH_FREQUENCY 20
 
 void RefreshWindow(PGWindowHandle window) {
-	time_t current_time = GetTime();
-	if (current_time - window->last_refresh < MAX_REFRESH_FREQUENCY) {
-		window->skipped_refresh = true;
-		return;
-	}
-	window->last_refresh = current_time;
 	InvalidateRect(window->hwnd, NULL, true);
 }
 
 void RefreshWindow(PGWindowHandle window, PGRect rectangle) {
-	time_t current_time = GetTime();
-	if (current_time - window->last_refresh < MAX_REFRESH_FREQUENCY) {
-		window->skipped_refresh = true;
-		return;
-	}
-	if (window->skipped_refresh) {
-		RefreshWindow(window);
-		return;
-	}
-	window->last_refresh = current_time;
 	RECT rect;
 	rect.top = rectangle.y;
 	rect.left = rectangle.x;
@@ -583,4 +567,27 @@ time_t GetTime() {
 
 void SetWindowTitle(PGWindowHandle window, char* title) {
 	SetWindowText(window->hwnd, title);
+}
+
+void SetClipboardText(PGWindowHandle window, std::string text) {
+	if(OpenClipboard(window->hwnd)) {
+		HGLOBAL clipbuffer;
+		char * buffer;
+		EmptyClipboard();
+		clipbuffer = GlobalAlloc(GMEM_DDESHARE, text.length() + 1);
+		buffer = (char*)GlobalLock(clipbuffer);
+		memcpy(buffer, text.c_str(), text.length() * sizeof(char));
+		GlobalUnlock(clipbuffer);
+		SetClipboardData(CF_TEXT, clipbuffer);
+		CloseClipboard();
+	}
+}
+
+std::string GetClipboardText(PGWindowHandle window) {
+	if (OpenClipboard(window->hwnd)) {
+		std::string text = std::string((char*) GetClipboardData(CF_TEXT));
+		CloseClipboard();
+		return text;
+	}
+	return NULL;
 }

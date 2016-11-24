@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include "utils.h"
 
 class TextFile;
@@ -27,6 +28,8 @@ public:
 	ssize_t BeginLine();
 	ssize_t EndCharacter();
 	ssize_t EndLine();
+
+	std::string GetText();
 
 	bool SelectionIsEmpty();
 

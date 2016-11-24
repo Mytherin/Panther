@@ -340,6 +340,16 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				this->cursors.back().end_line = 0;
 				this->Invalidate();
 				break;
+			case 'C': {
+				std::string text = textfile.CopyText(cursors);
+				SetClipboardText(window, text);
+				break;
+			}
+			case 'V': {
+				textfile.PasteText(cursors, GetClipboardText(window));
+				this->Invalidate();
+				break;
+			}
 			}
 		}
 	}
