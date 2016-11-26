@@ -158,7 +158,7 @@ void TextFile::PasteText(std::vector<Cursor>& cursors, std::string text) {
 	if (current > start) {
 		pasted_lines.push_back(text.substr(start, current - start));
 	}
-	
+
 	if (pasted_lines.size() == 1) {
 		InsertText(pasted_lines[0], cursors);
 	} else {
@@ -214,8 +214,8 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 			}
 		} else {
 			// FIXME: merge delta if it already exists
-			RemoveText* remove = new RemoveText(&*it, 
-				linenumber, 
+			RemoveText* remove = new RemoveText(&*it,
+				linenumber,
 				direction == PGDirectionRight ? characternumber + 1 : characternumber,
 				1);
 			delta->AddDelta(remove);
@@ -255,7 +255,7 @@ void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
 					index -= direction == PGDirectionLeft ? offset : 0;
 					break;
 				}
-		}	
+			}
 			index = std::min(std::max(index, (ssize_t)0), length);
 			delta->AddDelta(new RemoveText(&*it, it->SelectedLine(), std::max(index, it->SelectedCharacter()), std::abs(it->SelectedCharacter() - index)));
 		} else {
@@ -271,6 +271,7 @@ void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
 }
 
 void TextFile::AddNewLine(std::vector<Cursor>& cursors) {
+	// FIXME: newline with multiple cursors on the same line
 	AddNewLine(cursors, "");
 }
 
@@ -297,20 +298,20 @@ void TextFile::AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string
 		ssize_t linenumber = it->EndLine();
 		ssize_t length = lines[linenumber].GetLength();
 		ssize_t current_line = it->BeginLine();
-		std::string line = std::string(lines[linenumber].GetLine(), length).substr(characternumber, std::string::npos);
-		if (it->BeginLine() == it->EndLine() && length > characternumber && (first_is_newline || added_text.size() > 1)) {
-			delta->AddDelta(new RemoveText(NULL, linenumber, length, length - characternumber));
+
+		if (added_text.size() == 1) {
+			delta->AddDelta(new AddLine(&*it, current_line, it->BeginCharacter(), added_text.front()));
+			continue;
 		}
-		auto it2 = added_text.begin();
+		std::vector<std::string> text = added_text;
 		if (!first_is_newline) {
 			assert(added_text.size() > 1); // if added_text == 1 and first_is_newline is false, use InsertText
+			text.erase(text.begin());
+		}
+		delta->AddDelta(new AddLines(&*it, it->BeginLine(), it->BeginCharacter(), text));
+		if (!first_is_newline) {
 			delta->AddDelta(new AddText(NULL, it->BeginLine(), it->BeginCharacter(), added_text.front()));
-			it2++;
 		}
-		for (; (it2 + 1) != added_text.end(); it2++) {	
-			delta->AddDelta(new AddLine(NULL, current_line, 0, *it2));
-		}
-		delta->AddDelta(new AddLine(&*it, current_line, 0, added_text.back() + line, added_text.back().size()));
 	}
 	this->AddDelta(delta);
 	Redo(delta);
@@ -363,7 +364,22 @@ void TextFile::Undo(TextDelta* delta) {
 	}
 	case PGDeltaAddLine: {
 		AddLine* add = (AddLine*)delta;
+		if (add->remove_text) {
+			assert((lines[add->linenr].deltas == add->remove_text));
+			lines[add->linenr].deltas = add->remove_text->next;
+			delete add->remove_text;
+		}
 		this->lines.erase(this->lines.begin() + (add->linenr + 1));
+		break;
+	}
+	case PGDeltaAddManyLines: {
+		AddLines* add = (AddLines*)delta;
+		if (add->remove_text) {
+			assert((lines[add->linenr].deltas == add->remove_text));
+			lines[add->linenr].deltas = add->remove_text->next;
+			delete add->remove_text;
+		}
+		this->lines.erase(this->lines.begin() + (add->linenr + 1), this->lines.begin() + (add->linenr + 1 + add->lines.size()));
 		break;
 	}
 	case PGDeltaRemoveLine: {
@@ -397,7 +413,7 @@ void TextFile::Redo(TextDelta* delta) {
 		AddText* add = (AddText*)delta;
 		this->lines[add->linenr].AddDelta(delta);
 		if (add->cursor) {
-			add->cursor->end_character = (add->cursor->start_character += add->text.size());
+			add->cursor->end_character = add->cursor->start_character = add->characternr + add->text.size();
 		}
 		break;
 	}
@@ -412,11 +428,40 @@ void TextFile::Redo(TextDelta* delta) {
 	}
 	case PGDeltaAddLine: {
 		AddLine* add = (AddLine*)delta;
+		ssize_t length = lines[add->linenr].GetLength();
 		// FIXME: we keep around a reference to a string here, this probably segfaults if the delta is removed
-		lines.insert(lines.begin() + (add->linenr + 1), TextLine((char*)add->line.c_str(), add->line.size()));
+		add->extra_text = std::string(add->line);
+		if (add->characternr < length) {
+			add->extra_text += std::string(lines[add->linenr].GetLine() + add->characternr, length - add->characternr);
+			add->remove_text = new RemoveText(NULL, add->linenr, length, length - add->characternr);
+			lines[add->linenr].AddDelta(add->remove_text);
+		}
+		lines.insert(lines.begin() + (add->linenr + 1), TextLine((char*)add->extra_text.c_str(), (ssize_t)add->extra_text.size()));
 		if (add->cursor) {
 			add->cursor->end_line = add->cursor->start_line = add->linenr + 1;
-			add->cursor->end_character = add->cursor->start_character = add->cursor_position;
+			add->cursor->end_character = add->cursor->start_character = add->line.size();
+		}
+		break;
+	}
+	case PGDeltaAddManyLines: {
+		AddLines* add = (AddLines*)delta;
+		ssize_t length = lines[add->linenr].GetLength();
+		ssize_t linenr = add->linenr + 1;
+		// FIXME: we keep around a reference to a string here, this probably segfaults if the delta is removed
+		for (auto it = add->lines.begin(); (it + 1) != add->lines.end(); it++) {		
+			lines.insert(lines.begin() + linenr, TextLine((char*) it->c_str(), (ssize_t) it->size()));
+			linenr++;
+		}
+		add->extra_text = add->lines.back();
+		if (add->characternr < length) {
+			add->extra_text += std::string(lines[add->linenr].GetLine() + add->characternr, length - add->characternr);
+			add->remove_text = new RemoveText(NULL, add->linenr, length, length - add->characternr);
+			lines[add->linenr].AddDelta(add->remove_text);
+		}
+		lines.insert(lines.begin() + linenr, TextLine((char*)add->extra_text.c_str(), (ssize_t)add->extra_text.size()));
+		if (add->cursor) {
+			add->cursor->end_line = add->cursor->start_line = linenr;
+			add->cursor->end_character = add->cursor->start_character = add->lines.back().size();
 		}
 		break;
 	}

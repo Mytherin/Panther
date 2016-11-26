@@ -121,9 +121,6 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	if (button == PGLeftMouseButton) {
 		ssize_t line, character;
 		GetLineCharacterFromPosition(x, y, line, character);
-		if (cursors.size() > 1) {
-			cursors.erase(cursors.begin() + 1, cursors.end());
-		}
 
 		time_t time = GetTime();
 		if (time - last_click.time < DOUBLE_CLICK_TIME && 
@@ -138,13 +135,27 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		last_click.y = y;
 		
 		if (modifier == PGModifierNone && last_click.clicks == 0) {
+			if (cursors.size() > 1) {
+				cursors.erase(cursors.begin() + 1, cursors.end());
+			}
 			cursors[0].SetCursorLocation(line, character);
 		} else if (modifier == PGModifierShift) {
+			if (cursors.size() > 1) {
+				cursors.erase(cursors.begin() + 1, cursors.end());
+			}
 			cursors[0].SetCursorStartLocation(line, character);
-		} else if (modifier == PGModifierCtrl || last_click.clicks == 1) {
+		} else if (modifier == PGModifierCtrl) {
+			cursors.push_back(Cursor(&textfile, line, character));
+		} else if (last_click.clicks == 1) {
+			if (cursors.size() > 1) {
+				cursors.erase(cursors.begin() + 1, cursors.end());
+			}
 			cursors[0].SetCursorLocation(line, character);
 			cursors[0].SelectWord();
 		} else if (last_click.clicks == 2) {
+			if (cursors.size() > 1) {
+				cursors.erase(cursors.begin() + 1, cursors.end());
+			}
 			cursors[0].SelectLine();
 		}
 		this->Invalidate();
@@ -172,6 +183,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	switch (button) {
 		// FIXME: when moving up/down, count \t as multiple characters (equal to tab size)
+		// FIXME: when moving up/down, maintain the current character number (even though a line is shorter than that number)
 	case PGButtonDown:
 		for (auto it = cursors.begin(); it != cursors.end(); it++) {
 			if (modifier == PGModifierNone) {

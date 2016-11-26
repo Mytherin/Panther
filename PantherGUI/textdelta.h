@@ -11,6 +11,7 @@ typedef enum {
 	PGDeltaAddText,
 	PGDeltaRemoveText,
 	PGDeltaAddLine,
+	PGDeltaAddManyLines,
 	PGDeltaRemoveLine,
 	PGDeltaRemoveManyLines,
 	PGDeltaMultiple,
@@ -85,10 +86,26 @@ public:
 	int characternr;
 	int cursor_position;
 	std::string line;
+	std::string extra_text;
+	RemoveText* remove_text;
+
 
 	PGTextType TextDeltaType() { return PGDeltaAddLine; }
-	AddLine(Cursor* cursor, int linenr, int characternr, std::string text) : CursorDelta(cursor), linenr(linenr), characternr(characternr), line(text), cursor_position(0) {}
-	AddLine(Cursor* cursor, int linenr, int characternr, std::string text, int cursor_position) : CursorDelta(cursor), linenr(linenr), characternr(characternr), line(text), cursor_position(cursor_position) {}
+	AddLine(Cursor* cursor, int linenr, int characternr, std::string text) : CursorDelta(cursor), linenr(linenr), characternr(characternr), line(text), cursor_position(0), remove_text(NULL) {}
+	AddLine(Cursor* cursor, int linenr, int characternr, std::string text, int cursor_position) : CursorDelta(cursor), linenr(linenr), characternr(characternr), line(text), cursor_position(cursor_position), remove_text(NULL) {}
+};
+
+class AddLines : public CursorDelta {
+public:
+	int linenr;
+	int characternr;
+	std::vector<std::string> lines;
+	std::string extra_text;
+	RemoveText* remove_text;
+
+
+	PGTextType TextDeltaType() { return PGDeltaAddManyLines; }
+	AddLines(Cursor* cursor, int linenr, int characternr, std::vector<std::string> lines) : CursorDelta(cursor), linenr(linenr), characternr(characternr), lines(lines), remove_text(NULL) {}
 };
 
 class MultipleDelta : public TextDelta {
