@@ -34,11 +34,12 @@ public:
 
 	TextLine* GetLine(int linenumber);
 	void InsertText(char character, std::vector<Cursor>& cursors);
+	void InsertText(std::string text, std::vector<Cursor>& cursors);
 	void DeleteCharacter(std::vector<Cursor>& cursors, PGDirection direction);
 	void DeleteWord(std::vector<Cursor>& cursors, PGDirection direction);
 	void AddNewLine(std::vector<Cursor>& cursors);
 	void AddNewLine(std::vector<Cursor>& cursors, std::string text);
-	void AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string>& lines);
+	void AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string>& lines, bool first_is_newline);
 
 	std::string CopyText(std::vector<Cursor>& cursors);
 	void PasteText(std::vector<Cursor>& cursors, std::string text);

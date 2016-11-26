@@ -92,7 +92,7 @@ void Cursor::OffsetSelectionWord(PGDirection direction) {
 void Cursor::SelectWord() {
 	TextLine* textline = this->file->GetLine(start_line);
 	char* line = textline->GetLine();
-	ssize_t start_index = start_character - 1;
+	ssize_t start_index = std::max(start_character - 1, (ssize_t) 0);
 	ssize_t end_index = start_index + 1;
 	PGCharacterClass type = GetCharacterClass(line[start_index]);
 	for (end_index = start_index + 1; end_index < textline->GetLength(); end_index++) {

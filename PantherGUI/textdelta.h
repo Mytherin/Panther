@@ -83,11 +83,12 @@ class AddLine : public CursorDelta {
 public:
 	int linenr;
 	int characternr;
+	int cursor_position;
 	std::string line;
 
 	PGTextType TextDeltaType() { return PGDeltaAddLine; }
-	AddLine(Cursor* cursor, int linenr, int characternr, std::string text) : CursorDelta(cursor), linenr(linenr), characternr(characternr), line(text) {}
-
+	AddLine(Cursor* cursor, int linenr, int characternr, std::string text) : CursorDelta(cursor), linenr(linenr), characternr(characternr), line(text), cursor_position(0) {}
+	AddLine(Cursor* cursor, int linenr, int characternr, std::string text, int cursor_position) : CursorDelta(cursor), linenr(linenr), characternr(characternr), line(text), cursor_position(cursor_position) {}
 };
 
 class MultipleDelta : public TextDelta {
@@ -135,7 +136,7 @@ public:
 			case PGDeltaRemoveText:
 				shift_characters = -((ssize_t) ((RemoveText*)(*it))->charactercount);
 				shift_characters_line = ((RemoveText*)(*it))->linenr;
-				shift_characters_character = ((RemoveText*)(*it))->characternr;
+				shift_characters_character = ((RemoveText*)(*it))->characternr + shift_characters;
 				break;
 			}
 
@@ -143,25 +144,25 @@ public:
 				TextDelta* delta = *it2;
 				switch (delta->TextDeltaType()) {
 				case PGDeltaRemoveLine:
-					assert(((RemoveLine*)delta)->linenr < deleted_lines_start || ((RemoveLine*)delta)->linenr > deleted_lines_end);
+					//assert(((RemoveLine*)delta)->linenr < deleted_lines_start || ((RemoveLine*)delta)->linenr > deleted_lines_end);
 					if (((RemoveLine*)delta)->linenr >= shift_lines_start) {
 						((RemoveLine*)delta)->linenr += shift_lines;
 					}
 					break;
 				case PGDeltaRemoveManyLines:
-					assert(((RemoveLines*)delta)->start < deleted_lines_start || ((RemoveLines*)delta)->start > deleted_lines_end);
+					//assert(((RemoveLines*)delta)->start < deleted_lines_start || ((RemoveLines*)delta)->start > deleted_lines_end);
 					if (((RemoveLines*)delta)->start >= shift_lines_start) {
 						((RemoveLines*)delta)->start += shift_lines;
 					}
 					break;
 				case PGDeltaAddLine:
-					assert(((RemoveLine*)delta)->linenr < deleted_lines_start || ((RemoveLine*)delta)->linenr > deleted_lines_end);
+					//assert(((RemoveLine*)delta)->linenr < deleted_lines_start || ((RemoveLine*)delta)->linenr > deleted_lines_end);
 					if (((AddLine*)delta)->linenr >= shift_lines_start) {
 						((AddLine*)delta)->linenr += shift_lines;
 					}
 					break;
 				case PGDeltaAddText:
-					assert(((AddText*)delta)->linenr < deleted_lines_start || ((AddText*)delta)->linenr > deleted_lines_end);
+					//assert(((AddText*)delta)->linenr < deleted_lines_start || ((AddText*)delta)->linenr > deleted_lines_end);
 					if (((AddText*)delta)->linenr >= shift_lines_start) {
 						((AddText*)delta)->linenr += shift_lines;
 					}
@@ -171,7 +172,7 @@ public:
 					}
 					break;
 				case PGDeltaRemoveText:
-					assert(((RemoveText*)delta)->linenr < deleted_lines_start || ((RemoveText*)delta)->linenr > deleted_lines_end);
+					//assert(((RemoveText*)delta)->linenr < deleted_lines_start || ((RemoveText*)delta)->linenr > deleted_lines_end);
 					if (((RemoveText*)delta)->linenr >= shift_lines_start) {
 						((RemoveText*)delta)->linenr += shift_lines;
 					}
