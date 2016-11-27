@@ -160,6 +160,14 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			cursors[0].SelectLine();
 		}
 		this->Invalidate();
+	} else if (button == PGMiddleMouseButton) {
+		ssize_t line, character;
+		GetLineCharacterFromPosition(x, y, line, character);
+		if (cursors.size() > 1) {
+			cursors.erase(cursors.begin() + 1, cursors.end());
+		}
+		cursors[0].SetCursorLocation(line, character);
+		this->Invalidate();
 	}
 }
 
@@ -168,8 +176,6 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 }
 
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
-	// FIXME: mouse move with initial selection always keeps initial selection
-	// FIXME: mouse move with word selection always keeps word in selection
 	if (buttons & PGLeftMouseButton) {
 		ssize_t line, character;
 		GetLineCharacterFromPosition(x, y, line, character);
@@ -178,6 +184,13 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			cursors[0].SetCursorStartLocation(line, character);
 			this->InvalidateBetweenLines(old_line, cursors[0].start_line);
 		}
+	} else if (buttons & PGMiddleMouseButton) {
+		// FIXME: select multiple lines with the middle mouse button
+		ssize_t line, character;
+		GetLineCharacterFromPosition(x, y, line, character);
+
+		cursors[0].start_character = std::min(character, textfile.GetLine(cursors[0].start_line)->GetLength());
+		this->InvalidateBetweenLines(cursors[0].start_line, line);
 	}
 }
 

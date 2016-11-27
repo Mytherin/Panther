@@ -331,6 +331,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		global_handle->focused_control->MouseUp(x, y, PGLeftMouseButton, modifier);
 		break;
 	}
+	case WM_MBUTTONDOWN: {
+		// FIXME: control over which the mouse is
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+		PGModifier modifier = 0;
+		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+		global_handle->focused_control->MouseDown(x, y, PGMiddleMouseButton, modifier);
+		break;
+	}
+	case WM_MBUTTONUP: {
+		// FIXME: control over which the mouse is
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+		PGModifier modifier = 0;
+		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+		global_handle->focused_control->MouseUp(x, y, PGMiddleMouseButton, modifier);
+		break;
+	}
 	case WM_MOUSEMOVE: {
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);

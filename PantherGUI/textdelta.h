@@ -17,7 +17,8 @@ typedef enum {
 	PGDeltaRemoveLine,
 	PGDeltaRemoveManyLines,
 	PGDeltaMultiple,
-	PGTextUnknown
+	PGDeltaCursorMovement,
+	PGDeltaUnknown
 } PGTextType;
 
 class TextDelta {
@@ -28,7 +29,7 @@ public:
 
 	TextDelta() : next(NULL) {}
 
-	virtual PGTextType TextDeltaType() { return PGTextUnknown; }
+	virtual PGTextType TextDeltaType() { return PGDeltaUnknown; }
 	TextDelta(int linenr, int characternr) : linenr(linenr), characternr(characternr) { }
 };
 
@@ -41,7 +42,7 @@ public:
 		if (cursor) stored_cursor = Cursor(*cursor);
 	}
 
-	virtual PGTextType TextDeltaType() { return PGTextUnknown; }
+	virtual PGTextType TextDeltaType() { return PGDeltaCursorMovement; }
 };
 
 class AddText : public CursorDelta {

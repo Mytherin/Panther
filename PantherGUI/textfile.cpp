@@ -193,6 +193,8 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 					remove_lines->AddLine(lines[i]);
 				}
 			}
+		} else {
+			delta->AddDelta(new CursorDelta(it, it->start_line, it->start_character));
 		}
 	} else {
 		ssize_t characternumber = it->SelectedCharacter();
@@ -483,6 +485,14 @@ void TextFile::Redo(TextDelta* delta) {
 			remove->cursor->end_character = remove->cursor->start_character = 0;
 		}
 		this->lines.erase(this->lines.begin() + remove->linenr, this->lines.begin() + remove->linenr + remove->lines.size());
+		break;
+	}
+	case PGDeltaCursorMovement: {
+		CursorDelta* cursor_delta = (CursorDelta*)delta;
+		if (cursor_delta->cursor) {
+			cursor_delta->cursor->end_line = cursor_delta->cursor->start_line = cursor_delta->linenr;
+			cursor_delta->cursor->end_character = cursor_delta->cursor->start_character = cursor_delta->characternr;
+		}
 		break;
 	}
 	case PGDeltaMultiple: {
