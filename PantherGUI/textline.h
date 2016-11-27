@@ -10,6 +10,7 @@ public:
 	ssize_t GetLength(void);
 	char* GetLine(void);
 	void AddDelta(TextDelta* delta);
+	void RemoveDelta(TextDelta* delta);
 	void PopDelta();
 
 	void ApplyDeltas();

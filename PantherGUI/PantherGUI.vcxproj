@@ -115,6 +115,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
     <ClCompile Include="text.cpp" />
+    <ClCompile Include="textdelta.cpp" />
     <ClCompile Include="textfield.cpp" />
     <ClCompile Include="textfile.cpp" />
     <ClCompile Include="textline.cpp" />

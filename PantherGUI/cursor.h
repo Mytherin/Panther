@@ -3,6 +3,8 @@
 #include <string>
 #include "utils.h"
 
+#include <vector>
+
 class TextFile;
 
 class Cursor {
@@ -34,6 +36,12 @@ public:
 	bool SelectionIsEmpty();
 
 	void RestoreCursor(Cursor cursor);
+	bool Contains(int linenr, int characternr);
+	bool OverlapsWith(Cursor& cursor);
+	void Merge(Cursor& cursor);
+
+	static void NormalizeCursors(std::vector<Cursor>& cursors);
+	static bool CursorOccursFirst (Cursor a, Cursor b) { return (a.BeginLine() < b.BeginLine() || (a.BeginLine() == b.BeginLine() && a.BeginCharacter() < b.BeginCharacter())); }
 
 	Cursor(TextFile* file);
 	Cursor(TextFile* file, ssize_t line, ssize_t character);

@@ -146,6 +146,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			cursors[0].SetCursorStartLocation(line, character);
 		} else if (modifier == PGModifierCtrl) {
 			cursors.push_back(Cursor(&textfile, line, character));
+			Cursor::NormalizeCursors(cursors);
 		} else if (last_click.clicks == 1) {
 			if (cursors.size() > 1) {
 				cursors.erase(cursors.begin() + 1, cursors.end());
@@ -196,6 +197,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				// FIXME move line down
 			}
 		}
+		Cursor::NormalizeCursors(cursors);
 		Invalidate();
 		break;
 	case PGButtonUp:
@@ -210,6 +212,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				// FIXME move line up
 			}
 		}
+		Cursor::NormalizeCursors(cursors);
 		Invalidate();
 		break;
 	case PGButtonLeft:
@@ -228,6 +231,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				it->OffsetSelectionWord(PGDirectionLeft);
 			}
 		}
+		Cursor::NormalizeCursors(cursors);
 		Invalidate();
 		break;
 	case PGButtonRight:
@@ -246,6 +250,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				it->OffsetSelectionWord(PGDirectionRight);
 			}
 		}
+		Cursor::NormalizeCursors(cursors);
 		Invalidate();
 		break;
 	case PGButtonEnd:
@@ -260,6 +265,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				// FIXME select until end of file
 			}
 		}
+		Cursor::NormalizeCursors(cursors);
 		Invalidate();
 		break;
 	case PGButtonHome:
@@ -274,6 +280,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				// FIXME select until start of file
 			}
 		}
+		Cursor::NormalizeCursors(cursors);
 		Invalidate();
 		break;
 	case PGButtonPageUp:
@@ -343,6 +350,7 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				break;
 			case 'Y':
 				this->textfile.Redo();
+				Cursor::NormalizeCursors(cursors);
 				this->Invalidate();
 				break;
 			case 'A':

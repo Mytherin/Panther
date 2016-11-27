@@ -5,12 +5,12 @@
 
 #include <algorithm>
 
-Cursor::Cursor(TextFile* file) : 
+Cursor::Cursor(TextFile* file) :
 	file(file), start_line(0), start_character(0), end_line(0), end_character(0), min_character(-1) {
 
 }
 
-Cursor::Cursor(TextFile* file, ssize_t line, ssize_t character) : 
+Cursor::Cursor(TextFile* file, ssize_t line, ssize_t character) :
 	file(file), start_line(line), start_character(character), end_line(line), end_character(character), min_character(-1) {
 }
 
@@ -39,8 +39,7 @@ void Cursor::OffsetSelectionCharacter(ssize_t offset) {
 		if (start_line > 0) {
 			start_line--;
 			start_character += this->file->GetLine(start_line)->GetLength() + 1;
-		}
-		else {
+		} else {
 			start_character = 0;
 			break;
 		}
@@ -49,8 +48,7 @@ void Cursor::OffsetSelectionCharacter(ssize_t offset) {
 		if (start_line < this->file->GetLineCount() - 1) {
 			start_character -= this->file->GetLine(start_line)->GetLength() + 1;
 			start_line++;
-		}
-		else {
+		} else {
 			start_character = this->file->GetLine(start_line)->GetLength();
 			break;
 		}
@@ -92,7 +90,7 @@ void Cursor::OffsetSelectionWord(PGDirection direction) {
 void Cursor::SelectWord() {
 	TextLine* textline = this->file->GetLine(start_line);
 	char* line = textline->GetLine();
-	ssize_t start_index = std::max(start_character - 1, (ssize_t) 0);
+	ssize_t start_index = std::max(start_character - 1, (ssize_t)0);
 	ssize_t end_index = start_index + 1;
 	PGCharacterClass type = GetCharacterClass(line[start_index]);
 	for (end_index = start_index + 1; end_index < textline->GetLength(); end_index++) {
@@ -106,7 +104,7 @@ void Cursor::SelectWord() {
 			break;
 		}
 	}
-	end_character = std::max(start_index, (ssize_t) 0);
+	end_character = std::max(start_index, (ssize_t)0);
 	start_character = std::min(end_index, textline->GetLength());
 	end_line = start_line;
 	min_character = this->BeginCharacter();
@@ -238,4 +236,78 @@ std::string Cursor::GetText() {
 		text += std::string(line->GetLine() + start, end - start);
 	}
 	return text;
+}
+
+void Cursor::NormalizeCursors(std::vector<Cursor>& cursors) {
+	for (int i = 0; i < cursors.size(); i++) {
+		for (int j = i + 1; j < cursors.size(); j++) {
+			if (cursors[i].OverlapsWith(cursors[j])) {
+				cursors[i].Merge(cursors[j]);
+				cursors.erase(cursors.begin() + j);
+				j--;
+				continue;
+			}
+		}
+		if (cursors[i].start_line >= cursors[i].file->GetLineCount()) {
+			cursors.erase(cursors.begin() + i);
+			i--;
+			continue;
+		}
+		assert(cursors[i].start_character >= 0);
+		if (cursors[i].start_character > cursors[i].file->GetLine(cursors[i].start_line)->GetLength()) {
+			cursors.erase(cursors.begin() + i);
+			i--;
+			continue;
+		}
+	}
+	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
+}
+
+bool Cursor::Contains(int linenr, int characternr) {
+	if (this->BeginLine() == this->EndLine() && 
+		this->BeginLine() == linenr) {
+		return characternr >= this->BeginCharacter() && characternr <= this->EndCharacter();
+	} else if (this->BeginLine() == linenr) {
+		return characternr >= this->BeginCharacter();
+	} else if (this->EndLine() == linenr) {
+		return characternr <= this->EndCharacter();
+	} else if (linenr > this->BeginLine() && linenr < this->EndLine()) {
+		return true;
+	}
+}
+
+bool Cursor::OverlapsWith(Cursor& cursor) {
+	return
+		this->Contains(cursor.BeginLine(), cursor.BeginCharacter()) ||
+		this->Contains(cursor.EndLine(), cursor.EndCharacter()) ||
+		cursor.Contains(BeginLine(), BeginCharacter()) ||
+		cursor.Contains(EndLine(), EndCharacter());
+}
+
+void Cursor::Merge(Cursor& cursor) {
+	bool beginIsStart = BeginLine() == start_line && BeginCharacter() == start_character ? true : false;
+	ssize_t beginline = BeginLine();
+	ssize_t endline = EndLine();
+	ssize_t begincharacter = BeginCharacter();
+	ssize_t endcharacter = EndCharacter();
+	if (beginline > cursor.BeginLine() ||
+		(beginline == cursor.BeginLine() && begincharacter > cursor.BeginCharacter())) {
+		if (beginIsStart) {
+			start_line = cursor.BeginLine();
+			start_character = cursor.BeginCharacter();
+		} else {
+			end_line = cursor.BeginLine();
+			end_character = cursor.BeginCharacter();
+		}
+	}
+	if (endline < cursor.EndLine() ||
+		(endline == cursor.EndLine() && endcharacter < cursor.EndCharacter())) {
+		if (!beginIsStart) {
+			start_line = cursor.EndLine();
+			start_character = cursor.EndCharacter();
+		} else {
+			end_line = cursor.EndLine();
+			end_character = cursor.EndCharacter();
+		}
+	}
 }

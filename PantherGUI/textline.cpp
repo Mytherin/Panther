@@ -75,6 +75,26 @@ void TextLine::AddDelta(TextDelta* delta) {
 	modified_line = NULL;
 }
 
+void TextLine::RemoveDelta(TextDelta* delta) {
+	TextDelta* current = this->deltas;
+	TextDelta* prev = NULL;
+	do {
+		if (current == delta) {
+			if (!prev) {
+				this->deltas = current->next;
+			} else {
+				prev->next = current->next;
+			}
+			delete current;
+			if (modified_line) free(modified_line);
+			modified_line = NULL;
+			return;
+		}
+	} while ((prev = current) && (current = current->next) != NULL);
+	// attempt to delete a delta that is not part of the current line
+	assert(0);
+}
+
 void TextLine::PopDelta() {
 	TextDelta *linedelta = this->deltas;
 	TextDelta *prev = NULL;
