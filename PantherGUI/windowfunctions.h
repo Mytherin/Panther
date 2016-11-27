@@ -178,3 +178,4 @@ void RegisterMouseScroll(PGWindowHandle window, PGScrollFunction callback);
 
 void SetClipboardText(PGWindowHandle window, std::string);
 std::string GetClipboardText(PGWindowHandle window);
+

@@ -383,6 +383,10 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				this->Invalidate();
 				break;
 			}
+			case 'S': {
+				textfile.SaveChanges();
+				break;
+			}
 			}
 		}
 	}

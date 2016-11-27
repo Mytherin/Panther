@@ -16,6 +16,8 @@ typedef enum {
 	PGLineEndingUnknown
 } PGLineEnding;
 
+PGLineEnding GetSystemLineEnding();
+
 typedef enum {
 	PGIndentionSpaces,
 	PGIndentionTabs,
@@ -52,7 +54,7 @@ public:
 	void Undo();
 	void Redo();
 
-	void Flush();
+	void SaveChanges();
 
 	ssize_t GetLineCount();
 private:
@@ -67,10 +69,11 @@ private:
 	void Redo(TextDelta* delta);
 
 	TextField* textfield;
-	PGMemoryMappedFileHandle file;
+	//PGMemoryMappedFileHandle file;
 	std::vector<TextLine> lines;
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
+	std::string path;
 	char* base;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;

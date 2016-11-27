@@ -611,3 +611,7 @@ std::string GetClipboardText(PGWindowHandle window) {
 	}
 	return NULL;
 }
+
+PGLineEnding GetSystemLineEnding() {
+	return PGLineEndingWindows;
+}

@@ -5,23 +5,29 @@
 #include <algorithm>
 #include <fstream>
 
-TextFile::TextFile(std::string path) : textfield(NULL) {
+TextFile::TextFile(std::string path) : textfield(NULL), base(NULL) {
 	OpenFile(path);
 }
 
-TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield) {
+TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), base(NULL) {
 	OpenFile(path);
 }
 
 TextFile::~TextFile() {
+	if (base) {
+		mmap::DestroyFileContents(base);
+	}
+	/*
 	FlushMemoryMappedFile(base);
 	CloseMemoryMappedFile(base);
-	DestroyMemoryMappedFile(file);
+	DestroyMemoryMappedFile(file);*/
 }
 
 void TextFile::OpenFile(std::string path) {
-	file = MemoryMapFile(path);
-	base = (char*)OpenMemoryMappedFile(file);
+	this->path = path;
+	this->base = (char*)mmap::ReadFile(path);
+	//file = MemoryMapFile(path);
+	//base = (char*)OpenMemoryMappedFile(file);
 
 	this->lineending = PGLineEndingUnknown;
 	this->indentation = PGIndentionTabs;
@@ -67,6 +73,9 @@ void TextFile::OpenFile(std::string path) {
 		}
 		ptr++;
 	}
+	if (lines.size() == 1) {
+		lineending = GetSystemLineEnding();
+	}
 	current_line->length = (ptr - current_line->line) - offset;
 }
 
@@ -104,7 +113,6 @@ void TextFile::InsertText(char character, std::vector<Cursor>& cursors) {
 
 void TextFile::InsertText(std::string text, std::vector<Cursor>& cursors) {
 	// FIXME: merge delta if it already exists
-	// FIXME: check if MemoryMapped file size is too high after write
 
 	// FIXME: insert with selection
 	MultipleDelta* delta = new MultipleDelta();
@@ -452,8 +460,8 @@ void TextFile::Redo(TextDelta* delta) {
 		ssize_t length = lines[add->linenr].GetLength();
 		ssize_t linenr = add->linenr + 1;
 		// FIXME: we keep around a reference to a string here, this probably segfaults if the delta is removed
-		for (auto it = add->lines.begin(); (it + 1) != add->lines.end(); it++) {		
-			lines.insert(lines.begin() + linenr, TextLine((char*) it->c_str(), (ssize_t) it->size()));
+		for (auto it = add->lines.begin(); (it + 1) != add->lines.end(); it++) {
+			lines.insert(lines.begin() + linenr, TextLine((char*)it->c_str(), (ssize_t)it->size()));
 			linenr++;
 		}
 		add->extra_text = add->lines.back();
@@ -506,8 +514,37 @@ void TextFile::Redo(TextDelta* delta) {
 	}
 }
 
-void TextFile::Flush() {
-	FlushMemoryMappedFile(this->base);
+void TextFile::SaveChanges() {
+	PGLineEnding line_ending = lineending;
+	if (line_ending != PGLineEndingWindows && line_ending != PGLineEndingMacOS && line_ending != PGLineEndingUnix) {
+		line_ending = GetSystemLineEnding();
+	}
+	// FIXME: respect file encoding
+	PGFileHandle handle = mmap::OpenFile(this->path, PGFileReadWrite);
+	ssize_t position = 0;
+	for (auto it = lines.begin(); it != lines.end(); it++) {
+		ssize_t length = it->GetLength();
+		char* line = it->GetLine();
+		mmap::WriteToFile(handle, line, length);
+
+		if (it + 1 != lines.end()) {
+			switch (line_ending) {
+			case PGLineEndingWindows:
+				mmap::WriteToFile(handle, "\r\n", 2);
+				break;
+			case PGLineEndingMacOS:
+				mmap::WriteToFile(handle, "\r", 1);
+				break;
+			case PGLineEndingUnix:
+				mmap::WriteToFile(handle, "\n", 1);
+				break;
+			default:
+				assert(0);
+				break;
+			}
+		}
+	}
+	mmap::CloseFile(handle);
 }
 
 void TextFile::ChangeLineEnding(PGLineEnding lineending) {
