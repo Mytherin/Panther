@@ -56,6 +56,7 @@ public:
 
 	void SaveChanges();
 
+	PGLineEnding GetLineEnding() { return lineending; }
 	ssize_t GetLineCount();
 private:
 	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor>& cursors, PGDirection direction);

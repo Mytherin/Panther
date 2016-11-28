@@ -14,7 +14,7 @@ struct TextSelection {
 
 class TextField : public Control {
 public:
-	TextField(PGWindowHandle);
+	TextField(PGWindowHandle, std::string filename);
 
 	void Draw(PGRendererHandle, PGRect*);
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
@@ -30,6 +30,8 @@ public:
 	void InvalidateBeforeLine(int line);
 	void InvalidateAfterLine(int line);
 	void InvalidateBetweenLines(int start, int end);
+
+	TextFile& GetTextFile() { return textfile; }
 private:
 	ssize_t text_offset;
 	int offset_x;

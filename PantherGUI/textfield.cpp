@@ -5,8 +5,8 @@
 
 //"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
 //"C:\\Users\\wieis\\Desktop\\syntaxtest.py"
-TextField::TextField(PGWindowHandle window) :
-	Control(window), textfile("C:\\Users\\wieis\\Desktop\\syntaxtest.py") {
+TextField::TextField(PGWindowHandle window, std::string filename) :
+	Control(window), textfile(filename) {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
 }

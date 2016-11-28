@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{210C7358-09F4-4D3F-A3E6-A02279617986}</ProjectGuid>
-    <RootNamespace>PantherGUI</RootNamespace>
+    <ProjectGuid>{2BE4FFDD-73BD-4AC5-BAFE-76F5E3AB52A8}</ProjectGuid>
+    <RootNamespace>PantherTests</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -68,7 +68,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../PantherGUI;</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -110,34 +112,34 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="control.cpp" />
-    <ClCompile Include="cursor.cpp" />
+    <ClInclude Include="..\PantherGUI\control.h" />
+    <ClInclude Include="..\PantherGUI\cursor.h" />
+    <ClInclude Include="..\PantherGUI\encoding.h" />
+    <ClInclude Include="..\PantherGUI\main.h" />
+    <ClInclude Include="..\PantherGUI\mmap.h" />
+    <ClInclude Include="..\PantherGUI\text.h" />
+    <ClInclude Include="..\PantherGUI\textdelta.h" />
+    <ClInclude Include="..\PantherGUI\textfield.h" />
+    <ClInclude Include="..\PantherGUI\textfile.h" />
+    <ClInclude Include="..\PantherGUI\textline.h" />
+    <ClInclude Include="..\PantherGUI\time.h" />
+    <ClInclude Include="..\PantherGUI\utils.h" />
+    <ClInclude Include="..\PantherGUI\windowfunctions.h" />
+    <ClInclude Include="tester.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\PantherGUI\control.cpp" />
+    <ClCompile Include="..\PantherGUI\cursor.cpp" />
+    <ClCompile Include="..\PantherGUI\mmap.cpp" />
+    <ClCompile Include="..\PantherGUI\text.cpp" />
+    <ClCompile Include="..\PantherGUI\textdelta.cpp" />
+    <ClCompile Include="..\PantherGUI\textfield.cpp" />
+    <ClCompile Include="..\PantherGUI\textfile.cpp" />
+    <ClCompile Include="..\PantherGUI\textline.cpp" />
+    <ClCompile Include="..\PantherGUI\windowfunctions.cpp" />
+    <ClCompile Include="dummywindowfunctions.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="mmap.cpp" />
-    <ClCompile Include="text.cpp" />
-    <ClCompile Include="textdelta.cpp" />
-    <ClCompile Include="textfield.cpp" />
-    <ClCompile Include="textfile.cpp" />
-    <ClCompile Include="textline.cpp" />
-    <ClCompile Include="windowfunctions.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="control.h" />
-    <ClInclude Include="cursor.h" />
-    <ClInclude Include="encoding.h" />
-    <ClInclude Include="main.h" />
-    <ClInclude Include="mmap.h" />
-    <ClInclude Include="text.h" />
-    <ClInclude Include="textfield.h" />
-    <ClInclude Include="textfile.h" />
-    <ClInclude Include="textdelta.h" />
-    <ClInclude Include="textline.h" />
-    <ClInclude Include="time.h" />
-    <ClInclude Include="utils.h" />
-    <ClInclude Include="windowfunctions.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="logo.ico" />
+    <ClCompile Include="tester.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
