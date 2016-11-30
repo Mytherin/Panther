@@ -32,6 +32,7 @@ public:
 	void InvalidateBetweenLines(int start, int end);
 
 	TextFile& GetTextFile() { return textfile; }
+	std::vector<Cursor>& GetCursors() { return cursors; }
 private:
 	ssize_t text_offset;
 	int offset_x;

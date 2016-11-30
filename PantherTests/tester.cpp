@@ -44,6 +44,7 @@ void Tester::RunTextFieldTest(std::string name, TextFieldTestFunction testFuncti
 		std::cout << expectedOutput << std::endl;
 		std::cout << "Actual output:" << std::endl;
 		std::cout << resultingText << std::endl;
+	} else {
+		std::cout << "SUCCESS: Test " << name << std::endl;
 	}
-	std::cout << "SUCCESS: Test " << name << std::endl;
 }
