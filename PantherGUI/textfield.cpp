@@ -273,9 +273,9 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			} else if (modifier == PGModifierShift) {
 				(*it).SelectEndOfLine();
 			} else if (modifier == PGModifierCtrl) {
-				// FIXME go to end of file
+				(*it).OffsetEndOfFile();
 			} else if (modifier == PGModifierCtrlShift) {
-				// FIXME select until end of file
+				(*it).SelectEndOfFile();
 			}
 		}
 		Cursor::NormalizeCursors(cursors);
@@ -288,9 +288,9 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			} else if (modifier == PGModifierShift) {
 				(*it).SelectStartOfLine();
 			} else if (modifier == PGModifierCtrl) {
-				// FIXME go to start of file
+				(*it).OffsetStartOfFile();
 			} else if (modifier == PGModifierCtrlShift) {
-				// FIXME select until start of file
+				(*it).SelectStartOfFile();
 			}
 		}
 		Cursor::NormalizeCursors(cursors);
@@ -358,11 +358,11 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 		if (modifier == PGModifierCtrl) {
 			switch (character) {
 			case 'Z':
-				this->textfile.Undo();
+				this->textfile.Undo(cursors);
 				this->Invalidate();
 				break;
 			case 'Y':
-				this->textfile.Redo();
+				this->textfile.Redo(cursors);
 				Cursor::NormalizeCursors(cursors);
 				this->Invalidate();
 				break;

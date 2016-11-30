@@ -139,7 +139,27 @@ void Cursor::SelectStartOfLine() {
 }
 
 void Cursor::SelectEndOfLine() {
-	this->start_character = this->file->GetLine(end_line)->GetLength();
+	this->start_character = this->file->GetLine(start_line)->GetLength();
+}
+
+void Cursor::OffsetStartOfFile() {
+	this->start_character = this->end_character = 0;
+	this->start_line = this->end_line = 0;
+}
+
+void Cursor::OffsetEndOfFile() {
+	this->start_line = this->end_line = this->file->GetLineCount() - 1;
+	this->start_character = this->end_character = this->file->GetLine(this->start_line)->GetLength();
+}
+
+void Cursor::SelectStartOfFile() {
+	this->start_character = 0;
+	this->start_line = 0;
+}
+
+void Cursor::SelectEndOfFile() {
+	this->start_line = this->file->GetLineCount() - 1;
+	this->start_character = this->file->GetLine(this->start_line)->GetLength();
 }
 
 void Cursor::SetCursorLocation(int linenr, int characternr) {

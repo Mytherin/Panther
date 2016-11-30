@@ -14,6 +14,7 @@ std::string SimpleInsertNewline(TextField* textField);
 std::string SimpleCopyPaste(TextField* textField);
 std::string MultilineCopyPaste(TextField* textField);
 std::string MultilineCopyPasteReplaceText(TextField* textField);
+std::string ManyLinesCopyPaste(TextField* textField);
 std::string UndoSimpleDeletion(TextField* textField);
 std::string UndoForwardDeletion(TextField* textField);
 std::string UndoForwardWordDeletion(TextField* textField);
@@ -60,6 +61,7 @@ int main() {
 	tester.RunTextFieldTest("Simple Copy Paste", SimpleCopyPaste, "hello world", "hellohello world");
 	tester.RunTextFieldTest("Multiline Copy Paste", MultilineCopyPaste, "hello world\nhow are you doing?", "hello world\nhow are you doing?hello world\nhow are you doing?");
 	tester.RunTextFieldTest("Multiline Copy Paste In Text", MultilineCopyPasteReplaceText, "hello world\nhow are you doing?", "hello world\nhello world\nhow are you doing? are you doing?");
+	tester.RunTextFieldTest("Many Lines Copy Paste", ManyLinesCopyPaste, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\n\n\n\n\nhello\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\n\n\n\n\nhello\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\n\n\n\n\nhello\n");
 
 	tester.RunTextFieldTest("Undo Simple Deletion", UndoSimpleDeletion, "hello world", "hello world");
 	tester.RunTextFieldTest("Undo Forward Deletion", UndoForwardDeletion, "hello world", "hello world");
@@ -87,7 +89,7 @@ int main() {
 	tester.RunTextFieldTest("Multi Cursor Undo Insert", MultiCursorUndoInsert, "hello world", "hbello wborld");
 	tester.RunTextFieldTest("Multi Cursor Undo Deletion", MultiCursorUndoDelete, "hello world", "halo wald");
 	tester.RunTextFieldTest("Multi Cursor Undo Complex", MultiCursorUndoComplex, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n");
-	tester.RunTextFieldTest("Multi Cursor Redo Complex", MultiCursorRedoComplex, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\ndef hello():\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n	return \"hello world\";\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\n\nprint(hello())\n");
+	tester.RunTextFieldTest("Multi Cursor Redo Complex", MultiCursorRedoComplex, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\ndef hello():\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n    return \"hello world\";\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n\n\nprint(hello())\n");
 
 	std::string line;
 	std::getline(std::cin, line);
@@ -210,6 +212,14 @@ std::string MultilineCopyPasteReplaceText(TextField* textField) {
 	textField->KeyboardButton(PGButtonRight, PGModifierShift);
 	textField->KeyboardButton(PGButtonRight, PGModifierShift);
 	textField->KeyboardButton(PGButtonRight, PGModifierShift);
+	textField->KeyboardCharacter('V', PGModifierCtrl);
+	return std::string("");
+}
+
+std::string ManyLinesCopyPaste(TextField* textField) {
+	textField->KeyboardButton(PGButtonEnd, PGModifierCtrlShift);
+	textField->KeyboardCharacter('C', PGModifierCtrl);
+	textField->KeyboardButton(PGButtonRight, PGModifierNone);
 	textField->KeyboardCharacter('V', PGModifierCtrl);
 	return std::string("");
 }
@@ -460,7 +470,7 @@ std::string MultiCursorUndoInsert(TextField* textField) {
 }
 
 std::string MultiCursorUndoDelete(TextField* textField) {
-	MultiCursorInsert(textField);
+	MultiCursorSelectionDeletion(textField);
 	textField->KeyboardButton(PGButtonEnd, PGModifierNone);
 	textField->KeyboardCharacter('Z', PGModifierCtrl);
 	textField->KeyboardCharacter('a', PGModifierNone);

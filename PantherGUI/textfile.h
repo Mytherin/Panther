@@ -51,8 +51,8 @@ public:
 	void ChangeIndentation(PGLineIndentation indentation);
 	void RemoveTrailingWhitespace();
 
-	void Undo();
-	void Redo();
+	void Undo(std::vector<Cursor>& cursors);
+	void Redo(std::vector<Cursor>& cursors);
 
 	void SaveChanges();
 
@@ -66,8 +66,9 @@ private:
 
 	void AddDelta(TextDelta* delta);
 
-	void Undo(TextDelta* delta);
-	void Redo(TextDelta* delta);
+	void PerformOperation(TextDelta* delta);
+	void Undo(TextDelta* delta, std::vector<Cursor>& cursors);
+	void Redo(TextDelta* delta, std::vector<Cursor>& cursors);
 
 	TextField* textfield;
 	//PGMemoryMappedFileHandle file;

@@ -19,6 +19,10 @@ public:
 	void OffsetEndOfLine();
 	void SelectStartOfLine();
 	void SelectEndOfLine();
+	void OffsetStartOfFile();
+	void OffsetEndOfFile();
+	void SelectStartOfFile();
+	void SelectEndOfFile();
 	void OffsetWord(PGDirection direction);
 	void OffsetSelectionWord(PGDirection direction);
 	void SelectWord();
