@@ -6,6 +6,7 @@
 #include <vector>
 
 class TextFile;
+class TextField;
 
 class Cursor {
 	friend class TextFile;
@@ -44,7 +45,7 @@ public:
 	bool OverlapsWith(Cursor& cursor);
 	void Merge(Cursor& cursor);
 
-	static void NormalizeCursors(std::vector<Cursor>& cursors);
+	static void NormalizeCursors(TextField* textfield, std::vector<Cursor>& cursors);
 	static bool CursorOccursFirst (Cursor a, Cursor b) { return (a.BeginLine() < b.BeginLine() || (a.BeginLine() == b.BeginLine() && a.BeginCharacter() < b.BeginCharacter())); }
 
 	void SetCursorStartLocation(int linenr, int characternr);

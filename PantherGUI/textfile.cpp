@@ -123,7 +123,7 @@ void TextFile::InsertText(std::string text, std::vector<Cursor>& cursors) {
 		delta->AddDelta(new AddText(&*it, it->BeginLine(), it->BeginCharacter(), text));
 	}
 	this->AddDelta(delta);
-	Cursor::NormalizeCursors(cursors);
+	Cursor::NormalizeCursors(textfield, cursors);
 	PerformOperation(delta);
 
 }
@@ -247,7 +247,7 @@ void TextFile::DeleteCharacter(std::vector<Cursor>& cursors, PGDirection directi
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(cursors);
+	Cursor::NormalizeCursors(textfield, cursors);
 }
 
 void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
@@ -277,7 +277,7 @@ void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(cursors);
+	Cursor::NormalizeCursors(textfield, cursors);
 }
 
 void TextFile::AddNewLine(std::vector<Cursor>& cursors) {
@@ -323,7 +323,7 @@ void TextFile::AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(cursors);
+	Cursor::NormalizeCursors(textfield, cursors);
 
 }
 

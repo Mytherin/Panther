@@ -31,6 +31,10 @@ public:
 	void InvalidateAfterLine(int line);
 	void InvalidateBetweenLines(int start, int end);
 
+	int GetLineOffset() { return lineoffset_y; }
+	void SetLineOffset(ssize_t offset) { lineoffset_y = offset; }
+	int GetLineHeight();
+
 	TextFile& GetTextFile() { return textfile; }
 	std::vector<Cursor>& GetCursors() { return cursors; }
 private:

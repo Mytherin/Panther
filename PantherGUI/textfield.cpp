@@ -7,7 +7,7 @@
 //"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
 //"C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 TextField::TextField(PGWindowHandle window, std::string filename) :
-	Control(window), textfile(filename) {
+	Control(window), textfile(filename, this) {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
 }
@@ -107,12 +107,14 @@ void TextField::GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_
 	x = x - this->text_offset - this->offset_x;
 	ssize_t width = 0;
 	character = textfile.GetLine(line)->GetLength();
-	for (int i = 0; i < this->offsets[line_offset].size(); i++) {
-		if (width <= x && width + offsets[line_offset][i] > x) {
-			character = i;
-			break;
+	if (offsets.size() > line_offset) {
+		for (int i = 0; i < this->offsets[line_offset].size(); i++) {
+			if (width <= x && width + offsets[line_offset][i] > x) {
+				character = i;
+				break;
+			}
+			width += offsets[line_offset][i];
 		}
-		width += offsets[line_offset][i];
 	}
 }
 
@@ -151,7 +153,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			Logger::GetInstance()->WriteLogMessage(std::string("cursors.push_back(Cursor(&textfile, ") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 
 			cursors.push_back(Cursor(&textfile, line, character));
-			Cursor::NormalizeCursors(cursors);
+			Cursor::NormalizeCursors(this, cursors);
 		} else if (last_click.clicks == 1) {
 			if (cursors.size() > 1) {
 				cursors.erase(cursors.begin() + 1, cursors.end());
@@ -202,6 +204,10 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
+int TextField::GetLineHeight() {
+	return this->height / line_height + (this->height % line_height == 0 ? -1 : 0);
+}
+
 void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardButton(") + GetButtonName(button) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
 	switch (button) {
@@ -219,7 +225,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				// FIXME move line down
 			}
 		}
-		Cursor::NormalizeCursors(cursors);
+		Cursor::NormalizeCursors(this, cursors);
 		Invalidate();
 		break;
 	case PGButtonUp:
@@ -234,7 +240,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				// FIXME move line up
 			}
 		}
-		Cursor::NormalizeCursors(cursors);
+		Cursor::NormalizeCursors(this, cursors);
 		Invalidate();
 		break;
 	case PGButtonLeft:
@@ -253,7 +259,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				it->OffsetSelectionWord(PGDirectionLeft);
 			}
 		}
-		Cursor::NormalizeCursors(cursors);
+		Cursor::NormalizeCursors(this, cursors);
 		Invalidate();
 		break;
 	case PGButtonRight:
@@ -272,7 +278,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				it->OffsetSelectionWord(PGDirectionRight);
 			}
 		}
-		Cursor::NormalizeCursors(cursors);
+		Cursor::NormalizeCursors(this, cursors);
 		Invalidate();
 		break;
 	case PGButtonEnd:
@@ -287,7 +293,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				(*it).SelectEndOfFile();
 			}
 		}
-		Cursor::NormalizeCursors(cursors);
+		Cursor::NormalizeCursors(this, cursors);
 		Invalidate();
 		break;
 	case PGButtonHome:
@@ -302,15 +308,16 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 				(*it).SelectStartOfFile();
 			}
 		}
-		Cursor::NormalizeCursors(cursors);
+		Cursor::NormalizeCursors(this, cursors);
 		Invalidate();
 		break;
 	case PGButtonPageUp:
 		// FIXME: amount of lines in textfield
 		if (modifier == PGModifierNone) {
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
-				(*it).OffsetLine(-47);
+				(*it).OffsetLine(-GetLineHeight());
 			}
+			Cursor::NormalizeCursors(this, cursors);
 			Invalidate();
 		}
 		break;
@@ -318,8 +325,9 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		// FIXME: amount of lines in textfield
 		if (modifier == PGModifierNone) {
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
-				(*it).OffsetLine(47);
+				(*it).OffsetLine(GetLineHeight());
 			}
+			Cursor::NormalizeCursors(this, cursors);
 			Invalidate();
 		}
 		break;
@@ -374,7 +382,7 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				break;
 			case 'Y':
 				this->textfile.Redo(cursors);
-				Cursor::NormalizeCursors(cursors);
+				Cursor::NormalizeCursors(this, cursors);
 				this->Invalidate();
 				break;
 			case 'A':

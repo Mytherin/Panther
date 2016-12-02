@@ -240,6 +240,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case VK_RETURN:
 			button = PGButtonEnter;
 			break;
+		case VK_PRIOR:
+			button = PGButtonPageUp;
+			break;
+		case VK_NEXT:
+			button = PGButtonPageDown;
+			break;
 		default:
 			break;
 		}

@@ -1,6 +1,7 @@
 
 #include "cursor.h"
 #include "textfile.h"
+#include "textfield.h"
 #include "text.h"
 
 #include <algorithm>
@@ -258,7 +259,7 @@ std::string Cursor::GetText() {
 	return text;
 }
 
-void Cursor::NormalizeCursors(std::vector<Cursor>& cursors) {
+void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor>& cursors) {
 	for (int i = 0; i < cursors.size(); i++) {
 		for (int j = i + 1; j < cursors.size(); j++) {
 			if (cursors[i].OverlapsWith(cursors[j])) {
@@ -281,6 +282,27 @@ void Cursor::NormalizeCursors(std::vector<Cursor>& cursors) {
 		}
 	}
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
+	ssize_t line_offset = textfield->GetLineOffset();
+	ssize_t line_height = textfield->GetLineHeight();
+	ssize_t line_start = line_offset;
+	ssize_t line_end = line_start + line_height;
+	ssize_t cursor_min = INT_MAX, cursor_max = 0;
+	for (int i = 0; i < cursors.size(); i++) {
+		ssize_t cursor_line = cursors[i].start_line;
+		cursor_min = std::min(cursor_min, cursor_line);
+		cursor_max = std::max(cursor_max, cursor_line);
+	}
+	if (cursor_max - cursor_min > textfield->GetLineHeight()) {
+		// cursors are too far apart to show everything, just show the first one
+		line_offset = cursor_min;
+	} else if (cursor_max > line_end) {
+		// cursor is located past the end of what is visible, offset the view
+		line_offset = cursor_max - line_height + 1;
+	} else if (cursor_min < line_start) {
+		// cursor is located before the start of what is visible, offset the view
+		line_offset = cursor_min;
+	}
+	textfield->SetLineOffset(line_offset);
 }
 
 bool Cursor::Contains(int linenr, int characternr) {
