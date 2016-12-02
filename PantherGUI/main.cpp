@@ -120,7 +120,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	res->hwnd = hWnd;
 	global_handle = res;
 
-	TextField* textField = new TextField(res, "C:\\Users\\wieis\\Desktop\\syntaxtest.py");
+	TextField* textField = new TextField(res, "C:\\Users\\wieis\\Desktop\\bla.txt");
 	textField->width = 500;
 	textField->height = 500;
 	textField->x = 0;

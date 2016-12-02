@@ -187,6 +187,7 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 						delta->AddDelta(new RemoveText(&*it, i, lines[i].GetLength(), lines[i].GetLength() - it->BeginCharacter()));
 					}
 				} else if (i == it->EndLine()) {
+					assert(it->EndCharacter() <= lines[i].GetLength());
 					// remove part of the last line
 					std::string text = std::string(lines[i].GetLine() + it->EndCharacter(), lines[i].GetLength() - it->EndCharacter());
 					remove_lines->AddLine(lines[i]);

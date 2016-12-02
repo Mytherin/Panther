@@ -193,21 +193,21 @@ void Cursor::SetCursorStartLocation(int linenr, int characternr) {
 			return;
 		}
 	}
-	this->start_character = characternr;
-	this->start_line = linenr;
+	this->start_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
+	this->start_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
 }
 
 void Cursor::SetCursorEndLocation(int linenr, int characternr) {
-	this->end_character = characternr;
-	this->end_line = linenr;
+	this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
+	this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
 }
 
 void Cursor::SetCursorLine(int linenr) {
-	this->start_line = this->end_line = linenr;
+	this->start_line = this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
 }
 
 void Cursor::SetCursorCharacter(int characternr) {
-	this->start_character = this->end_character = characternr;
+	this->start_character = this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
 }
 
 void Cursor::RestoreCursor(Cursor cursor) {

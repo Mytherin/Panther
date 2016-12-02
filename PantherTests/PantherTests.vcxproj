@@ -115,6 +115,7 @@
     <ClInclude Include="..\PantherGUI\control.h" />
     <ClInclude Include="..\PantherGUI\cursor.h" />
     <ClInclude Include="..\PantherGUI\encoding.h" />
+    <ClInclude Include="..\PantherGUI\logger.h" />
     <ClInclude Include="..\PantherGUI\main.h" />
     <ClInclude Include="..\PantherGUI\mmap.h" />
     <ClInclude Include="..\PantherGUI\text.h" />
@@ -130,6 +131,7 @@
   <ItemGroup>
     <ClCompile Include="..\PantherGUI\control.cpp" />
     <ClCompile Include="..\PantherGUI\cursor.cpp" />
+    <ClCompile Include="..\PantherGUI\logger.cpp" />
     <ClCompile Include="..\PantherGUI\mmap.cpp" />
     <ClCompile Include="..\PantherGUI\text.cpp" />
     <ClCompile Include="..\PantherGUI\textdelta.cpp" />

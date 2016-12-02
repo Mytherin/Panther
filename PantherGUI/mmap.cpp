@@ -89,10 +89,15 @@ namespace mmap {
 		return string;
 	}
 
-	void WriteToFile(PGFileHandle handle, char* text, ssize_t length) {
+	void WriteToFile(PGFileHandle handle, const char* text, ssize_t length) {
 		if (length == 0) return;
 		fwrite(text, sizeof(char), length, handle->f);
+	}	
+	
+	void Flush(PGFileHandle handle) {
+		fflush(handle->f);
 	}
+
 
 	void DestroyFileContents(void* address) {
 		free(address);

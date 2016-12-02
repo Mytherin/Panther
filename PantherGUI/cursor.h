@@ -47,6 +47,12 @@ public:
 	static void NormalizeCursors(std::vector<Cursor>& cursors);
 	static bool CursorOccursFirst (Cursor a, Cursor b) { return (a.BeginLine() < b.BeginLine() || (a.BeginLine() == b.BeginLine() && a.BeginCharacter() < b.BeginCharacter())); }
 
+	void SetCursorStartLocation(int linenr, int characternr);
+	void SetCursorEndLocation(int linenr, int characternr);
+	void SetCursorLocation(int linenr, int characternr);
+	void SetCursorLine(int linenr);
+	void SetCursorCharacter(int characternr);
+
 	Cursor(TextFile* file);
 	Cursor(TextFile* file, ssize_t line, ssize_t character);
 private:
@@ -59,10 +65,4 @@ private:
 	ssize_t min_line;
 	ssize_t max_character;
 	ssize_t max_line;
-
-	void SetCursorStartLocation(int linenr, int characternr);
-	void SetCursorEndLocation(int linenr, int characternr);
-	void SetCursorLocation(int linenr, int characternr);
-	void SetCursorLine(int linenr);
-	void SetCursorCharacter(int characternr);
 };

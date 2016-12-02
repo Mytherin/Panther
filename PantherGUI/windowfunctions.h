@@ -137,6 +137,10 @@ typedef void (*PGScrollFunction)(int x, int y, int distance, PGModifier modifier
 typedef void (*PGButtonPress)(PGButton button, PGModifier modifier);
 typedef void (*PGRefresh)(PGRendererHandle handle);
 
+std::string GetButtonName(PGButton);
+std::string GetMouseButtonName(PGMouseButton);
+std::string GetModifierName(PGModifier);
+
 // Window Functions
 PGWindowHandle PGCreateWindow(void);
 void CloseWindow(PGWindowHandle window);
@@ -178,4 +182,3 @@ void RegisterMouseScroll(PGWindowHandle window, PGScrollFunction callback);
 
 void SetClipboardText(PGWindowHandle window, std::string);
 std::string GetClipboardText(PGWindowHandle window);
-

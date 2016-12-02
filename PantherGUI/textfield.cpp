@@ -2,6 +2,7 @@
 #include "textfield.h"
 #include <sstream>
 #include <algorithm>
+#include "logger.h"
 
 //"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
 //"C:\\Users\\wieis\\Desktop\\syntaxtest.py"
@@ -100,7 +101,7 @@ void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifi
 
 void TextField::GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character) {
 	// find the line position of the mouse
-	ssize_t line_offset = std::min((ssize_t)y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1);
+	ssize_t line_offset = std::max(std::min((ssize_t)y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1), (ssize_t) 0);
 	line = this->lineoffset_y + line_offset;
 	// find the character position within the line
 	x = x - this->text_offset - this->offset_x;
@@ -121,7 +122,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	if (button == PGLeftMouseButton) {
 		ssize_t line, character;
 		GetLineCharacterFromPosition(x, y, line, character);
-
+		
 		time_t time = GetTime();
 		if (time - last_click.time < DOUBLE_CLICK_TIME && 
 			std::abs(x - last_click.x) < 2 && 
@@ -139,12 +140,16 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				cursors.erase(cursors.begin() + 1, cursors.end());
 			}
 			cursors[0].SetCursorLocation(line, character);
+			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0].SetCursorLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 		} else if (modifier == PGModifierShift) {
 			if (cursors.size() > 1) {
 				cursors.erase(cursors.begin() + 1, cursors.end());
 			}
 			cursors[0].SetCursorStartLocation(line, character);
+			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0].SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 		} else if (modifier == PGModifierCtrl) {
+			Logger::GetInstance()->WriteLogMessage(std::string("cursors.push_back(Cursor(&textfile, ") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
+
 			cursors.push_back(Cursor(&textfile, line, character));
 			Cursor::NormalizeCursors(cursors);
 		} else if (last_click.clicks == 1) {
@@ -153,11 +158,13 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			}
 			cursors[0].SetCursorLocation(line, character);
 			cursors[0].SelectWord();
+			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0].SetCursorLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\ncursors[0].SelectWord();"));
 		} else if (last_click.clicks == 2) {
 			if (cursors.size() > 1) {
 				cursors.erase(cursors.begin() + 1, cursors.end());
 			}
 			cursors[0].SelectLine();
+			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0].SelectLine();"));
 		}
 		this->Invalidate();
 	} else if (button == PGMiddleMouseButton) {
@@ -182,6 +189,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		if (cursors[0].start_line != line || cursors[0].start_character != character) {
 			ssize_t old_line = cursors[0].start_line;
 			cursors[0].SetCursorStartLocation(line, character);
+			Logger::GetInstance()->WriteLogMessage(std::string("cursors[0].SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 			this->InvalidateBetweenLines(old_line, cursors[0].start_line);
 		}
 	} else if (buttons & PGMiddleMouseButton) {
@@ -195,6 +203,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 }
 
 void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
+	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardButton(") + GetButtonName(button) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
 	switch (button) {
 		// FIXME: when moving up/down, count \t as multiple characters (equal to tab size)
 		// FIXME: when moving up/down, maintain the current character number (even though a line is shorter than that number)
@@ -351,6 +360,8 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 }
 
 void TextField::KeyboardCharacter(char character, PGModifier modifier) {
+	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardCharacter(") + std::to_string(character) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
+
 	if (modifier == PGModifierNone) {
 		this->textfile.InsertText(character, cursors);
 		this->Invalidate();
