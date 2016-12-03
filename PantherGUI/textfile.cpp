@@ -109,6 +109,23 @@ void TextFile::InsertText(char character, std::vector<Cursor>& cursors) {
 	InsertText(std::string(1, character), cursors);
 }
 
+static void DeleteCursors(TextDelta* delta) {
+	CursorDelta* cursor_delta = dynamic_cast<CursorDelta*>(delta);
+	if (cursor_delta && cursor_delta->cursor) {
+		cursor_delta->cursor = NULL;
+	}
+	switch (delta->TextDeltaType()) {
+	case PGDeltaMultiple: {
+		MultipleDelta* multi = (MultipleDelta*)delta;
+		assert(multi->deltas.size() > 0);
+		for (ssize_t index = multi->deltas.size() - 1; index >= 0; index--) {
+			DeleteCursors(multi->deltas[index]);
+		}
+		break;
+	}
+	}
+}
+
 void TextFile::InsertText(std::string text, std::vector<Cursor>& cursors) {
 	// FIXME: merge delta if it already exists
 
@@ -117,6 +134,7 @@ void TextFile::InsertText(std::string text, std::vector<Cursor>& cursors) {
 	if (CursorsContainSelection(cursors)) {
 		// if any of the cursors select text, we delete that text before inserting the characters
 		DeleteCharacter(delta, cursors, PGDirectionLeft);
+		DeleteCursors(delta);
 	}
 
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {

@@ -10,6 +10,7 @@ TextField::TextField(PGWindowHandle window, std::string filename) :
 	Control(window), textfile(filename, this) {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
+	line_height = 20;
 }
 
 void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {

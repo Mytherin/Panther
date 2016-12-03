@@ -40,6 +40,7 @@ std::string MultiCursorUndoInsert(TextField* textField);
 std::string MultiCursorUndoDelete(TextField* textField);
 std::string MultiCursorUndoComplex(TextField* textField);
 std::string MultiCursorRedoComplex(TextField* textField);
+std::string PasteInsertUndoPaste(TextField* textField);
 std::string DetectUnixNewlineType(TextField* textField);
 std::string DetectWindowsNewlineType(TextField* textField);
 std::string DetectMacOSNewlineType(TextField* textField);
@@ -90,6 +91,8 @@ int main() {
 	tester.RunTextFieldTest("Multi Cursor Undo Deletion", MultiCursorUndoDelete, "hello world", "halo wald");
 	tester.RunTextFieldTest("Multi Cursor Undo Complex", MultiCursorUndoComplex, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n");
 	tester.RunTextFieldTest("Multi Cursor Redo Complex", MultiCursorRedoComplex, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\ndef hello():\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n    return \"hello world\";\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n\n\nprint(hello())\n");
+	
+	tester.RunTextFieldTest("Paste Insert Undo Paste", PasteInsertUndoPaste, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "a");
 
 	std::string line;
 	std::getline(std::cin, line);
@@ -527,5 +530,13 @@ std::string MultiCursorRedoComplex(TextField* textField) {
 		textField->KeyboardCharacter('Y', PGModifierCtrl);
 	}
 
+	return std::string("");
+}
+
+std::string PasteInsertUndoPaste(TextField* textField) {
+	textField->KeyboardCharacter('A', PGModifierCtrl);
+	textField->KeyboardCharacter('a', PGModifierNone);
+	textField->KeyboardCharacter('Z', PGModifierCtrl);
+	textField->KeyboardCharacter('a', PGModifierNone);
 	return std::string("");
 }
