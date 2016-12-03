@@ -73,9 +73,10 @@ class RemoveLines : public CursorDelta {
 public:
 	std::vector<TextLine> lines;
 	std::string extra_text;
+	ssize_t last_line_offset;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveManyLines; }
-	RemoveLines(Cursor* cursor, int linenr) : CursorDelta(cursor, linenr, 0) {}
+	RemoveLines(Cursor* cursor, int linenr) : CursorDelta(cursor, linenr, 0), last_line_offset(0) {}
 	void AddLine(TextLine line) {
 		lines.push_back(line);
 	}

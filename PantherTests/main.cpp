@@ -594,7 +594,7 @@ std::string PartialDeleteCursorSameLine(TextField* textField) {
 	TextFile& textfile = textField->GetTextFile();
 
 	cursors[0]->SetCursorStartLocation(3, 1);
-	cursors.push_back(new Cursor(&textfile, 3, 1));
+	cursors.push_back(new Cursor(&textfile, 3, 7));
 	textField->KeyboardCharacter('a', PGModifierNone);
 
 

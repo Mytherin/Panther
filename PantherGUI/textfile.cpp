@@ -114,23 +114,11 @@ void TextFile::InsertText(std::string text, std::vector<Cursor*>& cursors) {
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	MultipleDelta* delta = new MultipleDelta();
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		TextDelta* finalDelta = NULL;
 		if (!(*it)->SelectionIsEmpty()) {
 			// if any of the cursors select text, we delete that text before inserting the characters
 			DeleteCharacter(delta, *it, PGDirectionLeft, true, false);
-			if (delta->deltas.size() > 0 && delta->deltas.back()->TextDeltaType() == PGDeltaAddText) {
-				// if the delete ends with an 'AddText', that means we delete part of a line
-				// and move the remainder up to the next line
-				// this remainder should be added AFTER the text we insert here, so we temporarily remove
-				// the AddDelta and add it back in later
-				finalDelta = delta->deltas.back();
-				delta->deltas.erase(delta->deltas.begin() + (delta->deltas.size() - 1));
-			}
 		}
-		delta->AddDelta(new AddText(*it, (*it)->BeginLine(), (*it)->BeginCharacter(), text));
-		if (finalDelta) {
-			delta->AddDelta(finalDelta);
-		}
+		delta->AddDelta(new AddText(*it, (*it)->EndLine(), (*it)->EndCharacter(), text));
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
@@ -200,6 +188,7 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 					// remove part of the last line
 					std::string text = std::string(lines[i].GetLine() + it->EndCharacter(), lines[i].GetLength() - it->EndCharacter());
 					remove_lines->AddLine(lines[i]);
+					remove_lines->last_line_offset = it->EndCharacter();
 					delta->AddDelta(remove_lines);
 					delta->AddDelta(new AddText(NULL, it->BeginLine(), it->BeginCharacter(), text));
 				} else {
@@ -464,12 +453,14 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 			ssize_t shift_characters = 0;
 			ssize_t shift_characters_line = (*it)->linenr;
 			ssize_t shift_characters_character = (*it)->characternr;
+			ssize_t last_line_offset = 0;
 			switch ((*it)->TextDeltaType()) {
 			case PGDeltaRemoveLine:
 				shift_lines = -1;
 				break;
 			case PGDeltaRemoveManyLines:
 				shift_lines = -((ssize_t)((RemoveLines*)(*it))->lines.size());
+				last_line_offset = ((RemoveLines*)(*it))->last_line_offset;
 				break;
 			case PGDeltaAddLine:
 				shift_lines = 1;
@@ -486,21 +477,26 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 				shift_characters = -((ssize_t)((RemoveText*)(*it))->charactercount);
 				break;
 			}
-
 			for (auto it2 = it + 1; it2 != multi->deltas.end(); it2++) {
 				TextDelta* delta = *it2;
 				if (delta->linenr == shift_characters_line &&
 					delta->characternr >= shift_characters_character) {
 					delta->characternr += shift_characters;
+				} else if (delta->linenr == shift_characters_line &&
+					delta->characternr < 0) {
+					delta->characternr = shift_characters_character + std::abs(delta->characternr + 1);
 				}
 				if (shift_lines != 0) {
-					if (delta->linenr == shift_lines_line && shift_lines < 0) {
-						delta->characternr = this->lines[shift_lines_line - 1].GetLength();
-					}
-					if (delta->linenr >= shift_lines_line) {
+					if (delta->linenr == (shift_lines_line + std::abs(shift_lines) - 1) && shift_lines < 0) {
+						delta->characternr = -(delta->characternr - last_line_offset) - 1;
+						delta->linenr = shift_lines_line - 1;
+					} else if (delta->linenr >= shift_lines_line) {
 						delta->linenr += shift_lines;
 					}
 				}
+			}
+			if ((*it)->TextDeltaType() != PGDeltaRemoveManyLines) {
+				last_line_offset = 0;
 			}
 		}
 		break;
