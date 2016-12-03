@@ -118,6 +118,9 @@ void TextFile::InsertText(std::string text, std::vector<Cursor*>& cursors) {
 			// if any of the cursors select text, we delete that text before inserting the characters
 			DeleteCharacter(delta, *it, PGDirectionLeft, true, false);
 		}
+		// now actually add the text
+		// note that we add it at the end of the selected area
+		// it will be shifted to the start of the selected area in PerformOperation
 		delta->AddDelta(new AddText(*it, (*it)->EndLine(), (*it)->EndCharacter(), text));
 	}
 	this->AddDelta(delta);
@@ -258,6 +261,8 @@ void TextFile::DeleteWord(std::vector<Cursor*>& cursors, PGDirection direction) 
 			char* line = lines[(*it)->SelectedLine()].GetLine();
 			ssize_t length = lines[(*it)->SelectedLine()].GetLength();
 			ssize_t index = direction == PGDirectionLeft ? (*it)->SelectedCharacter() + offset : (*it)->SelectedCharacter();
+			// a word is a series of characters of equal type (punctuation, spaces or everything else)
+			// we scan the string to find out where the word ends 
 			PGCharacterClass type = GetCharacterClass(line[index]);
 			for (index += offset; index >= 0 && index < length; index += offset) {
 				if (GetCharacterClass(line[index]) != type) {
@@ -484,10 +489,18 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 					delta->characternr += shift_characters;
 				} else if (delta->linenr == shift_characters_line &&
 					delta->characternr < 0) {
+					// special case: see below explanation
 					delta->characternr = shift_characters_character + std::abs(delta->characternr + 1);
 				}
 				if (shift_lines != 0) {
 					if (delta->linenr == (shift_lines_line + std::abs(shift_lines) - 1) && shift_lines < 0) {
+						// special case: multi-line deletion that ends with deleting part of a line
+						// this is done by removing the entire last line and then adding part of the line back
+						// removing and readding text messes with cursors on that line,
+						// to make the cursor go back to the proper position, 
+						// we store the position of this delta on the original line as a negative number when removing it
+						// when performing the AddText we do a special case for negative numbers
+						// to shift the cursor position to its original position in the text again
 						delta->characternr = -(delta->characternr - last_line_offset) - 1;
 						delta->linenr = shift_lines_line - 1;
 					} else if (delta->linenr >= shift_lines_line) {
