@@ -259,24 +259,36 @@ std::string Cursor::GetText() {
 	return text;
 }
 
-void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor>& cursors) {
+void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursors) {
 	textfield->DisplayCarets();
 	for (int i = 0; i < cursors.size(); i++) {
 		for (int j = i + 1; j < cursors.size(); j++) {
-			if (cursors[i].OverlapsWith(cursors[j])) {
-				cursors[i].Merge(cursors[j]);
+			if (cursors[i]->OverlapsWith(*cursors[j])) {
+				cursors[i]->Merge(*cursors[j]);
+				if (textfield->active_cursor == cursors[j]) {
+					textfield->active_cursor = NULL;
+				}
+				delete cursors[j];
 				cursors.erase(cursors.begin() + j);
 				j--;
 				continue;
 			}
 		}
-		if (cursors[i].start_line >= cursors[i].file->GetLineCount()) {
+		if (cursors[i]->start_line >= cursors[i]->file->GetLineCount()) {
+			if (textfield->active_cursor == cursors[i]) {
+				textfield->active_cursor = NULL;
+			}
+			delete cursors[i];
 			cursors.erase(cursors.begin() + i);
 			i--;
 			continue;
 		}
-		assert(cursors[i].start_character >= 0);
-		if (cursors[i].start_character > cursors[i].file->GetLine(cursors[i].start_line)->GetLength()) {
+		assert(cursors[i]->start_character >= 0);
+		if (cursors[i]->start_character > cursors[i]->file->GetLine(cursors[i]->start_line)->GetLength()) {
+			if (textfield->active_cursor == cursors[i]) {
+				textfield->active_cursor = NULL;
+			}
+			delete cursors[i];
 			cursors.erase(cursors.begin() + i);
 			i--;
 			continue;
@@ -289,7 +301,7 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor>& cursors
 	ssize_t line_end = line_start + line_height;
 	ssize_t cursor_min = INT_MAX, cursor_max = 0;
 	for (int i = 0; i < cursors.size(); i++) {
-		ssize_t cursor_line = cursors[i].start_line;
+		ssize_t cursor_line = cursors[i]->start_line;
 		cursor_min = std::min(cursor_min, cursor_line);
 		cursor_max = std::max(cursor_max, cursor_line);
 	}

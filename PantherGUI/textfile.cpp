@@ -96,30 +96,29 @@ ssize_t TextFile::GetLineCount() {
 }
 
 static bool
-CursorsContainSelection(std::vector<Cursor>& cursors) {
+CursorsContainSelection(std::vector<Cursor*>& cursors) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if (!it->SelectionIsEmpty()) {
+		if (!(*it)->SelectionIsEmpty()) {
 			return true;
 		}
 	}
 	return false;
 }
 
-void TextFile::InsertText(char character, std::vector<Cursor>& cursors) {
+void TextFile::InsertText(char character, std::vector<Cursor*>& cursors) {
 	InsertText(std::string(1, character), cursors);
 }
 
-void TextFile::InsertText(std::string text, std::vector<Cursor>& cursors) {
+void TextFile::InsertText(std::string text, std::vector<Cursor*>& cursors) {
 	// FIXME: merge delta if it already exists
-	// FIXME: insert with selection
 	MultipleDelta* delta = new MultipleDelta();
 	bool containsSelection = CursorsContainSelection(cursors);
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		TextDelta* finalDelta = NULL;
 		if (containsSelection) {
 			// if any of the cursors select text, we delete that text before inserting the characters
-			DeleteCharacter(delta, &*it, PGDirectionLeft, containsSelection, false);
-			if (delta->deltas.back()->TextDeltaType() == PGDeltaAddText) {
+			DeleteCharacter(delta, *it, PGDirectionLeft, containsSelection, false);
+			if (delta->deltas.size() > 0 && delta->deltas.back()->TextDeltaType() == PGDeltaAddText) {
 				// if the delete ends with an 'AddText', that means we delete part of a line
 				// and move the remainder up to the next line
 				// this remainder should be added AFTER the text we insert here, so we temporarily remove
@@ -128,7 +127,7 @@ void TextFile::InsertText(std::string text, std::vector<Cursor>& cursors) {
 				delta->deltas.erase(delta->deltas.begin() + (delta->deltas.size() - 1));
 			}
 		}
-		delta->AddDelta(new AddText(&*it, it->BeginLine(), it->BeginCharacter(), text));
+		delta->AddDelta(new AddText(*it, (*it)->BeginLine(), (*it)->BeginCharacter(), text));
 		if (finalDelta) {
 			delta->AddDelta(finalDelta);
 		}
@@ -138,18 +137,18 @@ void TextFile::InsertText(std::string text, std::vector<Cursor>& cursors) {
 	Cursor::NormalizeCursors(textfield, cursors);
 }
 
-std::string TextFile::CopyText(std::vector<Cursor>& cursors) {
+std::string TextFile::CopyText(std::vector<Cursor*>& cursors) {
 	std::string text = "";
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		if (it != cursors.begin()) {
 			text += NEWLINE_CHARACTER;
 		}
-		text += it->GetText();
+		text += (*it)->GetText();
 	}
 	return text;
 }
 
-void TextFile::PasteText(std::vector<Cursor>& cursors, std::string text) {
+void TextFile::PasteText(std::vector<Cursor*>& cursors, std::string text) {
 	std::vector<std::string> pasted_lines;
 	ssize_t start = 0;
 	ssize_t current = 0;
@@ -243,14 +242,14 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 	}
 }
 void
-TextFile::DeleteCharacter(MultipleDelta* delta, std::vector<Cursor>& cursors, PGDirection direction) {
+TextFile::DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction) {
 	bool delete_selection = CursorsContainSelection(cursors);
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		DeleteCharacter(delta, &*it, direction, delete_selection);
+		DeleteCharacter(delta, *it, direction, delete_selection);
 	}
 }
 
-void TextFile::DeleteCharacter(std::vector<Cursor>& cursors, PGDirection direction) {
+void TextFile::DeleteCharacter(std::vector<Cursor*>& cursors, PGDirection direction) {
 	MultipleDelta* delta = new MultipleDelta();
 	DeleteCharacter(delta, cursors, direction);
 	if (delta->deltas.size() == 0) {
@@ -262,14 +261,14 @@ void TextFile::DeleteCharacter(std::vector<Cursor>& cursors, PGDirection directi
 	Cursor::NormalizeCursors(textfield, cursors);
 }
 
-void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
+void TextFile::DeleteWord(std::vector<Cursor*>& cursors, PGDirection direction) {
 	MultipleDelta* delta = new MultipleDelta();
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if (it->SelectionIsEmpty() && (direction == PGDirectionLeft ? it->SelectedCharacter() > 0 : it->SelectedCharacter() < lines[it->SelectedLine()].GetLength())) {
+		if ((*it)->SelectionIsEmpty() && (direction == PGDirectionLeft ? (*it)->SelectedCharacter() > 0 : (*it)->SelectedCharacter() < lines[(*it)->SelectedLine()].GetLength())) {
 			int offset = direction == PGDirectionLeft ? -1 : 1;
-			char* line = lines[it->SelectedLine()].GetLine();
-			ssize_t length = lines[it->SelectedLine()].GetLength();
-			ssize_t index = direction == PGDirectionLeft ? it->SelectedCharacter() + offset : it->SelectedCharacter();
+			char* line = lines[(*it)->SelectedLine()].GetLine();
+			ssize_t length = lines[(*it)->SelectedLine()].GetLength();
+			ssize_t index = direction == PGDirectionLeft ? (*it)->SelectedCharacter() + offset : (*it)->SelectedCharacter();
 			PGCharacterClass type = GetCharacterClass(line[index]);
 			for (index += offset; index >= 0 && index < length; index += offset) {
 				if (GetCharacterClass(line[index]) != type) {
@@ -278,9 +277,9 @@ void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
 				}
 			}
 			index = std::min(std::max(index, (ssize_t)0), length);
-			delta->AddDelta(new RemoveText(&*it, it->SelectedLine(), std::max(index, it->SelectedCharacter()), std::abs(it->SelectedCharacter() - index)));
+			delta->AddDelta(new RemoveText(*it, (*it)->SelectedLine(), std::max(index, (*it)->SelectedCharacter()), std::abs((*it)->SelectedCharacter() - index)));
 		} else {
-			DeleteCharacter(delta, &*it, direction, !it->SelectionIsEmpty());
+			DeleteCharacter(delta, *it, direction, !(*it)->SelectionIsEmpty());
 		}
 	}
 	if (delta->deltas.size() == 0) {
@@ -292,18 +291,18 @@ void TextFile::DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) {
 	Cursor::NormalizeCursors(textfield, cursors);
 }
 
-void TextFile::AddNewLine(std::vector<Cursor>& cursors) {
+void TextFile::AddNewLine(std::vector<Cursor*>& cursors) {
 	// FIXME: newline with multiple cursors on the same line
 	AddNewLine(cursors, "");
 }
 
-void TextFile::AddNewLine(std::vector<Cursor>& cursors, std::string text) {
+void TextFile::AddNewLine(std::vector<Cursor*>& cursors, std::string text) {
 	std::vector<std::string> lines;
 	lines.push_back(text);
 	AddNewLines(cursors, lines, true);
 }
 
-void TextFile::AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string>& added_text, bool first_is_newline) {
+void TextFile::AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::string>& added_text, bool first_is_newline) {
 	MultipleDelta* delta = new MultipleDelta();
 	if (CursorsContainSelection(cursors)) {
 		// if any of the cursors select text, we delete that text before inserting the characters
@@ -316,22 +315,22 @@ void TextFile::AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string
 		}
 	}
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		ssize_t characternumber = it->EndCharacter();
-		ssize_t linenumber = it->EndLine();
+		ssize_t characternumber = (*it)->EndCharacter();
+		ssize_t linenumber = (*it)->EndLine();
 		ssize_t length = lines[linenumber].GetLength();
-		ssize_t current_line = it->BeginLine();
+		ssize_t current_line = (*it)->BeginLine();
 
 		if (added_text.size() == 1) {
-			delta->AddDelta(new AddLine(&*it, current_line, it->BeginCharacter(), added_text.front()));
+			delta->AddDelta(new AddLine(*it, current_line, (*it)->BeginCharacter(), added_text.front()));
 			continue;
 		}
 		std::vector<std::string> text = added_text;
 		if (!first_is_newline) {
 			assert(added_text.size() > 1); // if added_text == 1 and first_is_newline is false, use InsertText
-			delta->AddDelta(new AddText(NULL, it->BeginLine(), it->BeginCharacter(), added_text.front()));
+			delta->AddDelta(new AddText(NULL, (*it)->BeginLine(), (*it)->BeginCharacter(), added_text.front()));
 			text.erase(text.begin());
 		}
-		delta->AddDelta(new AddLines(&*it, it->BeginLine(), it->BeginCharacter(), text));
+		delta->AddDelta(new AddLines(*it, (*it)->BeginLine(), (*it)->BeginCharacter(), text));
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
@@ -339,19 +338,19 @@ void TextFile::AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string
 
 }
 
-void TextFile::Undo(std::vector<Cursor>& cursors) {
+void TextFile::Undo(std::vector<Cursor*>& cursors) {
 	if (this->deltas.size() == 0) return;
 	TextDelta* delta = this->deltas.back();
-	cursors.clear();
+	textfield->ClearCursors(cursors);
 	this->Undo(delta, cursors);
 	this->deltas.pop_back();
 	this->redos.push_back(delta);
 }
 
-void TextFile::Redo(std::vector<Cursor>& cursors) {
+void TextFile::Redo(std::vector<Cursor*>& cursors) {
 	if (this->redos.size() == 0) return;
 	TextDelta* delta = this->redos.back();
-	cursors.clear();
+	textfield->ClearCursors(cursors);
 	this->Redo(delta, cursors);
 	this->PerformOperation(delta);
 	this->redos.pop_back();
@@ -465,12 +464,12 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	}
 }
 
-void TextFile::Undo(TextDelta* delta, std::vector<Cursor>& cursors) {
+void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 	assert(delta);
 	CursorDelta* cursor_delta = dynamic_cast<CursorDelta*>(delta);
 	if (cursor_delta && cursor_delta->cursor) {
-		cursors.push_back(Cursor(this));
-		cursors.back().RestoreCursor(cursor_delta->stored_cursor);
+		cursors.push_back(new Cursor(this));
+		cursors.back()->RestoreCursor(cursor_delta->stored_cursor);
 	}
 	switch (delta->TextDeltaType()) {
 	case PGDeltaAddText: {
@@ -525,12 +524,13 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor>& cursors) {
 	}
 }
 
-void TextFile::Redo(TextDelta* delta, std::vector<Cursor>& cursors) {
+void TextFile::Redo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 	assert(delta);
 	CursorDelta* cursor_delta = dynamic_cast<CursorDelta*>(delta);
 	if (cursor_delta && cursor_delta->cursor) {
-		cursors.push_back(Cursor(this));
-		cursors.back().RestoreCursor(cursor_delta->stored_cursor);
+		cursor_delta->cursor = new Cursor(this);
+		cursors.push_back(cursor_delta->cursor); 
+		cursor_delta->cursor->RestoreCursor(cursor_delta->stored_cursor);
 	}
 
 	switch (delta->TextDeltaType()) {

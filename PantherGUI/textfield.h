@@ -13,6 +13,7 @@ struct TextSelection {
 };
 
 class TextField : public Control {
+	friend class Cursor;
 public:
 	TextField(PGWindowHandle, std::string filename);
 
@@ -37,22 +38,26 @@ public:
 	int GetLineHeight();
 	void DisplayCarets();
 
+	void ClearCursors(std::vector<Cursor*>&);
+
 	TextFile& GetTextFile() { return textfile; }
-	std::vector<Cursor>& GetCursors() { return cursors; }
+	std::vector<Cursor*>& GetCursors() { return cursors; }
 private:
 	ssize_t text_offset;
 	int offset_x;
 	ssize_t lineoffset_y;
-	std::vector<Cursor> cursors;
+	std::vector<Cursor*> cursors;
 	std::vector<std::vector<short>> offsets;
 	int line_height;
 	bool display_carets;
 	int display_carets_count;
 
+	Cursor* active_cursor;
 	TextFile textfile;
 
 	MouseClickInstance last_click;
 
+	void ClearExtraCursors();
 	void GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character);
 	bool SetScrollOffset(ssize_t offset);
 };

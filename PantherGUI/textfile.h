@@ -35,31 +35,31 @@ public:
 	std::string GetText();
 
 	TextLine* GetLine(int linenumber);
-	void InsertText(char character, std::vector<Cursor>& cursors);
-	void InsertText(std::string text, std::vector<Cursor>& cursors);
-	void DeleteCharacter(std::vector<Cursor>& cursors, PGDirection direction);
-	void DeleteWord(std::vector<Cursor>& cursors, PGDirection direction);
-	void AddNewLine(std::vector<Cursor>& cursors);
-	void AddNewLine(std::vector<Cursor>& cursors, std::string text);
-	void AddNewLines(std::vector<Cursor>& cursors, std::vector<std::string>& lines, bool first_is_newline);
+	void InsertText(char character, std::vector<Cursor*>& cursors);
+	void InsertText(std::string text, std::vector<Cursor*>& cursors);
+	void DeleteCharacter(std::vector<Cursor*>& cursors, PGDirection direction);
+	void DeleteWord(std::vector<Cursor*>& cursors, PGDirection direction);
+	void AddNewLine(std::vector<Cursor*>& cursors);
+	void AddNewLine(std::vector<Cursor*>& cursors, std::string text);
+	void AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::string>& lines, bool first_is_newline);
 
-	std::string CopyText(std::vector<Cursor>& cursors);
-	void PasteText(std::vector<Cursor>& cursors, std::string text);
+	std::string CopyText(std::vector<Cursor*>& cursors);
+	void PasteText(std::vector<Cursor*>& cursors, std::string text);
 
 	void ChangeLineEnding(PGLineEnding lineending);
 	void ChangeFileEncoding(PGFileEncoding encoding);
 	void ChangeIndentation(PGLineIndentation indentation);
 	void RemoveTrailingWhitespace();
 
-	void Undo(std::vector<Cursor>& cursors);
-	void Redo(std::vector<Cursor>& cursors);
+	void Undo(std::vector<Cursor*>& cursors);
+	void Redo(std::vector<Cursor*>& cursors);
 
 	void SaveChanges();
 
 	PGLineEnding GetLineEnding() { return lineending; }
 	ssize_t GetLineCount();
 private:
-	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor>& cursors, PGDirection direction);
+	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction);
 	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection, bool include_cursor = true);
 
 	void OpenFile(std::string filename);
@@ -67,8 +67,8 @@ private:
 	void AddDelta(TextDelta* delta);
 
 	void PerformOperation(TextDelta* delta);
-	void Undo(TextDelta* delta, std::vector<Cursor>& cursors);
-	void Redo(TextDelta* delta, std::vector<Cursor>& cursors);
+	void Undo(TextDelta* delta, std::vector<Cursor*>& cursors);
+	void Redo(TextDelta* delta, std::vector<Cursor*>& cursors);
 
 	TextField* textfield;
 	//PGMemoryMappedFileHandle file;
