@@ -1,7 +1,7 @@
 
 #include "textline.h"
 #include "textdelta.h"
-
+#include <algorithm>
 
 ssize_t TextLine::GetLength(void) {
 	if (!deltas) return length; // no deltas, return original length
@@ -20,16 +20,19 @@ char* TextLine::GetLine(void) {
 void TextLine::ApplyDeltas() {
 	TextDelta* delta = this->deltas;
 	ssize_t length = this->length;
+	ssize_t maximum_length = this->length;
 	while (delta) {
 		if (delta->TextDeltaType() == PGDeltaAddText) {
 			length += ((AddText*)delta)->text.size();
+			maximum_length = std::max(maximum_length, length);
 		}
 		else if (delta->TextDeltaType() == PGDeltaRemoveText) {
-			//length -= ((RemoveText*)delta)->charactercount;
+			length -= ((RemoveText*)delta)->charactercount;
 		}
+		assert(length >= 0);
 		delta = delta->next;
 	}
-	modified_line = (char*) malloc(length * sizeof(char) + 1);
+	modified_line = (char*) malloc(maximum_length * sizeof(char) + 1);
 	if (!modified_line) {
 		// FIXME
 		assert(0);

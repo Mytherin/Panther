@@ -40,6 +40,7 @@ public:
 
 	void ClearCursors(std::vector<Cursor*>&);
 
+	Cursor*& GetActiveCursor() { return active_cursor; }
 	TextFile& GetTextFile() { return textfile; }
 	std::vector<Cursor*>& GetCursors() { return cursors; }
 private:

@@ -111,13 +111,13 @@ void TextFile::InsertText(char character, std::vector<Cursor*>& cursors) {
 
 void TextFile::InsertText(std::string text, std::vector<Cursor*>& cursors) {
 	// FIXME: merge delta if it already exists
+	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	MultipleDelta* delta = new MultipleDelta();
-	bool containsSelection = CursorsContainSelection(cursors);
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		TextDelta* finalDelta = NULL;
-		if (containsSelection) {
+		if (!(*it)->SelectionIsEmpty()) {
 			// if any of the cursors select text, we delete that text before inserting the characters
-			DeleteCharacter(delta, *it, PGDirectionLeft, containsSelection, false);
+			DeleteCharacter(delta, *it, PGDirectionLeft, true, false);
 			if (delta->deltas.size() > 0 && delta->deltas.back()->TextDeltaType() == PGDeltaAddText) {
 				// if the delete ends with an 'AddText', that means we delete part of a line
 				// and move the remainder up to the next line
@@ -352,15 +352,12 @@ void TextFile::Redo(std::vector<Cursor*>& cursors) {
 	TextDelta* delta = this->redos.back();
 	textfield->ClearCursors(cursors);
 	this->Redo(delta, cursors);
-	this->PerformOperation(delta);
+	this->PerformOperation(delta, false);
 	this->redos.pop_back();
 	this->deltas.push_back(delta);
 }
 
 void TextFile::AddDelta(TextDelta* delta) {
-	if (delta->TextDeltaType() == PGDeltaMultiple) {
-		((MultipleDelta*)delta)->FinalizeDeltas(this);
-	}
 	for (auto it = redos.begin(); it != redos.end(); it++) {
 		delete *it;
 	}
@@ -368,7 +365,7 @@ void TextFile::AddDelta(TextDelta* delta) {
 	this->deltas.push_back(delta);
 }
 
-void TextFile::PerformOperation(TextDelta* delta) {
+void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 	assert(delta);
 	switch (delta->TextDeltaType()) {
 	case PGDeltaAddText: {
@@ -457,7 +454,54 @@ void TextFile::PerformOperation(TextDelta* delta) {
 		MultipleDelta* multi = (MultipleDelta*)delta;
 		assert(multi->deltas.size() > 0);
 		for (auto it = multi->deltas.begin(); it != multi->deltas.end(); it++) {
-			PerformOperation(*it);
+			assert((*it)->TextDeltaType() != PGDeltaMultiple); // nested multiple deltas not supported
+			PerformOperation(*it, adjust_delta);
+			if (!adjust_delta) continue;
+
+			ssize_t shift_lines = 0;
+			ssize_t shift_lines_line = (*it)->linenr;
+			ssize_t shift_lines_character = (*it)->characternr;
+			ssize_t shift_characters = 0;
+			ssize_t shift_characters_line = (*it)->linenr;
+			ssize_t shift_characters_character = (*it)->characternr;
+			switch ((*it)->TextDeltaType()) {
+			case PGDeltaRemoveLine:
+				shift_lines = -1;
+				break;
+			case PGDeltaRemoveManyLines:
+				shift_lines = -((ssize_t)((RemoveLines*)(*it))->lines.size());
+				break;
+			case PGDeltaAddLine:
+				shift_lines = 1;
+				shift_characters = -((AddLine*)(*it))->characternr;
+				break;
+			case PGDeltaAddManyLines:
+				shift_lines = ((AddLines*)(*it))->lines.size();
+				shift_characters = -((AddLines*)(*it))->characternr;
+				break;
+			case PGDeltaAddText:
+				shift_characters = (ssize_t)((AddText*)(*it))->text.size();
+				break;
+			case PGDeltaRemoveText:
+				shift_characters = -((ssize_t)((RemoveText*)(*it))->charactercount);
+				break;
+			}
+
+			for (auto it2 = it + 1; it2 != multi->deltas.end(); it2++) {
+				TextDelta* delta = *it2;
+				if (delta->linenr == shift_characters_line &&
+					delta->characternr >= shift_characters_character) {
+					delta->characternr += shift_characters;
+				}
+				if (shift_lines != 0) {
+					if (delta->linenr == shift_lines_line && shift_lines < 0) {
+						delta->characternr = this->lines[shift_lines_line - 1].GetLength();
+					}
+					if (delta->linenr >= shift_lines_line) {
+						delta->linenr += shift_lines;
+					}
+				}
+			}
 		}
 		break;
 	}

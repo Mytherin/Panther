@@ -175,26 +175,26 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		if (modifier == PGModifierNone && last_click.clicks == 0) {
 			ClearExtraCursors();
 			cursors[0]->SetCursorLocation(line, character);
-			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0].SetCursorLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
+			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SetCursorLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 		} else if (modifier == PGModifierShift) {
 			ClearExtraCursors();
 			cursors[0]->SetCursorStartLocation(line, character);
-			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0].SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
+			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 		} else if (modifier == PGModifierCtrl) {
-			Logger::GetInstance()->WriteLogMessage(std::string("active_cursor = new Cursor(&textfile, ") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string("));\n") + std::string("cursors.push_back(active_cursor);"));
+			Logger::GetInstance()->WriteLogMessage(std::string("active_cursor = new Cursor(&textfile, ") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\n") + std::string("cursors.push_back(active_cursor);"));
 
 			cursors.push_back(new Cursor(&textfile, line, character));
 			active_cursor = cursors.back();
-			Cursor::NormalizeCursors(this, cursors);
+			Cursor::NormalizeCursors(this, cursors, false);
 		} else if (last_click.clicks == 1) {
 			ClearExtraCursors();
 			cursors[0]->SetCursorLocation(line, character);
 			cursors[0]->SelectWord();
-			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0].SetCursorLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\ncursors[0].SelectWord();"));
+			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SetCursorLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\ncursors[0].SelectWord();"));
 		} else if (last_click.clicks == 2) {
 			ClearExtraCursors();
 			cursors[0]->SelectLine();
-			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0].SelectLine();"));
+			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SelectLine();"));
 		}
 		this->Invalidate();
 	} else if (button == PGMiddleMouseButton) {
@@ -220,8 +220,8 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		if (active_cursor->start_line != line || active_cursor->start_character != character) {
 			ssize_t old_line = active_cursor->start_line;
 			active_cursor->SetCursorStartLocation(line, character);
-			Logger::GetInstance()->WriteLogMessage(std::string("if (!active_cursor) active_cursor = cursors.front();\nactive_cursor->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
-			Cursor::NormalizeCursors(this, cursors);
+			Logger::GetInstance()->WriteLogMessage(std::string("if (!active_cursor) active_cursor = cursors.front();\nactive_cursor->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\nCursor::NormalizeCursors(textfield, cursors, false);"));
+			Cursor::NormalizeCursors(this, cursors, false);
 			this->InvalidateBetweenLines(old_line, line);
 		}
 	} else if (buttons & PGMiddleMouseButton) {

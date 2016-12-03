@@ -66,7 +66,7 @@ private:
 
 	void AddDelta(TextDelta* delta);
 
-	void PerformOperation(TextDelta* delta);
+	void PerformOperation(TextDelta* delta, bool adjust_delta = true);
 	void Undo(TextDelta* delta, std::vector<Cursor*>& cursors);
 	void Redo(TextDelta* delta, std::vector<Cursor*>& cursors);
 

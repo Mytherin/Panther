@@ -39,9 +39,6 @@
     <ClCompile Include="text.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="textdelta.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="windowfunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
