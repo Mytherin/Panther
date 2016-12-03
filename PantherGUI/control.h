@@ -14,6 +14,7 @@ public:
 	virtual void KeyboardButton(PGButton button, PGModifier modifier);
 	virtual void KeyboardCharacter(char character, PGModifier modifier);
 	virtual void KeyboardUnicode(char* character, PGModifier modifier);
+	virtual void PeriodicRender(void);
 	virtual void Draw(PGRendererHandle, PGRect*);
 
 	virtual void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);

@@ -16,6 +16,7 @@ class TextField : public Control {
 public:
 	TextField(PGWindowHandle, std::string filename);
 
+	void PeriodicRender(void);
 	void Draw(PGRendererHandle, PGRect*);
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
@@ -34,6 +35,7 @@ public:
 	int GetLineOffset() { return lineoffset_y; }
 	void SetLineOffset(ssize_t offset) { lineoffset_y = offset; }
 	int GetLineHeight();
+	void DisplayCarets();
 
 	TextFile& GetTextFile() { return textfile; }
 	std::vector<Cursor>& GetCursors() { return cursors; }
@@ -44,6 +46,8 @@ private:
 	std::vector<Cursor> cursors;
 	std::vector<std::vector<short>> offsets;
 	int line_height;
+	bool display_carets;
+	int display_carets_count;
 
 	TextFile textfile;
 

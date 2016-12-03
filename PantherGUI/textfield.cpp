@@ -7,10 +7,35 @@
 //"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
 //"C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 TextField::TextField(PGWindowHandle window, std::string filename) :
-	Control(window), textfile(filename, this) {
+	Control(window), textfile(filename, this), display_carets(true), display_carets_count(0) {
 	RegisterRefresh(window, this);
 	cursors.push_back(Cursor(&textfile));
 	line_height = 20;
+}
+
+#define FLICKER_CARET_INTERVAL 15
+
+void TextField::DisplayCarets() {
+	// FIXME: thread safety on setting display_carets_count?
+	display_carets_count = 0;
+	display_carets = true;
+}
+
+void TextField::PeriodicRender(void) {
+	// FIXME: thread safety on incrementing display_carets_count and cursors?
+	display_carets_count++;
+	if (display_carets_count % FLICKER_CARET_INTERVAL == 0) {
+		display_carets_count = 0;
+		display_carets = !display_carets;
+		ssize_t start_line = LLONG_MAX, end_line;
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			start_line = std::min(it->start_line, start_line);
+			end_line = std::max(it->start_line, end_line);
+		}
+		if (start_line <= end_line) {
+			this->InvalidateBetweenLines(start_line, end_line);
+		}
+	}
 }
 
 void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
@@ -79,7 +104,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 				end = current_line->GetLength() + 1;
 			}
 
-			if (startline == it->SelectedLine()) {
+			if (display_carets && startline == it->SelectedLine()) {
 				// render the caret on the selected line
 				RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, it->SelectedCharacter());
 			}

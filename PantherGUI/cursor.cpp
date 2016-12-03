@@ -260,6 +260,7 @@ std::string Cursor::GetText() {
 }
 
 void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor>& cursors) {
+	textfield->DisplayCarets();
 	for (int i = 0; i < cursors.size(); i++) {
 		for (int j = i + 1; j < cursors.size(); j++) {
 			if (cursors[i].OverlapsWith(cursors[j])) {

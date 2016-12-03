@@ -12,6 +12,9 @@ typedef struct PGWindow* PGWindowHandle;
 struct PGRenderer;
 typedef struct PGRenderer* PGRendererHandle;
 
+struct PGTimer;
+typedef struct PGTimer* PGTimerHandle;
+
 struct PGFont;
 typedef struct PGFont* PGFontHandle;
 
@@ -148,7 +151,20 @@ void ShowWindow(PGWindowHandle window);
 void HideWindow(PGWindowHandle window);
 void RefreshWindow(PGWindowHandle window);
 void RefreshWindow(PGWindowHandle window, PGRect);
+void RedrawWindow(PGWindowHandle window);
+void RedrawWindow(PGWindowHandle window, PGRect);
 PGSize GetWindowSize(PGWindowHandle window);
+
+typedef enum {
+	PGTimerFlagsNone = 0x00,
+	PGTimerExecuteOnce = 0x01,
+
+} PGTimerFlags;
+
+typedef void (*PGTimerCallback)(void);
+
+PGTimerHandle CreateTimer(int ms, PGTimerCallback, PGTimerFlags);
+void DeleteTimer(PGTimerHandle);
 
 
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color);
@@ -169,6 +185,8 @@ void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t lengt
 int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length);
 
 Control* GetFocusedControl(PGWindowHandle window);
+
+
 
 
 void SetWindowTitle(PGWindowHandle window, char* title);

@@ -21,24 +21,43 @@ public:
 	HWND hwnd;
 	std::vector<Control*> registered_refresh;
 	Control *focused_control;
-	bool skipped_refresh;
-	time_t last_refresh;
+	PGRect invalidated_area;
+	bool invalidated;
 
-	PGWindow() : modifier(PGModifierNone) { }
+	PGWindow() : modifier(PGModifierNone), invalidated_area(0, 0, 0, 0), invalidated(false) {}
 };
 
 struct PGRenderer {
 	HDC hdc;
 	Graphics graphics;
 
-	PGRenderer(HDC hdc) : hdc(hdc), graphics(hdc) {	}
+	PGRenderer(HDC hdc) : hdc(hdc), graphics(hdc) {}
 };
 
 struct PGFont {
 	HFONT font;
 };
 
+struct PGTimer {
+	HANDLE timer;
+};
+
 PGWindowHandle global_handle;
+
+#define MAX_REFRESH_FREQUENCY 1000/30
+
+void PeriodicWindowRedraw(void) {
+	for (auto it = global_handle->registered_refresh.begin(); it != global_handle->registered_refresh.end(); it++) {
+		(*it)->PeriodicRender();
+	}
+	if (global_handle->invalidated) {
+		RedrawWindow(global_handle);
+	} else if (global_handle->invalidated_area.width != 0) {
+		RedrawWindow(global_handle, global_handle->invalidated_area);
+	}
+	global_handle->invalidated = 0;
+	global_handle->invalidated_area.width = 0;
+}
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	static TCHAR szWindowClass[] = _T("Panther");
@@ -57,14 +76,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
-	wcex.hIcon = (HICON) LoadImage( // returns a HANDLE so we have to cast to HICON
+	wcex.hIcon = (HICON)LoadImage( // returns a HANDLE so we have to cast to HICON
 		NULL,             // hInstance must be NULL when loading from a file
 		"logo.ico",       // the icon file name
 		IMAGE_ICON,       // specifies that the file is an icon
 		0,                // width of the image (we'll specify default later on)
 		0,                // height of the image
-		LR_LOADFROMFILE|  // we want to load a file (as opposed to a resource)
-		LR_DEFAULTSIZE|   // default metrics based on the type (IMAGE_ICON, 32x32)
+		LR_LOADFROMFILE |  // we want to load a file (as opposed to a resource)
+		LR_DEFAULTSIZE |   // default metrics based on the type (IMAGE_ICON, 32x32)
 		LR_SHARED         // let the system release the handle when it's no longer used
 		);
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
@@ -73,8 +92,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
 
-	if (!RegisterClassEx(&wcex))
-	{
+	if (!RegisterClassEx(&wcex)) {
 		MessageBox(NULL,
 			_T("Call to RegisterClassEx failed!"),
 			_T("Win32 Guided Tour"),
@@ -104,8 +122,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		hInstance,
 		NULL
 		);
-	if (!hWnd)
-	{
+	if (!hWnd) {
 		MessageBox(NULL,
 			_T("Call to CreateWindow failed!"),
 			_T("Win32 Guided Tour"),
@@ -119,6 +136,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
 	global_handle = res;
+
+	CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
 	TextField* textField = new TextField(res, "C:\\Users\\wieis\\Desktop\\syntaxtest.py");
 	textField->width = 500;
@@ -400,14 +419,31 @@ void HideWindow(PGWindowHandle window) {
 
 }
 
-// FIXME: smarter way of limiting refresh rate
-#define MAX_REFRESH_FREQUENCY 20
-
 void RefreshWindow(PGWindowHandle window) {
-	InvalidateRect(window->hwnd, NULL, true);
+	window->invalidated = true;
 }
 
 void RefreshWindow(PGWindowHandle window, PGRect rectangle) {
+	window->invalidated = true;
+	if (window->invalidated_area.width == 0) {
+		window->invalidated_area = rectangle;
+	} else {
+		window->invalidated_area.x = min(window->invalidated_area.x, rectangle.x);
+		window->invalidated_area.y = min(window->invalidated_area.y, rectangle.y);
+		window->invalidated_area.width = max(window->invalidated_area.x + window->invalidated_area.width, rectangle.x + rectangle.width) - window->invalidated_area.x;
+		window->invalidated_area.height = max(window->invalidated_area.y + window->invalidated_area.height, rectangle.y + rectangle.height) - window->invalidated_area.y;
+		assert(window->invalidated_area.x <= rectangle.x &&
+			window->invalidated_area.y <= rectangle.y &&
+			window->invalidated_area.x + window->invalidated_area.width >= rectangle.x + rectangle.width &&
+			window->invalidated_area.y + window->invalidated_area.height >= rectangle.y + rectangle.height);
+	}
+}
+
+void RedrawWindow(PGWindowHandle window) {
+	InvalidateRect(window->hwnd, NULL, true);
+}
+
+void RedrawWindow(PGWindowHandle window, PGRect rectangle) {
 	RECT rect;
 	rect.top = rectangle.y;
 	rect.left = rectangle.x;
@@ -467,7 +503,7 @@ void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, in
 
 void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t length, std::vector<short>& offsets) {
 	offsets.clear();
-	for (int i = 0; i < length; i++) {	
+	for (int i = 0; i < length; i++) {
 		int result;
 		UINT val = text[i];
 		if (val == '\t') {
@@ -482,7 +518,7 @@ void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t lengt
 
 int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) {
 	int width = 0;
-	for (int i = 0; i < length; i++) {	
+	for (int i = 0; i < length; i++) {
 		int result;
 		UINT val = text[i];
 		if (val == '\t') {
@@ -500,7 +536,7 @@ int GetCharacterPosition(PGWindowHandle window, const char* text, ssize_t length
 	HDC hdc = GetDC(window->hwnd);
 	int width = 0;
 	int position = 0;
-	for (int i = 0; i < length; i++) {	
+	for (int i = 0; i < length; i++) {
 		int result;
 		UINT val = text[i];
 		if (val == '\t') {
@@ -533,21 +569,17 @@ void SetTextAlign(PGRendererHandle renderer, PGTextAlign alignment) {
 	UINT fMode = 0;
 	if (alignment & PGTextAlignBottom) {
 		fMode |= TA_BOTTOM;
-	}
-	else if (alignment & PGTextAlignTop) {
+	} else if (alignment & PGTextAlignTop) {
 		fMode |= TA_TOP;
-	}
-	else if (alignment & PGTextAlignVerticalCenter) {
+	} else if (alignment & PGTextAlignVerticalCenter) {
 		fMode |= TA_BASELINE;
 	}
 
 	if (alignment & PGTextAlignLeft) {
 		fMode |= TA_LEFT;
-	}
-	else if (alignment & PGTextAlignRight) {
+	} else if (alignment & PGTextAlignRight) {
 		fMode |= TA_RIGHT;
-	}
-	else if (alignment & PGTextAlignHorizontalCenter) {
+	} else if (alignment & PGTextAlignHorizontalCenter) {
 		fMode |= TA_CENTER;
 	}
 
@@ -588,7 +620,7 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 }
 
 void SetClipboardText(PGWindowHandle window, std::string text) {
-	if(OpenClipboard(window->hwnd)) {
+	if (OpenClipboard(window->hwnd)) {
 		HGLOBAL clipbuffer;
 		char * buffer;
 		EmptyClipboard();
@@ -603,7 +635,7 @@ void SetClipboardText(PGWindowHandle window, std::string text) {
 
 std::string GetClipboardText(PGWindowHandle window) {
 	if (OpenClipboard(window->hwnd)) {
-		std::string text = std::string((char*) GetClipboardData(CF_TEXT));
+		std::string text = std::string((char*)GetClipboardData(CF_TEXT));
 		CloseClipboard();
 		return text;
 	}
@@ -612,4 +644,33 @@ std::string GetClipboardText(PGWindowHandle window) {
 
 PGLineEnding GetSystemLineEnding() {
 	return PGLineEndingWindows;
+}
+
+
+VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN TimerOrWaitFired) {
+	((PGTimerCallback)lpParam)();
+}
+
+PGTimerHandle CreateTimer(int ms, PGTimerCallback callback, PGTimerFlags flags) {
+	HANDLE timer;
+	ULONG timer_flags = 0;
+	if (timer_flags & PGTimerExecuteOnce) timer_flags |= WT_EXECUTEONLYONCE;
+
+	if (!CreateTimerQueueTimer(
+		&timer,
+		NULL,
+		TimerRoutine,
+		callback,
+		(DWORD)ms,
+		flags & PGTimerExecuteOnce ? (DWORD)0 : (DWORD)ms,
+		timer_flags))
+		return NULL;
+
+	PGTimerHandle handle = new PGTimer();
+	handle->timer = timer;
+	return handle;
+}
+
+void DeleteTimer(PGTimerHandle handle) {
+	DeleteTimerQueueTimer(NULL, handle->timer, NULL);
 }
