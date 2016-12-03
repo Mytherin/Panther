@@ -134,7 +134,6 @@
     <ClCompile Include="..\PantherGUI\logger.cpp" />
     <ClCompile Include="..\PantherGUI\mmap.cpp" />
     <ClCompile Include="..\PantherGUI\text.cpp" />
-    <ClCompile Include="..\PantherGUI\textdelta.cpp" />
     <ClCompile Include="..\PantherGUI\textfield.cpp" />
     <ClCompile Include="..\PantherGUI\textfile.cpp" />
     <ClCompile Include="..\PantherGUI\textline.cpp" />

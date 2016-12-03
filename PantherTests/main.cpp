@@ -44,6 +44,8 @@ std::string PasteInsertUndoPaste(TextField* textField);
 std::string MultiLineDelete(TextField* textField);
 std::string MultiLineMultiCursorDelete(TextField* textField);
 std::string MultiCursorDeleteInsert(TextField* textField);
+std::string PartialDeleteCursorSameLine(TextField* textField);
+std::string MultiCursorPasteSameLine(TextField* textField);
 std::string DetectUnixNewlineType(TextField* textField);
 std::string DetectWindowsNewlineType(TextField* textField);
 std::string DetectMacOSNewlineType(TextField* textField);
@@ -99,6 +101,8 @@ int main() {
 	tester.RunTextFieldTest("Multi Line Delete", MultiLineDelete, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n");
 	tester.RunTextFieldTest("Multi Line Multi Cursor Delete", MultiLineMultiCursorDelete, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n");
 	tester.RunTextFieldTest("Multi Cursor Delete + Insert", MultiCursorDeleteInsert, "\ndef hello():\n    print(\"hello world\")\n", "\ndefaa\"hellaao world\")\n");
+	tester.RunTextFieldTest("Partial Multi Cursor Delete On Same Line", PartialDeleteCursorSameLine, "\n\n\nprint(\"hello world\")", "arint(\"ahello world\")");
+	tester.RunTextFieldTest("Multi Cursor Paste Same Line", MultiCursorPasteSameLine, "\ndef hello():\n", "\n\ndef hello():\ndef hel\ndef hello():\nlo():\n");
 
 	std::string line;
 	std::getline(std::cin, line);
@@ -580,6 +584,33 @@ std::string MultiCursorDeleteInsert(TextField* textField) {
 	textField->KeyboardCharacter('a', PGModifierNone);
 	textField->KeyboardCharacter('a', PGModifierNone);
 
+
+	return std::string("");
+}
+
+std::string PartialDeleteCursorSameLine(TextField* textField) {
+	std::vector<Cursor*>& cursors = textField->GetCursors();
+	Cursor*& active_cursor = textField->GetActiveCursor();
+	TextFile& textfile = textField->GetTextFile();
+
+	cursors[0]->SetCursorStartLocation(3, 1);
+	cursors.push_back(new Cursor(&textfile, 3, 1));
+	textField->KeyboardCharacter('a', PGModifierNone);
+
+
+	return std::string("");
+}
+
+std::string MultiCursorPasteSameLine(TextField* textField) {
+	std::vector<Cursor*>& cursors = textField->GetCursors();
+	Cursor*& active_cursor = textField->GetActiveCursor();
+	TextFile& textfile = textField->GetTextFile();
+
+	textField->KeyboardCharacter('A', PGModifierCtrl);
+	textField->KeyboardCharacter('C', PGModifierCtrl);
+	cursors[0]->SetCursorLocation(1, 0);
+	cursors.push_back(new Cursor(&textfile, 1, 7));
+	textField->KeyboardCharacter('V', PGModifierCtrl);
 
 	return std::string("");
 }

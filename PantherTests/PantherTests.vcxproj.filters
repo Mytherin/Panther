@@ -77,9 +77,6 @@
     <ClCompile Include="..\PantherGUI\text.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\PantherGUI\textdelta.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\PantherGUI\textfield.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
