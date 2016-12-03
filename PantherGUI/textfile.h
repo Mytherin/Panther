@@ -60,7 +60,7 @@ public:
 	ssize_t GetLineCount();
 private:
 	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor>& cursors, PGDirection direction);
-	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection);
+	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection, bool include_cursor = true);
 
 	void OpenFile(std::string filename);
 

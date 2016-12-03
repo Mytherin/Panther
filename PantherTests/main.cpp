@@ -41,6 +41,8 @@ std::string MultiCursorUndoDelete(TextField* textField);
 std::string MultiCursorUndoComplex(TextField* textField);
 std::string MultiCursorRedoComplex(TextField* textField);
 std::string PasteInsertUndoPaste(TextField* textField);
+std::string MultiLineDelete(TextField* textField);
+std::string MultiLineMultiCursorDelete(TextField* textField);
 std::string DetectUnixNewlineType(TextField* textField);
 std::string DetectWindowsNewlineType(TextField* textField);
 std::string DetectMacOSNewlineType(TextField* textField);
@@ -93,6 +95,10 @@ int main() {
 	tester.RunTextFieldTest("Multi Cursor Redo Complex", MultiCursorRedoComplex, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\ndef hello():\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n    return \"hello world\";\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n\n\nprint(hello())\n");
 	
 	tester.RunTextFieldTest("Paste Insert Undo Paste", PasteInsertUndoPaste, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "a");
+	tester.RunTextFieldTest("Multi Line Delete", MultiLineDelete, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n");
+	tester.RunTextFieldTest("Multi Line Multi Cursor Delete", MultiLineMultiCursorDelete, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n");
+
+
 
 	std::string line;
 	std::getline(std::cin, line);
@@ -538,5 +544,27 @@ std::string PasteInsertUndoPaste(TextField* textField) {
 	textField->KeyboardCharacter('a', PGModifierNone);
 	textField->KeyboardCharacter('Z', PGModifierCtrl);
 	textField->KeyboardCharacter('a', PGModifierNone);
+	return std::string("");
+}
+
+std::string MultiLineDelete(TextField* textField) {
+	std::vector<Cursor>& cursors = textField->GetCursors();
+	cursors[0].SetCursorLocation(14, 16);
+	cursors[0].SetCursorStartLocation(12, 0);
+	textField->KeyboardCharacter('a', PGModifierNone);
+	textField->KeyboardCharacter('a', PGModifierNone);
+
+	return std::string("");
+}
+
+std::string MultiLineMultiCursorDelete(TextField* textField) {
+	std::vector<Cursor>& cursors = textField->GetCursors();
+	cursors[0].SetCursorLocation(14, 16);
+	cursors[0].SetCursorStartLocation(12, 0);
+	cursors.push_back(Cursor(&textField->GetTextFile(), 20, 16));
+	cursors[1].SetCursorStartLocation(18, 0);
+	textField->KeyboardCharacter('a', PGModifierNone);
+	textField->KeyboardCharacter('a', PGModifierNone);
+
 	return std::string("");
 }

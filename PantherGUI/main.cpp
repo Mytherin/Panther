@@ -424,6 +424,7 @@ void RefreshWindow(PGWindowHandle window) {
 }
 
 void RefreshWindow(PGWindowHandle window, PGRect rectangle) {
+	// FIXME do not invalidate entire window here
 	window->invalidated = true;
 	if (window->invalidated_area.width == 0) {
 		window->invalidated_area = rectangle;
