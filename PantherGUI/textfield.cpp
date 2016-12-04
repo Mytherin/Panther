@@ -406,8 +406,8 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			this->textfile.DeleteWord(cursors, PGDirectionRight);
 		} else if (modifier == PGModifierShift) {
 			textfile.DeleteLines(cursors);
-		} else if (modifier == PGModifierCtrlShift) {			
-			// FIXME Ctrl+Shift+Backspace = delete everything on the line before the START SELECTED character (NOT the cursor)
+		} else if (modifier == PGModifierCtrlShift) {
+			this->textfile.DeleteLine(cursors, PGDirectionRight);
 		}
 		this->Invalidate();
 		break;
@@ -417,7 +417,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else if (modifier == PGModifierCtrl) {
 			this->textfile.DeleteWord(cursors, PGDirectionLeft);
 		} else if (modifier == PGModifierCtrlShift) {
-			// FIXME Ctrl+Shift+Backspace = delete everything on the line before the END SELECTED character (NOT the cursor)
+			this->textfile.DeleteLine(cursors, PGDirectionLeft);
 		}
 		this->Invalidate();
 		break;

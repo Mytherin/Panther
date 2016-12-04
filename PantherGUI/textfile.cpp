@@ -212,6 +212,51 @@ void TextFile::DeleteLines(std::vector<Cursor*>& cursors) {
 	Cursor::NormalizeCursors(textfield, cursors);
 }
 
+void TextFile::DeleteLine(std::vector<Cursor*>& cursors, PGDirection direction) {
+	if (CursorsContainSelection(cursors)) {
+		// if any of the cursors contain a selection, delete only the selection
+		DeleteCharacter(cursors, PGDirectionLeft);
+		return;
+	}
+	MultipleDelta* delta = new MultipleDelta();
+	bool delete_lines = true;
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		if (!(((*it)->start_character == 0 && direction == PGDirectionLeft) ||
+			((*it)->start_character == lines[(*it)->start_line].GetLength() && direction == PGDirectionRight))) {
+			delete_lines = false;
+			break;
+		}
+	}
+	if (delete_lines) {
+		DeleteCharacter(cursors, direction);
+		return;
+	}
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		bool delete_line = true;
+		for (auto it2 = cursors.begin(); it2 != cursors.end(); it2++) {
+			if (it == it2) continue;
+			if ((*it2)->start_line == (*it)->start_line &&
+				(((*it2)->start_character > (*it)->start_character && direction == PGDirectionLeft) || 
+				((*it2)->start_character < (*it)->start_character && direction == PGDirectionRight))) {
+				delete_line = false;
+				break;
+			}
+		}
+		if (delete_line) {
+			if (direction == PGDirectionLeft) {
+				delta->AddDelta(new RemoveText(*it, (*it)->start_line, (*it)->start_character, (*it)->start_character));
+			} else {
+				delta->AddDelta(new RemoveText(*it, (*it)->start_line, lines[(*it)->start_line].GetLength(), lines[(*it)->start_line].GetLength() - (*it)->start_character));
+			}
+		} else {
+			delta->AddDelta(new CursorDelta(*it, (*it)->start_line, (*it)->start_character));
+		}
+	}
+	this->AddDelta(delta);
+	PerformOperation(delta);
+	Cursor::NormalizeCursors(textfield, cursors);
+}
+
 std::string TextFile::CopyText(std::vector<Cursor*>& cursors) {
 	std::string text = "";
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
