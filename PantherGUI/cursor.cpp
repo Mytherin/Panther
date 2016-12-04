@@ -57,18 +57,9 @@ void Cursor::OffsetSelectionCharacter(ssize_t offset) {
 }
 
 void Cursor::OffsetStartOfLine() {
-	if (this->start_character == 0) return;
-	char* line = this->file->GetLine(this->start_line)->GetLine();
-	ssize_t character = 0;
-	while (*line == ' ' || *line == '\t') {
-		character++;
-		line++;
-	}
-	if (this->start_character <= character) {
-		SetCursorLocation(this->start_line, 0);
-	} else {
-		SetCursorLocation(this->start_line, character);
-	}
+	SelectStartOfLine();
+	this->end_character = this->start_character;
+	this->end_line = this->start_line;
 }
 
 void Cursor::OffsetEndOfLine() {
@@ -145,8 +136,18 @@ void Cursor::OffsetWord(PGDirection direction) {
 }
 
 void Cursor::SelectStartOfLine() {
-	// FIXME: offset to indentation first (i.e. right after initial tabs/spaces)
-	this->start_character = 0;
+	if (this->start_character == 0) return;
+	char* line = this->file->GetLine(this->start_line)->GetLine();
+	ssize_t character = 0;
+	while (*line == ' ' || *line == '\t') {
+		character++;
+		line++;
+	}
+	if (this->start_character <= character) {
+		this->start_character = 0;
+	} else {
+		this->start_character = character;
+	}
 }
 
 void Cursor::SelectEndOfLine() {

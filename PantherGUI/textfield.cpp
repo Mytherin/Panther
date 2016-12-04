@@ -103,9 +103,12 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 				end = current_line->GetLength() + 1;
 			}
 
-			if (display_carets && startline == (*it)->SelectedLine()) {
-				// render the caret on the selected line
-				RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter());
+			if (startline == (*it)->SelectedLine()) {
+				RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGColor(32,32,255,64));
+				if (display_carets) {
+					// render the caret on the selected line
+					RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter());
+				}
 			}
 
 			RenderSelection(renderer,

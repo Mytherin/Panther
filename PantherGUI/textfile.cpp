@@ -17,10 +17,6 @@ TextFile::~TextFile() {
 	if (base) {
 		mmap::DestroyFileContents(base);
 	}
-	/*
-	FlushMemoryMappedFile(base);
-	CloseMemoryMappedFile(base);
-	DestroyMemoryMappedFile(file);*/
 }
 
 void TextFile::OpenFile(std::string path) {
