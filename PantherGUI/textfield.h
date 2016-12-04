@@ -50,6 +50,7 @@ private:
 	std::vector<Cursor*> cursors;
 	std::vector<std::vector<short>> offsets;
 	int line_height;
+	int character_width;
 	bool drag_selection;
 	bool drag_selection_cursors;
 	bool display_carets;
@@ -61,6 +62,6 @@ private:
 	MouseClickInstance last_click;
 
 	void ClearExtraCursors();
-	void GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character);
+	void GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character, bool clip_character = true);
 	bool SetScrollOffset(ssize_t offset);
 };

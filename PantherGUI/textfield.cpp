@@ -9,6 +9,7 @@ TextField::TextField(PGWindowHandle window, std::string filename) :
 	RegisterRefresh(window, this);
 	cursors.push_back(new Cursor(&textfile));
 	line_height = 20;
+	character_width = 9;
 }
 
 #define FLICKER_CARET_INTERVAL 15
@@ -49,6 +50,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	int position_x = this->x + this->offset_x;
 	int position_x_text = position_x + text_offset;
 	int position_y = 0;
+	character_width = GetRenderWidth(renderer, "a", 1);
 	ssize_t linenr = lineoffset_y;
 	TextLine *current_line;
 	SetTextFont(renderer, NULL);
@@ -125,22 +127,26 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
 }
 
-void TextField::GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character) {
+void TextField::GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character, bool clip_character) {
 	// find the line position of the mouse
 	ssize_t line_offset = std::max(std::min((ssize_t)y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1), (ssize_t) 0);
 	line = this->lineoffset_y + line_offset;
 	// find the character position within the line
 	x = x - this->text_offset - this->offset_x;
 	ssize_t width = 0;
-	character = textfile.GetLine(line)->GetLength();
-	if (offsets.size() > line_offset) {
-		for (int i = 0; i < this->offsets[line_offset].size(); i++) {
-			if (width <= x && width + offsets[line_offset][i] > x) {
-				character = i;
-				break;
+	if (clip_character) {
+		character = textfile.GetLine(line)->GetLength();
+		if (offsets.size() > line_offset) {
+			for (int i = 0; i < this->offsets[line_offset].size(); i++) {
+				if (width <= x && width + offsets[line_offset][i] > x) {
+					character = i;
+					break;
+				}
+				width += offsets[line_offset][i];
 			}
-			width += offsets[line_offset][i];
 		}
+	} else {
+		character = x / character_width;
 	}
 }
 
@@ -237,9 +243,8 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			this->InvalidateBetweenLines(old_line, line);
 		}
 	} else if (drag_selection_cursors) {
-		// FIXME: select multiple lines with the middle mouse button
 		ssize_t line, character;
-		GetLineCharacterFromPosition(x, y, line, character);
+		GetLineCharacterFromPosition(x, y, line, character, false);
 		ssize_t start_character = active_cursor->end_character;
 		ssize_t start_line = active_cursor->end_line;
 		ssize_t increment = line > active_cursor->end_line ? 1 : -1;
@@ -248,9 +253,9 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		for (auto it = active_cursor->end_line; ; it += increment) {
 			if (it != active_cursor->end_line) {
 				ssize_t line_length = textfile.GetLine(it)->GetLength();
-				if (line_length >= start_character) {
+				if (start_character == character || line_length >= start_character) {
 					Cursor* cursor = new Cursor(&textfile, it, start_character);
-					cursor->end_character = start_character;
+					cursor->end_character = std::min(start_character, line_length);
 					cursor->start_character = std::min(character, line_length);
 					cursors.push_back(cursor);
 				}
@@ -275,31 +280,34 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		// FIXME: when moving up/down, count \t as multiple characters (equal to tab size)
 		// FIXME: when moving up/down, maintain the current character number (even though a line is shorter than that number)
 	case PGButtonDown:
-		for (auto it = cursors.begin(); it != cursors.end(); it++) {
-			if (modifier == PGModifierNone) {
-				(*it)->OffsetLine(1);
-			} else if (modifier == PGModifierShift) {
-				(*it)->OffsetSelectionLine(1);
-			} else if (modifier == PGModifierCtrl) {
-				SetScrollOffset(this->lineoffset_y + 1);
-			} else if (modifier == PGModifierCtrlShift) {
-
-				// FIXME move line down
+		if (modifier == PGModifierCtrlShift) {
+			// FIXME: move line down
+		} else {
+			for (auto it = cursors.begin(); it != cursors.end(); it++) {
+				if (modifier == PGModifierNone) {
+					(*it)->OffsetLine(1);
+				} else if (modifier == PGModifierShift) {
+					(*it)->OffsetSelectionLine(1);
+				} else if (modifier == PGModifierCtrl) {
+					SetScrollOffset(this->lineoffset_y + 1);
+				}
 			}
 		}
 		Cursor::NormalizeCursors(this, cursors);
 		Invalidate();
 		break;
-	case PGButtonUp:
-		for (auto it = cursors.begin(); it != cursors.end(); it++) {
-			if (modifier == PGModifierNone) {
-				(*it)->OffsetLine(-1);
-			} else if (modifier == PGModifierShift) {
-				(*it)->OffsetSelectionLine(-1);
-			} else if (modifier == PGModifierCtrl) {
-				SetScrollOffset(this->lineoffset_y - 1);
-			} else if (modifier == PGModifierCtrlShift) {
-				// FIXME move line up
+	case PGButtonUp: 
+		if (modifier == PGModifierCtrlShift) {
+			// FIXME move line up
+		} else {
+			for (auto it = cursors.begin(); it != cursors.end(); it++) {
+				if (modifier == PGModifierNone) {
+					(*it)->OffsetLine(-1);
+				} else if (modifier == PGModifierShift) {
+					(*it)->OffsetSelectionLine(-1);
+				} else if (modifier == PGModifierCtrl) {
+					SetScrollOffset(this->lineoffset_y - 1);
+				}
 			}
 		}
 		Cursor::NormalizeCursors(this, cursors);

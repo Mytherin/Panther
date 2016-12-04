@@ -331,6 +331,7 @@ void TextFile::Undo(std::vector<Cursor*>& cursors) {
 	TextDelta* delta = this->deltas.back();
 	textfield->ClearCursors(cursors);
 	this->Undo(delta, cursors);
+	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	this->deltas.pop_back();
 	this->redos.push_back(delta);
 }

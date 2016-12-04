@@ -42,6 +42,7 @@ public:
 	void AddNewLine(std::vector<Cursor*>& cursors);
 	void AddNewLine(std::vector<Cursor*>& cursors, std::string text);
 	void AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::string>& lines, bool first_is_newline);
+	void MoveLines(std::vector<Cursor*>& cursors, int offset);
 
 	std::string CopyText(std::vector<Cursor*>& cursors);
 	void PasteText(std::vector<Cursor*>& cursors, std::string text);
