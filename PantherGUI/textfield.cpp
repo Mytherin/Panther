@@ -225,7 +225,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				if (y >= scrollbar_offset && y <= scrollbar_offset + scrollbar_height) {
 					// mouse is on the scrollbar; enable dragging of the scrollbar
 					drag_scrollbar = true;
-					drag_scrollbar_mouse_y = y;
+					drag_scrollbar_mouse_y = y - scrollbar_offset;
 					drag_selection_cursors = false;
 					drag_selection = false;
 				} else if (y <= scrollbar_offset) {
@@ -348,7 +348,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		} else if (drag_scrollbar) {
 			int new_y = y - this->y;
 			int current_offset = this->lineoffset_y;
-			SetScrollbarOffset(new_y);
+			SetScrollbarOffset(new_y - drag_scrollbar_mouse_y);
 			if (current_offset != this->lineoffset_y)
 				this->Invalidate();
 		}

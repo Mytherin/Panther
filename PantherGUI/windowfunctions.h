@@ -185,7 +185,7 @@ void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t lengt
 int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length);
 
 Control* GetFocusedControl(PGWindowHandle window);
-
+bool WindowHasFocus(PGWindowHandle window);
 
 
 PGPoint GetMousePosition(PGWindowHandle window);

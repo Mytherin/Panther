@@ -695,3 +695,7 @@ PGTimerHandle CreateTimer(int ms, PGTimerCallback callback, PGTimerFlags flags) 
 void DeleteTimer(PGTimerHandle handle) {
 	DeleteTimerQueueTimer(NULL, handle->timer, NULL);
 }
+
+bool WindowHasFocus(PGWindowHandle window) {
+	return GetActiveWindow() == window->hwnd;
+}
