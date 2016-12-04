@@ -129,16 +129,9 @@ struct Interval {
 	Interval(ssize_t start, ssize_t end, Cursor* cursor) : start_line(start), end_line(end) { cursors.push_back(cursor); }
 };
 
-void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
-	assert(offset == 1 || offset == -1); // we only support single line moves for now
-	// we keep track of all the line intervals that we have to move up/down
+std::vector<Interval> TextFile::GetCursorIntervals(std::vector<Cursor*>& cursors) {
 	std::vector<Interval> intervals;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if ((*it)->start_line + offset < 0 || (*it)->start_line + offset >= lines.size() ||
-			(*it)->end_line + offset < 0 || (*it)->end_line + offset >= lines.size()) {
-			// we do not move any lines if any of the movements are not possible
-			return;
-		}
 		intervals.push_back(Interval((*it)->BeginLine(), (*it)->EndLine(), *it));
 	}
 	// if we get here we know the movement is possible
@@ -150,7 +143,7 @@ void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
 				(interval.end_line >= intervals[j].start_line - 1 && interval.end_line <=  intervals[j].end_line + 1)) {
 				// intervals overlap, merge the two intervals
 				interval.start_line = std::min(interval.start_line, intervals[j].start_line);
-				interval.end_line = std::min(interval.end_line, intervals[j].end_line);
+				interval.end_line = std::max(interval.end_line, intervals[j].end_line);
 				for (auto it = intervals[j].cursors.begin(); it != intervals[j].cursors.end(); it++) {
 					interval.cursors.push_back(*it);
 				}
@@ -159,6 +152,20 @@ void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
 			}
 		}
 	}
+	return intervals;
+}
+
+void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
+	assert(offset == 1 || offset == -1); // we only support single line moves
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		if ((*it)->start_line + offset < 0 || (*it)->start_line + offset >= lines.size() ||
+			(*it)->end_line + offset < 0 || (*it)->end_line + offset >= lines.size()) {
+			// we do not move any lines if any of the movements are not possible
+			return;
+		}
+	}
+	// we keep track of all the line intervals that we have to move up/down
+	std::vector<Interval> intervals = GetCursorIntervals(cursors);
 	MultipleDelta* delta = new MultipleDelta();
 	// now each of the intervals are separate
 	// we must perform a RemoveLine and AddLine operation for each interval
@@ -174,6 +181,31 @@ void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
 			swap->stored_cursors.push_back(**it2);
 		}
 		delta->AddDelta(swap);
+	}
+	this->AddDelta(delta);
+	PerformOperation(delta);
+	Cursor::NormalizeCursors(textfield, cursors);
+}
+
+void TextFile::DeleteLines(std::vector<Cursor*>& cursors) {
+	if (CursorsContainSelection(cursors)) {
+		// if any of the cursors contain a selection, delete only the selection
+		DeleteCharacter(cursors, PGDirectionLeft);
+		return;
+	}
+	// otherwise, delete each of the lines
+	// first get the set of intervals covered by the cursors
+	MultipleDelta* delta = new MultipleDelta();
+	std::vector<Interval> intervals = GetCursorIntervals(cursors);
+	for (auto it = intervals.begin(); it != intervals.end(); it++) {
+		RemoveLines* remove = new RemoveLines(it->cursors.front(), it->start_line);
+		for (ssize_t i = it->start_line; i <= it->end_line; i++) {
+			remove->AddLine(lines[i]);
+		}
+		for (auto it2 = it->cursors.begin() + 1; it2 != it->cursors.end(); it2++) {
+			delta->AddDelta(new CursorDelta(*it2, it->cursors.front()->start_line, 0));
+		}
+		delta->AddDelta(remove);
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);

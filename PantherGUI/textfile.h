@@ -25,6 +25,7 @@ typedef enum {
 } PGLineIndentation;
 
 class TextField;
+struct Interval;
 
 class TextFile {
 public:
@@ -42,6 +43,7 @@ public:
 	void AddNewLine(std::vector<Cursor*>& cursors);
 	void AddNewLine(std::vector<Cursor*>& cursors, std::string text);
 	void AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::string>& lines, bool first_is_newline);
+	void DeleteLines(std::vector<Cursor*>& cursors);
 	void MoveLines(std::vector<Cursor*>& cursors, int offset);
 
 	std::string CopyText(std::vector<Cursor*>& cursors);
@@ -70,6 +72,7 @@ private:
 	void PerformOperation(TextDelta* delta, bool adjust_delta = true);
 	void Undo(TextDelta* delta, std::vector<Cursor*>& cursors);
 	void Redo(TextDelta* delta, std::vector<Cursor*>& cursors);
+	std::vector<Interval> GetCursorIntervals(std::vector<Cursor*>& cursors);
 
 	TextField* textfield;
 	//PGMemoryMappedFileHandle file;

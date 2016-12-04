@@ -382,7 +382,6 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		Invalidate();
 		break;
 	case PGButtonPageUp:
-		// FIXME: amount of lines in textfield
 		if (modifier == PGModifierNone) {
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it)->OffsetLine(-GetLineHeight());
@@ -392,7 +391,6 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		}
 		break;
 	case PGButtonPageDown:
-		// FIXME: amount of lines in textfield
 		if (modifier == PGModifierNone) {
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it)->OffsetLine(GetLineHeight());
@@ -407,9 +405,9 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else if (modifier == PGModifierCtrl) {
 			this->textfile.DeleteWord(cursors, PGDirectionRight);
 		} else if (modifier == PGModifierShift) {
-			//FIXME Shift+Delete = delete current line
-		} else if (modifier == PGModifierCtrlShift) {
-			//FIXME Shift+Backspace = normal backspace
+			textfile.DeleteLines(cursors);
+		} else if (modifier == PGModifierCtrlShift) {			
+			// FIXME Ctrl+Shift+Backspace = delete everything on the line before the START SELECTED character (NOT the cursor)
 		}
 		this->Invalidate();
 		break;
@@ -452,7 +450,7 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 		this->textfile.InsertText(character, cursors);
 		this->Invalidate();
 	} else {
-		if (modifier == PGModifierCtrl) {
+		if (modifier & PGModifierCtrl) {
 			switch (character) {
 			case 'Z':
 				this->textfile.Undo(cursors);
@@ -476,7 +474,11 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				break;
 			}
 			case 'V': {
-				textfile.PasteText(cursors, GetClipboardText(window));
+				if (modifier & PGModifierShift) {
+					// FIXME: cycle through previous copy-pastes
+				} else {
+					textfile.PasteText(cursors, GetClipboardText(window));
+				}
 				this->Invalidate();
 				break;
 			}
