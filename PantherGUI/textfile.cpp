@@ -257,6 +257,32 @@ void TextFile::DeleteLine(std::vector<Cursor*>& cursors, PGDirection direction) 
 	Cursor::NormalizeCursors(textfield, cursors);
 }
 
+void TextFile::AddEmptyLine(std::vector<Cursor*>& cursors, PGDirection direction) {
+	MultipleDelta* delta = new MultipleDelta();
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		bool add_newline = true;
+		for (auto it2 = cursors.begin(); it2 != cursors.end(); it2++) {
+			if (it == it2) continue;
+			if ((*it2)->start_line == (*it)->start_line && (*it2)->start_character > (*it)->start_character) {
+				add_newline = false;
+				break;
+			}
+		}
+		ssize_t line = (*it)->start_line;
+		if (direction == PGDirectionLeft) {
+			line--;
+		}
+		if (add_newline) {
+			delta->AddDelta(new AddLine(*it, line, lines[line].GetLength(),""));
+		} else {
+			delta->AddDelta(new CursorDelta(*it, line + 1, 0));
+		}
+	}
+	this->AddDelta(delta);
+	PerformOperation(delta);
+	Cursor::NormalizeCursors(textfield, cursors);
+}
+
 std::string TextFile::CopyText(std::vector<Cursor*>& cursors) {
 	std::string text = "";
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {

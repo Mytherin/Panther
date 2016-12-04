@@ -425,9 +425,9 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		if (modifier == PGModifierNone) {
 			this->textfile.AddNewLine(cursors);
 		} else if (modifier == PGModifierCtrl) {
-			// FIXME: new line at end of every cursor's line
+			this->textfile.AddEmptyLine(cursors, PGDirectionRight);
 		} else if (modifier == PGModifierCtrlShift) {
-			// FIXME: new line before every cursor's line
+			this->textfile.AddEmptyLine(cursors, PGDirectionLeft);
 		}
 		this->Invalidate();
 	default:

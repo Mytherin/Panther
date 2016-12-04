@@ -45,6 +45,7 @@ public:
 	void AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::string>& lines, bool first_is_newline);
 	void DeleteLines(std::vector<Cursor*>& cursors);
 	void DeleteLine(std::vector<Cursor*>& cursors, PGDirection direction);
+	void AddEmptyLine(std::vector<Cursor*>& cursors, PGDirection direction);
 	void MoveLines(std::vector<Cursor*>& cursors, int offset);
 
 	std::string CopyText(std::vector<Cursor*>& cursors);
