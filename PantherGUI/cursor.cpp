@@ -57,8 +57,18 @@ void Cursor::OffsetSelectionCharacter(ssize_t offset) {
 }
 
 void Cursor::OffsetStartOfLine() {
-	// FIXME: offset to indentation first (i.e. right after initial tabs/spaces)
-	SetCursorLocation(this->start_line, 0);
+	if (this->start_character == 0) return;
+	char* line = this->file->GetLine(this->start_line)->GetLine();
+	ssize_t character = 0;
+	while (*line == ' ' || *line == '\t') {
+		character++;
+		line++;
+	}
+	if (this->start_character <= character) {
+		SetCursorLocation(this->start_line, 0);
+	} else {
+		SetCursorLocation(this->start_line, character);
+	}
 }
 
 void Cursor::OffsetEndOfLine() {
@@ -164,8 +174,8 @@ void Cursor::SelectEndOfFile() {
 }
 
 void Cursor::SetCursorLocation(int linenr, int characternr) {
-	this->start_character = this->end_character = characternr;
-	this->start_line = this->end_line = linenr;
+	this->start_line = this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
+	this->start_character = this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
 	min_character = -1;
 }
 
@@ -294,6 +304,7 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 			continue;
 		}
 	}
+	assert(cursors.size() > 0);
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	if (scroll_textfield) {
 		ssize_t line_offset = textfield->GetLineOffset();
