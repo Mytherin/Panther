@@ -22,6 +22,21 @@ void TextField::DisplayCarets() {
 
 void TextField::PeriodicRender(void) {
 	// FIXME: thread safety on incrementing display_carets_count and cursors?
+	if (!WindowHasFocus(window)) {
+		display_carets = false;
+		display_carets_count = 0;
+		if (!current_focus) {
+			current_focus = true;
+			Invalidate();
+		}
+		return;
+	} else if (current_focus) {
+		if (current_focus) {
+			current_focus = false;
+			Invalidate();
+		}
+	}
+
 	display_carets_count++;
 	if (display_carets_count % FLICKER_CARET_INTERVAL == 0) {
 		display_carets_count = 0;
@@ -43,6 +58,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	// FIXME: draw background of textfield
 
 	// determine the width of the line numbers
+	bool window_has_focus = WindowHasFocus(window);
 	ssize_t line_count = textfile.GetLineCount();
 	auto line_number = std::to_string(std::max((ssize_t)10, textfile.GetLineCount() + 1));
 	text_offset = 10 + GetRenderWidth(renderer, line_number.c_str(), line_number.size());
@@ -128,7 +144,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	// FIXME: render the minimap
 	// render the scrollbar
 	if (this->display_scrollbar) {
-		bool mouse_in_scrollbar = mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width;
+		bool mouse_in_scrollbar = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width;
 		// the background of the scrollbar
 		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, 0, SCROLLBAR_WIDTH, y + this->height), PGColor(62, 62, 62));
 		// the arrows above/below the scrollbar

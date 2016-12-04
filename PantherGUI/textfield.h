@@ -62,6 +62,8 @@ private:
 	bool display_scrollbar;
 	bool display_minimap;
 
+	bool current_focus;
+
 	bool drag_scrollbar;
 	ssize_t drag_scrollbar_mouse_y;
 
