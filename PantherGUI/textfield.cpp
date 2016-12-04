@@ -4,8 +4,6 @@
 #include <algorithm>
 #include "logger.h"
 
-//"E:\\Github Projects\\Tibialyzer\\Database Scan\\tibiawiki_pages_current.xml"
-//"C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 TextField::TextField(PGWindowHandle window, std::string filename) :
 	Control(window), textfile(filename, this), display_carets(true), display_carets_count(0), active_cursor(NULL) {
 	RegisterRefresh(window, this);
@@ -160,6 +158,8 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	x = x - this->x;
 	y = y - this->y;
 	if (button == PGLeftMouseButton) {
+		if (drag_selection_cursors) return;
+		drag_selection = true;
 		ssize_t line, character;
 		GetLineCharacterFromPosition(x, y, line, character);
 		
@@ -185,7 +185,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 		} else if (modifier == PGModifierCtrl) {
 			Logger::GetInstance()->WriteLogMessage(std::string("active_cursor = new Cursor(&textfile, ") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\n") + std::string("cursors.push_back(active_cursor);"));
-
+			
 			cursors.push_back(new Cursor(&textfile, line, character));
 			active_cursor = cursors.back();
 			Cursor::NormalizeCursors(this, cursors, false);
@@ -201,20 +201,29 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		}
 		this->Invalidate();
 	} else if (button == PGMiddleMouseButton) {
+		if (drag_selection) return;
+		drag_selection_cursors = true;
 		ssize_t line, character;
 		GetLineCharacterFromPosition(x, y, line, character);
 		ClearExtraCursors();
 		cursors[0]->SetCursorLocation(line, character);
+		active_cursor = cursors[0];
 		this->Invalidate();
 	}
 }
 
 void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
-
+	if (button & PGLeftMouseButton) {
+		drag_selection = false;
+	} else if (button & PGMiddleMouseButton) {
+		drag_selection_cursors = false;
+	}
 }
 
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
-	if (buttons & PGLeftMouseButton) {
+	if (drag_selection) {
+		// FIXME: when having multiple cursors and we are altering the active cursor,
+		// the active cursor can never "consume" the other selections (they should always stay)
 		ssize_t line, character;
 		GetLineCharacterFromPosition(x, y, line, character);
 		if (active_cursor == NULL) {
@@ -227,10 +236,29 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			Cursor::NormalizeCursors(this, cursors, false);
 			this->InvalidateBetweenLines(old_line, line);
 		}
-	} else if (buttons & PGMiddleMouseButton) {
+	} else if (drag_selection_cursors) {
 		// FIXME: select multiple lines with the middle mouse button
 		ssize_t line, character;
 		GetLineCharacterFromPosition(x, y, line, character);
+		ssize_t start_character = active_cursor->end_character;
+		ssize_t start_line = active_cursor->end_line;
+		ssize_t increment = line > active_cursor->end_line ? 1 : -1;
+		cursors[0] = active_cursor;
+		ClearExtraCursors();
+		for (auto it = active_cursor->end_line; ; it += increment) {
+			if (it != active_cursor->end_line) {
+				ssize_t line_length = textfile.GetLine(it)->GetLength();
+				if (line_length >= start_character) {
+					Cursor* cursor = new Cursor(&textfile, it, start_character);
+					cursor->end_character = start_character;
+					cursor->start_character = std::min(character, line_length);
+					cursors.push_back(cursor);
+				}
+			}
+			if (it == line) {
+				break;
+			}
+		}
 
 		cursors[0]->start_character = std::min(character, textfile.GetLine(cursors[0]->start_line)->GetLength());
 		this->InvalidateBetweenLines(cursors[0]->start_line, line);
@@ -255,6 +283,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			} else if (modifier == PGModifierCtrl) {
 				SetScrollOffset(this->lineoffset_y + 1);
 			} else if (modifier == PGModifierCtrlShift) {
+
 				// FIXME move line down
 			}
 		}

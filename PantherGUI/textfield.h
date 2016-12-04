@@ -50,6 +50,8 @@ private:
 	std::vector<Cursor*> cursors;
 	std::vector<std::vector<short>> offsets;
 	int line_height;
+	bool drag_selection;
+	bool drag_selection_cursors;
 	bool display_carets;
 	int display_carets_count;
 

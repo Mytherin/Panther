@@ -22,8 +22,6 @@ TextFile::~TextFile() {
 void TextFile::OpenFile(std::string path) {
 	this->path = path;
 	this->base = (char*)mmap::ReadFile(path);
-	//file = MemoryMapFile(path);
-	//base = (char*)OpenMemoryMappedFile(file);
 
 	this->lineending = PGLineEndingUnknown;
 	this->indentation = PGIndentionTabs;
