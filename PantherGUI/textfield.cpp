@@ -142,6 +142,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 		}
 	}
 	// FIXME: render the minimap
+
 	// render the scrollbar
 	if (this->display_scrollbar) {
 		bool mouse_in_scrollbar = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width;
@@ -160,8 +161,10 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 		ssize_t scrollbar_height = GetScrollbarHeight();
 		ssize_t scrollbar_offset = GetScrollbarOffset();
 		PGColor scrollbar_color = PGColor(104, 104, 104);
-		if (mouse_in_scrollbar && mouse.y >= scrollbar_offset && mouse.y <= scrollbar_offset + scrollbar_height)
-			scrollbar_color = PGColor(28, 151, 234);
+		if (this->drag_scrollbar)
+			scrollbar_color = PGColor(0, 122, 204);
+		else if (mouse_in_scrollbar && mouse.y >= scrollbar_offset && mouse.y <= scrollbar_offset + scrollbar_height)
+		scrollbar_color = PGColor(28, 151, 234);
 		RenderRectangle(renderer, PGRect(x + this->width - 12, y + scrollbar_offset, 8, scrollbar_height), scrollbar_color);
 	}
 }
@@ -244,6 +247,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 					drag_scrollbar_mouse_y = y - scrollbar_offset;
 					drag_selection_cursors = false;
 					drag_selection = false;
+					this->Invalidate();
 				} else if (y <= scrollbar_offset) {
 					// mouse click above the scrollbar
 					this->lineoffset_y = std::max((ssize_t)0, this->lineoffset_y - GetLineHeight());
@@ -312,8 +316,11 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 
 void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 	if (button & PGLeftMouseButton) {
-		drag_selection = false;
-		drag_scrollbar = false;
+		if (drag_selection || drag_scrollbar) {
+			drag_selection = false;
+			drag_scrollbar = false;
+			this->Invalidate();
+		}
 	} else if (button & PGMiddleMouseButton) {
 		drag_selection_cursors = false;
 	}
