@@ -52,6 +52,80 @@ void TextField::PeriodicRender(void) {
 	}
 }
 
+void TextField::DrawTextField(PGRendererHandle renderer, PGRect* rectangle, bool minimap, int position_x_text, int position_y) {
+	// FIXME: respect Width while rendering
+	ssize_t linenr = lineoffset_y;
+	TextLine *current_line;
+	PGColor selection_color = PGColor(20, 20, 180, 125);
+	ssize_t line_height = this->line_height;
+	while ((current_line = textfile.GetLine(linenr)) != NULL) {
+		// only render lines that fall within the render rectangle
+		if (this->offsets.size() <= linenr - lineoffset_y) {
+			this->offsets.push_back(std::vector<short>());
+		}
+		if (rectangle && position_y > rectangle->y + rectangle->height) break;
+		if (!rectangle || !(position_y + line_height < rectangle->y)) {
+			// determine render offsets for mouse selection
+			if (!minimap)
+				GetRenderOffsets(renderer, current_line->GetLine(), current_line->GetLength(), this->offsets[linenr - lineoffset_y]);
+			// render the actual text
+			PGSize size = RenderText(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y);
+			line_height = size.height;
+		}
+
+		linenr++;
+		position_y += line_height;
+	}
+	// render the selection and carets
+	if (!minimap) {
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			ssize_t startline = std::max((*it)->BeginLine(), lineoffset_y);
+			ssize_t endline = std::min((*it)->EndLine(), linenr);
+			position_y = (startline - lineoffset_y) * line_height;
+			for (; startline <= endline; startline++) {
+				current_line = textfile.GetLine(startline);
+				assert(current_line);
+				ssize_t start, end;
+				if (startline == (*it)->BeginLine()) {
+					if (startline == (*it)->EndLine()) {
+						// start and end are on the same line
+						start = (*it)->BeginCharacter();
+						end = (*it)->EndCharacter();
+					} else {
+						start = (*it)->BeginCharacter();
+						end = current_line->GetLength() + 1;
+					}
+				} else if (startline == (*it)->EndLine()) {
+					start = 0;
+					end = (*it)->EndCharacter();
+				} else {
+					start = 0;
+					end = current_line->GetLength() + 1;
+				}
+
+				if (!minimap && startline == (*it)->SelectedLine()) {
+					if (display_carets) {
+						// render the caret on the selected line
+						RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter());
+					}
+				}
+				RenderSelection(renderer,
+					current_line->GetLine(),
+					current_line->GetLength(),
+					position_x_text,
+					position_y,
+					start,
+					end, 
+					selection_color);
+				position_y += line_height;
+			}
+		}
+	}
+	if (!minimap) {
+		this->line_height = line_height;
+	}
+}
+
 void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	// FIXME: get line height from renderer without drawing
 	// FIXME: mouse = caret over textfield
@@ -65,83 +139,41 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	PGPoint mouse = GetMousePosition(window);
 	mouse.x -= this->x;
 	mouse.y -= this->y;
-	// determine the render position
-	int position_x = this->x + this->offset_x;
-	int position_x_text = position_x + text_offset;
-	int position_y = 0;
 	character_width = GetRenderWidth(renderer, "a", 1);
+	// determine the render position
+	SetTextFont(renderer, NULL, 19);
+	SetTextColor(renderer, PGColor(0, 0, 255));
+	SetTextAlign(renderer, PGTextAlignRight);
+	// render the line numbers
+	int position_x = this->x + this->offset_x;
+	int position_y = 0;
 	ssize_t linenr = lineoffset_y;
 	TextLine *current_line;
-	SetTextFont(renderer, NULL);
-	SetTextColor(renderer, PGColor(0, 0, 255));
 	while ((current_line = textfile.GetLine(linenr)) != NULL) {
 		// only render lines that fall within the render rectangle
-		if (this->offsets.size() <= linenr - lineoffset_y) {
-			this->offsets.push_back(std::vector<short>());
-		}
-		if (position_y > rectangle->y + rectangle->height) break;
-		if (!(position_y + line_height < rectangle->y)) {
-			// determine render offsets for mouse selection
-			GetRenderOffsets(renderer, current_line->GetLine(), current_line->GetLength(), this->offsets[linenr - lineoffset_y]);
-			// render the actual text
-			PGSize size = RenderText(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y);
-			line_height = size.height;
-
+		if (rectangle && position_y > rectangle->y + rectangle->height) break;
+		if (!rectangle || !(position_y + line_height < rectangle->y)) {
 			// render the line number
 			auto line_number = std::to_string(linenr + 1);
-			SetTextAlign(renderer, PGTextAlignRight);
 			RenderText(renderer, line_number.c_str(), line_number.size(), position_x, position_y);
-		}
 
+			// if the line is selected by a cursor, render an overlay
+			for (auto it = cursors.begin(); it != cursors.end(); it++) {
+				if (linenr == (*it)->SelectedLine()) {
+					RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGColor(32,32,255,64));
+					break;
+				}
+			}
+		}
 		linenr++;
 		position_y += line_height;
 	}
-	// render the selection and carets
-	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		ssize_t startline = std::max((*it)->BeginLine(), lineoffset_y);
-		ssize_t endline = std::min((*it)->EndLine(), linenr);
-		position_y = (startline - lineoffset_y) * line_height;
-		for (; startline <= endline; startline++) {
-			current_line = textfile.GetLine(startline);
-			assert(current_line);
-			ssize_t start, end;
-			if (startline == (*it)->BeginLine()) {
-				if (startline == (*it)->EndLine()) {
-					// start and end are on the same line
-					start = (*it)->BeginCharacter();
-					end = (*it)->EndCharacter();
-				} else {
-					start = (*it)->BeginCharacter();
-					end = current_line->GetLength() + 1;
-				}
-			} else if (startline == (*it)->EndLine()) {
-				start = 0;
-				end = (*it)->EndCharacter();
-			} else {
-				start = 0;
-				end = current_line->GetLength() + 1;
-			}
-
-			if (startline == (*it)->SelectedLine()) {
-				RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGColor(32,32,255,64));
-				if (display_carets) {
-					// render the caret on the selected line
-					RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter());
-				}
-			}
-
-			RenderSelection(renderer,
-				current_line->GetLine(),
-				current_line->GetLength(),
-				position_x_text,
-				position_y,
-				start,
-				end);
-
-			position_y += line_height;
-		}
-	}
+	// render the actual text field
+	SetTextAlign(renderer, PGTextAlignLeft);
+	DrawTextField(renderer, rectangle, false, this->x + this->offset_x + text_offset, this->y);
 	// FIXME: render the minimap
+	//SetTextFont(renderer, NULL, 3);
+	//DrawTextField(renderer, NULL, true, this->x + (6 * this->width / 7), this->y);
 
 	// render the scrollbar
 	if (this->display_scrollbar) {
@@ -343,7 +375,15 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				Cursor::NormalizeCursors(this, cursors, false);
 				this->InvalidateBetweenLines(old_line, line);
 			}
-		} else if (drag_selection_cursors) {
+		} else if (drag_scrollbar) {
+			int new_y = y - this->y;
+			int current_offset = this->lineoffset_y;
+			SetScrollbarOffset(new_y - drag_scrollbar_mouse_y);
+			if (current_offset != this->lineoffset_y)
+				this->Invalidate();
+		}
+	} else if (buttons & PGMiddleMouseButton) {
+		if (drag_selection_cursors) {
 			ssize_t line, character;
 			GetLineCharacterFromPosition(x, y, line, character, false);
 			ssize_t start_character = active_cursor->end_character;
@@ -368,12 +408,6 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 
 			cursors[0]->start_character = std::min(character, textfile.GetLine(cursors[0]->start_line)->GetLength());
 			this->InvalidateBetweenLines(cursors[0]->start_line, line);
-		} else if (drag_scrollbar) {
-			int new_y = y - this->y;
-			int current_offset = this->lineoffset_y;
-			SetScrollbarOffset(new_y - drag_scrollbar_mouse_y);
-			if (current_offset != this->lineoffset_y)
-				this->Invalidate();
 		}
 	} else {
 		drag_selection = false;

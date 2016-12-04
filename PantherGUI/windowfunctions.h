@@ -173,11 +173,11 @@ void RenderImage(PGRendererHandle window, void* image, int x, int y);
 // Render text at the specified location; returns the width and height of the rendered text
 PGSize RenderText(PGRendererHandle window, const char* text, size_t length, int x, int y);
 void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t characternr);
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end);
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end, PGColor selection_color);
 // Sets the color of the text rendered with the RenderText method
 void SetTextColor(PGRendererHandle window, PGColor color);
 // Sets the font used by the RenderText method
-void SetTextFont(PGRendererHandle window, PGFontHandle font);
+void SetTextFont(PGRendererHandle window, PGFontHandle font, int height);
 // Sets the text-alignment of text rendered with the RenderText method
 void SetTextAlign(PGRendererHandle window, PGTextAlign alignment);
 

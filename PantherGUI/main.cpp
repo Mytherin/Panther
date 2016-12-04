@@ -116,7 +116,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		szTitle,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		516, 538,
+		1016, 738,
 		NULL,
 		NULL,
 		hInstance,
@@ -140,8 +140,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
 	TextField* textField = new TextField(res, "C:\\Users\\wieis\\Desktop\\syntaxtest.py");
-	textField->width = 500;
-	textField->height = 500;
+	textField->width = 1000;
+	textField->height = 700;
 	textField->x = 0;
 	textField->y = 0;
 
@@ -513,7 +513,7 @@ void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x,
 	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(0, 0, 0));
 }
 
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end) {
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end, PGColor selection_color) {
 	if (start == end) return;
 	ssize_t line_height = 19;
 	int selection_start = GetRenderWidth(renderer, text, start);
@@ -522,7 +522,7 @@ void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, in
 		assert(end == len + 1);
 		selection_width += GetRenderWidth(renderer, " ", 1);
 	}
-	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, line_height), PGColor(20, 20, 180, 125));
+	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, line_height), selection_color);
 }
 
 void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t length, std::vector<short>& offsets) {
@@ -584,8 +584,8 @@ void SetTextColor(PGRendererHandle renderer, PGColor color) {
 	SetTextColor(renderer->hdc, RGB(color.r, color.g, color.b));
 }
 
-void SetTextFont(PGRendererHandle renderer, PGFontHandle font) {
-	HFONT mfont = CreateFont(0, 0, 0, 0, FW_NORMAL, false, false, false, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_DONTCARE, "Consolas");
+void SetTextFont(PGRendererHandle renderer, PGFontHandle font, int height) {
+	HFONT mfont = CreateFont(height, 0, 0, 0, FW_NORMAL, false, false, false, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_DONTCARE, "Consolas");
 	SelectObject(renderer->hdc, mfont);
 }
 

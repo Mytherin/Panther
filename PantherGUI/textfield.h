@@ -76,6 +76,9 @@ private:
 
 	MouseClickInstance last_click;
 
+	void DrawTextField(PGRendererHandle, PGRect*, bool minimap, int position_x_text, int position_y);
+
+
 	void ClearExtraCursors();
 	void GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character, bool clip_character = true);
 	bool SetScrollOffset(ssize_t offset);
