@@ -23,6 +23,8 @@ public:
 	Control *focused_control;
 	PGRect invalidated_area;
 	bool invalidated;
+	int mouse_x;
+	int mouse_y;
 
 	PGWindow() : modifier(PGModifierNone), invalidated_area(0, 0, 0, 0), invalidated(false) {}
 };
@@ -366,6 +368,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		if (wParam & MK_XBUTTON1) buttons |= PGXButton1;
 		if (wParam & MK_XBUTTON2) buttons |= PGXButton2;
 		global_handle->focused_control->MouseMove(x, y, buttons);
+		global_handle->mouse_x = x;
+		global_handle->mouse_y = y;
 		break;
 	}
 	case WM_DESTROY:
@@ -377,6 +381,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	}
 
 	return 0;
+}
+
+PGPoint GetMousePosition(PGWindowHandle window) {
+	return PGPoint(window->mouse_x, window->mouse_y);
 }
 
 PGWindowHandle PGCreateWindow(void) {

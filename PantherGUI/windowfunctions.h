@@ -188,7 +188,7 @@ Control* GetFocusedControl(PGWindowHandle window);
 
 
 
-
+PGPoint GetMousePosition(PGWindowHandle window);
 void SetWindowTitle(PGWindowHandle window, char* title);
 void RegisterRefresh(PGWindowHandle window, Control *callback);
 void UnregisterRefresh(PGWindowHandle window, Control *callback);

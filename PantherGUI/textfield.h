@@ -12,6 +12,9 @@ struct TextSelection {
 	int character_end;
 };
 
+#define SCROLLBAR_BASE_OFFSET 16
+#define SCROLLBAR_WIDTH 16
+
 class TextField : public Control {
 	friend class Cursor;
 public:
@@ -32,6 +35,7 @@ public:
 	void InvalidateBeforeLine(int line);
 	void InvalidateAfterLine(int line);
 	void InvalidateBetweenLines(int start, int end);
+	void InvalidateScrollbar();
 
 	int GetLineOffset() { return lineoffset_y; }
 	void SetLineOffset(ssize_t offset) { lineoffset_y = offset; }
@@ -57,6 +61,13 @@ private:
 	bool display_carets;
 	bool display_scrollbar;
 	bool display_minimap;
+
+	bool drag_scrollbar;
+	ssize_t drag_scrollbar_mouse_y;
+
+	ssize_t GetScrollbarHeight();
+	ssize_t GetScrollbarOffset();
+	void SetScrollbarOffset(ssize_t offset);
 
 	Cursor* active_cursor;
 	TextFile textfile;
