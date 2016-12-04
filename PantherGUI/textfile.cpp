@@ -122,6 +122,64 @@ void TextFile::InsertText(std::string text, std::vector<Cursor*>& cursors) {
 	Cursor::NormalizeCursors(textfield, cursors);
 }
 
+struct Interval {
+	ssize_t start_line;
+	ssize_t end_line;
+	std::vector<Cursor*> cursors;
+	Interval(ssize_t start, ssize_t end, Cursor* cursor) : start_line(start), end_line(end) { cursors.push_back(cursor); }
+};
+
+void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
+	assert(offset == 1 || offset == -1); // we only support single line moves for now
+	// we keep track of all the line intervals that we have to move up/down
+	std::vector<Interval> intervals;
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		if ((*it)->start_line + offset < 0 || (*it)->start_line + offset >= lines.size() ||
+			(*it)->end_line + offset < 0 || (*it)->end_line + offset >= lines.size()) {
+			// we do not move any lines if any of the movements are not possible
+			return;
+		}
+		intervals.push_back(Interval((*it)->BeginLine(), (*it)->EndLine(), *it));
+	}
+	// if we get here we know the movement is possible
+	// first merge the different intervals so each interval is "standalone" (i.e. not adjacent to another interval)
+	for (ssize_t i = 0; i < intervals.size(); i++) {
+		Interval& interval = intervals[i];
+		for (ssize_t j = i + 1; j < intervals.size(); j++) {
+			if ((interval.start_line >= intervals[j].start_line - 1 && interval.start_line <= intervals[j].end_line + 1) ||
+				(interval.end_line >= intervals[j].start_line - 1 && interval.end_line <=  intervals[j].end_line + 1)) {
+				// intervals overlap, merge the two intervals
+				interval.start_line = std::min(interval.start_line, intervals[j].start_line);
+				interval.end_line = std::min(interval.end_line, intervals[j].end_line);
+				for (auto it = intervals[j].cursors.begin(); it != intervals[j].cursors.end(); it++) {
+					interval.cursors.push_back(*it);
+				}
+				intervals.erase(intervals.begin() + j);
+				j--;
+			}
+		}
+	}
+	MultipleDelta* delta = new MultipleDelta();
+	// now each of the intervals are separate
+	// we must perform a RemoveLine and AddLine operation for each interval
+	// we remove the line before (or after) the interval, and add it back after (or before) the interval
+	// before or after depends on the offset
+	for (auto it = intervals.begin(); it != intervals.end(); it++) {
+		SwapLines* swap = new SwapLines(it->start_line, offset, *GetLine(it->start_line));
+		for (ssize_t j = it->start_line + 1; j <= it->end_line; j++) {
+			swap->lines.push_back(*GetLine(j));
+		}
+		for (auto it2 = it->cursors.begin(); it2 != it->cursors.end(); it2++) {
+			swap->cursors.push_back(*it2);
+			swap->stored_cursors.push_back(**it2);
+		}
+		delta->AddDelta(swap);
+	}
+	this->AddDelta(delta);
+	PerformOperation(delta);
+	Cursor::NormalizeCursors(textfield, cursors);
+}
+
 std::string TextFile::CopyText(std::vector<Cursor*>& cursors) {
 	std::string text = "";
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -354,6 +412,32 @@ void TextFile::AddDelta(TextDelta* delta) {
 	this->deltas.push_back(delta);
 }
 
+static void ShiftDelta(ssize_t& linenr, ssize_t& characternr, ssize_t shift_lines, ssize_t shift_lines_line, ssize_t shift_lines_character, ssize_t shift_characters, ssize_t shift_characters_line, ssize_t shift_characters_character, ssize_t last_line_offset) {
+	if (linenr == shift_characters_line &&
+		characternr >= shift_characters_character) {
+		characternr += shift_characters;
+	} else if (linenr == shift_characters_line &&
+		characternr < 0) {
+		// special case: see below explanation
+		characternr = shift_characters_character + std::abs(characternr + 1);
+	}
+	if (shift_lines != 0) {
+		if (linenr == (shift_lines_line + std::abs(shift_lines) - 1) && shift_lines < 0) {
+			// special case: multi-line deletion that ends with deleting part of a line
+			// this is done by removing the entire last line and then adding part of the line back
+			// removing and readding text messes with cursors on that line,
+			// to make the cursor go back to the proper position, 
+			// we store the position of this delta on the original line as a negative number when removing it
+			// when performing the AddText we do a special case for negative numbers
+			// to shift the cursor position to its original position in the text again
+			characternr = -(characternr - last_line_offset) - 1;
+			linenr = shift_lines_line - 1;
+		} else if (linenr >= shift_lines_line) {
+			linenr += shift_lines;
+		}
+	}
+}
+
 void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 	assert(delta);
 	switch (delta->TextDeltaType()) {
@@ -395,7 +479,6 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 		AddLines* add = (AddLines*)delta;
 		ssize_t length = lines[add->linenr].GetLength();
 		ssize_t linenr = add->linenr + 1;
-		// FIXME: we keep around a reference to a string here, this probably segfaults if the delta is removed
 		for (auto it = add->lines.begin(); (it + 1) != add->lines.end(); it++) {
 			lines.insert(lines.begin() + linenr, TextLine((char*)it->c_str(), (ssize_t)it->size()));
 			linenr++;
@@ -439,6 +522,22 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 		}
 		break;
 	}
+	case PGDeltaSwapLines: {
+		SwapLines* swap = (SwapLines*)delta;
+		if (swap->offset == -1) {
+			this->lines.insert(this->lines.begin() + swap->linenr + swap->lines.size(), this->lines[swap->linenr - 1]);
+			this->lines.erase(this->lines.begin() + swap->linenr - 1);
+		} else {
+			assert(swap->offset == 1);
+			this->lines.insert(this->lines.begin() + swap->linenr, this->lines[swap->linenr + swap->lines.size()]);
+			this->lines.erase(this->lines.begin() + swap->linenr + swap->lines.size() + 1);
+		}
+		for (auto it = swap->cursors.begin(); it != swap->cursors.end(); it++) {
+			(*it)->start_line += swap->offset;
+			(*it)->end_line += swap->offset;
+		}
+		break;
+	}
 	case PGDeltaMultiple: {
 		MultipleDelta* multi = (MultipleDelta*)delta;
 		assert(multi->deltas.size() > 0);
@@ -479,29 +578,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 			}
 			for (auto it2 = it + 1; it2 != multi->deltas.end(); it2++) {
 				TextDelta* delta = *it2;
-				if (delta->linenr == shift_characters_line &&
-					delta->characternr >= shift_characters_character) {
-					delta->characternr += shift_characters;
-				} else if (delta->linenr == shift_characters_line &&
-					delta->characternr < 0) {
-					// special case: see below explanation
-					delta->characternr = shift_characters_character + std::abs(delta->characternr + 1);
-				}
-				if (shift_lines != 0) {
-					if (delta->linenr == (shift_lines_line + std::abs(shift_lines) - 1) && shift_lines < 0) {
-						// special case: multi-line deletion that ends with deleting part of a line
-						// this is done by removing the entire last line and then adding part of the line back
-						// removing and readding text messes with cursors on that line,
-						// to make the cursor go back to the proper position, 
-						// we store the position of this delta on the original line as a negative number when removing it
-						// when performing the AddText we do a special case for negative numbers
-						// to shift the cursor position to its original position in the text again
-						delta->characternr = -(delta->characternr - last_line_offset) - 1;
-						delta->linenr = shift_lines_line - 1;
-					} else if (delta->linenr >= shift_lines_line) {
-						delta->linenr += shift_lines;
-					}
-				}
+				ShiftDelta(delta->linenr, delta->characternr, shift_lines, shift_lines_line, shift_lines_character, shift_characters, shift_characters_line, shift_characters_character, last_line_offset);
 			}
 			if ((*it)->TextDeltaType() != PGDeltaRemoveManyLines) {
 				last_line_offset = 0;
@@ -561,6 +638,26 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 		}
 		break;
 	}
+	case PGDeltaSwapLines: {
+		SwapLines* swap = (SwapLines*)delta;
+		if (swap->offset == 1) {
+			this->lines.insert(this->lines.begin() + swap->linenr + swap->lines.size() + 1, this->lines[swap->linenr]);
+			this->lines.erase(this->lines.begin() + swap->linenr);
+		} else {
+			assert(swap->offset == -1);
+			this->lines.insert(this->lines.begin() + swap->linenr - 1, this->lines[swap->linenr + swap->lines.size() - 1]);
+			this->lines.erase(this->lines.begin() + swap->linenr + swap->lines.size());
+		}
+
+		swap->cursors.clear();
+		for (auto it = swap->stored_cursors.begin(); it != swap->stored_cursors.end(); it++) {
+			Cursor* cursor = new Cursor(this);
+			swap->cursors.push_back(cursor);
+			cursors.push_back(cursor);
+			cursor->RestoreCursor(*it);
+		}
+		break;
+	}
 	case PGDeltaMultiple: {
 		MultipleDelta* multi = (MultipleDelta*)delta;
 		assert(multi->deltas.size() > 0);
@@ -579,6 +676,16 @@ void TextFile::Redo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 		cursor_delta->cursor = new Cursor(this);
 		cursors.push_back(cursor_delta->cursor); 
 		cursor_delta->cursor->RestoreCursor(cursor_delta->stored_cursor);
+	}
+	if (delta->TextDeltaType() == PGDeltaSwapLines) {
+		SwapLines* swap = (SwapLines*)delta;
+		swap->cursors.clear();
+		for (auto it = swap->stored_cursors.begin(); it != swap->stored_cursors.end(); it++) {
+			Cursor* cursor = new Cursor(this);
+			swap->cursors.push_back(cursor);
+			cursors.push_back(cursor);
+			cursor->RestoreCursor(*it);
+		}
 	}
 
 	switch (delta->TextDeltaType()) {

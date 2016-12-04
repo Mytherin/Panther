@@ -26,7 +26,7 @@ void TextField::PeriodicRender(void) {
 	if (display_carets_count % FLICKER_CARET_INTERVAL == 0) {
 		display_carets_count = 0;
 		display_carets = !display_carets;
-		ssize_t start_line = LLONG_MAX, end_line;
+		ssize_t start_line = LLONG_MAX, end_line = -LLONG_MAX;
 		for (auto it = cursors.begin(); it != cursors.end(); it++) {
 			start_line = std::min((*it)->start_line, start_line);
 			end_line = std::max((*it)->start_line, end_line);
@@ -281,7 +281,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		// FIXME: when moving up/down, maintain the current character number (even though a line is shorter than that number)
 	case PGButtonDown:
 		if (modifier == PGModifierCtrlShift) {
-			// FIXME: move line down
+			textfile.MoveLines(cursors, 1);
 		} else {
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				if (modifier == PGModifierNone) {
@@ -298,7 +298,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		break;
 	case PGButtonUp: 
 		if (modifier == PGModifierCtrlShift) {
-			// FIXME move line up
+			textfile.MoveLines(cursors, -1);
 		} else {
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				if (modifier == PGModifierNone) {

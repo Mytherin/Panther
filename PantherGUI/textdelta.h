@@ -18,19 +18,20 @@ typedef enum {
 	PGDeltaRemoveManyLines,
 	PGDeltaMultiple,
 	PGDeltaCursorMovement,
+	PGDeltaSwapLines,
 	PGDeltaUnknown
 } PGTextType;
 
 class TextDelta {
 public:
-	int linenr;
-	int characternr;
+	ssize_t linenr;
+	ssize_t characternr;
 	TextDelta* next;
 
 	TextDelta() : next(NULL) {}
 
 	virtual PGTextType TextDeltaType() { return PGDeltaUnknown; }
-	TextDelta(int linenr, int characternr) : linenr(linenr), characternr(characternr) { }
+	TextDelta(ssize_t linenr, ssize_t characternr) : linenr(linenr), characternr(characternr) { }
 };
 
 class CursorDelta : public TextDelta {
@@ -38,7 +39,7 @@ public:
 	Cursor* cursor;
 	Cursor stored_cursor;
 
-	CursorDelta(Cursor* cursor, int linenr, int characternr) : cursor(cursor), stored_cursor(NULL), TextDelta(linenr, characternr) {
+	CursorDelta(Cursor* cursor, ssize_t linenr, ssize_t characternr) : cursor(cursor), stored_cursor(NULL), TextDelta(linenr, characternr) {
 		if (cursor) stored_cursor = Cursor(*cursor);
 	}
 
@@ -104,6 +105,17 @@ public:
 
 	PGTextType TextDeltaType() { return PGDeltaAddManyLines; }
 	AddLines(Cursor* cursor, int linenr, int characternr, std::vector<std::string> lines) : CursorDelta(cursor, linenr, characternr), lines(lines), remove_text(NULL) {}
+};
+
+class SwapLines : public TextDelta {
+public:
+	std::vector<Cursor*> cursors;
+	std::vector<Cursor> stored_cursors;
+	std::vector<TextLine> lines;
+	int offset;
+
+	PGTextType TextDeltaType() { return PGDeltaSwapLines; }
+	SwapLines(ssize_t linenr, int offset, TextLine line) : TextDelta(linenr, 0), offset(offset) { lines.push_back(line); }
 };
 
 class MultipleDelta : public TextDelta {
