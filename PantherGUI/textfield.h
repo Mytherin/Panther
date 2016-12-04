@@ -51,10 +51,12 @@ private:
 	std::vector<std::vector<short>> offsets;
 	int line_height;
 	int character_width;
+	int display_carets_count;
 	bool drag_selection;
 	bool drag_selection_cursors;
 	bool display_carets;
-	int display_carets_count;
+	bool display_scrollbar;
+	bool display_minimap;
 
 	Cursor* active_cursor;
 	TextFile textfile;

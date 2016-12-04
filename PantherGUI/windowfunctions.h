@@ -166,7 +166,7 @@ typedef void (*PGTimerCallback)(void);
 PGTimerHandle CreateTimer(int ms, PGTimerCallback, PGTimerFlags);
 void DeleteTimer(PGTimerHandle);
 
-
+void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color);
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);

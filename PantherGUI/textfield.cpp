@@ -5,7 +5,7 @@
 #include "logger.h"
 
 TextField::TextField(PGWindowHandle window, std::string filename) :
-	Control(window), textfile(filename, this), display_carets(true), display_carets_count(0), active_cursor(NULL) {
+	Control(window), textfile(filename, this), display_carets(true), display_carets_count(0), active_cursor(NULL), display_scrollbar(true), display_minimap(true) {
 	RegisterRefresh(window, this);
 	cursors.push_back(new Cursor(&textfile));
 	line_height = 20;
@@ -121,6 +121,21 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 
 			position_y += line_height;
 		}
+	}
+	// FIXME: render the minimap
+	// render the scrollbar
+	if (this->display_scrollbar) {
+		// the background of the scrollbar
+		RenderRectangle(renderer, PGRect(x + this->width - 16, 0, y + 16, y + this->height), PGColor(62, 62, 62));
+		// the arrows above/below the scrollbar
+		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + 4), PGPoint(x + this->width - 14, y + 12), PGPoint(x + this->width - 2, y + 12), PGColor(104, 104, 104));
+		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + this->height - 4), PGPoint(x + this->width - 14, y + this->height - 12), PGPoint(x + this->width - 2, y + this->height - 12), PGColor(104, 104, 104));
+		// the actual scrollbar
+		ssize_t scrollbar_base_offset = 16;
+		ssize_t scrollbar_max_height = this->height - scrollbar_base_offset * 2;
+		ssize_t scrollbar_height = std::max((ssize_t) 16, (this->GetLineHeight() * scrollbar_max_height) / (this->textfile.GetLineCount() + this->GetLineHeight()));
+		ssize_t scrollbar_offset = scrollbar_base_offset + ((this->lineoffset_y * (this->height - scrollbar_height - 2 * scrollbar_base_offset)) / std::max((ssize_t) 1, (this->textfile.GetLineCount() - 1)));
+		RenderRectangle(renderer, PGRect(x + this->width - 12, y + scrollbar_offset, 8, scrollbar_height), PGColor(104, 104, 104));
 	}
 }
 

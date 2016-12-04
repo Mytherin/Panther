@@ -116,7 +116,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		szTitle,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		500, 500,
+		516, 538,
 		NULL,
 		NULL,
 		hInstance,
@@ -457,6 +457,18 @@ PGSize GetWindowSize(PGWindowHandle window) {
 	// FIXME
 	PGSize size(0, 0);
 	return size;
+}
+
+void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color) {
+	SolidBrush solidBrush(Color(color.a, color.r, color.g, color.b));
+	PointF points[3];
+	points[0].X = a.x;
+	points[0].Y = a.y;
+	points[1].X = b.x;
+	points[1].Y = b.y;
+	points[2].X = c.x;
+	points[2].Y = c.y;
+	handle->graphics.FillPolygon(&solidBrush, points, 3);
 }
 
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color) {
