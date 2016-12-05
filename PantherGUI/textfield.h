@@ -52,7 +52,6 @@ private:
 	int offset_x;
 	ssize_t lineoffset_y;
 	std::vector<Cursor*> cursors;
-	std::vector<std::vector<short>> offsets;
 	int line_height;
 	int character_width;
 	int display_carets_count;
@@ -61,6 +60,8 @@ private:
 	bool display_carets;
 	bool display_scrollbar;
 	bool display_minimap;
+
+	ssize_t tabwidth;
 
 	bool current_focus;
 

@@ -525,21 +525,6 @@ void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, in
 	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, line_height), selection_color);
 }
 
-void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t length, std::vector<short>& offsets) {
-	offsets.clear();
-	for (int i = 0; i < length; i++) {
-		int result;
-		UINT val = text[i];
-		if (val == '\t') {
-			GetCharWidth(renderer->hdc, ' ', ' ', &result);
-			result *= 5; // FIXME: tabwidth
-		} else {
-			GetCharWidth(renderer->hdc, val, val, &result);
-		}
-		offsets.push_back((short)result);
-	}
-}
-
 int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) {
 	int width = 0;
 	for (int i = 0; i < length; i++) {
