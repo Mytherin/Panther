@@ -72,48 +72,47 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGRect* rectangle, bool
 		position_y += line_height;
 	}
 	// render the selection and carets
-	if (!minimap) {
-		for (auto it = cursors.begin(); it != cursors.end(); it++) {
-			ssize_t startline = std::max((*it)->BeginLine(), lineoffset_y);
-			ssize_t endline = std::min((*it)->EndLine(), linenr);
-			position_y = (startline - lineoffset_y) * line_height;
-			for (; startline <= endline; startline++) {
-				current_line = textfile.GetLine(startline);
-				assert(current_line);
-				ssize_t start, end;
-				if (startline == (*it)->BeginLine()) {
-					if (startline == (*it)->EndLine()) {
-						// start and end are on the same line
-						start = (*it)->BeginCharacter();
-						end = (*it)->EndCharacter();
-					} else {
-						start = (*it)->BeginCharacter();
-						end = current_line->GetLength() + 1;
-					}
-				} else if (startline == (*it)->EndLine()) {
-					start = 0;
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		ssize_t startline = std::max((*it)->BeginLine(), lineoffset_y);
+		ssize_t endline = std::min((*it)->EndLine(), linenr);
+		position_y = (startline - lineoffset_y) * line_height;
+		for (; startline <= endline; startline++) {
+			current_line = textfile.GetLine(startline);
+			assert(current_line);
+			ssize_t start, end;
+			if (startline == (*it)->BeginLine()) {
+				if (startline == (*it)->EndLine()) {
+					// start and end are on the same line
+					start = (*it)->BeginCharacter();
 					end = (*it)->EndCharacter();
 				} else {
-					start = 0;
+					start = (*it)->BeginCharacter();
 					end = current_line->GetLength() + 1;
 				}
-
-				if (!minimap && startline == (*it)->SelectedLine()) {
-					if (display_carets) {
-						// render the caret on the selected line
-						RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter());
-					}
-				}
-				RenderSelection(renderer,
-					current_line->GetLine(),
-					current_line->GetLength(),
-					position_x_text,
-					position_y,
-					start,
-					end, 
-					selection_color);
-				position_y += line_height;
+			} else if (startline == (*it)->EndLine()) {
+				start = 0;
+				end = (*it)->EndCharacter();
+			} else {
+				start = 0;
+				end = current_line->GetLength() + 1;
 			}
+
+			if (!minimap && startline == (*it)->SelectedLine()) {
+				if (display_carets) {
+					// render the caret on the selected line
+					RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter());
+				}
+			}
+			RenderSelection(renderer,
+				current_line->GetLine(),
+				current_line->GetLength(),
+				position_x_text,
+				position_y,
+				start,
+				end, 
+				selection_color,
+				line_height);
+			position_y += line_height;
 		}
 	}
 	if (!minimap) {
@@ -170,8 +169,8 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 	SetTextAlign(renderer, PGTextAlignLeft);
 	DrawTextField(renderer, rectangle, false, this->x + this->offset_x + text_offset, this->y);
 	// FIXME: render the minimap
-	//SetTextFont(renderer, NULL, 3);
-	//DrawTextField(renderer, NULL, true, this->x + (6 * this->width / 7), this->y);
+	SetTextFont(renderer, NULL, 3);
+	DrawTextField(renderer, NULL, true, this->x + (6 * this->width / 7), this->y);
 
 	// render the scrollbar
 	if (this->display_scrollbar) {

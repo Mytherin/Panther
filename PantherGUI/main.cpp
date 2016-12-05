@@ -44,7 +44,7 @@ struct PGTimer {
 
 PGWindowHandle global_handle;
 
-#define MAX_REFRESH_FREQUENCY 1000/30
+#define MAX_REFRESH_FREQUENCY 1000/20
 
 void PeriodicWindowRedraw(void) {
 	for (auto it = global_handle->registered_refresh.begin(); it != global_handle->registered_refresh.end(); it++) {
@@ -513,9 +513,8 @@ void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x,
 	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(0, 0, 0));
 }
 
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end, PGColor selection_color) {
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end, PGColor selection_color, ssize_t line_height) {
 	if (start == end) return;
-	ssize_t line_height = 19;
 	int selection_start = GetRenderWidth(renderer, text, start);
 	int selection_width = GetRenderWidth(renderer, text, end > len ? len : end);
 	if (end > len) {
@@ -539,30 +538,6 @@ int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) 
 		width += result;
 	}
 	return width;
-}
-
-int GetCharacterPosition(PGWindowHandle window, const char* text, ssize_t length, ssize_t x_position) {
-	HDC hdc = GetDC(window->hwnd);
-	int width = 0;
-	int position = 0;
-	for (int i = 0; i < length; i++) {
-		int result;
-		UINT val = text[i];
-		if (val == '\t') {
-			GetCharWidth(hdc, ' ', ' ', &result);
-			result *= 5; // FIXME: tabwidth
-		} else {
-			GetCharWidth(hdc, val, val, &result);
-		}
-		if (width < x_position && width + result > x_position) {
-			goto end;
-		}
-		width += result;
-		position++;
-	}
-end:
-	ReleaseDC(window->hwnd, hdc);
-	return position;
 }
 
 void SetTextColor(PGRendererHandle renderer, PGColor color) {
