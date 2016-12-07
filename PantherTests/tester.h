@@ -13,4 +13,5 @@ class Tester {
 public:
 	void RunTest(TestFunction testFunction);
 	void RunTextFieldTest(std::string name, TextFieldTestFunction testFunction, std::string input, std::string expectedOutput);
+	void RunTextFieldFileTest(std::string name, TextFieldTestFunction testFunction, std::string file_input, std::string expectedOutput);
 };

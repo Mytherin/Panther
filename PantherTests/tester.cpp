@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 
 void Tester::RunTest(TestFunction testFunction) {
@@ -47,4 +48,12 @@ void Tester::RunTextFieldTest(std::string name, TextFieldTestFunction testFuncti
 	} else {
 		std::cout << "SUCCESS: Test " << name << std::endl;
 	}
+}
+
+void Tester::RunTextFieldFileTest(std::string name, TextFieldTestFunction testFunction, std::string path, std::string expectedOutput) {
+	std::ostringstream buf;
+	path = std::string(__FILE__).substr(0, strlen(__FILE__) - strlen("tester.cpp")) + path;
+	std::ifstream input (path.c_str()); 
+	buf << input.rdbuf(); 
+	RunTextFieldTest(name, testFunction, buf.str(), expectedOutput);
 }

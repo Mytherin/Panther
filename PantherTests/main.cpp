@@ -51,6 +51,8 @@ std::string DetectUnixNewlineType(TextField* textField);
 std::string DetectWindowsNewlineType(TextField* textField);
 std::string DetectMacOSNewlineType(TextField* textField);
 
+std::string Testerino(TextField* textField);
+
 int main() {
 	Tester tester;
 
@@ -105,6 +107,8 @@ int main() {
 	tester.RunTextFieldTest("Partial Multi Cursor Delete On Same Line", PartialDeleteCursorSameLine, "\n\n\nprint(\"hello world\")", "arint(\"ahello world\")");
 	tester.RunTextFieldTest("Multi Cursor Paste Same Line", MultiCursorPasteSameLine, "\ndef hello():\n", "\n\ndef hello():\ndef hel\ndef hello():\nlo():\n");
 	tester.RunTextFieldTest("Undo Multi Newline", UndoMultiNewLine, "\ndef hello():\n	return \"hello world\";\n", "\ndef hello():\n\tretu\nrn \"h\nello world\";\n");
+
+	tester.RunTextFieldFileTest("Testerino", Testerino, "mserver.txt", "");
 
 	std::string line;
 	std::getline(std::cin, line);
@@ -629,5 +633,9 @@ std::string UndoMultiNewLine(TextField* textfield) {
 	textField->KeyboardCharacter('Z', PGModifierCtrl);
 	textField->KeyboardButton(PGButtonEnter, PGModifierNone);
 
+	return std::string("");
+}
+
+std::string Testerino(TextField* textField) {
 	return std::string("");
 }
