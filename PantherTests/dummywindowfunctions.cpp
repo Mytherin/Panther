@@ -57,8 +57,8 @@ void RenderImage(PGRendererHandle window, void* image, int x, int y) {
 
 }
 
-PGSize RenderText(PGRendererHandle window, const char* text, size_t length, int x, int y) {
-	return PGSize(0, 0);
+void RenderText(PGRendererHandle renderer, const char* text, size_t length, PGScalar x, PGScalar y) {
+
 }
 
 void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t characternr) {
@@ -121,4 +121,44 @@ PGLineEnding GetSystemLineEnding() {
 
 ssize_t GetTime(void) {
 	return 0;
+}
+
+void RefreshWindow(PGWindowHandle window, PGIRect rect) {
+
+}
+
+void SetCursor(PGWindowHandle window, PGCursorType type) {
+
+}
+
+void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color) {
+
+}
+
+PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length) {
+	return 0;
+}
+
+PGScalar GetTextHeight(PGRendererHandle renderer) {
+	return 0;
+}
+
+void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t characternr, PGScalar line_height) {
+
+}
+
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t start, ssize_t end, PGColor selection_color, PGScalar line_height) {
+
+}
+
+void SetTextFont(PGRendererHandle window, PGFontHandle font, PGScalar height) {
+
+}
+
+bool WindowHasFocus(PGWindowHandle window) {
+	return true;
+}
+
+PGPoint GetMousePosition(PGWindowHandle window) {
+	return PGPoint(0, 0);
 }
