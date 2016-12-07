@@ -36,6 +36,15 @@ struct PGSize {
 	PGSize(PGScalar width, PGScalar height) : width(width), height(height) { }
 };
 
+struct PGIRect {
+	int x;
+	int y;
+	int width;
+	int height;
+
+	PGIRect(int x, int y, int width, int height) : x(x), y(y), width(width), height(height) { }
+};
+
 struct PGRect {
 	PGScalar x;
 	PGScalar y;
@@ -152,9 +161,9 @@ void CloseWindow(PGWindowHandle window);
 void ShowWindow(PGWindowHandle window);
 void HideWindow(PGWindowHandle window);
 void RefreshWindow(PGWindowHandle window);
-void RefreshWindow(PGWindowHandle window, PGRect);
+void RefreshWindow(PGWindowHandle window, PGIRect);
 void RedrawWindow(PGWindowHandle window);
-void RedrawWindow(PGWindowHandle window, PGRect);
+void RedrawWindow(PGWindowHandle window, PGIRect);
 PGSize GetWindowSize(PGWindowHandle window);
 
 typedef enum {
@@ -190,7 +199,7 @@ void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PG
 // Sets the color of the text rendered with the RenderText method
 void SetTextColor(PGRendererHandle window, PGColor color);
 // Sets the font used by the RenderText method
-void SetTextFont(PGRendererHandle window, PGFontHandle font, int height);
+void SetTextFont(PGRendererHandle window, PGFontHandle font, PGScalar height);
 // Sets the text-alignment of text rendered with the RenderText method
 void SetTextAlign(PGRendererHandle window, PGTextAlign alignment);
 

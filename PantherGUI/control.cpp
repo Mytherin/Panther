@@ -7,7 +7,7 @@ Control::Control(PGWindowHandle handle) {
 	this->y = 0;
 }
 
-void Control::Draw(PGRendererHandle handle, PGRect* rectangle) {
+void Control::Draw(PGRendererHandle handle, PGIRect* rectangle) {
 }
 
 void Control::PeriodicRender(void) {
@@ -53,9 +53,12 @@ void Control::Invalidate() {
 	RefreshWindow(this->window);
 }
 
-void Control::Invalidate(PGRect rectangle) {
+void Control::Invalidate(PGIRect rectangle) {
 	RefreshWindow(this->window, rectangle);
+}
 
+void Control::Invalidate(PGRect rectangle) {
+	this->Invalidate(PGIRect((int)rectangle.x, (int)rectangle.y, (int)rectangle.width, (int)rectangle.height));
 }
 
 bool Control::HasFocus() {

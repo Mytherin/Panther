@@ -6,8 +6,8 @@ time_t GetTime();
 
 class MouseClickInstance {
 public:
-	int x;
-	int y;
+	PGScalar x;
+	PGScalar y;
 	time_t time;
 	int clicks;
 

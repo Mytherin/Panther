@@ -98,8 +98,8 @@ std::string GetMouseButtonName(PGMouseButton modifier) {
 	else if (modifier == PGMiddleMouseButton) return std::string("PGMiddleMouseButton");
 	else if (modifier == PGXButton1) return std::string("PGXButton1");
 	else if (modifier == PGXButton2) return std::string("PGXButton2");
-	else if (modifier == PGLeftMouseButton | PGRightMouseButton) return std::string("PGLeftMouseButton | PGRightMouseButton");
-	else if (modifier == PGLeftMouseButton | PGMiddleMouseButton) return std::string("PGLeftMouseButton | PGMiddleMouseButton");
-	else if (modifier == PGRightMouseButton | PGMiddleMouseButton) return std::string("PGRightMouseButton | PGMiddleMouseButton");
+	else if (modifier == (PGLeftMouseButton | PGRightMouseButton)) return std::string("PGLeftMouseButton | PGRightMouseButton");
+	else if (modifier == (PGLeftMouseButton | PGMiddleMouseButton)) return std::string("PGLeftMouseButton | PGMiddleMouseButton");
+	else if (modifier == (PGRightMouseButton | PGMiddleMouseButton)) return std::string("PGRightMouseButton | PGMiddleMouseButton");
 	return std::string("UnknownModifier");
 }

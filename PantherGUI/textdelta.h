@@ -56,10 +56,10 @@ public:
 
 class RemoveText : public CursorDelta {
 public:
-	int charactercount;
+	ssize_t charactercount;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveText; }
-	RemoveText(Cursor* cursor, ssize_t linenr, ssize_t characternr, int charactercount) : CursorDelta(cursor, linenr, characternr), charactercount(charactercount) {}
+	RemoveText(Cursor* cursor, ssize_t linenr, ssize_t characternr, ssize_t charactercount) : CursorDelta(cursor, linenr, characternr), charactercount(charactercount) {}
 };
 
 class RemoveLine : public CursorDelta {

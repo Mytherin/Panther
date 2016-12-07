@@ -41,7 +41,7 @@ public:
 	bool SelectionIsEmpty();
 
 	void RestoreCursor(Cursor cursor);
-	bool Contains(int linenr, int characternr);
+	bool Contains(ssize_t linenr, ssize_t characternr);
 	bool OverlapsWith(Cursor& cursor);
 	void Merge(Cursor& cursor);
 
@@ -49,11 +49,11 @@ public:
 	static bool CursorOccursFirst (Cursor* a, Cursor* b) { return (a->BeginLine() < b->BeginLine() || (a->BeginLine() == b->BeginLine() && a->BeginCharacter() < b->BeginCharacter())); }
 	static void VerifyCursors(TextField* textfield, std::vector<Cursor*>& cursors);
 
-	void SetCursorStartLocation(int linenr, int characternr);
-	void SetCursorEndLocation(int linenr, int characternr);
-	void SetCursorLocation(int linenr, int characternr);
-	void SetCursorLine(int linenr);
-	void SetCursorCharacter(int characternr);
+	void SetCursorStartLocation(ssize_t linenr, ssize_t characternr);
+	void SetCursorEndLocation(ssize_t linenr, ssize_t characternr);
+	void SetCursorLocation(ssize_t linenr, ssize_t characternr);
+	void SetCursorLine(ssize_t linenr);
+	void SetCursorCharacter(ssize_t characternr);
 
 	Cursor(TextFile* file);
 	Cursor(TextFile* file, ssize_t line, ssize_t character);

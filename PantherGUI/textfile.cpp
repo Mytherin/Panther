@@ -77,9 +77,9 @@ std::string TextFile::GetText() {
 
 // FIXME: "file has been modified without us being the one that modified it"
 // FIXME: use memory mapping on big files and only parse initial lines
-TextLine* TextFile::GetLine(int linenumber) {
+TextLine* TextFile::GetLine(ssize_t linenumber) {
 	// FIXME: account for deltas
-	if (linenumber < 0 || linenumber >= lines.size())
+	if (linenumber < 0 || linenumber >= (ssize_t) lines.size())
 		return NULL;
 	return &lines[linenumber];
 }
@@ -136,9 +136,9 @@ std::vector<Interval> TextFile::GetCursorIntervals(std::vector<Cursor*>& cursors
 	}
 	// if we get here we know the movement is possible
 	// first merge the different intervals so each interval is "standalone" (i.e. not adjacent to another interval)
-	for (ssize_t i = 0; i < intervals.size(); i++) {
+	for (ssize_t i = 0; i < (ssize_t) intervals.size(); i++) {
 		Interval& interval = intervals[i];
-		for (ssize_t j = i + 1; j < intervals.size(); j++) {
+		for (ssize_t j = i + 1; j < (ssize_t) intervals.size(); j++) {
 			if ((interval.start_line >= intervals[j].start_line - 1 && interval.start_line <= intervals[j].end_line + 1) ||
 				(interval.end_line >= intervals[j].start_line - 1 && interval.end_line <=  intervals[j].end_line + 1)) {
 				// intervals overlap, merge the two intervals
@@ -158,8 +158,8 @@ std::vector<Interval> TextFile::GetCursorIntervals(std::vector<Cursor*>& cursors
 void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
 	assert(offset == 1 || offset == -1); // we only support single line moves
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if ((*it)->start_line + offset < 0 || (*it)->start_line + offset >= lines.size() ||
-			(*it)->end_line + offset < 0 || (*it)->end_line + offset >= lines.size()) {
+		if ((*it)->start_line + offset < 0 || (*it)->start_line + offset >= (ssize_t) lines.size() ||
+			(*it)->end_line + offset < 0 || (*it)->end_line + offset >= (ssize_t) lines.size()) {
 			// we do not move any lines if any of the movements are not possible
 			return;
 		}

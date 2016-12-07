@@ -5,8 +5,8 @@
 
 class Control {
 public:
-	int x, y;
-	int width, height;
+	PGScalar x, y;
+	PGScalar width, height;
 
 	Control(PGWindowHandle window);
 
@@ -15,7 +15,7 @@ public:
 	virtual void KeyboardCharacter(char character, PGModifier modifier);
 	virtual void KeyboardUnicode(char* character, PGModifier modifier);
 	virtual void PeriodicRender(void);
-	virtual void Draw(PGRendererHandle, PGRect*);
+	virtual void Draw(PGRendererHandle, PGIRect*);
 
 	virtual void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
@@ -24,6 +24,7 @@ public:
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 
 	virtual void Invalidate();
+	virtual void Invalidate(PGIRect);
 	virtual void Invalidate(PGRect);
 protected:
 	PGWindowHandle window;

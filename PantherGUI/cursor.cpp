@@ -174,13 +174,13 @@ void Cursor::SelectEndOfFile() {
 	this->start_character = this->file->GetLine(this->start_line)->GetLength();
 }
 
-void Cursor::SetCursorLocation(int linenr, int characternr) {
+void Cursor::SetCursorLocation(ssize_t linenr, ssize_t characternr) {
 	this->start_line = this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
 	this->start_character = this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
 	min_character = -1;
 }
 
-void Cursor::SetCursorStartLocation(int linenr, int characternr) {
+void Cursor::SetCursorStartLocation(ssize_t linenr, ssize_t characternr) {
 	if (min_character >= 0) {
 		if (linenr < min_line ||
 			(linenr == min_line && characternr < min_character)) {
@@ -209,16 +209,16 @@ void Cursor::SetCursorStartLocation(int linenr, int characternr) {
 	this->start_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
 }
 
-void Cursor::SetCursorEndLocation(int linenr, int characternr) {
+void Cursor::SetCursorEndLocation(ssize_t linenr, ssize_t characternr) {
 	this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
 	this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
 }
 
-void Cursor::SetCursorLine(int linenr) {
+void Cursor::SetCursorLine(ssize_t linenr) {
 	this->start_line = this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
 }
 
-void Cursor::SetCursorCharacter(int characternr) {
+void Cursor::SetCursorCharacter(ssize_t characternr) {
 	this->start_character = this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
 }
 
@@ -343,7 +343,7 @@ void Cursor::VerifyCursors(TextField* textfield, std::vector<Cursor*>& cursors) 
 	}
 }
 
-bool Cursor::Contains(int linenr, int characternr) {
+bool Cursor::Contains(ssize_t linenr, ssize_t characternr) {
 	if (this->BeginLine() == this->EndLine() && 
 		this->BeginLine() == linenr) {
 		return characternr >= this->BeginCharacter() && characternr <= this->EndCharacter();

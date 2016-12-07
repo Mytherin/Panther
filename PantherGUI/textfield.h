@@ -21,7 +21,7 @@ public:
 	TextField(PGWindowHandle, std::string filename);
 
 	void PeriodicRender(void);
-	void Draw(PGRendererHandle, PGRect*);
+	void Draw(PGRendererHandle, PGIRect*);
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
@@ -31,13 +31,13 @@ public:
 	void KeyboardCharacter(char character, PGModifier modifier);
 	void KeyboardUnicode(char *character, PGModifier modifier);
 	
-	void InvalidateLine(int line);
-	void InvalidateBeforeLine(int line);
-	void InvalidateAfterLine(int line);
-	void InvalidateBetweenLines(int start, int end);
+	void InvalidateLine(ssize_t line);
+	void InvalidateBeforeLine(ssize_t line);
+	void InvalidateAfterLine(ssize_t line);
+	void InvalidateBetweenLines(ssize_t start, ssize_t end);
 	void InvalidateScrollbar();
 
-	int GetLineOffset() { return lineoffset_y; }
+	ssize_t GetLineOffset() { return lineoffset_y; }
 	void SetLineOffset(ssize_t offset) { lineoffset_y = offset; }
 	int GetLineHeight();
 	void DisplayCarets();
@@ -48,10 +48,10 @@ public:
 	TextFile& GetTextFile() { return textfile; }
 	std::vector<Cursor*>& GetCursors() { return cursors; }
 private:
-	ssize_t text_offset;
 	int offset_x;
 	ssize_t lineoffset_y;
 	std::vector<Cursor*> cursors;
+	PGScalar text_offset;
 	PGScalar line_height;
 	PGScalar character_width;
 	int display_carets_count;
@@ -66,21 +66,21 @@ private:
 	bool current_focus;
 
 	bool drag_scrollbar;
-	ssize_t drag_scrollbar_mouse_y;
+	PGScalar drag_scrollbar_mouse_y;
 
-	ssize_t GetScrollbarHeight();
-	ssize_t GetScrollbarOffset();
-	void SetScrollbarOffset(ssize_t offset);
+	PGScalar GetScrollbarHeight();
+	PGScalar GetScrollbarOffset();
+	void SetScrollbarOffset(PGScalar offset);
 
 	Cursor* active_cursor;
 	TextFile textfile;
 
 	MouseClickInstance last_click;
 
-	void DrawTextField(PGRendererHandle, PGRect*, bool minimap, PGScalar position_x_text, PGScalar position_y);
+	void DrawTextField(PGRendererHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y);
 
 
 	void ClearExtraCursors();
-	void GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character, bool clip_character = true);
+	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, ssize_t& line, ssize_t& character, bool clip_character = true);
 	bool SetScrollOffset(ssize_t offset);
 };

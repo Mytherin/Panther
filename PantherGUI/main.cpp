@@ -28,7 +28,7 @@ public:
 	HWND hwnd;
 	std::vector<Control*> registered_refresh;
 	Control *focused_control;
-	PGRect invalidated_area;
+	PGIRect invalidated_area;
 	PGCursorType cursor_type;
 	bool invalidated;
 
@@ -103,7 +103,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = szWindowClass;
-	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
+	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	
 	if (!RegisterClassEx(&wcex)) {
 		MessageBox(NULL,
@@ -191,7 +191,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		SkPaint paint;
 		SkPaint textpaint;
 		PGRenderer renderer(hdc);
-		PGRect rect(
+		PGIRect rect(
 			ps.rcPaint.left,
 			ps.rcPaint.top,
 			ps.rcPaint.right - ps.rcPaint.left,
@@ -337,7 +337,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			// FIXME modifier
 			global_handle->focused_control->KeyboardButton(button, global_handle->modifier);
 		} else if (wParam >= 0x41 && wParam <= 0x5A) {
-			character = wParam;
+			character = (char) wParam;
 			if (global_handle->modifier != PGModifierNone) {
 				global_handle->focused_control->KeyboardCharacter((char)wParam, global_handle->modifier);
 			}
@@ -456,7 +456,7 @@ PGPoint GetMousePosition(PGWindowHandle window) {
 	if (!ScreenToClient(window->hwnd, &point)) {
 		return PGPoint(-1, -1);
 	}
-	return PGPoint(point.x, point.y);
+	return PGPoint((PGScalar) point.x, (PGScalar) point.y);
 }
 
 PGWindowHandle PGCreateWindow(void) {
@@ -503,7 +503,7 @@ void RefreshWindow(PGWindowHandle window) {
 	window->invalidated = true;
 }
 
-void RefreshWindow(PGWindowHandle window, PGRect rectangle) {
+void RefreshWindow(PGWindowHandle window, PGIRect rectangle) {
 	// FIXME do not invalidate entire window here
 	window->invalidated = true;
 	if (window->invalidated_area.width == 0) {
@@ -524,7 +524,7 @@ void RedrawWindow(PGWindowHandle window) {
 	InvalidateRect(window->hwnd, NULL, true);
 }
 
-void RedrawWindow(PGWindowHandle window, PGRect rectangle) {
+void RedrawWindow(PGWindowHandle window, PGIRect rectangle) {
 	RECT rect;
 	rect.top = rectangle.y;
 	rect.left = rectangle.x;
@@ -601,8 +601,8 @@ void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScal
 void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t start, ssize_t end, PGColor selection_color, PGScalar line_height) {
 	if (start == end) return;
 	PGScalar selection_start = MeasureTextWidth(renderer, text, start);
-	PGScalar selection_width = MeasureTextWidth(renderer, text, end > len ? len : end);
-	if (end > len) {
+	PGScalar selection_width = MeasureTextWidth(renderer, text, end > (ssize_t) len ? len : end);
+	if (end > (ssize_t) len) {
 		assert(end == len + 1);
 		selection_width += renderer->character_width;
 	}
@@ -613,7 +613,7 @@ void SetTextColor(PGRendererHandle renderer, PGColor color) {
 	renderer->textpaint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 }
 
-void SetTextFont(PGRendererHandle renderer, PGFontHandle font, int height) {
+void SetTextFont(PGRendererHandle renderer, PGFontHandle font, PGScalar height) {
 	renderer->textpaint->setTextSize(height);
 	renderer->character_width = renderer->textpaint->measureText("x", 1);
 	renderer->text_offset = renderer->textpaint->getFontBounds().height() / 2 + renderer->textpaint->getFontBounds().height() / 4;

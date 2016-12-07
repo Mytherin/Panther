@@ -35,7 +35,7 @@ public:
 
 	std::string GetText();
 
-	TextLine* GetLine(int linenumber);
+	TextLine* GetLine(ssize_t linenumber);
 	void InsertText(char character, std::vector<Cursor*>& cursors);
 	void InsertText(std::string text, std::vector<Cursor*>& cursors);
 	void DeleteCharacter(std::vector<Cursor*>& cursors, PGDirection direction);
