@@ -262,13 +262,13 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	x = x - this->x;
 	y = y - this->y;
 	if (button == PGLeftMouseButton) {
-		if (x > this->width - 16) {
+		if (x > this->width - SCROLLBAR_WIDTH) {
 			// scrollbar
-			if (y <= 16) {
+			if (y <= SCROLLBAR_BASE_OFFSET) {
 				if (this->lineoffset_y == 0) return;
 				this->lineoffset_y--;
 				this->Invalidate();
-			} else if (y >= this->height - 16) {
+			} else if (y >= this->height - SCROLLBAR_BASE_OFFSET) {
 				if (this->lineoffset_y == textfile.GetLineCount() - 1) return;
 				this->lineoffset_y++;
 				this->Invalidate();

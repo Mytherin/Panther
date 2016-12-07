@@ -354,6 +354,7 @@ bool Cursor::Contains(int linenr, int characternr) {
 	} else if (linenr > this->BeginLine() && linenr < this->EndLine()) {
 		return true;
 	}
+	return false;
 }
 
 bool Cursor::OverlapsWith(Cursor& cursor) {
