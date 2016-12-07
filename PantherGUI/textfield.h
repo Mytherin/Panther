@@ -52,8 +52,8 @@ private:
 	int offset_x;
 	ssize_t lineoffset_y;
 	std::vector<Cursor*> cursors;
-	int line_height;
-	int character_width;
+	PGScalar line_height;
+	PGScalar character_width;
 	int display_carets_count;
 	bool drag_selection;
 	bool drag_selection_cursors;
@@ -77,7 +77,7 @@ private:
 
 	MouseClickInstance last_click;
 
-	void DrawTextField(PGRendererHandle, PGRect*, bool minimap, int position_x_text, int position_y);
+	void DrawTextField(PGRendererHandle, PGRect*, bool minimap, PGScalar position_x_text, PGScalar position_y);
 
 
 	void ClearExtraCursors();

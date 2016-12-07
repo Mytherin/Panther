@@ -18,29 +18,31 @@ typedef struct PGTimer* PGTimerHandle;
 struct PGFont;
 typedef struct PGFont* PGFontHandle;
 
+typedef float PGScalar;
+
 class Control;
 
 struct PGPoint {
-	int x;
-	int y;
+	PGScalar x;
+	PGScalar y;
 
-	PGPoint(int x, int y) : x(x), y(y) { }
+	PGPoint(PGScalar x, PGScalar y) : x(x), y(y) { }
 };
 
 struct PGSize {
-	int width;
-	int height;
+	PGScalar width;
+	PGScalar height;
 
-	PGSize(int width, int height) : width(width), height(height) { }
+	PGSize(PGScalar width, PGScalar height) : width(width), height(height) { }
 };
 
 struct PGRect {
-	int x;
-	int y;
-	int width;
-	int height;
+	PGScalar x;
+	PGScalar y;
+	PGScalar width;
+	PGScalar height;
 
-	PGRect(int x, int y, int width, int height) : x(x), y(y), width(width), height(height) { }
+	PGRect(PGScalar x, PGScalar y, PGScalar width, PGScalar height) : x(x), y(y), width(width), height(height) { }
 };
 
 struct PGLine {
@@ -48,7 +50,7 @@ struct PGLine {
 	PGPoint end;
 
 	PGLine(PGPoint start, PGPoint end) : start(start), end(end) { }
-	PGLine(int startx, int starty, int endx, int endy) : start(startx, starty), end(endx, endy) { }
+	PGLine(PGScalar startx, PGScalar starty, PGScalar endx, PGScalar endy) : start(startx, starty), end(endx, endy) { }
 };
 
 typedef int PGTextAlign;
@@ -170,18 +172,18 @@ void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PG
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);
-// Render text at the specified location; returns the width and height of the rendered text
-PGSize RenderText(PGRendererHandle window, const char* text, size_t length, int x, int y);
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t characternr);
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end, PGColor selection_color, ssize_t line_height);
+// Render text at the specified location
+void RenderText(PGRendererHandle renderer, const char* text, size_t length, PGScalar x, PGScalar y);
+PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length);
+PGScalar GetTextHeight(PGRendererHandle renderer);
+void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t characternr, PGScalar line_height);
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t start, ssize_t end, PGColor selection_color, PGScalar line_height);
 // Sets the color of the text rendered with the RenderText method
 void SetTextColor(PGRendererHandle window, PGColor color);
 // Sets the font used by the RenderText method
 void SetTextFont(PGRendererHandle window, PGFontHandle font, int height);
 // Sets the text-alignment of text rendered with the RenderText method
 void SetTextAlign(PGRendererHandle window, PGTextAlign alignment);
-
-int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length);
 
 Control* GetFocusedControl(PGWindowHandle window);
 bool WindowHasFocus(PGWindowHandle window);

@@ -10,10 +10,17 @@
 
 #include <windowsx.h>
 #include <vector>
-#include <gdiplus.h>
-#pragma comment (lib, "Gdiplus.lib")
 
-using namespace Gdiplus;
+#include <SkBitmap.h>
+#include <SkDevice.h>
+#include <SkPaint.h>
+#include <SkRect.h>
+#include <SkData.h>
+#include <SkImage.h>
+#include <SkStream.h>
+#include <SkSurface.h>
+#include <SkPath.h>
+#include <SkTypeface.h>
 
 struct PGWindow {
 public:
@@ -29,9 +36,13 @@ public:
 
 struct PGRenderer {
 	HDC hdc;
-	Graphics graphics;
+	SkCanvas* canvas;
+	SkPaint* paint;
+	SkPaint* textpaint;
+	PGScalar character_width;
+	PGScalar text_offset;
 
-	PGRenderer(HDC hdc) : hdc(hdc), graphics(hdc) {}
+	PGRenderer(HDC hdc) : hdc(hdc), canvas(NULL), paint(NULL) {}
 };
 
 struct PGFont {
@@ -44,7 +55,7 @@ struct PGTimer {
 
 PGWindowHandle global_handle;
 
-#define MAX_REFRESH_FREQUENCY 1000/20
+#define MAX_REFRESH_FREQUENCY 1000/30
 
 void PeriodicWindowRedraw(void) {
 	for (auto it = global_handle->registered_refresh.begin(); it != global_handle->registered_refresh.end(); it++) {
@@ -62,11 +73,6 @@ void PeriodicWindowRedraw(void) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	static TCHAR szWindowClass[] = _T("Panther");
 	static TCHAR szTitle[] = _T("Panther GUI");
-	GdiplusStartupInput gdiplusStartupInput;
-	ULONG_PTR           gdiplusToken;
-
-	// Initialize GDI+.
-	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
 	WNDCLASSEX wcex;
 
@@ -91,7 +97,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
-
+	
 	if (!RegisterClassEx(&wcex)) {
 		MessageBox(NULL,
 			_T("Call to RegisterClassEx failed!"),
@@ -157,7 +163,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-	GdiplusShutdown(gdiplusToken);
+	//GdiplusShutdown(gdiplusToken);
 	return (int)msg.wParam;
 }
 
@@ -166,17 +172,63 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	switch (message) {
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
-		HDC hdc;
-		hdc = BeginPaint(hWnd, &ps);
+		HDC hdc = BeginPaint(hWnd, &ps);
+		SkBitmap bitmap;
+		SkPaint paint;
+		SkPaint textpaint;
 		PGRenderer renderer(hdc);
 		PGRect rect(
 			ps.rcPaint.left,
 			ps.rcPaint.top,
-			ps.rcPaint.bottom - ps.rcPaint.top,
-			ps.rcPaint.right - ps.rcPaint.left);
+			ps.rcPaint.right - ps.rcPaint.left,
+			ps.rcPaint.bottom - ps.rcPaint.top);
+
+		assert(rect.x == 0 && rect.y == 0);
+		bitmap.allocN32Pixels(rect.width, rect.height);
+		bitmap.allocPixels();
+
+		SkCanvas canvas(bitmap);
+		textpaint.setTextSize(SkIntToScalar(15));
+		textpaint.setAntiAlias(true);
+		textpaint.setStyle(SkPaint::kFill_Style);
+		textpaint.setTextEncoding(SkPaint::kUTF8_TextEncoding);
+		textpaint.setTextAlign(SkPaint::kLeft_Align);
+		SkFontStyle style(SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
+		auto font = SkTypeface::MakeFromName("Consolas", style);
+		textpaint.setTypeface(font);
+		paint.setStyle(SkPaint::kFill_Style);
+		canvas.clear(SkColorSetRGB(30, 30, 30));
+
+		renderer.canvas = &canvas;
+		renderer.paint = &paint;
+		renderer.textpaint = &textpaint;
+
 		for (auto it = global_handle->registered_refresh.begin(); it != global_handle->registered_refresh.end(); it++) {
 			(*it)->Draw(&renderer, &rect);
 		}
+
+		BITMAPINFO bmi;
+		memset(&bmi, 0, sizeof(bmi));
+		bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+		bmi.bmiHeader.biWidth       = bitmap.width();
+		bmi.bmiHeader.biHeight      = -bitmap.height(); // top-down image
+		bmi.bmiHeader.biPlanes      = 1;
+		bmi.bmiHeader.biBitCount    = 32;
+		bmi.bmiHeader.biCompression = BI_RGB;
+		bmi.bmiHeader.biSizeImage   = 0;
+
+		assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
+		bitmap.lockPixels();
+		int ret = SetDIBitsToDevice(hdc,
+			0, 0,
+			bitmap.width(), bitmap.height(),
+			0, 0,
+			0, bitmap.height(),
+			bitmap.getPixels(),
+			&bmi,
+			DIB_RGB_COLORS);
+		(void)ret; // we're ignoring potential failures for now.
+		bitmap.unlockPixels();
 		EndPaint(hWnd, &ps);
 		break;
 	}
@@ -368,6 +420,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		global_handle->focused_control->MouseMove(x, y, buttons);
 		break;
 	}
+	case WM_ERASEBKGND:
+		return 1;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -471,103 +525,101 @@ PGSize GetWindowSize(PGWindowHandle window) {
 }
 
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color) {
-	SolidBrush solidBrush(Color(color.a, color.r, color.g, color.b));
-	PointF points[3];
-	points[0].X = a.x;
-	points[0].Y = a.y;
-	points[1].X = b.x;
-	points[1].Y = b.y;
-	points[2].X = c.x;
-	points[2].Y = c.y;
-	handle->graphics.FillPolygon(&solidBrush, points, 3);
+	SkPath path;
+	SkPoint points[] = {{a.x, a.y}, {b.x, b.y}, {c.x, c.y}}; // triangle
+	path.addPoly(points, 3, true);
+	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	handle->canvas->drawPath(path, *handle->paint);
 }
 
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color) {
-	SolidBrush solidBrush(Color(color.a, color.r, color.g, color.b));
-	handle->graphics.FillRectangle(&solidBrush, rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+	SkRect rect;
+	rect.fLeft = rectangle.x;
+	rect.fTop = rectangle.y;
+	rect.fRight = rectangle.x + rectangle.width;
+	rect.fBottom = rectangle.y + rectangle.height;
+	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	handle->canvas->drawRect(rect, *handle->paint);
 }
 
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color) {
-	Pen pen(Color(color.a, color.r, color.g, color.b));
-	handle->graphics.DrawLine(&pen, line.start.x, line.start.y, line.end.x, line.end.y);
-
+	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	handle->canvas->drawLine(line.start.x, line.start.y, line.end.x, line.end.y, *handle->paint);
 }
 
 void RenderImage(PGRendererHandle renderer, void* image, int x, int y) {
 
 }
 
-PGSize RenderText(PGRendererHandle renderer, const char *text, size_t len, int x, int y) {
+void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y) {
 	if (len == 0) {
 		len = 1;
 		text = " ";
 	}
-
-	LONG return_value = TabbedTextOut(renderer->hdc, x, y, text, len, 0, NULL, 0);
-	return PGSize{ LOWORD(return_value), HIWORD(return_value) };
+	renderer->canvas->drawText(text, len, x, y + renderer->text_offset, *renderer->textpaint);
 }
 
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t characternr) {
-	ssize_t line_height = 19;
-	int width = GetRenderWidth(renderer, text, characternr);
-	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(0, 0, 0));
+PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length) {
+	int size = 0;
+	for (size_t i = 0; i < length; i++) {
+		if (text[i] == '\t') {
+			size += 5; // FIXME: tab width
+		} else {
+			size += 1;
+		}
+	}
+	return size * renderer->character_width;
 }
 
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end, PGColor selection_color, ssize_t line_height) {
+PGScalar GetTextHeight(PGRendererHandle renderer) {
+	SkPaint::FontMetrics metrics;
+	renderer->textpaint->getFontMetrics(&metrics, 0);
+	return metrics.fDescent - metrics.fAscent;
+}
+
+void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t characternr, PGScalar line_height) {
+	PGScalar width = MeasureTextWidth(renderer, text, characternr);
+	SkColor color = renderer->textpaint->getColor();
+	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color)));
+}
+
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t start, ssize_t end, PGColor selection_color, PGScalar line_height) {
 	if (start == end) return;
-	int selection_start = GetRenderWidth(renderer, text, start);
-	int selection_width = GetRenderWidth(renderer, text, end > len ? len : end);
+	PGScalar selection_start = MeasureTextWidth(renderer, text, start);
+	PGScalar selection_width = MeasureTextWidth(renderer, text, end > len ? len : end);
 	if (end > len) {
 		assert(end == len + 1);
-		selection_width += GetRenderWidth(renderer, " ", 1);
+		selection_width += renderer->character_width;
 	}
-	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, line_height), selection_color);
-}
-
-int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) {
-	int width = 0;
-	for (int i = 0; i < length; i++) {
-		int result;
-		UINT val = text[i];
-		if (val == '\t') {
-			GetCharWidth(renderer->hdc, ' ', ' ', &result);
-			result *= 5; // FIXME: tabwidth
-		} else {
-			GetCharWidth(renderer->hdc, val, val, &result);
-		}
-		width += result;
-	}
-	return width;
+	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, GetTextHeight(renderer)), selection_color);
 }
 
 void SetTextColor(PGRendererHandle renderer, PGColor color) {
-	SetTextColor(renderer->hdc, RGB(color.r, color.g, color.b));
+	renderer->textpaint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 }
 
 void SetTextFont(PGRendererHandle renderer, PGFontHandle font, int height) {
-	HFONT mfont = CreateFont(height, 0, 0, 0, FW_NORMAL, false, false, false, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_DONTCARE, "Consolas");
-	SelectObject(renderer->hdc, mfont);
+	renderer->textpaint->setTextSize(height);
+	renderer->character_width = renderer->textpaint->measureText("x", 1);
+	renderer->text_offset = renderer->textpaint->getFontBounds().height() / 2;
 }
 
 void SetTextAlign(PGRendererHandle renderer, PGTextAlign alignment) {
-	UINT fMode = 0;
 	if (alignment & PGTextAlignBottom) {
-		fMode |= TA_BOTTOM;
+		assert(0);
 	} else if (alignment & PGTextAlignTop) {
-		fMode |= TA_TOP;
+		assert(0);
 	} else if (alignment & PGTextAlignVerticalCenter) {
-		fMode |= TA_BASELINE;
+		assert(0);
 	}
 
 	if (alignment & PGTextAlignLeft) {
-		fMode |= TA_LEFT;
+		renderer->textpaint->setTextAlign(SkPaint::kLeft_Align);
 	} else if (alignment & PGTextAlignRight) {
-		fMode |= TA_RIGHT;
+		renderer->textpaint->setTextAlign(SkPaint::kRight_Align);
 	} else if (alignment & PGTextAlignHorizontalCenter) {
-		fMode |= TA_CENTER;
+		renderer->textpaint->setTextAlign(SkPaint::kCenter_Align);
 	}
-
-	SetTextAlign(renderer->hdc, fMode);
 }
 
 Control* GetFocusedControl(PGWindowHandle window) {

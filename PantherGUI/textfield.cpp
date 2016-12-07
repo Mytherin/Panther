@@ -53,19 +53,22 @@ void TextField::PeriodicRender(void) {
 	}
 }
 
-void TextField::DrawTextField(PGRendererHandle renderer, PGRect* rectangle, bool minimap, int position_x_text, int position_y) {
+void TextField::DrawTextField(PGRendererHandle renderer, PGRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y) {
 	// FIXME: respect Width while rendering
 	ssize_t linenr = lineoffset_y;
 	TextLine *current_line;
-	PGColor selection_color = PGColor(20, 20, 180, 125);
-	ssize_t line_height = this->line_height;
+	PGColor selection_color = PGColor(20, 60, 255, 125);
+	PGScalar line_height = GetTextHeight(renderer);
+	if (minimap) {
+		PGRect rect(position_x_text, position_y, this->width - position_x_text, this->height - position_y);
+		RenderRectangle(renderer, rect, PGColor(30, 30, 30));
+	}
 	while ((current_line = textfile.GetLine(linenr)) != NULL) {
 		// only render lines that fall within the render rectangle
 		if (rectangle && position_y > rectangle->y + rectangle->height) break;
 		if (!rectangle || !(position_y + line_height < rectangle->y)) {
 			// render the actual text
-			PGSize size = RenderText(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y);
-			line_height = size.height;
+			RenderText(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y);
 		}
 
 		linenr++;
@@ -100,7 +103,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGRect* rectangle, bool
 			if (!minimap && startline == (*it)->SelectedLine()) {
 				if (display_carets) {
 					// render the caret on the selected line
-					RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter());
+					RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter(), line_height);
 				}
 			}
 			RenderSelection(renderer,
@@ -127,23 +130,23 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 
 	bool window_has_focus = WindowHasFocus(window);
 
-	SetTextFont(renderer, NULL, 19);
-	SetTextColor(renderer, PGColor(0, 0, 255));
-	SetTextAlign(renderer, PGTextAlignRight);
+	SetTextFont(renderer, NULL, 15);
+	SetTextColor(renderer, PGColor(200, 200, 182));
+	//SetTextAlign(renderer, PGTextAlignRight);
 
 	// determine the width of the line numbers
 	ssize_t line_count = textfile.GetLineCount();
 	auto line_number = std::to_string(std::max((ssize_t)10, textfile.GetLineCount() + 1));
-	text_offset = 10 + GetRenderWidth(renderer, line_number.c_str(), line_number.size());
+	text_offset = 10 + MeasureTextWidth(renderer, line_number.c_str(), line_number.size());
 	// get the mouse position (for rendering hovers)
 	PGPoint mouse = GetMousePosition(window);
 	mouse.x -= this->x;
 	mouse.y -= this->y;
 	// determine the character width
-	character_width = GetRenderWidth(renderer, "a", 1);
+	character_width = MeasureTextWidth(renderer, "a", 1);
 	// render the line numbers
-	int position_x = this->x + this->offset_x;
-	int position_y = 0;
+	PGScalar position_x = this->x + this->offset_x;
+	PGScalar position_y = 0;
 	ssize_t linenr = lineoffset_y;
 	TextLine *current_line;
 	while ((current_line = textfile.GetLine(linenr)) != NULL) {
@@ -166,7 +169,7 @@ void TextField::Draw(PGRendererHandle renderer, PGRect* rectangle) {
 		position_y += line_height;
 	}
 	// render the actual text field
-	SetTextAlign(renderer, PGTextAlignLeft);
+	//SetTextAlign(renderer, PGTextAlignLeft);
 	DrawTextField(renderer, rectangle, false, this->x + this->offset_x + text_offset, this->y);
 	// FIXME: render the minimap
 	SetTextFont(renderer, NULL, 3);
@@ -220,7 +223,7 @@ void TextField::SetScrollbarOffset(ssize_t offset) {
 
 void TextField::GetLineCharacterFromPosition(int x, int y, ssize_t& line, ssize_t& character, bool clip_character) {
 	// find the line position of the mouse
-	ssize_t line_offset = std::max(std::min((ssize_t)y / this->line_height, textfile.GetLineCount() - this->lineoffset_y - 1), (ssize_t) 0);
+	PGScalar line_offset = std::max(std::min((ssize_t)(y / this->line_height), textfile.GetLineCount() - this->lineoffset_y - 1), (ssize_t) 0);
 	line = this->lineoffset_y + line_offset;
 	// find the character position within the line
 	x = x - this->text_offset - this->offset_x;
@@ -423,7 +426,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 }
 
 int TextField::GetLineHeight() {
-	return this->height / line_height + (this->height % line_height == 0 ? -1 : 0);
+	return (int)(this->height / line_height);
 }
 
 void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
