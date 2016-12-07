@@ -158,9 +158,18 @@ void RedrawWindow(PGWindowHandle window, PGRect);
 PGSize GetWindowSize(PGWindowHandle window);
 
 typedef enum {
+	PGCursorStandard,
+	PGCursorCrosshair,
+	PGCursorHand,
+	PGCursorIBeam,
+	PGCursorWait
+} PGCursorType;
+
+void SetCursor(PGWindowHandle window, PGCursorType type);
+
+typedef enum {
 	PGTimerFlagsNone = 0x00,
 	PGTimerExecuteOnce = 0x01,
-
 } PGTimerFlags;
 
 typedef void (*PGTimerCallback)(void);

@@ -29,6 +29,7 @@ public:
 	std::vector<Control*> registered_refresh;
 	Control *focused_control;
 	PGRect invalidated_area;
+	PGCursorType cursor_type;
 	bool invalidated;
 
 	PGWindow() : modifier(PGModifierNone), invalidated_area(0, 0, 0, 0), invalidated(false) {}
@@ -54,6 +55,12 @@ struct PGTimer {
 };
 
 PGWindowHandle global_handle;
+
+HCURSOR cursor_standard = NULL;
+HCURSOR cursor_crosshair = NULL;
+HCURSOR cursor_hand = NULL;
+HCURSOR cursor_ibeam = NULL;
+HCURSOR cursor_wait = NULL;
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
@@ -107,6 +114,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 1;
 	}
 
+	cursor_standard = LoadCursor(NULL, IDC_ARROW);
+	cursor_crosshair = LoadCursor(NULL, IDC_CROSS);
+	cursor_hand = LoadCursor(NULL, IDC_HAND);
+	cursor_ibeam = LoadCursor(NULL, IDC_IBEAM);
+	cursor_wait = LoadCursor(NULL, IDC_WAIT);
+
 	// The parameters to CreateWindow explained:
 	// szWindowClass: the name of the application
 	// szTitle: the text that appears in the title bar
@@ -141,6 +154,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
+	res->cursor_type = PGCursorStandard;
 	global_handle = res;
 
 	CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
@@ -183,7 +197,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ps.rcPaint.right - ps.rcPaint.left,
 			ps.rcPaint.bottom - ps.rcPaint.top);
 
-		assert(rect.x == 0 && rect.y == 0);
 		bitmap.allocN32Pixels(rect.width, rect.height);
 		bitmap.allocPixels();
 
@@ -220,7 +233,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
 		bitmap.lockPixels();
 		int ret = SetDIBitsToDevice(hdc,
-			0, 0,
+			rect.x, rect.y,
 			bitmap.width(), bitmap.height(),
 			0, 0,
 			0, bitmap.height(),
@@ -420,6 +433,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		global_handle->focused_control->MouseMove(x, y, buttons);
 		break;
 	}
+	case WM_SETCURSOR:
+		return 1;
 	case WM_ERASEBKGND:
 		return 1;
 	case WM_DESTROY:
@@ -601,7 +616,7 @@ void SetTextColor(PGRendererHandle renderer, PGColor color) {
 void SetTextFont(PGRendererHandle renderer, PGFontHandle font, int height) {
 	renderer->textpaint->setTextSize(height);
 	renderer->character_width = renderer->textpaint->measureText("x", 1);
-	renderer->text_offset = renderer->textpaint->getFontBounds().height() / 2;
+	renderer->text_offset = renderer->textpaint->getFontBounds().height() / 2 + renderer->textpaint->getFontBounds().height() / 4;
 }
 
 void SetTextAlign(PGRendererHandle renderer, PGTextAlign alignment) {
@@ -714,4 +729,30 @@ void DeleteTimer(PGTimerHandle handle) {
 bool WindowHasFocus(PGWindowHandle window) {
 	HWND hwnd = GetForegroundWindow();
 	return hwnd == window->hwnd;
+}
+
+void SetCursor(PGWindowHandle window, PGCursorType type) {
+	if (window->cursor_type == type) return;
+	HCURSOR cursor = NULL;
+	switch (type) {
+	case PGCursorStandard:
+		cursor = cursor_standard;
+		break;
+	case PGCursorCrosshair:
+		cursor = cursor_crosshair;
+		break;
+	case PGCursorHand:
+		cursor = cursor_hand;
+		break;
+	case PGCursorIBeam:
+		cursor = cursor_ibeam;
+		break;
+	case PGCursorWait:
+		cursor = cursor_wait;
+		break;
+	default:
+		return;
+	}
+	window->cursor_type = type;
+	SetCursor(cursor);
 }

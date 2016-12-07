@@ -272,8 +272,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				if (this->lineoffset_y == textfile.GetLineCount() - 1) return;
 				this->lineoffset_y++;
 				this->Invalidate();
-			} else 
-			{
+			} else {
 				ssize_t scrollbar_offset = GetScrollbarOffset();
 				ssize_t scrollbar_height = GetScrollbarHeight();
 
@@ -363,6 +362,11 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 }
 
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
+	if (x >= this->x && y >= this->y && x <= this->x + (6 * this->width / 7) && y <= this->y + this->height) {
+		SetCursor(this->window, PGCursorIBeam);
+	} else {
+		SetCursor(this->window, PGCursorStandard);
+	}
 	if (buttons & PGLeftMouseButton) {
 		if (drag_selection) {
 			// FIXME: when having multiple cursors and we are altering the active cursor,
