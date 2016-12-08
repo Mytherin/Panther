@@ -53,15 +53,24 @@ void TextField::PeriodicRender(void) {
 	}
 }
 
-void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y) {
+void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width) {
 	// FIXME: respect Width while rendering
-	ssize_t linenr = lineoffset_y;
+	ssize_t start_line = lineoffset_y;
+	ssize_t linenr = start_line;
 	TextLine *current_line;
 	PGColor selection_color = PGColor(20, 60, 255, 125);
 	PGScalar line_height = GetTextHeight(renderer);
+	PGScalar start_position_y = position_y;
 	if (minimap) {
 		PGRect rect(position_x_text, position_y, this->width - position_x_text, this->height - position_y);
 		RenderRectangle(renderer, rect, PGColor(30, 30, 30));
+		// amount of lines rendered in the minimap
+		ssize_t lines_rendered = (this->height - position_y) / line_height;
+		// percentage of text
+		double percentage = (double) lineoffset_y / textfile.GetLineCount();
+		start_line = std::max((ssize_t)(lineoffset_y - (lines_rendered * percentage)), (ssize_t)0);
+		linenr = start_line;
+		start_position_y = position_y + (this->height - position_y) * percentage;
 	}
 	while ((current_line = textfile.GetLine(linenr)) != NULL) {
 		// only render lines that fall within the render rectangle
@@ -76,9 +85,9 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	}
 	// render the selection and carets
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		ssize_t startline = std::max((*it)->BeginLine(), lineoffset_y);
+		ssize_t startline = std::max((*it)->BeginLine(), start_line);
 		ssize_t endline = std::min((*it)->EndLine(), linenr);
-		position_y = (startline - lineoffset_y) * line_height;
+		position_y = (startline - start_line) * line_height;
 		for (; startline <= endline; startline++) {
 			current_line = textfile.GetLine(startline);
 			assert(current_line);
@@ -120,6 +129,11 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	}
 	if (!minimap) {
 		this->line_height = line_height;
+	} else {
+		// render the overlay for the minimap
+		PGRect rect(position_x_text, start_position_y, this->width - position_x_text, line_height * GetLineHeight());
+		RenderRectangle(renderer, rect, PGColor(191, 191, 191, 50));
+
 	}
 }
 
@@ -170,10 +184,12 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	}
 	// render the actual text field
 	//SetTextAlign(renderer, PGTextAlignLeft);
-	DrawTextField(renderer, rectangle, false, this->x + this->offset_x + text_offset, this->y);
-	// FIXME: render the minimap
+	PGScalar textfield_width = 6.0f * this->width / 7.0f;
+	PGScalar minimap_width = this->width - textfield_width;
+	DrawTextField(renderer, rectangle, false, this->x + this->offset_x + text_offset, this->y, textfield_width);
+	// render the minimap
 	SetTextFont(renderer, NULL, 3);
-	DrawTextField(renderer, NULL, true, this->x + (6.0f * this->width / 7.0f), this->y);
+	DrawTextField(renderer, NULL, true, this->x + textfield_width, this->y, minimap_width);
 
 	// render the scrollbar
 	if (this->display_scrollbar) {

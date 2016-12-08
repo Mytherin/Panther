@@ -484,7 +484,6 @@ void TextFile::AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::strin
 	this->AddDelta(delta);
 	PerformOperation(delta);
 	Cursor::NormalizeCursors(textfield, cursors);
-
 }
 
 void TextFile::Undo(std::vector<Cursor*>& cursors) {

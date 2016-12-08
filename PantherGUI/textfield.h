@@ -77,7 +77,7 @@ private:
 
 	MouseClickInstance last_click;
 
-	void DrawTextField(PGRendererHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y);
+	void DrawTextField(PGRendererHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width);
 
 
 	void ClearExtraCursors();
