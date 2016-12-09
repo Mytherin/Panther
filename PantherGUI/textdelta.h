@@ -28,7 +28,7 @@ public:
 	ssize_t characternr;
 	TextDelta* next;
 
-	TextDelta() : next(NULL) {}
+	TextDelta() : next(nullptr) {}
 
 	virtual PGTextType TextDeltaType() { return PGDeltaUnknown; }
 	TextDelta(ssize_t linenr, ssize_t characternr) : linenr(linenr), characternr(characternr) { }
@@ -39,7 +39,7 @@ public:
 	Cursor* cursor;
 	Cursor stored_cursor;
 
-	CursorDelta(Cursor* cursor, ssize_t linenr, ssize_t characternr) : cursor(cursor), stored_cursor(NULL), TextDelta(linenr, characternr) {
+	CursorDelta(Cursor* cursor, ssize_t linenr, ssize_t characternr) : cursor(cursor), stored_cursor(nullptr), TextDelta(linenr, characternr) {
 		if (cursor) stored_cursor = Cursor(*cursor);
 	}
 
@@ -92,8 +92,8 @@ public:
 
 
 	PGTextType TextDeltaType() { return PGDeltaAddLine; }
-	AddLine(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::string text) : CursorDelta(cursor, linenr, characternr), line(text), cursor_position(0), remove_text(NULL) {}
-	AddLine(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::string text, int cursor_position) : CursorDelta(cursor, linenr, characternr), line(text), cursor_position(cursor_position), remove_text(NULL) {}
+	AddLine(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::string text) : CursorDelta(cursor, linenr, characternr), line(text), cursor_position(0), remove_text(nullptr) {}
+	AddLine(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::string text, int cursor_position) : CursorDelta(cursor, linenr, characternr), line(text), cursor_position(cursor_position), remove_text(nullptr) {}
 };
 
 class AddLines : public CursorDelta {
@@ -104,7 +104,7 @@ public:
 
 
 	PGTextType TextDeltaType() { return PGDeltaAddManyLines; }
-	AddLines(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::vector<std::string> lines) : CursorDelta(cursor, linenr, characternr), lines(lines), remove_text(NULL) {}
+	AddLines(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::vector<std::string> lines) : CursorDelta(cursor, linenr, characternr), lines(lines), remove_text(nullptr) {}
 };
 
 class SwapLines : public TextDelta {
@@ -123,7 +123,7 @@ public:
 	std::vector<TextDelta*> deltas;
 
 	PGTextType TextDeltaType() { return PGDeltaMultiple; }
-	MultipleDelta() : deltas(NULL) {}
+	MultipleDelta() : deltas() {}
 
 	void AddDelta(TextDelta* delta) {
 		deltas.push_back(delta);

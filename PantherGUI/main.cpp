@@ -43,7 +43,7 @@ struct PGRenderer {
 	PGScalar character_width;
 	PGScalar text_offset;
 
-	PGRenderer(HDC hdc) : hdc(hdc), canvas(NULL), paint(NULL) {}
+	PGRenderer(HDC hdc) : hdc(hdc), canvas(nullptr), paint(nullptr) {}
 };
 
 struct PGFont {
@@ -56,11 +56,11 @@ struct PGTimer {
 
 PGWindowHandle global_handle;
 
-HCURSOR cursor_standard = NULL;
-HCURSOR cursor_crosshair = NULL;
-HCURSOR cursor_hand = NULL;
-HCURSOR cursor_ibeam = NULL;
-HCURSOR cursor_wait = NULL;
+HCURSOR cursor_standard = nullptr;
+HCURSOR cursor_crosshair = nullptr;
+HCURSOR cursor_hand = nullptr;
+HCURSOR cursor_ibeam = nullptr;
+HCURSOR cursor_wait = nullptr;
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
@@ -90,7 +90,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
 	wcex.hIcon = (HICON)LoadImage( // returns a HANDLE so we have to cast to HICON
-		NULL,             // hInstance must be NULL when loading from a file
+		nullptr,             // hInstance must be NULL when loading from a file
 		"logo.ico",       // the icon file name
 		IMAGE_ICON,       // specifies that the file is an icon
 		0,                // width of the image (we'll specify default later on)
@@ -99,26 +99,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		LR_DEFAULTSIZE |   // default metrics based on the type (IMAGE_ICON, 32x32)
 		LR_SHARED         // let the system release the handle when it's no longer used
 		);
-	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = NULL;
+	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	
 	if (!RegisterClassEx(&wcex)) {
-		MessageBox(NULL,
+		MessageBox(nullptr,
 			_T("Call to RegisterClassEx failed!"),
 			_T("Win32 Guided Tour"),
-			NULL);
+			0);
 
 		return 1;
 	}
 
-	cursor_standard = LoadCursor(NULL, IDC_ARROW);
-	cursor_crosshair = LoadCursor(NULL, IDC_CROSS);
-	cursor_hand = LoadCursor(NULL, IDC_HAND);
-	cursor_ibeam = LoadCursor(NULL, IDC_IBEAM);
-	cursor_wait = LoadCursor(NULL, IDC_WAIT);
+	cursor_standard = LoadCursor(nullptr, IDC_ARROW);
+	cursor_crosshair = LoadCursor(nullptr, IDC_CROSS);
+	cursor_hand = LoadCursor(nullptr, IDC_HAND);
+	cursor_ibeam = LoadCursor(nullptr, IDC_IBEAM);
+	cursor_wait = LoadCursor(nullptr, IDC_WAIT);
 
 	// The parameters to CreateWindow explained:
 	// szWindowClass: the name of the application
@@ -136,16 +136,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		1016, 738,
-		NULL,
-		NULL,
+		nullptr,
+		nullptr,
 		hInstance,
-		NULL
+		nullptr
 		);
 	if (!hWnd) {
-		MessageBox(NULL,
+		MessageBox(nullptr,
 			_T("Call to CreateWindow failed!"),
 			_T("Win32 Guided Tour"),
-			NULL);
+			0);
 
 		return 1;
 	}
@@ -159,7 +159,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
-	TextField* textField = new TextField(res, "C:\\Users\\wieis\\Desktop\\syntaxtest.py");
+	TextField* textField = new TextField(res, "E:\\killinginthenameof.xml"); //"C:\\Users\\wieis\\Desktop\\syntaxtest.py");
 	textField->width = 1000;
 	textField->height = 700;
 	textField->x = 0;
@@ -462,9 +462,9 @@ PGPoint GetMousePosition(PGWindowHandle window) {
 PGWindowHandle PGCreateWindow(void) {
 	PGWindowHandle res = new PGWindow();
 	if (!res) {
-		return NULL;
+		return nullptr;
 	}
-	HINSTANCE hInstance = GetModuleHandle(NULL);
+	HINSTANCE hInstance = GetModuleHandle(nullptr);
 
 	HWND hWnd = CreateWindow(
 		"Panther",
@@ -472,13 +472,13 @@ PGWindowHandle PGCreateWindow(void) {
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		500, 100,
-		NULL,
-		NULL,
+		nullptr,
+		nullptr,
 		hInstance,
-		NULL
+		nullptr
 		);
 	if (!hWnd) {
-		return NULL;
+		return nullptr;
 	}
 	res->hwnd = hWnd;
 	return res;
@@ -521,7 +521,7 @@ void RefreshWindow(PGWindowHandle window, PGIRect rectangle) {
 }
 
 void RedrawWindow(PGWindowHandle window) {
-	InvalidateRect(window->hwnd, NULL, true);
+	InvalidateRect(window->hwnd, nullptr, true);
 }
 
 void RedrawWindow(PGWindowHandle window, PGIRect rectangle) {
@@ -571,6 +571,7 @@ void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScala
 		len = 1;
 		text = " ";
 	}
+	// FIXME: render tabs correctly
 	renderer->canvas->drawText(text, len, x, y + renderer->text_offset, *renderer->textpaint);
 }
 
@@ -690,7 +691,7 @@ std::string GetClipboardText(PGWindowHandle window) {
 		CloseClipboard();
 		return text;
 	}
-	return NULL;
+	return nullptr;
 }
 
 PGLineEnding GetSystemLineEnding() {
@@ -709,13 +710,13 @@ PGTimerHandle CreateTimer(int ms, PGTimerCallback callback, PGTimerFlags flags) 
 
 	if (!CreateTimerQueueTimer(
 		&timer,
-		NULL,
+		nullptr,
 		TimerRoutine,
 		callback,
 		(DWORD)ms,
 		flags & PGTimerExecuteOnce ? (DWORD)0 : (DWORD)ms,
 		timer_flags))
-		return NULL;
+		return nullptr;
 
 	PGTimerHandle handle = new PGTimer();
 	handle->timer = timer;
@@ -723,7 +724,7 @@ PGTimerHandle CreateTimer(int ms, PGTimerCallback callback, PGTimerFlags flags) 
 }
 
 void DeleteTimer(PGTimerHandle handle) {
-	DeleteTimerQueueTimer(NULL, handle->timer, NULL);
+	DeleteTimerQueueTimer(nullptr, handle->timer, nullptr);
 }
 
 bool WindowHasFocus(PGWindowHandle window) {
@@ -733,7 +734,7 @@ bool WindowHasFocus(PGWindowHandle window) {
 
 void SetCursor(PGWindowHandle window, PGCursorType type) {
 	if (window->cursor_type == type) return;
-	HCURSOR cursor = NULL;
+	HCURSOR cursor = nullptr;
 	switch (type) {
 	case PGCursorStandard:
 		cursor = cursor_standard;

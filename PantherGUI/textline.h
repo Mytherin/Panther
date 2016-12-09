@@ -1,10 +1,12 @@
 #pragma once
 
+#include "syntax.h"
 #include "utils.h"
 
 class TextDelta;
 
 struct TextLine {
+	friend class SyntaxHighlighter;
 	friend class TextFile;
 public:
 	ssize_t GetLength(void);
@@ -15,8 +17,10 @@ public:
 
 	void ApplyDeltas();
 
-	TextLine(char* line, ssize_t length) : line(line), length(length), deltas(NULL), modified_line(NULL) { }
+	TextLine(char* line, ssize_t length) : line(line), length(length), deltas(nullptr), modified_line(nullptr) { }
 
+	PGParserState state;
+	PGSyntax syntax;
 private:
 	ssize_t length;
 	char* line;

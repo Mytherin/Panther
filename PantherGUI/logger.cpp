@@ -1,7 +1,7 @@
 
 #include "logger.h"
 
-static Logger* logger = NULL;
+static Logger* logger = nullptr;
 
 Logger::Logger() {
 	file = mmap::OpenFile(std::string(LOG_FILE), PGFileReadWrite);

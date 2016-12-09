@@ -66,7 +66,7 @@ void TextLine::ApplyDeltas() {
 void TextLine::AddDelta(TextDelta* delta) {
 	// check for invalid delta
 	assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
-	if (this->deltas == NULL) {
+	if (this->deltas == nullptr) {
 		this->deltas = delta;
 	} else {
 		TextDelta* current = this->deltas;
@@ -75,12 +75,12 @@ void TextLine::AddDelta(TextDelta* delta) {
 		current->next = delta;
 	}
 	if (modified_line) free(modified_line);
-	modified_line = NULL;
+	modified_line = nullptr;
 }
 
 void TextLine::RemoveDelta(TextDelta* delta) {
 	TextDelta* current = this->deltas;
-	TextDelta* prev = NULL;
+	TextDelta* prev = nullptr;
 	do {
 		if (current == delta) {
 			if (!prev) {
@@ -90,27 +90,27 @@ void TextLine::RemoveDelta(TextDelta* delta) {
 			}
 			delete current;
 			if (modified_line) free(modified_line);
-			modified_line = NULL;
+			modified_line = nullptr;
 			return;
 		}
-	} while ((prev = current) && (current = current->next) != NULL);
+	} while ((prev = current) && (current = current->next) != nullptr);
 	// attempt to delete a delta that is not part of the current line
 	assert(0);
 }
 
 void TextLine::PopDelta() {
 	TextDelta *linedelta = this->deltas;
-	TextDelta *prev = NULL;
+	TextDelta *prev = nullptr;
 	assert(linedelta);
 	while (linedelta->next) {
 		prev = linedelta;
 		linedelta = linedelta->next;
 	}
 	if (!prev)
-		this->deltas = NULL;
+		this->deltas = nullptr;
 	else
-		prev->next = NULL;
+		prev->next = nullptr;
 
 	if (this->modified_line) free(this->modified_line);
-	this->modified_line = NULL;
+	this->modified_line = nullptr;
 }

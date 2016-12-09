@@ -18,15 +18,15 @@ struct PGFile {
 
 namespace mmap {
 	PGMemoryMappedFileHandle MemoryMapFile(std::string filename) {
-		HANDLE file = CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		HANDLE file = CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		if (!file) {
 			// FIXME: check error
-			return NULL;
+			return nullptr;
 		}
-		HANDLE mmap = CreateFileMapping(file, NULL, PAGE_READWRITE, 0, 0, NULL);
+		HANDLE mmap = CreateFileMapping(file, nullptr, PAGE_READWRITE, 0, 0, nullptr);
 		if (!mmap) {
 			// FIXME: check error
-			return NULL;
+			return nullptr;
 		}
 		return new PGMemoryMappedFile(file, mmap);
 	}
@@ -35,7 +35,7 @@ namespace mmap {
 		void *mmap_location = MapViewOfFile(mmap->mmap, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 		if (!mmap_location) {
 			// FIXME: check error
-			return NULL;
+			return nullptr;
 		}
 		return mmap_location;
 	}
@@ -58,7 +58,7 @@ namespace mmap {
 		fopen_s(&handle->f, filename.c_str(), access == PGFileReadOnly ? "rb" : (access == PGFileReadWrite ? "wb" : "wb+"));
 		if (!handle->f) {
 			delete handle;
-			return NULL;
+			return nullptr;
 		}
 		return handle;
 	}
@@ -70,7 +70,7 @@ namespace mmap {
 	void* ReadFile(std::string filename) {
 		PGFileHandle handle = OpenFile(filename, PGFileReadOnly);
 		if (!handle) {
-			return NULL;
+			return nullptr;
 		}
 		// FIXME: incorrect with windows line ending
 		FILE* f = handle->f;
@@ -80,7 +80,7 @@ namespace mmap {
 
 		char* string = (char*)malloc(fsize + 1);
 		if (!string) {
-			return NULL;
+			return nullptr;
 		}
 		fread(string, fsize, 1, f);
 		CloseFile(handle);

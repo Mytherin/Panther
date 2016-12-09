@@ -4,13 +4,23 @@
 #include "text.h"
 #include <algorithm>
 #include <fstream>
+#include "xml.h"
 
-TextFile::TextFile(std::string path) : textfield(NULL), base(NULL) {
+TextFile::TextFile(std::string path) : textfield(nullptr), base(nullptr), highlighter(nullptr) {
 	OpenFile(path);
 }
 
-TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), base(NULL) {
+TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), base(nullptr), highlighter(nullptr) {
+	highlighter = new XMLHighlighter();
 	OpenFile(path);
+	if (highlighter) {
+		// FIXME: syntax highlighter should run in different thread
+		// FIXME: locks on updating the highlighted data
+		PGParserState state = PGParserDefaultState;
+		for (ssize_t i = 0; i < lines.size(); i++) {
+			state = highlighter->IncrementalParseLine(lines[i], state);
+		}
+	}
 }
 
 TextFile::~TextFile() {
@@ -80,7 +90,7 @@ std::string TextFile::GetText() {
 TextLine* TextFile::GetLine(ssize_t linenumber) {
 	// FIXME: account for deltas
 	if (linenumber < 0 || linenumber >= (ssize_t) lines.size())
-		return NULL;
+		return nullptr;
 	return &lines[linenumber];
 }
 
@@ -332,14 +342,14 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 	if (delete_selection) {
 		if (!it->SelectionIsEmpty()) {
 			// delete with selection
-			RemoveLines *remove_lines = new RemoveLines(NULL, it->BeginLine() + 1);
+			RemoveLines *remove_lines = new RemoveLines(nullptr, it->BeginLine() + 1);
 			for (ssize_t i = it->BeginLine(); i <= it->EndLine(); i++) {
 				if (i == it->BeginLine()) {
 					if (i == it->EndLine()) {
 						delete remove_lines;
-						delta->AddDelta(new RemoveText(include_cursor ? &*it : NULL, i, it->EndCharacter(), it->EndCharacter() - it->BeginCharacter()));
+						delta->AddDelta(new RemoveText(include_cursor ? &*it : nullptr, i, it->EndCharacter(), it->EndCharacter() - it->BeginCharacter()));
 					} else {
-						delta->AddDelta(new RemoveText(include_cursor ? &*it : NULL, i, lines[i].GetLength(), lines[i].GetLength() - it->BeginCharacter()));
+						delta->AddDelta(new RemoveText(include_cursor ? &*it : nullptr, i, lines[i].GetLength(), lines[i].GetLength() - it->BeginCharacter()));
 					}
 				} else if (i == it->EndLine()) {
 					assert(it->EndCharacter() <= lines[i].GetLength());
@@ -348,7 +358,7 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 					remove_lines->AddLine(lines[i]);
 					remove_lines->last_line_offset = it->EndCharacter();
 					delta->AddDelta(remove_lines);
-					delta->AddDelta(new AddText(NULL, it->BeginLine(), it->BeginCharacter(), text));
+					delta->AddDelta(new AddText(nullptr, it->BeginLine(), it->BeginCharacter(), text));
 				} else {
 					// remove the entire line
 					remove_lines->AddLine(lines[i]);
@@ -366,21 +376,21 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 			if (linenumber > 0) {
 				// merge the line with the previous line
 				std::string line = std::string(lines[linenumber].GetLine(), lines[linenumber].GetLength());
-				delta->AddDelta(new RemoveLine(include_cursor ? &*it : NULL, linenumber, lines[linenumber]));
-				TextDelta *addText = new AddText(NULL, linenumber - 1, lines[linenumber - 1].GetLength(), line);
+				delta->AddDelta(new RemoveLine(include_cursor ? &*it : nullptr, linenumber, lines[linenumber]));
+				TextDelta *addText = new AddText(nullptr, linenumber - 1, lines[linenumber - 1].GetLength(), line);
 				delta->AddDelta(addText);
 			}
 		} else if (direction == PGDirectionRight && characternumber == lines[linenumber].GetLength()) {
 			if (linenumber < GetLineCount() - 1) {
 				// merge the next line with the current line
 				std::string line = std::string(lines[linenumber + 1].GetLine(), lines[linenumber + 1].GetLength());
-				delta->AddDelta(new RemoveLine(include_cursor ? &*it : NULL, linenumber + 1, lines[linenumber + 1]));
-				TextDelta *addText = new AddText(NULL, linenumber, lines[linenumber].GetLength(), line);
+				delta->AddDelta(new RemoveLine(include_cursor ? &*it : nullptr, linenumber + 1, lines[linenumber + 1]));
+				TextDelta *addText = new AddText(nullptr, linenumber, lines[linenumber].GetLength(), line);
 				delta->AddDelta(addText);
 			}
 		} else {
 			// FIXME: merge delta if it already exists
-			RemoveText* remove = new RemoveText(include_cursor ? &*it : NULL,
+			RemoveText* remove = new RemoveText(include_cursor ? &*it : nullptr,
 				linenumber,
 				direction == PGDirectionRight ? characternumber + 1 : characternumber,
 				1);
@@ -476,7 +486,7 @@ void TextFile::AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::strin
 		std::vector<std::string> text = added_text;
 		if (!first_is_newline) {
 			assert(added_text.size() > 1); // if added_text == 1 and first_is_newline is false, use InsertText
-			delta->AddDelta(new AddText(NULL, (*it)->BeginLine(), (*it)->BeginCharacter(), added_text.front()));
+			delta->AddDelta(new AddText(nullptr, (*it)->BeginLine(), (*it)->BeginCharacter(), added_text.front()));
 			text.erase(text.begin());
 		}
 		delta->AddDelta(new AddLines(*it, (*it)->BeginLine(), (*it)->BeginCharacter(), text));
@@ -567,7 +577,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 		add->extra_text = std::string(add->line);
 		if (add->characternr < length) {
 			add->extra_text += std::string(lines[add->linenr].GetLine() + add->characternr, length - add->characternr);
-			add->remove_text = new RemoveText(NULL, add->linenr, length, length - add->characternr);
+			add->remove_text = new RemoveText(nullptr, add->linenr, length, length - add->characternr);
 			lines[add->linenr].AddDelta(add->remove_text);
 		}
 		lines.insert(lines.begin() + (add->linenr + 1), TextLine((char*)add->extra_text.c_str(), (ssize_t)add->extra_text.size()));
@@ -588,7 +598,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 		add->extra_text = add->lines.back();
 		if (add->characternr < length) {
 			add->extra_text += std::string(lines[add->linenr].GetLine() + add->characternr, length - add->characternr);
-			add->remove_text = new RemoveText(NULL, add->linenr, length, length - add->characternr);
+			add->remove_text = new RemoveText(nullptr, add->linenr, length, length - add->characternr);
 			lines[add->linenr].AddDelta(add->remove_text);
 		}
 		lines.insert(lines.begin() + linenr, TextLine((char*)add->extra_text.c_str(), (ssize_t)add->extra_text.size()));
@@ -713,7 +723,7 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 		AddLine* add = (AddLine*)delta;
 		if (add->remove_text) {
 			lines[add->linenr].RemoveDelta(add->remove_text);
-			add->remove_text = NULL;
+			add->remove_text = nullptr;
 		}
 		this->lines.erase(this->lines.begin() + (add->linenr + 1));
 		break;
@@ -722,7 +732,7 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 		AddLines* add = (AddLines*)delta;
 		if (add->remove_text) {
 			lines[add->linenr].RemoveDelta(add->remove_text);
-			add->remove_text = NULL;
+			add->remove_text = nullptr;
 		}
 		this->lines.erase(this->lines.begin() + (add->linenr + 1), this->lines.begin() + (add->linenr + 1 + add->lines.size()));
 		break;

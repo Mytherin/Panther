@@ -5,7 +5,7 @@
 #include "logger.h"
 
 TextField::TextField(PGWindowHandle window, std::string filename) :
-	Control(window), textfile(filename, this), display_carets(true), display_carets_count(0), active_cursor(NULL), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
+	Control(window), textfile(filename, this), display_carets(true), display_carets_count(0), active_cursor(nullptr), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
 	RegisterRefresh(window, this);
 	drag_type = PGDragNone;
 	cursors.push_back(new Cursor(&textfile));
@@ -71,12 +71,43 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 		linenr = start_line;
 		start_position_y = position_y + GetMinimapOffset();
 	}
-	while ((current_line = textfile.GetLine(linenr)) != NULL) {
+	while ((current_line = textfile.GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
 		if (rectangle && position_y > rectangle->y + rectangle->height) break;
 		if (!rectangle || !(position_y + line_height < rectangle->y)) {
 			// render the actual text
-			RenderText(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y);
+			PGSyntax* syntax = &current_line->syntax;
+			char* line = current_line->GetLine();
+			ssize_t length = current_line->GetLength();
+			ssize_t position = 0;
+			ssize_t xpos = position_x_text;
+			while (syntax->end > 0) {
+				assert(syntax->end > position);
+				switch (syntax->type) {
+				case -1:
+					SetTextColor(renderer, PGColor(255, 0, 0));
+					break;
+				case 0:
+				case 4:
+					SetTextColor(renderer, PGColor(191, 191, 191));
+					break;
+				case 1:
+					SetTextColor(renderer, PGColor(255, 255, 0));
+					break;
+				case 2:
+					SetTextColor(renderer, PGColor(0, 255, 0));
+					break;
+				case 3:
+					SetTextColor(renderer, PGColor(0, 255, 255));
+					break;
+				}
+				RenderText(renderer, line + position, syntax->end - position, xpos, position_y);
+				xpos += MeasureTextWidth(renderer, line + position, syntax->end - position);
+				position = syntax->end;
+				syntax = syntax->next;
+			}
+			SetTextColor(renderer, PGColor(191, 191, 191));
+			RenderText(renderer, line + position, length - position, xpos, position_y);
 		}
 
 		linenr++;
@@ -143,7 +174,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 
 	bool window_has_focus = WindowHasFocus(window);
 
-	SetTextFont(renderer, NULL, 15);
+	SetTextFont(renderer, nullptr, 15);
 	SetTextColor(renderer, PGColor(200, 200, 182));
 	//SetTextAlign(renderer, PGTextAlignRight);
 
@@ -166,7 +197,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	ssize_t linenr = lineoffset_y;
 	if (this->display_linenumbers) {
 		TextLine *current_line;
-		while ((current_line = textfile.GetLine(linenr)) != NULL) {
+		while ((current_line = textfile.GetLine(linenr)) != nullptr) {
 			// only render lines that fall within the render rectangle
 			if (rectangle && position_y > rectangle->y + rectangle->height) break;
 			if (!rectangle || !(position_y + line_height < rectangle->y)) {
@@ -196,8 +227,8 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	if (this->display_minimap) {
 		bool mouse_in_minimap = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH - minimap_width && mouse.x <= this->width - SCROLLBAR_WIDTH;
 
-		SetTextFont(renderer, NULL, 2.5f);
-		DrawTextField(renderer, NULL, true, this->x + textfield_width, this->y, minimap_width, mouse_in_minimap);
+		SetTextFont(renderer, nullptr, 2.5f);
+		DrawTextField(renderer, nullptr, true, this->x + textfield_width, this->y, minimap_width, mouse_in_minimap);
 	}
 
 	// render the scrollbar
@@ -453,7 +484,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			// the active cursor can never "consume" the other selections (they should always stay)
 			ssize_t line, character;
 			GetLineCharacterFromPosition((PGScalar) x, (PGScalar) y, line, character);
-			if (active_cursor == NULL) {
+			if (active_cursor == nullptr) {
 				active_cursor = cursors.front();
 			}
 			if (active_cursor->start_line != line || active_cursor->start_character != character) {
@@ -685,7 +716,7 @@ void TextField::ClearCursors(std::vector<Cursor*>& cursors) {
 		delete *it;
 	}
 	cursors.clear();
-	active_cursor = NULL;
+	active_cursor = nullptr;
 }
 
 void TextField::KeyboardCharacter(char character, PGModifier modifier) {

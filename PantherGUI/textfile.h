@@ -85,4 +85,6 @@ private:
 	char* base;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
+
+	SyntaxHighlighter* highlighter;
 };

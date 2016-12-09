@@ -287,7 +287,7 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 		}
 		if (cursors[i]->start_line >= cursors[i]->file->GetLineCount()) {
 			if (textfield->active_cursor == cursors[i]) {
-				textfield->active_cursor = NULL;
+				textfield->active_cursor = nullptr;
 			}
 			delete cursors[i];
 			cursors.erase(cursors.begin() + i);
@@ -297,7 +297,7 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 		assert(cursors[i]->start_character >= 0);
 		if (cursors[i]->start_character > cursors[i]->file->GetLine(cursors[i]->start_line)->GetLength()) {
 			if (textfield->active_cursor == cursors[i]) {
-				textfield->active_cursor = NULL;
+				textfield->active_cursor = nullptr;
 			}
 			delete cursors[i];
 			cursors.erase(cursors.begin() + i);
