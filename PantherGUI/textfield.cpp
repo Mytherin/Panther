@@ -73,8 +73,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	}
 	while ((current_line = textfile.GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
-		if (rectangle && position_y > rectangle->y + rectangle->height) break;
-		if (!rectangle || !(position_y + line_height < rectangle->y)) {
+		if (position_y > rectangle->y + rectangle->height) break;
+		if (!(position_y + line_height < rectangle->y)) {
 			// render the actual text
 			PGSyntax* syntax = &current_line->syntax;
 			char* line = current_line->GetLine();
@@ -109,7 +109,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 			SetTextColor(renderer, PGColor(191, 191, 191));
 			RenderText(renderer, line + position, length - position, xpos, position_y);
 		}
-
 		linenr++;
 		position_y += line_height;
 	}
@@ -226,9 +225,10 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	// render the minimap
 	if (this->display_minimap) {
 		bool mouse_in_minimap = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH - minimap_width && mouse.x <= this->width - SCROLLBAR_WIDTH;
+		PGIRect minimap_rect = PGIRect(this->x + textfield_width, this->y, minimap_width, this->height);
 
 		SetTextFont(renderer, nullptr, 2.5f);
-		DrawTextField(renderer, nullptr, true, this->x + textfield_width, this->y, minimap_width, mouse_in_minimap);
+		DrawTextField(renderer, &minimap_rect, true, this->x + textfield_width, this->y, minimap_width, mouse_in_minimap);
 	}
 
 	// render the scrollbar

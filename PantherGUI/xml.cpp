@@ -14,7 +14,6 @@ const PGSyntaxType PGXMLValue = 3;
 const PGSyntaxType PGXMLBracket = 4;
 
 PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState state) {
-	assert(state == PGParserDefaultState);
 	char* text = line.GetLine();
 	ssize_t size = line.GetLength();
 	bool escaped = false;
