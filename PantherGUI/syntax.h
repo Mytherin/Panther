@@ -9,5 +9,5 @@ struct PGSyntax {
 	int end;
 	PGSyntax* next;
 
-	PGSyntax() : end(-1), next(nullptr) { }
+	PGSyntax() : type(0), end(-1), next(nullptr) { }
 };

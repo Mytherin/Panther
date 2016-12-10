@@ -22,9 +22,12 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 	// free the current
 	PGSyntax* prev = nullptr;
 	PGSyntax* current = &line.syntax;
-	while (current->next) {
-		delete current->next;
-		current = current->next;
+	PGSyntax* next = current->next;
+	current->next = nullptr;
+	while (next) {
+		PGSyntax* tmp = next->next;
+		delete next;
+		next = tmp;
 	}
 	current = &line.syntax;
 	current->end = -1;

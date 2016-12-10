@@ -4,6 +4,7 @@
 #include "utils.h"
 
 class TextDelta;
+class TextFile;
 
 struct TextLine {
 	friend class SyntaxHighlighter;
@@ -17,7 +18,7 @@ public:
 
 	void ApplyDeltas();
 
-	TextLine(char* line, ssize_t length) : line(line), length(length), deltas(nullptr), modified_line(nullptr) { }
+	TextLine(char* line, ssize_t length) : line(line), length(length), deltas(nullptr), modified_line(nullptr), syntax() { syntax.next = nullptr; }
 
 	PGParserState state;
 	PGSyntax syntax;

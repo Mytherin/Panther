@@ -63,6 +63,8 @@ public:
 
 	PGLineEnding GetLineEnding() { return lineending; }
 	ssize_t GetLineCount();
+	void AddUnparsedLine(ssize_t line);
+	void RemoveParsedLine(ssize_t line);
 private:
 	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction);
 	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection, bool include_cursor = true);
@@ -81,6 +83,7 @@ private:
 	std::vector<TextLine> lines;
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
+	std::vector<ssize_t> unparsed;
 	std::string path;
 	char* base;
 	PGLineEnding lineending;

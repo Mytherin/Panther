@@ -23,6 +23,27 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 	}
 }
 
+void TextFile::AddUnparsedLine(ssize_t line) {
+	PGParserState state = PGParserDefaultState;
+	if (line > 0) {
+		state = lines[line - 1].state;
+	}
+	while (line < lines.size()) {
+		PGParserState oldstate = lines[line].state;
+		state = highlighter->IncrementalParseLine(lines[line], state);
+		if (state == oldstate) break;
+		line++;
+	}
+	/*
+	if (std::find(unparsed.begin(), unparsed.end(), line) == unparsed.end()) {
+		unparsed.push_back(line);
+	}*/
+}
+
+void TextFile::RemoveParsedLine(ssize_t line) {
+	//unparsed.erase(std::remove(unparsed.begin(), unparsed.end(), line), unparsed.end());
+}
+
 TextFile::~TextFile() {
 	if (base) {
 		mmap::DestroyFileContents(base);
@@ -556,6 +577,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 	case PGDeltaAddText: {
 		AddText* add = (AddText*)delta;
 		this->lines[add->linenr].AddDelta(delta);
+		AddUnparsedLine(add->linenr);
 		if (add->cursor) {
 			add->cursor->end_character = add->cursor->start_character = add->characternr + add->text.size();
 			add->cursor->end_line = add->cursor->start_line = add->linenr;
@@ -565,6 +587,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 	case PGDeltaRemoveText: {
 		RemoveText* remove = (RemoveText*)delta;
 		this->lines[remove->linenr].AddDelta(delta);
+		AddUnparsedLine(remove->linenr);
 		if (remove->cursor) {
 			remove->cursor->start_character = remove->cursor->end_character = (remove->characternr - remove->charactercount);
 			remove->cursor->end_line = remove->cursor->start_line = remove->linenr;
@@ -579,8 +602,10 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 			add->extra_text += std::string(lines[add->linenr].GetLine() + add->characternr, length - add->characternr);
 			add->remove_text = new RemoveText(nullptr, add->linenr, length, length - add->characternr);
 			lines[add->linenr].AddDelta(add->remove_text);
+			AddUnparsedLine(add->linenr);
 		}
 		lines.insert(lines.begin() + (add->linenr + 1), TextLine((char*)add->extra_text.c_str(), (ssize_t)add->extra_text.size()));
+		AddUnparsedLine(add->linenr + 1);
 		if (add->cursor) {
 			add->cursor->end_line = add->cursor->start_line = add->linenr + 1;
 			add->cursor->end_character = add->cursor->start_character = add->line.size();
@@ -593,6 +618,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 		ssize_t linenr = add->linenr + 1;
 		for (auto it = add->lines.begin(); (it + 1) != add->lines.end(); it++) {
 			lines.insert(lines.begin() + linenr, TextLine((char*)it->c_str(), (ssize_t)it->size()));
+			AddUnparsedLine(linenr);
 			linenr++;
 		}
 		add->extra_text = add->lines.back();
@@ -600,8 +626,10 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 			add->extra_text += std::string(lines[add->linenr].GetLine() + add->characternr, length - add->characternr);
 			add->remove_text = new RemoveText(nullptr, add->linenr, length, length - add->characternr);
 			lines[add->linenr].AddDelta(add->remove_text);
+			AddUnparsedLine(add->linenr);
 		}
 		lines.insert(lines.begin() + linenr, TextLine((char*)add->extra_text.c_str(), (ssize_t)add->extra_text.size()));
+		AddUnparsedLine(linenr);
 		if (add->cursor) {
 			add->cursor->end_line = add->cursor->start_line = linenr;
 			add->cursor->end_character = add->cursor->start_character = add->lines.back().size();
@@ -615,6 +643,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 			remove->cursor->end_character = remove->cursor->start_character = this->lines[remove->cursor->start_line].GetLength();
 		}
 		this->lines.erase(this->lines.begin() + remove->linenr);
+		AddUnparsedLine(remove->linenr);
 		break;
 	}
 	case PGDeltaRemoveManyLines: {
@@ -624,6 +653,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 			remove->cursor->end_character = remove->cursor->start_character = 0;
 		}
 		this->lines.erase(this->lines.begin() + remove->linenr, this->lines.begin() + remove->linenr + remove->lines.size());
+		AddUnparsedLine(remove->linenr);
 		break;
 	}
 	case PGDeltaCursorMovement: {
@@ -712,11 +742,13 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 	case PGDeltaAddText: {
 		AddText* add = (AddText*)delta;
 		this->lines[add->linenr].PopDelta();
+		AddUnparsedLine(add->linenr);
 		break;
 	}
 	case PGDeltaRemoveText: {
 		RemoveText* remove = (RemoveText*)delta;
 		this->lines[remove->linenr].PopDelta();
+		AddUnparsedLine(remove->linenr);
 		break;
 	}
 	case PGDeltaAddLine: {
@@ -726,6 +758,7 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 			add->remove_text = nullptr;
 		}
 		this->lines.erase(this->lines.begin() + (add->linenr + 1));
+		AddUnparsedLine(add->linenr);
 		break;
 	}
 	case PGDeltaAddManyLines: {
@@ -735,11 +768,13 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 			add->remove_text = nullptr;
 		}
 		this->lines.erase(this->lines.begin() + (add->linenr + 1), this->lines.begin() + (add->linenr + 1 + add->lines.size()));
+		AddUnparsedLine(add->linenr);
 		break;
 	}
 	case PGDeltaRemoveLine: {
 		RemoveLine* remove = (RemoveLine*)delta;
 		this->lines.insert(this->lines.begin() + remove->linenr, remove->line);
+		AddUnparsedLine(remove->linenr);
 		break;
 	}
 	case PGDeltaRemoveManyLines: {
@@ -747,6 +782,7 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 		ssize_t index = remove->linenr;
 		for (auto it = remove->lines.begin(); it != remove->lines.end(); it++, index++) {
 			this->lines.insert(this->lines.begin() + index, *it);
+			AddUnparsedLine(index);
 		}
 		break;
 	}
@@ -760,6 +796,8 @@ void TextFile::Undo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 			this->lines.insert(this->lines.begin() + swap->linenr - 1, this->lines[swap->linenr + swap->lines.size() - 1]);
 			this->lines.erase(this->lines.begin() + swap->linenr + swap->lines.size());
 		}
+		AddUnparsedLine(swap->linenr - 1);
+		AddUnparsedLine(swap->linenr);
 
 		swap->cursors.clear();
 		for (auto it = swap->stored_cursors.begin(); it != swap->stored_cursors.end(); it++) {

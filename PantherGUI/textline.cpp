@@ -1,6 +1,6 @@
 
-#include "textline.h"
 #include "textdelta.h"
+#include "textfile.h"
 #include <algorithm>
 
 ssize_t TextLine::GetLength(void) {
