@@ -19,7 +19,6 @@ const PGSyntaxType PGXMLComment = 5;
 PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState state) {
 	char* text = line.GetLine();
 	ssize_t size = line.GetLength();
-	bool escaped = false;
 	// free the current
 	PGSyntax* prev = nullptr;
 	PGSyntax* current = &line.syntax;
@@ -107,9 +106,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 				state = PGParserXMLStartValue;
 			}
 		} else if (text[i] == '"' || text[i] == '\'') {
-			if (escaped) {
-				escaped = false;
-			} else if (state == PGParserXMLStartValue) {
+			if (state == PGParserXMLStartValue) {
 				prev->end = i;
 				state = PGParserXMLOpenValue;
 			} else if (state == PGParserXMLOpenValue) {
@@ -132,8 +129,6 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 					prev->end = i + 1;
 				}
 			}
-		} else if (text[i] == '\\') {
-			escaped = !escaped;
 		} else if (text[i] == '!') {
 			if (state == PGParserXMLElementName) {
 				state = PGParserXMLSpecialName;
@@ -156,8 +151,8 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 			}
 		}
 	}
-	if (state == PGParserXMLComment) {
-		current->type = PGXMLComment;
+	if (state == PGParserXMLComment || state == PGParserXMLOpenValue) {
+		current->type = state == PGParserXMLComment ? PGXMLComment : PGXMLValue;
 		current->end = size;
 		current->next = new PGSyntax();
 		current = current->next;
