@@ -162,7 +162,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml"
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
-	TextField* textField = new TextField(res, "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml");
+	TextField* textField = new TextField(res, "E:\\killinginthenameof.xml");
 	textField->width = 1000;
 	textField->height = 700;
 	textField->x = 0;
@@ -576,6 +576,22 @@ void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScala
 	}
 	// FIXME: render tabs correctly
 	renderer->canvas->drawText(text, len, x, y + renderer->text_offset, *renderer->textpaint);
+}
+
+void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color) {
+	SkPath path;
+	PGScalar offset = 3; // FIXME: depend on text height
+	PGScalar end = x + width;
+	path.moveTo(x, y);
+	while (x < end) {
+		path.quadTo(x + 1, y + offset, x + 2, y);
+		offset = -offset;
+		x += 2;
+	}
+	renderer->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	renderer->paint->setAntiAlias(true);
+	renderer->paint->setAutohinted(true);
+	renderer->canvas->drawPath(path, *renderer->paint);
 }
 
 PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length) {

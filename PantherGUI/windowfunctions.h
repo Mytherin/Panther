@@ -192,6 +192,8 @@ void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);
 // Render text at the specified location
 void RenderText(PGRendererHandle renderer, const char* text, size_t length, PGScalar x, PGScalar y);
+// Render squiggles under text at the specified location
+void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color);
 PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length);
 PGScalar GetTextHeight(PGRendererHandle renderer);
 void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t characternr, PGScalar line_height);
