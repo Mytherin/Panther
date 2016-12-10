@@ -94,13 +94,15 @@ void Cursor::SelectWord() {
 	char* line = textline->GetLine();
 	ssize_t start_index = std::max(start_character - 1, (ssize_t)0);
 	ssize_t end_index = start_index + 1;
-	PGCharacterClass type = GetCharacterClass(line[start_index]);
+	PGCharacterClass left_type = GetCharacterClass(line[start_index]);
+	PGCharacterClass right_type = GetCharacterClass(line[end_index]);
+	PGCharacterClass type = left_type == PGCharacterTypeText || right_type == PGCharacterTypeText ? PGCharacterTypeText : left_type;
 	for (end_index = start_index + 1; end_index < textline->GetLength(); end_index++) {
 		if (GetCharacterClass(line[end_index]) != type) {
 			break;
 		}
 	}
-	for (start_index--; start_index >= 0; start_index--) {
+	for (; start_index >= 0; start_index--) {
 		if (GetCharacterClass(line[start_index]) != type) {
 			start_index++;
 			break;
@@ -113,6 +115,50 @@ void Cursor::SelectWord() {
 	min_line = this->BeginLine();
 	max_character = this->EndCharacter();
 	max_line = this->EndLine();
+}
+
+int Cursor::GetSelectedWord(ssize_t& word_start, ssize_t& word_end) {
+	// returns the currently selected word, if any
+	if (start_line != end_line) return -1;
+
+	TextLine* textline = this->file->GetLine(start_line);
+	char* line = textline->GetLine();
+	ssize_t length = textline->GetLength();
+	// select the word from the start character
+	// note that words in this context can only contain PGCharacterTypeText
+	// unlike word selections which can contain any type as long as all characters have the same type
+	ssize_t start_index = std::max(start_character - 1, (ssize_t)0);
+	ssize_t end_index = start_index + 1;
+	PGCharacterClass type = PGCharacterTypeText;
+	for (end_index = start_index + 1; end_index < length; end_index++) {
+		if (GetCharacterClass(line[end_index]) != type) {
+			break;
+		}
+	}
+	for (; start_index >= 0; start_index--) {
+		if (GetCharacterClass(line[start_index]) != type) {
+			start_index++;
+			break;
+		}
+	}
+	start_index = std::max(start_index, (ssize_t)0);
+	end_index = std::min(end_index, length);
+	if (end_index <= start_index) {
+		// no word found
+		return -1;
+	}
+	if (start_index != BeginCharacter() || end_index != EndCharacter()) {
+		// only highlight if the entire word is selected
+		return -1;
+	}
+	if (end_character < start_index || end_character > end_index) {
+		// the end of the selection does not contain the word: no word selected
+		return -1;
+	}
+	word_start = start_index;
+	word_end = end_index;
+	return 0;
+
 }
 
 void Cursor::SelectLine() {

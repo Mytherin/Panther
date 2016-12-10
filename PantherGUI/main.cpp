@@ -542,20 +542,29 @@ PGSize GetWindowSize(PGWindowHandle window) {
 	return size;
 }
 
-void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color) {
+static SkPaint::Style PGStyleConvert(PGStyle style) {
+	if (style == PGStyleStroke) {
+		return SkPaint::kStroke_Style;
+	}
+	return SkPaint::kFill_Style;
+}
+
+void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle) {
 	SkPath path;
 	SkPoint points[] = {{a.x, a.y}, {b.x, b.y}, {c.x, c.y}}; // triangle
 	path.addPoly(points, 3, true);
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	handle->paint->setStyle(PGStyleConvert(drawStyle));
 	handle->canvas->drawPath(path, *handle->paint);
 }
 
-void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color) {
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle drawStyle) {
 	SkRect rect;
 	rect.fLeft = rectangle.x;
 	rect.fTop = rectangle.y;
 	rect.fRight = rectangle.x + rectangle.width;
 	rect.fBottom = rectangle.y + rectangle.height;
+	handle->paint->setStyle(PGStyleConvert(drawStyle));
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	handle->canvas->drawRect(rect, *handle->paint);
 }
@@ -627,7 +636,7 @@ void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PG
 		assert(end == len + 1);
 		selection_width += renderer->character_width;
 	}
-	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, GetTextHeight(renderer)), selection_color);
+	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, GetTextHeight(renderer)), selection_color, PGStyleFill);
 }
 
 void SetTextColor(PGRendererHandle renderer, PGColor color) {

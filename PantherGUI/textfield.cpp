@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include "logger.h"
+#include "text.h"
 
 TextField::TextField(PGWindowHandle window, std::string filename) :
 	Control(window), textfile(filename, this), display_carets(true), display_carets_count(0), active_cursor(nullptr), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
@@ -65,11 +66,20 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	if (minimap) {
 		// fill in the background of the minimap
 		PGRect rect(position_x_text, position_y, this->width - position_x_text, this->height - position_y);
-		RenderRectangle(renderer, rect, PGColor(30, 30, 30));
+		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGStyleFill);
 		// start line of the minimap
 		start_line = GetMinimapStartLine();;
 		linenr = start_line;
 		start_position_y = position_y + GetMinimapOffset();
+	}
+	ssize_t word_start = -1, word_end = -1;
+	char* selected_word = nullptr;
+	if (!minimap) {
+		if (cursors[0]->GetSelectedWord(word_start, word_end) >= 0) {
+			// successfully found a word
+			selected_word = (char*) calloc(1, word_end - word_start + 1);
+			memcpy(selected_word, textfile.GetLine(cursors[0]->BeginLine())->GetLine() + word_start, word_end - word_start);
+		}
 	}
 	while ((current_line = textfile.GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
@@ -106,8 +116,10 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 				}
 				RenderText(renderer, line + position, syntax->end - position, xpos, position_y);
 				PGScalar text_width = MeasureTextWidth(renderer, line + position, syntax->end - position);
-				if (!minimap && squiggles) {
-					RenderSquiggles(renderer, text_width, xpos, position_y + line_height * 1.2f, PGColor(255, 0, 0));
+				if (!minimap) {
+					if (squiggles) {
+						RenderSquiggles(renderer, text_width, xpos, position_y + line_height * 1.2f, PGColor(255, 0, 0));
+					}
 				}
 				xpos += text_width;
 				position = syntax->end;
@@ -115,6 +127,30 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 			}
 			SetTextColor(renderer, PGColor(191, 191, 191));
 			RenderText(renderer, line + position, length - position, xpos, position_y);
+			if (selected_word) {
+				// FIXME: find all occurences of string in string
+				for (ssize_t i = 0; i <= length - (word_end - word_start); i++) {
+					if ((i == 0 || GetCharacterClass(line[i - 1]) != PGCharacterTypeText) &&
+						GetCharacterClass(line[i]) == PGCharacterTypeText) {
+						bool found = true;
+						for (ssize_t j = 0; j < (word_end - word_start); j++) {
+							if (line[i + j] != selected_word[j]) {
+								found = false;
+								break;
+							}
+						}
+						if (found) {
+							if ((i + (word_end - word_start) == length ||
+								GetCharacterClass(line[i + (word_end - word_start)]) != PGCharacterTypeText)) {
+								PGScalar char_width = MeasureTextWidth(renderer, "x", 1);
+								PGScalar width = MeasureTextWidth(renderer, selected_word, word_end - word_start);
+								PGRect rect(position_x_text + i * char_width, position_y, width, line_height);
+								RenderRectangle(renderer, rect, PGColor(191, 191, 191), PGStyleStroke);
+							}
+						}
+					}
+				}
+			}
 		}
 		linenr++;
 		position_y += line_height;
@@ -170,9 +206,10 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 		if (render_overlay) {
 			// render the overlay for the minimap
 			PGRect rect(position_x_text, start_position_y, this->width - position_x_text, line_height * GetLineHeight());
-			RenderRectangle(renderer, rect, PGColor(191, 191, 191, 50));
+			RenderRectangle(renderer, rect, PGColor(191, 191, 191, 50), PGStyleFill);
 		}
 	}
+	if (selected_word) free(selected_word);
 }
 
 void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
@@ -214,7 +251,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 				// if the line is selected by a cursor, render an overlay
 				for (auto it = cursors.begin(); it != cursors.end(); it++) {
 					if (linenr == (*it)->SelectedLine()) {
-						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGColor(32,32,255,64));
+						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGColor(32,32,255,64), PGStyleFill);
 						break;
 					}
 				}
@@ -243,16 +280,16 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		bool mouse_in_scrollbar = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width;
 
 		// the background of the scrollbar
-		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, 0, SCROLLBAR_WIDTH, y + this->height), PGColor(62, 62, 62));
+		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, 0, SCROLLBAR_WIDTH, y + this->height), PGColor(62, 62, 62), PGStyleFill);
 		// the arrows above/below the scrollbar
 		PGColor arrowColor(104, 104, 104);
 		if (mouse_in_scrollbar && mouse.y >= 0 && mouse.y <= 16)
 			arrowColor = PGColor(28, 151, 234);
-		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + 4), PGPoint(x + this->width - 13, y + 12), PGPoint(x + this->width - 3, y + 12), arrowColor);
+		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + 4), PGPoint(x + this->width - 13, y + 12), PGPoint(x + this->width - 3, y + 12), arrowColor, PGStyleFill);
 		arrowColor = PGColor(104, 104, 104);
 		if (mouse_in_scrollbar && mouse.y >= this->height - 16 && mouse.y <= this->height)
 			arrowColor = PGColor(28, 151, 234);
-		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + this->height - 4), PGPoint(x + this->width - 13, y + this->height - 12), PGPoint(x + this->width - 3, y + this->height - 12), arrowColor);
+		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + this->height - 4), PGPoint(x + this->width - 13, y + this->height - 12), PGPoint(x + this->width - 3, y + this->height - 12), arrowColor, PGStyleFill);
 		// the actual scrollbar
 		PGScalar scrollbar_height = GetScrollbarHeight();
 		PGScalar scrollbar_offset = GetScrollbarOffset();
@@ -261,7 +298,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 			scrollbar_color = PGColor(0, 122, 204);
 		else if (mouse_in_scrollbar && mouse.y >= scrollbar_offset && mouse.y <= scrollbar_offset + scrollbar_height)
 		scrollbar_color = PGColor(28, 151, 234);
-		RenderRectangle(renderer, PGRect(x + this->width - 12, y + scrollbar_offset, 8, scrollbar_height), scrollbar_color);
+		RenderRectangle(renderer, PGRect(x + this->width - 12, y + scrollbar_offset, 8, scrollbar_height), scrollbar_color, PGStyleFill);
 	}
 }
 

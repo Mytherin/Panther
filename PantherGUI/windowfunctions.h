@@ -174,6 +174,11 @@ typedef enum {
 	PGCursorWait
 } PGCursorType;
 
+typedef enum {
+	PGStyleFill,
+	PGStyleStroke
+} PGStyle;
+
 void SetCursor(PGWindowHandle window, PGCursorType type);
 
 typedef enum {
@@ -186,8 +191,8 @@ typedef void (*PGTimerCallback)(void);
 PGTimerHandle CreateTimer(int ms, PGTimerCallback, PGTimerFlags);
 void DeleteTimer(PGTimerHandle);
 
-void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color);
-void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color);
+void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle);
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle style);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);
 // Render text at the specified location

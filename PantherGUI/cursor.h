@@ -28,6 +28,7 @@ public:
 	void OffsetSelectionWord(PGDirection direction);
 	void SelectWord();
 	void SelectLine();
+	int GetSelectedWord(ssize_t& word_start, ssize_t& word_end);
 
 	ssize_t SelectedCharacter() { return start_character; }
 	ssize_t SelectedLine() { return start_line; }
