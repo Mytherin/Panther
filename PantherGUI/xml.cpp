@@ -3,15 +3,17 @@
 
 const PGParserState PGParserXMLComment = 1;
 const PGParserState PGParserXMLElementName = 2;
-const PGParserState PGParserXMLInsideElement = 3;
+const PGParserState PGParserXMLInElement = 3;
 const PGParserState PGParserXMLOpenAttribute = 4;
 const PGParserState PGParserXMLStartValue = 5;
 const PGParserState PGParserXMLOpenValue = 6;
+const PGParserState PGParserXMLSpecialName = 7;
 
 const PGSyntaxType PGXMLElementName = 1;
 const PGSyntaxType PGXMLAttributeName = 2;
 const PGSyntaxType PGXMLValue = 3;
 const PGSyntaxType PGXMLBracket = 4;
+const PGSyntaxType PGXMLComment = 5;
 
 // FIXME: add comment support
 PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState state) {
@@ -36,7 +38,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 				prev = current;
 				current = current->next;
 				state = PGParserXMLElementName;
-			} else if (state != PGParserXMLComment && state != PGParserXMLOpenValue || state != PGParserDefaultState) {
+			} else if (state != PGParserXMLComment && state != PGParserXMLOpenValue && state != PGParserDefaultState) {
 				// Parse Error
 				if (!prev || prev->type != PGSyntaxError) {
 					current->type = PGSyntaxError;
@@ -49,14 +51,14 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 				}
 			}
 		} else if (text[i] == '>') {
-			if (state == PGParserXMLInsideElement) {
+			if (state == PGParserXMLInElement) {
 				state = PGParserDefaultState;
 				current->type = PGXMLBracket;
 				current->end = i + 1;
 				current->next = new PGSyntax();
 				prev = current;
 				current = current->next;
-			} else if (state == PGParserXMLElementName) {
+			} else if (state == PGParserXMLElementName || state == PGParserXMLSpecialName) {
 				current->type = PGXMLElementName;
 				current->end = i;
 				current->next = new PGSyntax();
@@ -68,7 +70,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 				prev = current;
 				current = current->next;
 				state = PGParserDefaultState;
-			} else if (state != PGParserXMLComment && state != PGParserXMLOpenValue || state != PGParserDefaultState) {
+			} else if (state != PGParserXMLComment && state != PGParserXMLOpenValue) {
 				// Parse Error
 				if (!prev || prev->type != PGSyntaxError) {
 					current->type = PGSyntaxError;
@@ -81,17 +83,17 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 				}
 			}
 		} else if (text[i] == ' ' || text[i] == '\t') {
-			if (state == PGParserXMLElementName) {
+			if (state == PGParserXMLElementName || state == PGParserXMLSpecialName) {
 				// Element Name
 				current->type = PGXMLElementName;
 				current->end = i;
 				current->next = new PGSyntax();
 				prev = current;
 				current = current->next;
-				state = PGParserXMLInsideElement;
+				state = PGParserXMLInElement;
 			}
 		} else if (text[i] == '=') {
-			if (state == PGParserXMLInsideElement) {
+			if (state == PGParserXMLInElement) {
 				// Attribute Name
 				current->type = PGXMLAttributeName;
 				current->end = i;
@@ -117,8 +119,8 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 				current->next = new PGSyntax();
 				prev = current;
 				current = current->next;
-				state = PGParserXMLInsideElement;
-			} else if (state != PGParserXMLComment && state != PGParserXMLOpenValue || state != PGParserDefaultState) {
+				state = PGParserXMLInElement;
+			} else if (state != PGParserXMLComment && state != PGParserXMLOpenValue && state != PGParserDefaultState) {
 				// Parse Error
 				if (!prev || prev->type != PGSyntaxError) {
 					current->type = PGSyntaxError;
@@ -132,7 +134,33 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 			}
 		} else if (text[i] == '\\') {
 			escaped = !escaped;
+		} else if (text[i] == '!') {
+			if (state == PGParserXMLElementName) {
+				state = PGParserXMLSpecialName;
+			}
+		} else if (text[i] == '-') {
+			if (state == PGParserXMLSpecialName) {
+				if (i + 1 < size && text[i + 1] == '-') {
+					state = PGParserXMLComment;
+					i++;
+				}
+			} else if (state == PGParserXMLComment) {
+				if (i + 2 < size && text[i + 1] == '-' && text[i + 2] == '>') {
+					state = PGParserDefaultState;
+					i += 2;
+					current->type = PGXMLComment;
+					current->end = i;
+					current->next = new PGSyntax();
+					current = current->next;
+				}
+			}
 		}
+	}
+	if (state == PGParserXMLComment) {
+		current->type = PGXMLComment;
+		current->end = size;
+		current->next = new PGSyntax();
+		current = current->next;
 	}
 	line.state = state;
 	return state;

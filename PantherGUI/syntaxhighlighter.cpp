@@ -15,6 +15,3 @@ PGParserState SyntaxHighlighter::IncrementalParseLine(TextLine& line, PGParserSt
 	return PGParserErrorState;
 }
 
-PGParserState SyntaxHighlighter::BacktrackParseLine(TextLine& line) {
-	return PGParserErrorState;
-}

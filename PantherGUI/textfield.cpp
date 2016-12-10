@@ -100,6 +100,9 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 				case 3:
 					SetTextColor(renderer, PGColor(0, 255, 255));
 					break;
+				case 5:
+					SetTextColor(renderer, PGColor(128, 128, 128));
+					break;
 				}
 				RenderText(renderer, line + position, syntax->end - position, xpos, position_y);
 				PGScalar text_width = MeasureTextWidth(renderer, line + position, syntax->end - position);
