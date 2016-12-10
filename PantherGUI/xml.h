@@ -13,5 +13,4 @@ class XMLHighlighter : public SyntaxHighlighter {
 public:
 	SyntaxHighlighterType GetType() { return PGSyntaxHighlighterIncremental; }
 	PGParserState IncrementalParseLine(TextLine& line, PGParserState state);
-	PGParserState BacktrackParseLine(TextLine& line);
 };
