@@ -80,7 +80,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 			char* line = current_line->GetLine();
 			ssize_t length = current_line->GetLength();
 			ssize_t position = 0;
-			ssize_t xpos = position_x_text;
+			PGScalar xpos = position_x_text;
 			while (syntax->end > 0) {
 				bool squiggles = false;
 				assert(syntax->end > position);
@@ -95,10 +95,10 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 					SetTextColor(renderer, PGColor(255, 255, 0));
 					break;
 				case 2:
-					SetTextColor(renderer, PGColor(0, 255, 0));
+					SetTextColor(renderer, PGColor(166, 226, 46));
 					break;
 				case 3:
-					SetTextColor(renderer, PGColor(0, 255, 255));
+					SetTextColor(renderer, PGColor(230, 219, 116));
 					break;
 				case 5:
 					SetTextColor(renderer, PGColor(128, 128, 128));

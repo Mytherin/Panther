@@ -79,7 +79,7 @@ void PeriodicWindowRedraw(void) {
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	static TCHAR szWindowClass[] = _T("Panther");
-	static TCHAR szTitle[] = _T("Panther GUI");
+	static TCHAR szTitle[] = _T("Panther");
 
 	WNDCLASSEX wcex;
 
@@ -595,6 +595,7 @@ void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGSc
 }
 
 PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length) {
+	//return renderer->textpaint->measureText(text, length);
 	int size = 0;
 	for (size_t i = 0; i < length; i++) {
 		if (text[i] == '\t') {
