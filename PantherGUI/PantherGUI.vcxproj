@@ -135,21 +135,26 @@
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
+    <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
     <ClCompile Include="text.cpp" />
     <ClCompile Include="textfield.cpp" />
     <ClCompile Include="textfile.cpp" />
     <ClCompile Include="textline.cpp" />
+    <ClCompile Include="thread.cpp" />
     <ClCompile Include="windowfunctions.cpp" />
     <ClCompile Include="xml.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="blockingconcurrentqueue.h" />
+    <ClInclude Include="concurrentqueue.h" />
     <ClInclude Include="control.h" />
     <ClInclude Include="cursor.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
+    <ClInclude Include="scheduler.h" />
     <ClInclude Include="syntax.h" />
     <ClInclude Include="syntaxhighlighter.h" />
     <ClInclude Include="text.h" />
@@ -158,6 +163,7 @@
     <ClInclude Include="textfile.h" />
     <ClInclude Include="textdelta.h" />
     <ClInclude Include="textline.h" />
+    <ClInclude Include="thread.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />

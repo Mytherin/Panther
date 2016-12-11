@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "textfile.h"
 #include "textblock.h"
+#include "scheduler.h"
 #include <string>
 #include <vector>
 
@@ -67,6 +68,7 @@ public:
 	ssize_t GetLineCount();
 
 	void InvalidateParsing(ssize_t line);
+	void InvalidateParsing(std::vector<ssize_t>& lines);
 	bool LineIsParsed(ssize_t line);
 private:
 	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction);
@@ -77,9 +79,13 @@ private:
 	void AddDelta(TextDelta* delta);
 
 	void PerformOperation(TextDelta* delta, bool adjust_delta = true);
-	void Undo(TextDelta* delta, std::vector<Cursor*>& cursors);
+	void PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalidated_lines, bool adjust_delta = true);
+	void Undo(TextDelta* delta, std::vector<ssize_t>& invalidated_lines, std::vector<Cursor*>& cursors);
 	void Redo(TextDelta* delta, std::vector<Cursor*>& cursors);
 	std::vector<Interval> GetCursorIntervals(std::vector<Cursor*>& cursors);
+
+	Task* current_task;
+	static void TextFile::RunHighlighter(TextFile* textfile);
 
 	TextField* textfield;
 	//PGMemoryMappedFileHandle file;
@@ -87,6 +93,7 @@ private:
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
 	std::vector<TextBlock> parsed_blocks;
+	bool unparsed_blocks;
 	std::string path;
 	char* base;
 	PGLineEnding lineending;

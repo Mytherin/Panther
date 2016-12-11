@@ -5,6 +5,7 @@
 #include "control.h"
 #include "textfield.h"
 #include "time.h"
+#include "scheduler.h"
 
 #include <malloc.h>
 
@@ -158,6 +159,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	global_handle = res;
 
 	CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
+	
+	Scheduler::Initialize();
+	Scheduler::SetThreadCount(8);
 
 	// "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml"
 	// "E:\\killinginthenameof.xml"

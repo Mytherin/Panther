@@ -3,7 +3,7 @@
 #include "utils.h"
 #include "syntax.h"
 
-#define TEXTBLOCK_SIZE 64
+#define TEXTBLOCK_SIZE 32
 
 struct TextBlock {
 	ssize_t line_start;

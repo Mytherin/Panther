@@ -19,6 +19,9 @@
     <Filter Include="Source Files\parsers">
       <UniqueIdentifier>{46a8d712-fb9d-445a-b840-be864689312b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\libs">
+      <UniqueIdentifier>{25aa54e9-de6a-42f8-b71c-533d895346bb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -56,6 +59,12 @@
     </ClCompile>
     <ClCompile Include="xml.cpp">
       <Filter>Source Files\parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="thread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scheduler.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +121,18 @@
     </ClInclude>
     <ClInclude Include="textblock.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scheduler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="blockingconcurrentqueue.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="concurrentqueue.h">
+      <Filter>Header Files\libs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
