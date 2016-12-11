@@ -7,11 +7,11 @@
 #include "scheduler.h"
 #include "xml.h"
 
-TextFile::TextFile(std::string path) : textfield(nullptr), base(nullptr), highlighter(nullptr), current_task(nullptr), unparsed_blocks(false) {
+TextFile::TextFile(std::string path) : textfield(nullptr), base(nullptr), highlighter(nullptr), current_task(nullptr) {
 	OpenFile(path);
 }
 
-TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), base(nullptr), highlighter(nullptr), current_task(nullptr), unparsed_blocks(false) {
+TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), base(nullptr), highlighter(nullptr), current_task(nullptr) {
 	highlighter = new XMLHighlighter();
 	OpenFile(path);
 	if (highlighter) {
@@ -39,11 +39,9 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 			state = highlighter->IncrementalParseLine(lines[i], state);
 		}
 		if (lines.size() > TEXTBLOCK_SIZE * 10) {
-			unparsed_blocks = true;
+			this->current_task = new Task((PGThreadFunctionParams) RunHighlighter, (void*) this);
+			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 		}
-		this->current_task = new Task((PGThreadFunctionParams) RunHighlighter, (void*) this);
-		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
-		// FIXME: syntax highlighter should run in different thread
 		// FIXME: locks on updating the highlighted data
 	}
 }
@@ -57,29 +55,32 @@ TextFile::~TextFile() {
 	}
 }
 
-void TextFile::RunHighlighter(TextFile* textfile) {
-	if (textfile->unparsed_blocks) {
-		std::vector<TextBlock>& parsed_blocks = textfile->parsed_blocks;
-		for (ssize_t i = 0; i < parsed_blocks.size(); i++) {
-			if (!parsed_blocks[i].parsed) {
-				ssize_t current_block = i;
-				while (current_block < parsed_blocks.size()) {
-					PGParserState oldstate = parsed_blocks[current_block].state;
-					PGParserState state = current_block == 0 ? PGParserDefaultState : parsed_blocks[current_block - 1].state;
-					ssize_t last_line = current_block == parsed_blocks.size() - 1 ? textfile->lines.size() : parsed_blocks[current_block + 1].line_start;
-					for (ssize_t i = parsed_blocks[current_block].line_start; i < last_line; i++) {
-						state = textfile->highlighter->IncrementalParseLine(textfile->lines[i], state);
-					}
-					parsed_blocks[current_block].parsed = true;
-					parsed_blocks[current_block].state = state;
-					if (state == oldstate) break;
-					current_block++;
+void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
+	std::vector<TextBlock>& parsed_blocks = textfile->parsed_blocks;
+	for (ssize_t i = 0; i < parsed_blocks.size(); i++) {
+		if (!parsed_blocks[i].parsed) {
+			// if we encounter a non-parsed block, parse it and any subsequent blocks that have to be parsed
+			ssize_t current_block = i;
+			while (current_block < parsed_blocks.size()) {
+				PGParserState oldstate = parsed_blocks[current_block].state;
+				PGParserState state = current_block == 0 ? PGParserDefaultState : parsed_blocks[current_block - 1].state;
+				ssize_t last_line = current_block == parsed_blocks.size() - 1 ? textfile->lines.size() : parsed_blocks[current_block + 1].line_start;
+				for (ssize_t i = parsed_blocks[current_block].line_start; i < last_line; i++) {
+					state = textfile->highlighter->IncrementalParseLine(textfile->lines[i], state);
 				}
+				if (textfile->current_task != task) {
+					// a new syntax highlighting task has been activated
+					// stop parsing with possibly outdated information
+					return;
+				}
+				parsed_blocks[current_block].parsed = true;
+				parsed_blocks[current_block].state = state;
+				if (state == oldstate) break;
+				current_block++;
 			}
 		}
-		textfile->current_task = nullptr;
-		textfile->unparsed_blocks = false;
 	}
+	textfile->current_task = nullptr;
 }
 
 void TextFile::InvalidateParsing(ssize_t line) {
@@ -103,7 +104,6 @@ void TextFile::InvalidateParsing(std::vector<ssize_t>& invalidated_lines) {
 	for (size_t i = 0; i < invalidated_lines.size(); i++) {
 		parsed_blocks[invalidated_lines[i] / TEXTBLOCK_SIZE].parsed = false;
 	}
-	unparsed_blocks = true;
 	this->current_task = new Task((PGThreadFunctionParams) RunHighlighter, (void*) this);
 	Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 }

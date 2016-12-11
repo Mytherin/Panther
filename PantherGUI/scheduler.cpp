@@ -19,7 +19,7 @@ void Scheduler::RunThread() {
 		if (task != nullptr) {
 			// task found, run the task
 			if (task->active) {
-				task->function(task->parameter);
+				task->function(task, task->parameter);
 			}
 			delete task;
 		}

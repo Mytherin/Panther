@@ -85,7 +85,7 @@ private:
 	std::vector<Interval> GetCursorIntervals(std::vector<Cursor*>& cursors);
 
 	Task* current_task;
-	static void TextFile::RunHighlighter(TextFile* textfile);
+	static void TextFile::RunHighlighter(Task* task, TextFile* textfile);
 
 	TextField* textfield;
 	//PGMemoryMappedFileHandle file;
@@ -93,7 +93,6 @@ private:
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
 	std::vector<TextBlock> parsed_blocks;
-	bool unparsed_blocks;
 	std::string path;
 	char* base;
 	PGLineEnding lineending;

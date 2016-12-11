@@ -5,7 +5,9 @@
 #include "thread.h"
 #include <vector>
 
-typedef void(*PGThreadFunctionParams)(void*);
+struct Task;
+
+typedef void(*PGThreadFunctionParams)(Task*, void*);
 
 enum PGTaskUrgency {
 	PGTaskUrgent,
