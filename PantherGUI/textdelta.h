@@ -29,6 +29,7 @@ public:
 	TextDelta* next;
 
 	TextDelta() : next(nullptr) {}
+	virtual ~TextDelta() { }
 
 	virtual PGTextType TextDeltaType() { return PGDeltaUnknown; }
 	TextDelta(ssize_t linenr, ssize_t characternr) : linenr(linenr), characternr(characternr) { }
@@ -124,6 +125,11 @@ public:
 
 	PGTextType TextDeltaType() { return PGDeltaMultiple; }
 	MultipleDelta() : deltas() {}
+	~MultipleDelta() {
+		for (auto it = deltas.begin(); it != deltas.end(); it++) {
+			delete *it;
+		}
+	}
 
 	void AddDelta(TextDelta* delta) {
 		deltas.push_back(delta);

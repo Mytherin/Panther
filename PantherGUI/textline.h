@@ -19,8 +19,9 @@ public:
 	void ApplyDeltas();
 
 	TextLine(char* line, ssize_t length) : line(line), length(length), deltas(nullptr), modified_line(nullptr), syntax() { syntax.next = nullptr; }
+	TextLine(const TextLine&);
+	~TextLine();
 
-	PGParserState state;
 	PGSyntax syntax;
 private:
 	ssize_t length;

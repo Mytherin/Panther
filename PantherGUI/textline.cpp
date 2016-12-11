@@ -3,6 +3,25 @@
 #include "textfile.h"
 #include <algorithm>
 
+TextLine::TextLine(const TextLine& other) {
+	this->line =  other.line;
+	this->length =  other.length;
+	this->modified_line = nullptr;
+	this->deltas =  other.deltas; 
+	syntax.next = nullptr;
+}
+
+TextLine::~TextLine() {
+	if (modified_line) free(modified_line);
+	PGSyntax* next = syntax.next;
+	syntax.next = nullptr;
+	while (next) {
+		PGSyntax* tmp = next->next;
+		delete next;
+		next = tmp;
+	}
+}
+
 ssize_t TextLine::GetLength(void) {
 	if (!deltas) return length; // no deltas, return original length
 	if (modified_line) return strlen(modified_line); // deltas have already been computed

@@ -161,6 +161,5 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 	} else {
 		state = PGParserDefaultState;
 	}
-	line.state = state;
 	return state;
 }
