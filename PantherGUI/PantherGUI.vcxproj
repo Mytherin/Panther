@@ -153,6 +153,7 @@
     <ClInclude Include="syntax.h" />
     <ClInclude Include="syntaxhighlighter.h" />
     <ClInclude Include="text.h" />
+    <ClInclude Include="textblock.h" />
     <ClInclude Include="textfield.h" />
     <ClInclude Include="textfile.h" />
     <ClInclude Include="textdelta.h" />

@@ -1,6 +1,7 @@
 
 #include "syntaxhighlighter.h"
 
+const PGParserState PGParserUnknownState = -2;
 const PGParserState PGParserErrorState = -1;
 const PGParserState PGParserDefaultState = 0;
 

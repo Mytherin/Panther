@@ -15,7 +15,6 @@ const PGSyntaxType PGXMLValue = 3;
 const PGSyntaxType PGXMLBracket = 4;
 const PGSyntaxType PGXMLComment = 5;
 
-// FIXME: add comment support
 PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState state) {
 	char* text = line.GetLine();
 	ssize_t size = line.GetLength();
@@ -159,6 +158,8 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, PGParserState
 		current->end = size;
 		current->next = new PGSyntax();
 		current = current->next;
+	} else {
+		state = PGParserDefaultState;
 	}
 	line.state = state;
 	return state;

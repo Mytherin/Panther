@@ -10,12 +10,6 @@ enum SyntaxHighlighterType {
 	PGSyntaxHighlighterIncremental,
 };
 
-extern const PGParserState PGParserErrorState;
-extern const PGParserState PGParserDefaultState;
-
-extern const PGSyntaxType PGSyntaxError;
-extern const PGSyntaxType PGSyntaxNone;
-
 class SyntaxHighlighter {
 public:
 	virtual ~SyntaxHighlighter();
