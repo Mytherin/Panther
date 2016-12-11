@@ -22,6 +22,7 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 		ssize_t current_line = 0;
 		while (current_line <= lines.size()) {
 			parsed_blocks.push_back(TextBlock(current_line));
+			block_locks.push_back(CreateMutex());
 			current_line += TEXTBLOCK_SIZE;
 		}
 		// parse the first 10 blocks
@@ -42,7 +43,6 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 			this->current_task = new Task((PGThreadFunctionParams) RunHighlighter, (void*) this);
 			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 		}
-		// FIXME: locks on updating the highlighted data
 	}
 }
 
@@ -53,24 +53,30 @@ TextFile::~TextFile() {
 	if (current_task) {
 		current_task->active = false;
 	}
+	for (auto it = block_locks.begin(); it != block_locks.end(); it++) {
+		DestroyMutex(*it);
+	}
 }
 
 void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 	std::vector<TextBlock>& parsed_blocks = textfile->parsed_blocks;
-	for (ssize_t i = 0; i < parsed_blocks.size(); i++) {
+	for (ssize_t i = 0; i < textfile->GetMaximumBlocks(); i++) {
 		if (!parsed_blocks[i].parsed) {
 			// if we encounter a non-parsed block, parse it and any subsequent blocks that have to be parsed
 			ssize_t current_block = i;
-			while (current_block < parsed_blocks.size()) {
+			while (current_block < textfile->GetMaximumBlocks()) {
+				textfile->LockBlock(current_block);
 				PGParserState oldstate = parsed_blocks[current_block].state;
 				PGParserState state = current_block == 0 ? PGParserDefaultState : parsed_blocks[current_block - 1].state;
-				ssize_t last_line = current_block == parsed_blocks.size() - 1 ? textfile->lines.size() : parsed_blocks[current_block + 1].line_start;
+				ssize_t last_line = current_block == parsed_blocks.size() - 1 ? textfile->lines.size() : std::min((ssize_t) textfile->lines.size(), (ssize_t) parsed_blocks[current_block + 1].line_start);
 				for (ssize_t i = parsed_blocks[current_block].line_start; i < last_line; i++) {
 					state = textfile->highlighter->IncrementalParseLine(textfile->lines[i], state);
 				}
+				textfile->UnlockBlock(current_block);
 				if (textfile->current_task != task) {
 					// a new syntax highlighting task has been activated
 					// stop parsing with possibly outdated information
+					parsed_blocks[current_block].parsed = false;
 					return;
 				}
 				parsed_blocks[current_block].parsed = true;
@@ -97,9 +103,6 @@ void TextFile::InvalidateParsing(std::vector<ssize_t>& invalidated_lines) {
 		parsed_blocks.push_back(TextBlock(maximum_line));
 		maximum_line += TEXTBLOCK_SIZE;
 	}
-	// erase any superfluous blocks
-	ssize_t maximum_blocks = lines.size() / TEXTBLOCK_SIZE;
-	parsed_blocks.erase(parsed_blocks.begin() + maximum_blocks);
 	// now set all of the invalidated blocks to unparsed
 	for (size_t i = 0; i < invalidated_lines.size(); i++) {
 		parsed_blocks[invalidated_lines[i] / TEXTBLOCK_SIZE].parsed = false;
@@ -108,8 +111,16 @@ void TextFile::InvalidateParsing(std::vector<ssize_t>& invalidated_lines) {
 	Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 }
 
-bool TextFile::LineIsParsed(ssize_t line) {
-	return parsed_blocks[line / TEXTBLOCK_SIZE].parsed;
+#include "logger.h"
+
+void TextFile::LockBlock(ssize_t block) {
+	std::string s = "Lock block " + std::to_string(block);
+	Logger::GetInstance()->WriteLogMessage(s);
+	LockMutex(block_locks[block]);
+}
+
+void TextFile::UnlockBlock(ssize_t block) {
+	UnlockMutex(block_locks[block]);
 }
 
 void TextFile::OpenFile(std::string path) {

@@ -1,6 +1,7 @@
 
 #include "thread.h"
 #include <thread>
+#include <mutex>
 
 struct PGThread {
 	std::thread thread;
@@ -22,6 +23,26 @@ void DetachThread(PGThreadHandle handle) {
 	handle->thread.detach();
 }
 
-void DeleteThread(PGThreadHandle handle){ 
+void DestroyThread(PGThreadHandle handle){ 
+	delete handle;
+}
+
+struct PGMutex {
+	std::mutex mutex;
+};
+
+PGMutexHandle CreateMutex() {
+	return new PGMutex();
+}
+
+void LockMutex(PGMutexHandle handle) {
+	handle->mutex.lock();
+}
+
+void UnlockMutex(PGMutexHandle handle) {
+	handle->mutex.unlock();
+}
+
+void DestroyMutex(PGMutexHandle handle) {
 	delete handle;
 }

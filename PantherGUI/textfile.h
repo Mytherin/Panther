@@ -69,7 +69,11 @@ public:
 
 	void InvalidateParsing(ssize_t line);
 	void InvalidateParsing(std::vector<ssize_t>& lines);
-	bool LineIsParsed(ssize_t line);
+	void LockBlock(ssize_t block);
+	void UnlockBlock(ssize_t block);
+	ssize_t GetBlock(ssize_t linenr) { return linenr / TEXTBLOCK_SIZE; }
+	ssize_t GetMaximumBlocks() { return GetBlock(lines.size()) + 1; }
+	bool BlockIsParsed(ssize_t block) { return parsed_blocks[block].parsed; }
 private:
 	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction);
 	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection, bool include_cursor = true);
@@ -93,6 +97,7 @@ private:
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
 	std::vector<TextBlock> parsed_blocks;
+	std::vector<PGMutexHandle> block_locks;
 	std::string path;
 	char* base;
 	PGLineEnding lineending;

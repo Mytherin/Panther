@@ -81,49 +81,61 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 			memcpy(selected_word, textfile.GetLine(cursors[0]->BeginLine())->GetLine() + word_start, word_end - word_start);
 		}
 	}
+	ssize_t block = -1;
+	bool parsed = false;
 	while ((current_line = textfile.GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
 		if (position_y > rectangle->y + rectangle->height) break;
 		if (!(position_y + line_height < rectangle->y)) {
 			// render the actual text
-			PGSyntax* syntax = &current_line->syntax;
+			ssize_t new_block = textfile.GetBlock(linenr);
+			if (new_block != block) {
+				if (block >= 0)
+					textfile.UnlockBlock(block);
+				textfile.LockBlock(new_block);
+				block = new_block;
+				parsed = textfile.BlockIsParsed(block);
+			}
 			char* line = current_line->GetLine();
 			ssize_t length = current_line->GetLength();
 			ssize_t position = 0;
 			PGScalar xpos = position_x_text;
-			while (syntax->end > 0) {
-				bool squiggles = false;
-				assert(syntax->end > position);
-				switch (syntax->type) {
-				case -1:
-					squiggles = true;
-				case 0:
-				case 4:
-					SetTextColor(renderer, PGColor(191, 191, 191));
-					break;
-				case 1:
-					SetTextColor(renderer, PGColor(255, 255, 0));
-					break;
-				case 2:
-					SetTextColor(renderer, PGColor(166, 226, 46));
-					break;
-				case 3:
-					SetTextColor(renderer, PGColor(230, 219, 116));
-					break;
-				case 5:
-					SetTextColor(renderer, PGColor(128, 128, 128));
-					break;
-				}
-				RenderText(renderer, line + position, syntax->end - position, xpos, position_y);
-				PGScalar text_width = MeasureTextWidth(renderer, line + position, syntax->end - position);
-				if (!minimap) {
-					if (squiggles) {
-						RenderSquiggles(renderer, text_width, xpos, position_y + line_height * 1.2f, PGColor(255, 0, 0));
+			if (parsed) {
+				PGSyntax* syntax = &current_line->syntax;
+				while (syntax->end > 0) {
+					bool squiggles = false;
+					assert(syntax->end > position);
+					switch (syntax->type) {
+					case -1:
+						squiggles = true;
+					case 0:
+					case 4:
+						SetTextColor(renderer, PGColor(191, 191, 191));
+						break;
+					case 1:
+						SetTextColor(renderer, PGColor(255, 255, 0));
+						break;
+					case 2:
+						SetTextColor(renderer, PGColor(166, 226, 46));
+						break;
+					case 3:
+						SetTextColor(renderer, PGColor(230, 219, 116));
+						break;
+					case 5:
+						SetTextColor(renderer, PGColor(128, 128, 128));
+						break;
 					}
+					RenderText(renderer, line + position, syntax->end - position, xpos, position_y);
+					PGScalar text_width = MeasureTextWidth(renderer, line + position, syntax->end - position);
+					if (!minimap) {
+						if (squiggles) {
+							RenderSquiggles(renderer, text_width, xpos, position_y + line_height * 1.2f, PGColor(255, 0, 0));
+						}
+					}
+					xpos += text_width;
+					position = syntax->end;
+					syntax = syntax->next;
 				}
-				xpos += text_width;
-				position = syntax->end;
-				syntax = syntax->next;
 			}
 			SetTextColor(renderer, PGColor(191, 191, 191));
 			RenderText(renderer, line + position, length - position, xpos, position_y);
@@ -155,6 +167,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 		linenr++;
 		position_y += line_height;
 	}
+	if (block >= 0)
+		textfile.UnlockBlock(block);
 	// render the selection and carets
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		ssize_t startline = std::max((*it)->BeginLine(), start_line);
