@@ -11,6 +11,5 @@ struct TextBlock {
 	PGParserState state;
 	bool parsed;
 
-
-	TextBlock(ssize_t line) : line_start(line), state(PGParserDefaultState), parsed(false) { }
+	TextBlock(ssize_t line) : line_start(line), state(PGParserErrorState), parsed(false) { }
 };

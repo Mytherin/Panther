@@ -7,12 +7,14 @@ TextLine::TextLine(const TextLine& other) {
 	this->line =  other.line;
 	this->length =  other.length;
 	this->modified_line = nullptr;
-	this->deltas =  other.deltas; 
+	this->deltas =  other.deltas;
+	syntax.end = -1;
 	syntax.next = nullptr;
 }
 
 TextLine::~TextLine() {
 	if (modified_line) free(modified_line);
+	modified_line = nullptr;
 	PGSyntax* next = syntax.next;
 	syntax.next = nullptr;
 	while (next) {

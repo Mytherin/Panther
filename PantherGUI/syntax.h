@@ -1,12 +1,10 @@
 #pragma once
 
 
-typedef short PGParserState;
+typedef void* PGParserState;
 typedef short PGSyntaxType;
 
-extern const PGParserState PGParserUnknownState;
 extern const PGParserState PGParserErrorState;
-extern const PGParserState PGParserDefaultState;
 
 extern const PGSyntaxType PGSyntaxError;
 extern const PGSyntaxType PGSyntaxNone;

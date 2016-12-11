@@ -26,19 +26,21 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 			current_line += TEXTBLOCK_SIZE;
 		}
 		// parse the first 10 blocks
-		PGParserState state = PGParserDefaultState;
+		PGParseErrors errors;
+		PGParserState state = highlighter->GetDefaultState();
 		TextBlock* textblock = nullptr;
 		ssize_t line_count = std::min((ssize_t) lines.size(), (ssize_t) TEXTBLOCK_SIZE * 10);
 		for (ssize_t i = 0; i <= line_count; i++) {
 			if (i % TEXTBLOCK_SIZE == 0) {
 				if (textblock) {
-					textblock->state = state;
+					textblock->state = highlighter->CopyParserState(state);
 					textblock->parsed = true;
 				}
 				textblock = &parsed_blocks[i / TEXTBLOCK_SIZE];
 			}
-			state = highlighter->IncrementalParseLine(lines[i], state);
+			state = highlighter->IncrementalParseLine(lines[i], i, state, errors);
 		}
+		highlighter->DeleteParserState(state);
 		if (lines.size() > TEXTBLOCK_SIZE * 10) {
 			this->current_task = new Task((PGThreadFunctionParams) RunHighlighter, (void*) this);
 			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
@@ -66,11 +68,18 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 			ssize_t current_block = i;
 			while (current_block < textfile->GetMaximumBlocks()) {
 				textfile->LockBlock(current_block);
+				PGParseErrors errors;
 				PGParserState oldstate = parsed_blocks[current_block].state;
-				PGParserState state = current_block == 0 ? PGParserDefaultState : parsed_blocks[current_block - 1].state;
+				PGParserState state = current_block == 0 ? textfile->highlighter->GetDefaultState() : parsed_blocks[current_block - 1].state;
 				ssize_t last_line = current_block == parsed_blocks.size() - 1 ? textfile->lines.size() : std::min((ssize_t) textfile->lines.size(), (ssize_t) parsed_blocks[current_block + 1].line_start);
 				for (ssize_t i = parsed_blocks[current_block].line_start; i < last_line; i++) {
-					state = textfile->highlighter->IncrementalParseLine(textfile->lines[i], state);
+					state = textfile->highlighter->IncrementalParseLine(textfile->lines[i], i, state, errors);
+				}
+				parsed_blocks[current_block].parsed = true;
+				parsed_blocks[current_block].state =  textfile->highlighter->CopyParserState(state);
+				bool equivalent = !oldstate ? false : textfile->highlighter->StateEquivalent(parsed_blocks[current_block].state, oldstate);
+				if (oldstate) {
+					textfile->highlighter->DeleteParserState(oldstate);
 				}
 				textfile->UnlockBlock(current_block);
 				if (textfile->current_task != task) {
@@ -79,9 +88,9 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 					parsed_blocks[current_block].parsed = false;
 					return;
 				}
-				parsed_blocks[current_block].parsed = true;
-				parsed_blocks[current_block].state = state;
-				if (state == oldstate) break;
+				if (equivalent) {
+					break;
+				}
 				current_block++;
 			}
 		}
@@ -96,7 +105,6 @@ void TextFile::InvalidateParsing(ssize_t line) {
 }
 
 void TextFile::InvalidateParsing(std::vector<ssize_t>& invalidated_lines) {
-	PGParserState state = PGParserDefaultState;
 	// add any necessary blocks
 	ssize_t maximum_line = parsed_blocks.back().line_start + TEXTBLOCK_SIZE;
 	while (maximum_line <= lines.size()) {

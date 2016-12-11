@@ -72,7 +72,7 @@ public:
 	void LockBlock(ssize_t block);
 	void UnlockBlock(ssize_t block);
 	ssize_t GetBlock(ssize_t linenr) { return linenr / TEXTBLOCK_SIZE; }
-	ssize_t GetMaximumBlocks() { return GetBlock(lines.size()) + 1; }
+	ssize_t GetMaximumBlocks() { return lines.size() % TEXTBLOCK_SIZE == 0 ? GetBlock(lines.size()) : GetBlock(lines.size()) + 1; }
 	bool BlockIsParsed(ssize_t block) { return parsed_blocks[block].parsed; }
 private:
 	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction);

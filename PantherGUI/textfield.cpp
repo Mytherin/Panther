@@ -102,13 +102,14 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 			PGScalar xpos = position_x_text;
 			if (parsed) {
 				PGSyntax* syntax = &current_line->syntax;
-				while (syntax->end > 0) {
+				while (syntax && syntax->end > 0) {
 					bool squiggles = false;
 					assert(syntax->end > position);
 					switch (syntax->type) {
 					case -1:
 						squiggles = true;
 					case 0:
+					case 255:
 					case 4:
 						SetTextColor(renderer, PGColor(191, 191, 191));
 						break;
