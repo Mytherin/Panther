@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils.h"
 
 typedef void* PGParserState;
 typedef short PGSyntaxType;
@@ -11,7 +12,7 @@ extern const PGSyntaxType PGSyntaxNone;
 
 struct PGSyntax {
 	PGSyntaxType type;
-	int end;
+	ssize_t end;
 	PGSyntax* next;
 
 	PGSyntax() : type(0), end(-1), next(nullptr) { }

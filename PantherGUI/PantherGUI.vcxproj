@@ -130,8 +130,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="c.cpp" />
     <ClCompile Include="control.cpp" />
     <ClCompile Include="cursor.cpp" />
+    <ClCompile Include="keywords.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
@@ -147,10 +149,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="blockingconcurrentqueue.h" />
+    <ClInclude Include="c.h" />
     <ClInclude Include="concurrentqueue.h" />
     <ClInclude Include="control.h" />
     <ClInclude Include="cursor.h" />
     <ClInclude Include="encoding.h" />
+    <ClInclude Include="keywords.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />

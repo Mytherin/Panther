@@ -6,13 +6,14 @@
 #include <fstream>
 #include "scheduler.h"
 #include "xml.h"
+#include "c.h"
 
 TextFile::TextFile(std::string path) : textfield(nullptr), base(nullptr), highlighter(nullptr), current_task(nullptr) {
 	OpenFile(path);
 }
 
 TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), base(nullptr), highlighter(nullptr), current_task(nullptr) {
-	highlighter = new XMLHighlighter();
+	highlighter = new CHighlighter();
 	OpenFile(path);
 	if (highlighter) {
 		// we parse the first 10 blocks before opening the textfield for viewing
@@ -39,6 +40,10 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 				textblock = &parsed_blocks[i / TEXTBLOCK_SIZE];
 			}
 			state = highlighter->IncrementalParseLine(lines[i], i, state, errors);
+			if (i == line_count) {
+				textblock->state = highlighter->CopyParserState(state);
+				textblock->parsed = true;
+			}
 		}
 		highlighter->DeleteParserState(state);
 		if (lines.size() > TEXTBLOCK_SIZE * 10) {
