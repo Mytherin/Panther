@@ -139,6 +139,10 @@ void TextFile::UnlockBlock(ssize_t block) {
 void TextFile::OpenFile(std::string path) {
 	this->path = path;
 	this->base = (char*)mmap::ReadFile(path);
+	if (!this->base) {
+		// FIXME: proper error message
+		return;
+	}
 
 	this->lineending = PGLineEndingUnknown;
 	this->indentation = PGIndentionTabs;

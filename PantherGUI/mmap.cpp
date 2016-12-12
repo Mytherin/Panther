@@ -72,7 +72,7 @@ namespace mmap {
 		if (!handle) {
 			return nullptr;
 		}
-		// FIXME: incorrect with windows line ending
+
 		FILE* f = handle->f;
 		fseek(f, 0, SEEK_END);
 		long fsize = ftell(f);

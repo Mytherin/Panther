@@ -448,6 +448,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_SIZE: {
+		if (wParam != SIZE_MINIMIZED) {
+			int width = LOWORD(lParam);
+			int height = HIWORD(lParam);
+			global_handle->focused_control->width = width;
+			global_handle->focused_control->height = height;
+			global_handle->focused_control->Invalidate();
+		}
+		break;
+	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 		break;
