@@ -169,9 +169,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
 	TextField* textField = new TextField(res, "C:\\Users\\wieis\\Desktop\\syntaxtest.c");
 	textField->width = 1000;
-	textField->height = 700;
+	textField->height = 600;
 	textField->x = 0;
-	textField->y = 0;
+	textField->y = 100;
+	textField->anchor = PGAnchorBottom | PGAnchorLeft | PGAnchorRight;
 
 
 	// The parameters to ShowWindow explained:
@@ -452,9 +453,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		if (wParam != SIZE_MINIMIZED) {
 			int width = LOWORD(lParam);
 			int height = HIWORD(lParam);
-			global_handle->focused_control->width = width;
-			global_handle->focused_control->height = height;
-			global_handle->focused_control->Invalidate();
+			PGSize old_size = GetWindowSize(global_handle);
+			for (auto it = global_handle->registered_refresh.begin(); it != global_handle->registered_refresh.end(); it++) {
+				PGAnchor anchor = (*it)->anchor;
+				if (anchor & PGAnchorLeft && anchor & PGAnchorRight) {
+					(*it)->width = width;
+				} else if (anchor & PGAnchorRight) {
+					(*it)->width = width - (*it)->x;
+				} else if (anchor & PGAnchorLeft) {
+					int old = old_size.width - ((*it)->x + (*it)->width);
+					(*it)->width = (old - width) + (*it)->x;
+				}
+
+				if (anchor & PGAnchorBottom && anchor & PGAnchorTop) {
+					(*it)->height = height;
+				} else if (anchor & PGAnchorBottom) {
+					(*it)->height = height - (*it)->y;
+				} else if (anchor & PGAnchorTop) {
+					int old = old_size.width - ((*it)->y + (*it)->width);
+					(*it)->height = (old - height) + (*it)->y;
+				}
+			}
+			RedrawWindow(global_handle);
 		}
 		break;
 	}
@@ -552,9 +572,9 @@ void RedrawWindow(PGWindowHandle window, PGIRect rectangle) {
 }
 
 PGSize GetWindowSize(PGWindowHandle window) {
-	// FIXME
-	PGSize size(0, 0);
-	return size;
+	RECT rect;
+	GetWindowRect(window->hwnd, &rect);
+	return PGSize(rect.right - rect.left, rect.bottom - rect.top);
 }
 
 static SkPaint::Style PGStyleConvert(PGStyle style) {

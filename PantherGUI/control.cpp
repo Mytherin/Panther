@@ -1,10 +1,17 @@
 
 #include "control.h"
 
+const PGAnchor PGAnchorNone = 0x00;
+const PGAnchor PGAnchorLeft = 0x01;
+const PGAnchor PGAnchorRight = 0x02;
+const PGAnchor PGAnchorTop = 0x04;
+const PGAnchor PGAnchorBottom = 0x08;
+
 Control::Control(PGWindowHandle handle) {
 	this->window = handle;
 	this->x = 0;
 	this->y = 0;
+	this->anchor = PGAnchorNone;
 }
 
 void Control::Draw(PGRendererHandle handle, PGIRect* rectangle) {

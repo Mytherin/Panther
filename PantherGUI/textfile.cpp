@@ -31,7 +31,7 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 		PGParserState state = highlighter->GetDefaultState();
 		TextBlock* textblock = nullptr;
 		ssize_t line_count = std::min((ssize_t) lines.size(), (ssize_t) TEXTBLOCK_SIZE * 10);
-		for (ssize_t i = 0; i <= line_count; i++) {
+		for (ssize_t i = 0; i < line_count; i++) {
 			if (i % TEXTBLOCK_SIZE == 0) {
 				if (textblock) {
 					textblock->state = highlighter->CopyParserState(state);
@@ -40,7 +40,7 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 				textblock = &parsed_blocks[i / TEXTBLOCK_SIZE];
 			}
 			state = highlighter->IncrementalParseLine(lines[i], i, state, errors);
-			if (i == line_count) {
+			if (i == line_count - 1) {
 				textblock->state = highlighter->CopyParserState(state);
 				textblock->parsed = true;
 			}

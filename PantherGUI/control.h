@@ -3,10 +3,19 @@
 #include "windowfunctions.h"
 #include "utils.h"
 
+typedef int PGAnchor;
+
+extern const PGAnchor PGAnchorNone;
+extern const PGAnchor PGAnchorLeft;
+extern const PGAnchor PGAnchorRight;
+extern const PGAnchor PGAnchorTop;
+extern const PGAnchor PGAnchorBottom;
+
 class Control {
 public:
 	PGScalar x, y;
 	PGScalar width, height;
+	PGAnchor anchor;
 
 	Control(PGWindowHandle window);
 

@@ -141,7 +141,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 			SetTextColor(renderer, PGColor(191, 191, 191));
 			RenderText(renderer, line + position, length - position, xpos, position_y);
 			if (selected_word) {
-				// FIXME: find all occurences of string in string
 				for (ssize_t i = 0; i <= length - (word_end - word_start); i++) {
 					if ((i == 0 || GetCharacterClass(line[i - 1]) != PGCharacterTypeText) &&
 						GetCharacterClass(line[i]) == PGCharacterTypeText) {
@@ -174,7 +173,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		ssize_t startline = std::max((*it)->BeginLine(), start_line);
 		ssize_t endline = std::min((*it)->EndLine(), linenr);
-		position_y = (startline - start_line) * line_height;
+		position_y = this->y + (startline - start_line) * line_height;
 		for (; startline <= endline; startline++) {
 			current_line = textfile.GetLine(startline);
 			assert(current_line);
@@ -251,7 +250,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	character_width = MeasureTextWidth(renderer, "a", 1);
 	// render the line numbers
 	PGScalar position_x = this->x + this->offset_x;
-	PGScalar position_y = 0;
+	PGScalar position_y = this->y;
 	ssize_t linenr = lineoffset_y;
 	if (this->display_linenumbers) {
 		TextLine *current_line;
@@ -509,7 +508,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		if (drag_type == PGDragSelection) return;
 		drag_type = PGDragSelectionCursors;
 		ssize_t line, character;
-		GetLineCharacterFromPosition(x, y, line, character);
+		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
 		ClearExtraCursors();
 		cursors[0]->SetCursorLocation(line, character);
 		active_cursor = cursors[0];
@@ -531,8 +530,9 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 }
 
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
+	PGPoint mouse(x - this->x, y - this->y);
 	// FIXME: changing the cursor probably shouldn't be done here, but in the main form
-	if (x >= this->x && y >= this->y && x <= this->x + (6 * this->width / 7) && y <= this->y + this->height) {
+	if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= (6 * this->width / 7) && mouse.y <= this->height) {
 		SetCursor(this->window, PGCursorIBeam);
 	} else {
 		SetCursor(this->window, PGCursorStandard);
@@ -542,7 +542,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			// FIXME: when having multiple cursors and we are altering the active cursor,
 			// the active cursor can never "consume" the other selections (they should always stay)
 			ssize_t line, character;
-			GetLineCharacterFromPosition((PGScalar) x, (PGScalar) y, line, character);
+			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
 			if (active_cursor == nullptr) {
 				active_cursor = cursors.front();
 			}
@@ -554,22 +554,20 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				this->InvalidateBetweenLines(old_line, line);
 			}
 		} else if (drag_type == PGDragScrollbar) {
-			PGScalar new_y = y - this->y;
 			ssize_t current_offset = this->lineoffset_y;
-			SetScrollbarOffset(new_y - drag_offset);
+			SetScrollbarOffset(mouse.y - drag_offset);
 			if (current_offset != this->lineoffset_y)
 				this->Invalidate();
 		} else if (drag_type == PGDragMinimap) {
-			PGScalar new_y = y - this->y;
 			ssize_t current_offset = this->lineoffset_y;
-			SetMinimapOffset(new_y - drag_offset);
+			SetMinimapOffset(mouse.y - drag_offset);
 			if (current_offset != this->lineoffset_y)
 				this->Invalidate();
 		}
 	} else if (buttons & PGMiddleMouseButton) {
 		if (drag_type == PGDragSelectionCursors) {
 			ssize_t line, character;
-			GetLineCharacterFromPosition((PGScalar) x, (PGScalar) y, line, character, false);
+			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character, false);
 			ssize_t start_character = active_cursor->end_character;
 			ssize_t start_line = active_cursor->end_line;
 			ssize_t increment = line > active_cursor->end_line ? 1 : -1;
@@ -597,9 +595,9 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		if (drag_type != PGDragSelectionCursors) {
 			drag_type = PGDragNone;
 		}
-		if (this->display_scrollbar && x >= this->x + this->width - SCROLLBAR_WIDTH && x <= this->x + this->width) {
+		if (this->display_scrollbar && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width) {
 			this->InvalidateScrollbar();
-		} else if (this->display_minimap && x >= this->x + this->width - SCROLLBAR_WIDTH - GetMinimapWidth() && x <= this->x + this->width - SCROLLBAR_WIDTH){
+		} else if (this->display_minimap && mouse.x >= this->width - SCROLLBAR_WIDTH - GetMinimapWidth() && mouse.x <= this->width - SCROLLBAR_WIDTH) {
 			this->InvalidateMinimap();
 		}
 	}
