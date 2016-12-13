@@ -17,7 +17,7 @@ enum PGParserXMLState {
 const PGSyntaxType PGXMLElementName = 1;
 const PGSyntaxType PGXMLAttributeName = 2;
 const PGSyntaxType PGXMLAttributeValue = 3;
-const PGSyntaxType PGXMLComment = 4;
+const PGSyntaxType PGXMLComment = 5;
 const PGSyntaxType PGXMLEmpty = 255;
 
 struct XMLToken {
@@ -31,10 +31,10 @@ struct XMLParserState {
 	std::vector<XMLToken> open_tokens;
 };
 
-PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, ssize_t linenr, PGParserState s, PGParseErrors& errors) {
+PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState s, PGParseErrors& errors) {
 	XMLParserState* state = (XMLParserState*)s;
 	char* text = line.GetLine();
-	ssize_t size = line.GetLength();
+	lng size = line.GetLength();
 	// free the current syntax of this line
 	PGSyntax* current = &line.syntax;
 	PGSyntax* prev = nullptr;
@@ -48,7 +48,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, ssize_t linen
 	}
 	current = &line.syntax;
 	current->end = -1;
-	for (ssize_t i = 0; i < size; i++) {
+	for (lng i = 0; i < size; i++) {
 		if (text[i] == '<') {
 			if (state->state == PGParserXMLDefault) {
 				current->type = PGXMLEmpty;
@@ -173,7 +173,7 @@ PGParserState XMLHighlighter::CopyParserState(const PGParserState inp) {
 }
 
 void XMLHighlighter::DeleteParserState(PGParserState inp) {
-	delete inp;
+	delete (XMLParserState*) inp;
 }
 
 bool XMLHighlighter::StateEquivalent(const PGParserState a, const PGParserState b) {

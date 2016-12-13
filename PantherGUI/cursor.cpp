@@ -11,30 +11,30 @@ Cursor::Cursor(TextFile* file) :
 
 }
 
-Cursor::Cursor(TextFile* file, ssize_t line, ssize_t character) :
+Cursor::Cursor(TextFile* file, lng line, lng character) :
 	file(file), start_line(line), start_character(character), end_line(line), end_character(character), min_character(-1) {
 }
 
-void Cursor::OffsetLine(ssize_t offset) {
+void Cursor::OffsetLine(lng offset) {
 	OffsetSelectionLine(offset);
 	end_line = start_line;
 	end_character = start_character;
 	min_character = -1;
 }
 
-void Cursor::OffsetSelectionLine(ssize_t offset) {
-	start_line = std::min(std::max(start_line + offset, (ssize_t)0), this->file->GetLineCount() - 1);
+void Cursor::OffsetSelectionLine(lng offset) {
+	start_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
 	start_character = std::min(start_character, file->GetLine(start_line)->GetLength());
 }
 
-void Cursor::OffsetCharacter(ssize_t offset) {
+void Cursor::OffsetCharacter(lng offset) {
 	OffsetSelectionCharacter(offset);
 	end_character = start_character;
 	end_line = start_line;
 	min_character = -1;
 }
 
-void Cursor::OffsetSelectionCharacter(ssize_t offset) {
+void Cursor::OffsetSelectionCharacter(lng offset) {
 	start_character += offset;
 	while (start_character < 0) {
 		if (start_line > 0) {
@@ -74,9 +74,9 @@ void Cursor::OffsetSelectionWord(PGDirection direction) {
 	} else {
 		TextLine* textline = this->file->GetLine(start_line);
 		char* line = textline->GetLine();
-		ssize_t length = textline->GetLength();
+		lng length = textline->GetLength();
 		int offset = direction == PGDirectionLeft ? -1 : 1;
-		ssize_t index = direction == PGDirectionLeft ? start_character + offset : start_character;
+		lng index = direction == PGDirectionLeft ? start_character + offset : start_character;
 		PGCharacterClass type = GetCharacterClass(line[index]);
 		for (index += offset; index >= 0 && index < length; index += offset) {
 			if (GetCharacterClass(line[index]) != type) {
@@ -84,7 +84,7 @@ void Cursor::OffsetSelectionWord(PGDirection direction) {
 				break;
 			}
 		}
-		index = std::min(std::max(index, (ssize_t)0), textline->GetLength());
+		index = std::min(std::max(index, (lng)0), textline->GetLength());
 		start_character = index;
 	}
 }
@@ -92,8 +92,8 @@ void Cursor::OffsetSelectionWord(PGDirection direction) {
 void Cursor::SelectWord() {
 	TextLine* textline = this->file->GetLine(start_line);
 	char* line = textline->GetLine();
-	ssize_t start_index = std::max(start_character - 1, (ssize_t)0);
-	ssize_t end_index = start_index + 1;
+	lng start_index = std::max(start_character - 1, (lng)0);
+	lng end_index = start_index + 1;
 	PGCharacterClass left_type = GetCharacterClass(line[start_index]);
 	PGCharacterClass right_type = GetCharacterClass(line[end_index]);
 	PGCharacterClass type = left_type == PGCharacterTypeText || right_type == PGCharacterTypeText ? PGCharacterTypeText : left_type;
@@ -108,7 +108,7 @@ void Cursor::SelectWord() {
 			break;
 		}
 	}
-	end_character = std::max(start_index, (ssize_t)0);
+	end_character = std::max(start_index, (lng)0);
 	start_character = std::min(end_index, textline->GetLength());
 	end_line = start_line;
 	min_character = this->BeginCharacter();
@@ -117,18 +117,18 @@ void Cursor::SelectWord() {
 	max_line = this->EndLine();
 }
 
-int Cursor::GetSelectedWord(ssize_t& word_start, ssize_t& word_end) {
+int Cursor::GetSelectedWord(lng& word_start, lng& word_end) {
 	// returns the currently selected word, if any
 	if (start_line != end_line) return -1;
 
 	TextLine* textline = this->file->GetLine(start_line);
 	char* line = textline->GetLine();
-	ssize_t length = textline->GetLength();
+	lng length = textline->GetLength();
 	// select the word from the start character
 	// note that words in this context can only contain PGCharacterTypeText
 	// unlike word selections which can contain any type as long as all characters have the same type
-	ssize_t start_index = std::max(start_character - 1, (ssize_t)0);
-	ssize_t end_index = start_index + 1;
+	lng start_index = std::max(start_character - 1, (lng)0);
+	lng end_index = start_index + 1;
 	PGCharacterClass type = PGCharacterTypeText;
 	for (end_index = start_index + 1; end_index < length; end_index++) {
 		if (GetCharacterClass(line[end_index]) != type) {
@@ -141,7 +141,7 @@ int Cursor::GetSelectedWord(ssize_t& word_start, ssize_t& word_end) {
 			break;
 		}
 	}
-	start_index = std::max(start_index, (ssize_t)0);
+	start_index = std::max(start_index, (lng)0);
 	end_index = std::min(end_index, length);
 	if (end_index <= start_index) {
 		// no word found
@@ -184,7 +184,7 @@ void Cursor::OffsetWord(PGDirection direction) {
 void Cursor::SelectStartOfLine() {
 	if (this->start_character == 0) return;
 	char* line = this->file->GetLine(this->start_line)->GetLine();
-	ssize_t character = 0;
+	lng character = 0;
 	while (*line == ' ' || *line == '\t') {
 		character++;
 		line++;
@@ -220,13 +220,13 @@ void Cursor::SelectEndOfFile() {
 	this->start_character = this->file->GetLine(this->start_line)->GetLength();
 }
 
-void Cursor::SetCursorLocation(ssize_t linenr, ssize_t characternr) {
-	this->start_line = this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
-	this->start_character = this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
+void Cursor::SetCursorLocation(lng linenr, lng characternr) {
+	this->start_line = this->end_line = std::max(std::min((lng)  linenr, this->file->GetLineCount() - 1), (lng) 0);
+	this->start_character = this->end_character = std::max(std::min((lng) characternr, file->GetLine(start_line)->GetLength()), (lng) 0);
 	min_character = -1;
 }
 
-void Cursor::SetCursorStartLocation(ssize_t linenr, ssize_t characternr) {
+void Cursor::SetCursorStartLocation(lng linenr, lng characternr) {
 	if (min_character >= 0) {
 		if (linenr < min_line ||
 			(linenr == min_line && characternr < min_character)) {
@@ -251,21 +251,21 @@ void Cursor::SetCursorStartLocation(ssize_t linenr, ssize_t characternr) {
 			return;
 		}
 	}
-	this->start_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
-	this->start_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
+	this->start_line = std::max(std::min((lng)  linenr, this->file->GetLineCount() - 1), (lng) 0);
+	this->start_character = std::max(std::min((lng) characternr, file->GetLine(start_line)->GetLength()), (lng) 0);
 }
 
-void Cursor::SetCursorEndLocation(ssize_t linenr, ssize_t characternr) {
-	this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
-	this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
+void Cursor::SetCursorEndLocation(lng linenr, lng characternr) {
+	this->end_line = std::max(std::min((lng)  linenr, this->file->GetLineCount() - 1), (lng) 0);
+	this->end_character = std::max(std::min((lng) characternr, file->GetLine(start_line)->GetLength()), (lng) 0);
 }
 
-void Cursor::SetCursorLine(ssize_t linenr) {
-	this->start_line = this->end_line = std::max(std::min((ssize_t)  linenr, this->file->GetLineCount() - 1), (ssize_t) 0);
+void Cursor::SetCursorLine(lng linenr) {
+	this->start_line = this->end_line = std::max(std::min((lng)  linenr, this->file->GetLineCount() - 1), (lng) 0);
 }
 
-void Cursor::SetCursorCharacter(ssize_t characternr) {
-	this->start_character = this->end_character = std::max(std::min((ssize_t) characternr, file->GetLine(start_line)->GetLength()), (ssize_t) 0);
+void Cursor::SetCursorCharacter(lng characternr) {
+	this->start_character = this->end_character = std::max(std::min((lng) characternr, file->GetLine(start_line)->GetLength()), (lng) 0);
 }
 
 void Cursor::RestoreCursor(Cursor cursor) {
@@ -279,34 +279,34 @@ bool Cursor::SelectionIsEmpty() {
 	return this->start_character == this->end_character && this->start_line == this->end_line;
 }
 
-ssize_t Cursor::BeginCharacter() {
+lng Cursor::BeginCharacter() {
 	if (start_line < end_line) return start_character;
 	if (end_line < start_line) return end_character;
 	return std::min(start_character, end_character);
 }
 
-ssize_t Cursor::BeginLine() {
+lng Cursor::BeginLine() {
 	return std::min(start_line, end_line);
 }
 
-ssize_t Cursor::EndCharacter() {
+lng Cursor::EndCharacter() {
 	if (start_line < end_line) return end_character;
 	if (end_line < start_line) return start_character;
 	return std::max(start_character, end_character);
 }
 
-ssize_t Cursor::EndLine() {
+lng Cursor::EndLine() {
 	return std::max(start_line, end_line);
 }
 
 std::string Cursor::GetText() {
-	ssize_t beginline = BeginLine();
-	ssize_t endline = EndLine();
+	lng beginline = BeginLine();
+	lng endline = EndLine();
 	std::string text = "";
-	for (ssize_t linenr = beginline; linenr <= endline; linenr++) {
+	for (lng linenr = beginline; linenr <= endline; linenr++) {
 		TextLine* line = file->GetLine(linenr);
-		ssize_t start = linenr == beginline ? BeginCharacter() : 0;
-		ssize_t end = linenr == endline ? EndCharacter() : line->GetLength();
+		lng start = linenr == beginline ? BeginCharacter() : 0;
+		lng end = linenr == endline ? EndCharacter() : line->GetLength();
 
 		if (linenr != beginline) {
 			text += NEWLINE_CHARACTER;
@@ -354,13 +354,13 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 	assert(cursors.size() > 0);
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	if (scroll_textfield) {
-		ssize_t line_offset = textfield->GetLineOffset();
-		ssize_t line_height = textfield->GetLineHeight();
-		ssize_t line_start = line_offset;
-		ssize_t line_end = line_start + line_height;
-		ssize_t cursor_min = INT_MAX, cursor_max = 0;
+		lng line_offset = textfield->GetLineOffset();
+		lng line_height = textfield->GetLineHeight();
+		lng line_start = line_offset;
+		lng line_end = line_start + line_height;
+		lng cursor_min = INT_MAX, cursor_max = 0;
 		for (int i = 0; i < cursors.size(); i++) {
-			ssize_t cursor_line = cursors[i]->start_line;
+			lng cursor_line = cursors[i]->start_line;
 			cursor_min = std::min(cursor_min, cursor_line);
 			cursor_max = std::max(cursor_max, cursor_line);
 		}
@@ -389,7 +389,7 @@ void Cursor::VerifyCursors(TextField* textfield, std::vector<Cursor*>& cursors) 
 	}
 }
 
-bool Cursor::Contains(ssize_t linenr, ssize_t characternr) {
+bool Cursor::Contains(lng linenr, lng characternr) {
 	if (this->BeginLine() == this->EndLine() && 
 		this->BeginLine() == linenr) {
 		return characternr >= this->BeginCharacter() && characternr <= this->EndCharacter();
@@ -413,10 +413,10 @@ bool Cursor::OverlapsWith(Cursor& cursor) {
 
 void Cursor::Merge(Cursor& cursor) {
 	bool beginIsStart = BeginLine() == start_line && BeginCharacter() == start_character ? true : false;
-	ssize_t beginline = BeginLine();
-	ssize_t endline = EndLine();
-	ssize_t begincharacter = BeginCharacter();
-	ssize_t endcharacter = EndCharacter();
+	lng beginline = BeginLine();
+	lng endline = EndLine();
+	lng begincharacter = BeginCharacter();
+	lng endcharacter = EndCharacter();
 	if (beginline > cursor.BeginLine() ||
 		(beginline == cursor.BeginLine() && begincharacter > cursor.BeginCharacter())) {
 		if (beginIsStart) {

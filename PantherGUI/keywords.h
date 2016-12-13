@@ -35,7 +35,7 @@ extern const PGSyntaxType PGKWEmpty;
 
 class KeywordHighlighter : public SyntaxHighlighter {
 public:
-	virtual PGParserState IncrementalParseLine(TextLine& line, ssize_t linenr, PGParserState state, PGParseErrors& errors);
+	virtual PGParserState IncrementalParseLine(TextLine& line, lng linenr, PGParserState state, PGParseErrors& errors);
 	virtual PGParserState GetDefaultState();
 	virtual PGParserState CopyParserState(const PGParserState state);
 	virtual bool StateEquivalent(const PGParserState a, const PGParserState b);

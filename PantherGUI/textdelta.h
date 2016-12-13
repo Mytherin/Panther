@@ -24,15 +24,15 @@ typedef enum {
 
 class TextDelta {
 public:
-	ssize_t linenr;
-	ssize_t characternr;
+	lng linenr;
+	lng characternr;
 	TextDelta* next;
 
 	TextDelta() : next(nullptr) {}
 	virtual ~TextDelta() { }
 
 	virtual PGTextType TextDeltaType() { return PGDeltaUnknown; }
-	TextDelta(ssize_t linenr, ssize_t characternr) : linenr(linenr), characternr(characternr) { }
+	TextDelta(lng linenr, lng characternr) : linenr(linenr), characternr(characternr) { }
 };
 
 class CursorDelta : public TextDelta {
@@ -40,7 +40,7 @@ public:
 	Cursor* cursor;
 	Cursor stored_cursor;
 
-	CursorDelta(Cursor* cursor, ssize_t linenr, ssize_t characternr) : cursor(cursor), stored_cursor(nullptr), TextDelta(linenr, characternr) {
+	CursorDelta(Cursor* cursor, lng linenr, lng characternr) : cursor(cursor), stored_cursor(nullptr), TextDelta(linenr, characternr) {
 		if (cursor) stored_cursor = Cursor(*cursor);
 	}
 
@@ -52,16 +52,16 @@ public:
 	std::string text;
 
 	PGTextType TextDeltaType() { return PGDeltaAddText; }
-	AddText(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::string text) : CursorDelta(cursor, linenr, characternr), text(text) {}
+	AddText(Cursor* cursor, lng linenr, lng characternr, std::string text) : CursorDelta(cursor, linenr, characternr), text(text) {}
 };
 
 class RemoveText : public CursorDelta {
 public:
-	ssize_t charactercount;
+	lng charactercount;
 	std::string removed_text;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveText; }
-	RemoveText(Cursor* cursor, ssize_t linenr, ssize_t characternr, ssize_t charactercount) : CursorDelta(cursor, linenr, characternr), charactercount(charactercount) {}
+	RemoveText(Cursor* cursor, lng linenr, lng characternr, lng charactercount) : CursorDelta(cursor, linenr, characternr), charactercount(charactercount) {}
 };
 
 class RemoveLine : public CursorDelta {
@@ -69,17 +69,17 @@ public:
 	TextLine line;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveLine; }
-	RemoveLine(Cursor* cursor, ssize_t linenr, TextLine line) : CursorDelta(cursor, linenr, characternr), line(line) {}
+	RemoveLine(Cursor* cursor, lng linenr, TextLine line) : CursorDelta(cursor, linenr, characternr), line(line) {}
 };
 
 class RemoveLines : public CursorDelta {
 public:
 	std::vector<TextLine> lines;
 	std::string extra_text;
-	ssize_t last_line_offset;
+	lng last_line_offset;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveManyLines; }
-	RemoveLines(Cursor* cursor, ssize_t linenr) : CursorDelta(cursor, linenr, 0), last_line_offset(0) {}
+	RemoveLines(Cursor* cursor, lng linenr) : CursorDelta(cursor, linenr, 0), last_line_offset(0) {}
 	void AddLine(TextLine line) {
 		lines.push_back(line);
 	}
@@ -94,8 +94,8 @@ public:
 
 
 	PGTextType TextDeltaType() { return PGDeltaAddLine; }
-	AddLine(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::string text) : CursorDelta(cursor, linenr, characternr), line(text), cursor_position(0), remove_text(nullptr) {}
-	AddLine(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::string text, int cursor_position) : CursorDelta(cursor, linenr, characternr), line(text), cursor_position(cursor_position), remove_text(nullptr) {}
+	AddLine(Cursor* cursor, lng linenr, lng characternr, std::string text) : CursorDelta(cursor, linenr, characternr), line(text), cursor_position(0), remove_text(nullptr) {}
+	AddLine(Cursor* cursor, lng linenr, lng characternr, std::string text, int cursor_position) : CursorDelta(cursor, linenr, characternr), line(text), cursor_position(cursor_position), remove_text(nullptr) {}
 };
 
 class AddLines : public CursorDelta {
@@ -106,7 +106,7 @@ public:
 
 
 	PGTextType TextDeltaType() { return PGDeltaAddManyLines; }
-	AddLines(Cursor* cursor, ssize_t linenr, ssize_t characternr, std::vector<std::string> lines) : CursorDelta(cursor, linenr, characternr), lines(lines), remove_text(nullptr) {}
+	AddLines(Cursor* cursor, lng linenr, lng characternr, std::vector<std::string> lines) : CursorDelta(cursor, linenr, characternr), lines(lines), remove_text(nullptr) {}
 };
 
 class SwapLines : public TextDelta {
@@ -117,7 +117,7 @@ public:
 	int offset;
 
 	PGTextType TextDeltaType() { return PGDeltaSwapLines; }
-	SwapLines(ssize_t linenr, int offset, TextLine line) : TextDelta(linenr, 0), offset(offset) { lines.push_back(line); }
+	SwapLines(lng linenr, int offset, TextLine line) : TextDelta(linenr, 0), offset(offset) { lines.push_back(line); }
 };
 
 class MultipleDelta : public TextDelta {

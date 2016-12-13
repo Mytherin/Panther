@@ -26,10 +26,10 @@ void Scheduler::RunThread() {
 	}
 }
 
-void Scheduler::_SetThreadCount(ssize_t threads) {
+void Scheduler::_SetThreadCount(lng threads) {
 	// FIXME: removing threads is not supported right now
 	assert(threads > this->threads.size());
-	for (ssize_t current_threads = this->threads.size(); current_threads <= threads; current_threads++) {
+	for (lng current_threads = this->threads.size(); current_threads <= threads; current_threads++) {
 		PGThreadHandle handle = CreateThread(RunThread);
 		this->threads.push_back(handle);
 	}

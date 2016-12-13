@@ -61,11 +61,11 @@ void RenderText(PGRendererHandle renderer, const char* text, size_t length, PGSc
 
 }
 
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t characternr) {
+void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, int x, int y, lng characternr) {
 
 }
 
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, ssize_t start, ssize_t end) {
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, int x, int y, lng start, lng end) {
 
 }
 
@@ -83,11 +83,11 @@ void SetTextAlign(PGRendererHandle window, PGTextAlign alignment) {
 
 }
 
-void GetRenderOffsets(PGRendererHandle renderer, const char* text, ssize_t length, std::vector<short>& offsets) {
+void GetRenderOffsets(PGRendererHandle renderer, const char* text, lng length, std::vector<short>& offsets) {
 
 }
 
-int GetRenderWidth(PGRendererHandle renderer, const char* text, ssize_t length) {
+int GetRenderWidth(PGRendererHandle renderer, const char* text, lng length) {
 	return 5;
 }
 
@@ -119,7 +119,7 @@ PGLineEnding GetSystemLineEnding() {
 	return PGLineEndingWindows;
 }
 
-ssize_t GetTime(void) {
+lng GetTime(void) {
 	return 0;
 }
 
@@ -143,11 +143,11 @@ PGScalar GetTextHeight(PGRendererHandle renderer) {
 	return 0;
 }
 
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t characternr, PGScalar line_height) {
+void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height) {
 
 }
 
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t start, ssize_t end, PGColor selection_color, PGScalar line_height) {
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height) {
 
 }
 

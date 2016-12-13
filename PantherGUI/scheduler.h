@@ -26,15 +26,15 @@ class Scheduler {
 public:
 	static void Initialize() { GetInstance(); }
 
-	static void SetThreadCount(ssize_t count) { GetInstance()._SetThreadCount(count); }
-	static ssize_t GetThreadCount() { return GetInstance().threads.size(); }
+	static void SetThreadCount(lng count) { GetInstance()._SetThreadCount(count); }
+	static lng GetThreadCount() { return GetInstance().threads.size(); }
 
 	static bool IsRunning() { return GetInstance().running; }
 
 	static void RegisterTask(Task* task, PGTaskUrgency urgency) { GetInstance()._RegisterTask(task, urgency); }
 private:
 	Scheduler();
-	void _SetThreadCount(ssize_t threads);
+	void _SetThreadCount(lng threads);
 	void _RegisterTask(Task* task, PGTaskUrgency);
 	static void RunThread(void);
 	static Scheduler& GetInstance()

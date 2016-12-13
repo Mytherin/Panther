@@ -143,5 +143,8 @@
     <ClCompile Include="..\PantherGUI\xml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\PantherGUI\file.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

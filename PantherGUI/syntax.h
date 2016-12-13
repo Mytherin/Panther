@@ -12,7 +12,7 @@ extern const PGSyntaxType PGSyntaxNone;
 
 struct PGSyntax {
 	PGSyntaxType type;
-	ssize_t end;
+	lng end;
 	PGSyntax* next;
 
 	PGSyntax() : type(0), end(-1), next(nullptr) { }

@@ -18,7 +18,7 @@ struct TextSelection {
 class TextField : public Control {
 	friend class Cursor;
 public:
-	TextField(PGWindowHandle, std::string filename);
+	TextField(PGWindowHandle, std::string filename, bool immediate_load = false);
 
 	void PeriodicRender(void);
 	void Draw(PGRendererHandle, PGIRect*);
@@ -31,15 +31,15 @@ public:
 	void KeyboardCharacter(char character, PGModifier modifier);
 	void KeyboardUnicode(char *character, PGModifier modifier);
 	
-	void InvalidateLine(ssize_t line);
-	void InvalidateBeforeLine(ssize_t line);
-	void InvalidateAfterLine(ssize_t line);
-	void InvalidateBetweenLines(ssize_t start, ssize_t end);
+	void InvalidateLine(lng line);
+	void InvalidateBeforeLine(lng line);
+	void InvalidateAfterLine(lng line);
+	void InvalidateBetweenLines(lng start, lng end);
 	void InvalidateScrollbar();
 	void InvalidateMinimap();
 
-	ssize_t GetLineOffset() { return lineoffset_y; }
-	void SetLineOffset(ssize_t offset) { lineoffset_y = offset; }
+	lng GetLineOffset() { return lineoffset_y; }
+	void SetLineOffset(lng offset) { lineoffset_y = offset; }
 	int GetLineHeight();
 	void DisplayCarets();
 
@@ -50,7 +50,7 @@ public:
 	std::vector<Cursor*>& GetCursors() { return cursors; }
 private:
 	int offset_x;
-	ssize_t lineoffset_y;
+	lng lineoffset_y;
 	std::vector<Cursor*> cursors;
 	PGScalar text_offset;
 	PGScalar line_height;
@@ -67,7 +67,7 @@ private:
 	};
 	PGDragType drag_type;
 
-	ssize_t tabwidth;
+	lng tabwidth;
 
 	bool current_focus;
 
@@ -84,7 +84,7 @@ private:
 	PGScalar GetMinimapWidth();
 	PGScalar GetMinimapHeight();
 	PGScalar GetMinimapOffset();
-	ssize_t GetMinimapStartLine();
+	lng GetMinimapStartLine();
 	void SetMinimapOffset(PGScalar offset);
 
 	Cursor* active_cursor;
@@ -95,6 +95,6 @@ private:
 	void DrawTextField(PGRendererHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
 	void ClearExtraCursors();
-	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, ssize_t& line, ssize_t& character, bool clip_character = true);
-	bool SetScrollOffset(ssize_t offset);
+	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character, bool clip_character = true);
+	bool SetScrollOffset(lng offset);
 };

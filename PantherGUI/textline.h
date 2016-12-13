@@ -11,7 +11,7 @@ struct TextLine {
 	friend class SyntaxHighlighter;
 	friend class TextFile;
 public:
-	ssize_t GetLength(void);
+	lng GetLength(void);
 	char* GetLine(void); // FIXME std::string&
 	void AddDelta(TextDelta* delta);
 	void RemoveDelta(TextDelta* delta);
@@ -19,7 +19,7 @@ public:
 
 	void ApplyDeltas();
 
-	TextLine(char* line, ssize_t length) : line(line, length), deltas(nullptr), syntax(), applied_deltas(nullptr) {}
+	TextLine(char* line, lng length) : line(line, length), deltas(nullptr), syntax(), applied_deltas(nullptr) {}
 	TextLine(const TextLine&);
 	~TextLine();
 

@@ -12,11 +12,7 @@ struct PGMemoryMappedFile {
 	PGMemoryMappedFile(HANDLE file, HANDLE mmap) : file(file), mmap(mmap) {}
 };
 
-struct PGFile {
-	FILE *f;
-};
-
-namespace mmap {
+namespace PGmmap {
 	PGMemoryMappedFileHandle MemoryMapFile(std::string filename) {
 		HANDLE file = CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		if (!file) {
@@ -51,57 +47,5 @@ namespace mmap {
 
 	void FlushMemoryMappedFile(void *address) {
 		FlushViewOfFile(address, 0);
-	}
-
-	PGFileHandle OpenFile(std::string filename, PGFileAccess access) {
-		PGFileHandle handle = new PGFile();
-		fopen_s(&handle->f, filename.c_str(), access == PGFileReadOnly ? "rb" : (access == PGFileReadWrite ? "wb" : "wb+"));
-		if (!handle->f) {
-			delete handle;
-			return nullptr;
-		}
-		return handle;
-	}
-
-	void CloseFile(PGFileHandle handle) {
-		fclose(handle->f);
-	}
-
-	void* ReadFile(std::string filename, ssize_t& result_size) {
-		result_size = -1;
-		PGFileHandle handle = OpenFile(filename, PGFileReadOnly);
-		if (!handle) {
-			return nullptr;
-		}
-
-		FILE* f = handle->f;
-		fseek(f, 0, SEEK_END);
-		long fsize = ftell(f);
-		fseek(f, 0, SEEK_SET);
-
-		char* string = (char*)malloc(fsize + 1);
-		if (!string) {
-			return nullptr;
-		}
-		fread(string, fsize, 1, f);
-		CloseFile(handle);
-		result_size = (ssize_t)fsize;
-
-		string[fsize] = 0;
-		return string;
-	}
-
-	void WriteToFile(PGFileHandle handle, const char* text, ssize_t length) {
-		if (length == 0) return;
-		fwrite(text, sizeof(char), length, handle->f);
-	}	
-	
-	void Flush(PGFileHandle handle) {
-		fflush(handle->f);
-	}
-
-
-	void DestroyFileContents(void* address) {
-		free(address);
 	}
 }

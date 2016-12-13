@@ -21,20 +21,27 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 	delete info;
 }
 
-TextFile::TextFile(std::string path) : textfield(nullptr), highlighter(nullptr), current_task(nullptr) {
+TextFile::TextFile(std::string path) : textfield(nullptr), highlighter(nullptr) {
+	this->current_task = nullptr;
 	loaded = 0;
 	is_loaded = false;
 	OpenFile(path);
 	is_loaded = true;
 }
 
-TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), highlighter(nullptr), current_task(nullptr) {
+TextFile::TextFile(std::string path, TextField* textfield, bool immediate_load) : textfield(textfield), highlighter(nullptr) {
+	this->current_task = nullptr;
 	loaded = 0;
-	is_loaded = false;
 	highlighter = new XMLHighlighter();
-	OpenFileInformation* info = new OpenFileInformation(this, path);
-	this->current_task = new Task((PGThreadFunctionParams)OpenFileAsync, info);
-	Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
+	is_loaded = false;
+	if (!immediate_load) {
+		OpenFileInformation* info = new OpenFileInformation(this, path);
+		this->current_task = new Task((PGThreadFunctionParams)OpenFileAsync, info);
+		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
+	} else {
+		OpenFile(path);
+		is_loaded = true;
+	}
 }
 
 TextFile::~TextFile() {
@@ -48,17 +55,17 @@ TextFile::~TextFile() {
 
 void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 	std::vector<TextBlock>& parsed_blocks = textfile->parsed_blocks;
-	for (ssize_t i = 0; i < textfile->GetMaximumBlocks(); i++) {
+	for (lng i = 0; i < textfile->GetMaximumBlocks(); i++) {
 		if (!parsed_blocks[i].parsed) {
 			// if we encounter a non-parsed block, parse it and any subsequent blocks that have to be parsed
-			ssize_t current_block = i;
+			lng current_block = i;
 			while (current_block < textfile->GetMaximumBlocks()) {
 				textfile->LockBlock(current_block);
 				PGParseErrors errors;
 				PGParserState oldstate = parsed_blocks[current_block].state;
 				PGParserState state = current_block == 0 ? textfile->highlighter->GetDefaultState() : parsed_blocks[current_block - 1].state;
-				ssize_t last_line = current_block == parsed_blocks.size() - 1 ? textfile->lines.size() : std::min((ssize_t)textfile->lines.size(), (ssize_t)parsed_blocks[current_block + 1].line_start);
-				for (ssize_t i = parsed_blocks[current_block].line_start; i < last_line; i++) {
+				lng last_line = current_block == parsed_blocks.size() - 1 ? textfile->lines.size() : std::min((lng)textfile->lines.size(), (lng)parsed_blocks[current_block + 1].line_start);
+				for (lng i = parsed_blocks[current_block].line_start; i < last_line; i++) {
 					state = textfile->highlighter->IncrementalParseLine(textfile->lines[i], i, state, errors);
 				}
 				parsed_blocks[current_block].parsed = true;
@@ -84,17 +91,17 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 	textfile->current_task = nullptr;
 }
 
-void TextFile::InvalidateParsing(ssize_t line) {
+void TextFile::InvalidateParsing(lng line) {
 	assert(is_loaded);
-	std::vector<ssize_t> lines(1);
+	std::vector<lng> lines(1);
 	lines.push_back(line);
 	InvalidateParsing(lines);
 }
 
-void TextFile::InvalidateParsing(std::vector<ssize_t>& invalidated_lines) {
+void TextFile::InvalidateParsing(std::vector<lng>& invalidated_lines) {
 	assert(is_loaded);
 	// add any necessary blocks
-	ssize_t maximum_line = parsed_blocks.back().line_start + TEXTBLOCK_SIZE;
+	lng maximum_line = parsed_blocks.back().line_start + TEXTBLOCK_SIZE;
 	while (maximum_line <= lines.size()) {
 		parsed_blocks.push_back(TextBlock(maximum_line));
 		maximum_line += TEXTBLOCK_SIZE;
@@ -108,20 +115,20 @@ void TextFile::InvalidateParsing(std::vector<ssize_t>& invalidated_lines) {
 }
 
 
-void TextFile::LockBlock(ssize_t block) {
+void TextFile::LockBlock(lng block) {
 	assert(is_loaded);
 	LockMutex(block_locks[block]);
 }
 
-void TextFile::UnlockBlock(ssize_t block) {
+void TextFile::UnlockBlock(lng block) {
 	assert(is_loaded);
 	UnlockMutex(block_locks[block]);
 }
 
 void TextFile::OpenFile(std::string path) {
-	ssize_t size = 0;
+	lng size = 0;
 	this->path = path;
-	char* base = (char*)mmap::ReadFile(path, size);
+	char* base = (char*)PGmmap::ReadFile(path, size);
 	if (!base || size < 0) {
 		// FIXME: proper error message
 		return;
@@ -175,7 +182,7 @@ void TextFile::OpenFile(std::string path) {
 	}
 	lines.push_back(TextLine(prev, (ptr - prev) - offset));
 
-	mmap::DestroyFileContents(base);
+	PGmmap::DestroyFileContents(base);
 	loaded = 1;
 
 	if (highlighter) {
@@ -183,7 +190,7 @@ void TextFile::OpenFile(std::string path) {
 		// (heuristic: probably should be dependent on highlight speed/amount of text/etc)
 		// anything else we schedule for highlighting in a separate thread
 		// first create all the textblocks
-		ssize_t current_line = 0;
+		lng current_line = 0;
 		while (current_line <= lines.size()) {
 			parsed_blocks.push_back(TextBlock(current_line));
 			block_locks.push_back(CreateMutex());
@@ -193,8 +200,8 @@ void TextFile::OpenFile(std::string path) {
 		PGParseErrors errors;
 		PGParserState state = highlighter->GetDefaultState();
 		TextBlock* textblock = nullptr;
-		ssize_t line_count = std::min((ssize_t)lines.size(), (ssize_t)TEXTBLOCK_SIZE * 10);
-		for (ssize_t i = 0; i < line_count; i++) {
+		lng line_count = std::min((lng)lines.size(), (lng)TEXTBLOCK_SIZE * 10);
+		for (lng i = 0; i < line_count; i++) {
 			if (i % TEXTBLOCK_SIZE == 0) {
 				if (textblock) {
 					textblock->state = highlighter->CopyParserState(state);
@@ -219,14 +226,14 @@ void TextFile::OpenFile(std::string path) {
 
 // FIXME: "file has been modified without us being the one that modified it"
 // FIXME: use memory mapping on big files and only parse initial lines
-TextLine* TextFile::GetLine(ssize_t linenumber) {
+TextLine* TextFile::GetLine(lng linenumber) {
 	if (!is_loaded) return nullptr;
-	if (linenumber < 0 || linenumber >= (ssize_t)lines.size())
+	if (linenumber < 0 || linenumber >= (lng)lines.size())
 		return nullptr;
 	return &lines[linenumber];
 }
 
-ssize_t TextFile::GetLineCount() {
+lng TextFile::GetLineCount() {
 	if (!is_loaded) return 0;
 	return lines.size();
 }
@@ -267,10 +274,10 @@ void TextFile::InsertText(std::string text, std::vector<Cursor*>& cursors) {
 }
 
 struct Interval {
-	ssize_t start_line;
-	ssize_t end_line;
+	lng start_line;
+	lng end_line;
 	std::vector<Cursor*> cursors;
-	Interval(ssize_t start, ssize_t end, Cursor* cursor) : start_line(start), end_line(end) { cursors.push_back(cursor); }
+	Interval(lng start, lng end, Cursor* cursor) : start_line(start), end_line(end) { cursors.push_back(cursor); }
 };
 
 std::vector<Interval> TextFile::GetCursorIntervals(std::vector<Cursor*>& cursors) {
@@ -281,9 +288,9 @@ std::vector<Interval> TextFile::GetCursorIntervals(std::vector<Cursor*>& cursors
 	}
 	// if we get here we know the movement is possible
 	// first merge the different intervals so each interval is "standalone" (i.e. not adjacent to another interval)
-	for (ssize_t i = 0; i < (ssize_t)intervals.size(); i++) {
+	for (lng i = 0; i < (lng)intervals.size(); i++) {
 		Interval& interval = intervals[i];
-		for (ssize_t j = i + 1; j < (ssize_t)intervals.size(); j++) {
+		for (lng j = i + 1; j < (lng)intervals.size(); j++) {
 			if ((interval.start_line >= intervals[j].start_line - 1 && interval.start_line <= intervals[j].end_line + 1) ||
 				(interval.end_line >= intervals[j].start_line - 1 && interval.end_line <= intervals[j].end_line + 1)) {
 				// intervals overlap, merge the two intervals
@@ -304,8 +311,8 @@ void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
 	if (!is_loaded) return;
 	assert(offset == 1 || offset == -1); // we only support single line moves
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if ((*it)->start_line + offset < 0 || (*it)->start_line + offset >= (ssize_t)lines.size() ||
-			(*it)->end_line + offset < 0 || (*it)->end_line + offset >= (ssize_t)lines.size()) {
+		if ((*it)->start_line + offset < 0 || (*it)->start_line + offset >= (lng)lines.size() ||
+			(*it)->end_line + offset < 0 || (*it)->end_line + offset >= (lng)lines.size()) {
 			// we do not move any lines if any of the movements are not possible
 			return;
 		}
@@ -319,7 +326,7 @@ void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
 	// before or after depends on the offset
 	for (auto it = intervals.begin(); it != intervals.end(); it++) {
 		SwapLines* swap = new SwapLines(it->start_line, offset, *GetLine(it->start_line));
-		for (ssize_t j = it->start_line + 1; j <= it->end_line; j++) {
+		for (lng j = it->start_line + 1; j <= it->end_line; j++) {
 			swap->lines.push_back(*GetLine(j));
 		}
 		for (auto it2 = it->cursors.begin(); it2 != it->cursors.end(); it2++) {
@@ -346,7 +353,7 @@ void TextFile::DeleteLines(std::vector<Cursor*>& cursors) {
 	std::vector<Interval> intervals = GetCursorIntervals(cursors);
 	for (auto it = intervals.begin(); it != intervals.end(); it++) {
 		RemoveLines* remove = new RemoveLines(it->cursors.front(), it->start_line);
-		for (ssize_t i = it->start_line; i <= it->end_line; i++) {
+		for (lng i = it->start_line; i <= it->end_line; i++) {
 			remove->AddLine(lines[i]);
 		}
 		for (auto it2 = it->cursors.begin() + 1; it2 != it->cursors.end(); it2++) {
@@ -417,7 +424,7 @@ void TextFile::AddEmptyLine(std::vector<Cursor*>& cursors, PGDirection direction
 				break;
 			}
 		}
-		ssize_t line = (*it)->start_line;
+		lng line = (*it)->start_line;
 		if (direction == PGDirectionLeft) {
 			line--;
 		}
@@ -447,8 +454,8 @@ std::string TextFile::CopyText(std::vector<Cursor*>& cursors) {
 void TextFile::PasteText(std::vector<Cursor*>& cursors, std::string text) {
 	if (!is_loaded) return;
 	std::vector<std::string> pasted_lines;
-	ssize_t start = 0;
-	ssize_t current = 0;
+	lng start = 0;
+	lng current = 0;
 	for (auto it = text.begin(); it != text.end(); it++) {
 		if (*it == '\r') {
 			if (*(it + 1) == '\n') {
@@ -485,7 +492,7 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 		if (!it->SelectionIsEmpty()) {
 			// delete with selection
 			RemoveLines *remove_lines = new RemoveLines(nullptr, it->BeginLine() + 1);
-			for (ssize_t i = it->BeginLine(); i <= it->EndLine(); i++) {
+			for (lng i = it->BeginLine(); i <= it->EndLine(); i++) {
 				if (i == it->BeginLine()) {
 					if (i == it->EndLine()) {
 						delete remove_lines;
@@ -512,8 +519,8 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 			}
 		}
 	} else {
-		ssize_t characternumber = it->SelectedCharacter();
-		ssize_t linenumber = it->SelectedLine();
+		lng characternumber = it->SelectedCharacter();
+		lng linenumber = it->SelectedLine();
 		if (direction == PGDirectionLeft && characternumber == 0) {
 			if (linenumber > 0) {
 				// merge the line with the previous line
@@ -569,8 +576,8 @@ void TextFile::DeleteWord(std::vector<Cursor*>& cursors, PGDirection direction) 
 		if ((*it)->SelectionIsEmpty() && (direction == PGDirectionLeft ? (*it)->SelectedCharacter() > 0 : (*it)->SelectedCharacter() < lines[(*it)->SelectedLine()].GetLength())) {
 			int offset = direction == PGDirectionLeft ? -1 : 1;
 			char* line = lines[(*it)->SelectedLine()].GetLine();
-			ssize_t length = lines[(*it)->SelectedLine()].GetLength();
-			ssize_t index = direction == PGDirectionLeft ? (*it)->SelectedCharacter() + offset : (*it)->SelectedCharacter();
+			lng length = lines[(*it)->SelectedLine()].GetLength();
+			lng index = direction == PGDirectionLeft ? (*it)->SelectedCharacter() + offset : (*it)->SelectedCharacter();
 			// a word is a series of characters of equal type (punctuation, spaces or everything else)
 			// we scan the string to find out where the word ends 
 			PGCharacterClass type = GetCharacterClass(line[index]);
@@ -580,7 +587,7 @@ void TextFile::DeleteWord(std::vector<Cursor*>& cursors, PGDirection direction) 
 					break;
 				}
 			}
-			index = std::min(std::max(index, (ssize_t)0), length);
+			index = std::min(std::max(index, (lng)0), length);
 			delta->AddDelta(new RemoveText(*it, (*it)->SelectedLine(), std::max(index, (*it)->SelectedCharacter()), std::abs((*it)->SelectedCharacter() - index)));
 		} else {
 			DeleteCharacter(delta, *it, direction, !(*it)->SelectionIsEmpty());
@@ -626,10 +633,10 @@ void TextFile::AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::strin
 		}*/
 	}
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		ssize_t characternumber = (*it)->EndCharacter();
-		ssize_t linenumber = (*it)->EndLine();
-		ssize_t length = lines[linenumber].GetLength();
-		ssize_t current_line = (*it)->BeginLine();
+		lng characternumber = (*it)->EndCharacter();
+		lng linenumber = (*it)->EndLine();
+		lng length = lines[linenumber].GetLength();
+		lng current_line = (*it)->BeginLine();
 
 		if (added_text.size() == 1) {
 			delta->AddDelta(new AddLine(*it, current_line, (*it)->BeginCharacter(), added_text.front()));
@@ -653,7 +660,7 @@ void TextFile::Undo(std::vector<Cursor*>& cursors) {
 	if (this->deltas.size() == 0) return;
 	TextDelta* delta = this->deltas.back();
 	textfield->ClearCursors(cursors);
-	std::vector<ssize_t> invalidated_lines;
+	std::vector<lng> invalidated_lines;
 	this->Undo(delta, invalidated_lines, cursors);
 	InvalidateParsing(invalidated_lines);
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
@@ -681,7 +688,7 @@ void TextFile::AddDelta(TextDelta* delta) {
 	this->deltas.push_back(delta);
 }
 
-static void ShiftDelta(ssize_t& linenr, ssize_t& characternr, ssize_t shift_lines, ssize_t shift_lines_line, ssize_t shift_lines_character, ssize_t shift_characters, ssize_t shift_characters_line, ssize_t shift_characters_character, ssize_t last_line_offset) {
+static void ShiftDelta(lng& linenr, lng& characternr, lng shift_lines, lng shift_lines_line, lng shift_lines_character, lng shift_characters, lng shift_characters_line, lng shift_characters_character, lng last_line_offset) {
 	if (linenr == shift_characters_line &&
 		characternr >= shift_characters_character) {
 		characternr += shift_characters;
@@ -708,12 +715,12 @@ static void ShiftDelta(ssize_t& linenr, ssize_t& characternr, ssize_t shift_line
 }
 
 void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
-	std::vector<ssize_t> invalidated_lines;
+	std::vector<lng> invalidated_lines;
 	PerformOperation(delta, invalidated_lines, adjust_delta);
 	InvalidateParsing(invalidated_lines);
 }
 
-void TextFile::PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalidated_lines, bool adjust_delta) {
+void TextFile::PerformOperation(TextDelta* delta, std::vector<lng>& invalidated_lines, bool adjust_delta) {
 	assert(delta);
 	switch (delta->TextDeltaType()) {
 	case PGDeltaAddText: {
@@ -738,7 +745,7 @@ void TextFile::PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalida
 	}
 	case PGDeltaAddLine: {
 		AddLine* add = (AddLine*)delta;
-		ssize_t length = lines[add->linenr].GetLength();
+		lng length = lines[add->linenr].GetLength();
 		add->extra_text = std::string(add->line);
 		if (add->characternr < length) {
 			add->extra_text += std::string(lines[add->linenr].GetLine() + add->characternr, length - add->characternr);
@@ -746,7 +753,7 @@ void TextFile::PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalida
 			lines[add->linenr].AddDelta(add->remove_text);
 			invalidated_lines.push_back(add->linenr);
 		}
-		lines.insert(lines.begin() + (add->linenr + 1), TextLine((char*)add->extra_text.c_str(), (ssize_t)add->extra_text.size()));
+		lines.insert(lines.begin() + (add->linenr + 1), TextLine((char*)add->extra_text.c_str(), (lng)add->extra_text.size()));
 		invalidated_lines.push_back(add->linenr + 1);
 		if (add->cursor) {
 			add->cursor->end_line = add->cursor->start_line = add->linenr + 1;
@@ -756,10 +763,10 @@ void TextFile::PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalida
 	}
 	case PGDeltaAddManyLines: {
 		AddLines* add = (AddLines*)delta;
-		ssize_t length = lines[add->linenr].GetLength();
-		ssize_t linenr = add->linenr + 1;
+		lng length = lines[add->linenr].GetLength();
+		lng linenr = add->linenr + 1;
 		for (auto it = add->lines.begin(); (it + 1) != add->lines.end(); it++) {
-			lines.insert(lines.begin() + linenr, TextLine((char*)it->c_str(), (ssize_t)it->size()));
+			lines.insert(lines.begin() + linenr, TextLine((char*)it->c_str(), (lng)it->size()));
 			invalidated_lines.push_back(linenr);
 			linenr++;
 		}
@@ -770,7 +777,7 @@ void TextFile::PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalida
 			lines[add->linenr].AddDelta(add->remove_text);
 			invalidated_lines.push_back(add->linenr);
 		}
-		lines.insert(lines.begin() + linenr, TextLine((char*)add->extra_text.c_str(), (ssize_t)add->extra_text.size()));
+		lines.insert(lines.begin() + linenr, TextLine((char*)add->extra_text.c_str(), (lng)add->extra_text.size()));
 		invalidated_lines.push_back(linenr);
 		if (add->cursor) {
 			add->cursor->end_line = add->cursor->start_line = linenr;
@@ -830,19 +837,19 @@ void TextFile::PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalida
 			PerformOperation(*it, invalidated_lines, adjust_delta);
 			if (!adjust_delta) continue;
 
-			ssize_t shift_lines = 0;
-			ssize_t shift_lines_line = (*it)->linenr;
-			ssize_t shift_lines_character = (*it)->characternr;
-			ssize_t shift_characters = 0;
-			ssize_t shift_characters_line = (*it)->linenr;
-			ssize_t shift_characters_character = (*it)->characternr;
-			ssize_t last_line_offset = 0;
+			lng shift_lines = 0;
+			lng shift_lines_line = (*it)->linenr;
+			lng shift_lines_character = (*it)->characternr;
+			lng shift_characters = 0;
+			lng shift_characters_line = (*it)->linenr;
+			lng shift_characters_character = (*it)->characternr;
+			lng last_line_offset = 0;
 			switch ((*it)->TextDeltaType()) {
 			case PGDeltaRemoveLine:
 				shift_lines = -1;
 				break;
 			case PGDeltaRemoveManyLines:
-				shift_lines = -((ssize_t)((RemoveLines*)(*it))->lines.size());
+				shift_lines = -((lng)((RemoveLines*)(*it))->lines.size());
 				last_line_offset = ((RemoveLines*)(*it))->last_line_offset;
 				break;
 			case PGDeltaAddLine:
@@ -854,10 +861,12 @@ void TextFile::PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalida
 				shift_characters = -((AddLines*)(*it))->characternr;
 				break;
 			case PGDeltaAddText:
-				shift_characters = (ssize_t)((AddText*)(*it))->text.size();
+				shift_characters = (lng)((AddText*)(*it))->text.size();
 				break;
 			case PGDeltaRemoveText:
-				shift_characters = -((ssize_t)((RemoveText*)(*it))->charactercount);
+				shift_characters = -((lng)((RemoveText*)(*it))->charactercount);
+				break;
+			default:
 				break;
 			}
 			for (auto it2 = it + 1; it2 != multi->deltas.end(); it2++) {
@@ -870,10 +879,12 @@ void TextFile::PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalida
 		}
 		break;
 	}
+	default:
+		break;
 	}
 }
 
-void TextFile::Undo(TextDelta* delta, std::vector<ssize_t>& invalidated_lines, std::vector<Cursor*>& cursors) {
+void TextFile::Undo(TextDelta* delta, std::vector<lng>& invalidated_lines, std::vector<Cursor*>& cursors) {
 	assert(delta);
 	CursorDelta* cursor_delta = dynamic_cast<CursorDelta*>(delta);
 	if (cursor_delta && cursor_delta->cursor) {
@@ -921,7 +932,7 @@ void TextFile::Undo(TextDelta* delta, std::vector<ssize_t>& invalidated_lines, s
 	}
 	case PGDeltaRemoveManyLines: {
 		RemoveLines* remove = (RemoveLines*)delta;
-		ssize_t index = remove->linenr;
+		lng index = remove->linenr;
 		for (auto it = remove->lines.begin(); it != remove->lines.end(); it++, index++) {
 			this->lines.insert(this->lines.begin() + index, *it);
 			invalidated_lines.push_back(index);
@@ -953,11 +964,13 @@ void TextFile::Undo(TextDelta* delta, std::vector<ssize_t>& invalidated_lines, s
 	case PGDeltaMultiple: {
 		MultipleDelta* multi = (MultipleDelta*)delta;
 		assert(multi->deltas.size() > 0);
-		for (ssize_t index = multi->deltas.size() - 1; index >= 0; index--) {
+		for (lng index = multi->deltas.size() - 1; index >= 0; index--) {
 			Undo(multi->deltas[index], invalidated_lines, cursors);
 		}
 		break;
 	}
+	default:
+		break;
 	}
 }
 
@@ -989,6 +1002,8 @@ void TextFile::Redo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 		}
 		break;
 	}
+	default:
+		break;
 	}
 }
 
@@ -999,23 +1014,23 @@ void TextFile::SaveChanges() {
 		line_ending = GetSystemLineEnding();
 	}
 	// FIXME: respect file encoding
-	PGFileHandle handle = mmap::OpenFile(this->path, PGFileReadWrite);
-	ssize_t position = 0;
+	PGFileHandle handle = PGmmap::OpenFile(this->path, PGFileReadWrite);
+	lng position = 0;
 	for (auto it = lines.begin(); it != lines.end(); it++) {
-		ssize_t length = it->GetLength();
+		lng length = it->GetLength();
 		char* line = it->GetLine();
-		mmap::WriteToFile(handle, line, length);
+		PGmmap::WriteToFile(handle, line, length);
 
 		if (it + 1 != lines.end()) {
 			switch (line_ending) {
 			case PGLineEndingWindows:
-				mmap::WriteToFile(handle, "\r\n", 2);
+				PGmmap::WriteToFile(handle, "\r\n", 2);
 				break;
 			case PGLineEndingMacOS:
-				mmap::WriteToFile(handle, "\r", 1);
+				PGmmap::WriteToFile(handle, "\r", 1);
 				break;
 			case PGLineEndingUnix:
-				mmap::WriteToFile(handle, "\n", 1);
+				PGmmap::WriteToFile(handle, "\n", 1);
 				break;
 			default:
 				assert(0);
@@ -1023,7 +1038,7 @@ void TextFile::SaveChanges() {
 			}
 		}
 	}
-	mmap::CloseFile(handle);
+	PGmmap::CloseFile(handle);
 }
 
 void TextFile::ChangeLineEnding(PGLineEnding lineending) {

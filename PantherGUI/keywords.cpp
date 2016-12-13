@@ -16,11 +16,11 @@ static bool KeywordCharacter(char c) {
 	return c == '#' || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57);
 } 
 
-PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, ssize_t linenr, PGParserState s, PGParseErrors& errors) {
+PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState s, PGParseErrors& errors) {
 	assert(is_generated);
 	KWParserState* state = (KWParserState*)s;
 	char* text = line.GetLine();
-	ssize_t size = line.GetLength();
+	lng size = line.GetLength();
 	// free the current syntax of this line
 	PGSyntax* current = &line.syntax;
 	PGSyntax* prev = nullptr;
@@ -36,10 +36,10 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, ssize_t l
 	current->end = -1;
 	bool escaped = false;
 	// parse the actual keywords
-	for (ssize_t i = 0; i < size; i++) {
+	for (lng i = 0; i < size; i++) {
 		if (state->state == PGParserKWDefault) {
 			if (KeywordCharacter(text[i])) {
-				ssize_t start = i;
+				lng start = i;
 				// consume keyword
 				while (i < size && KeywordCharacter(text[i]))
 					i++;
@@ -68,7 +68,7 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, ssize_t l
 							continue;
 						}
 						bool found = true;
-						for(ssize_t j = 0; j < start.size(); j++) {
+						for(lng j = 0; j < start.size(); j++) {
 							if (text[i + j] != start[j]) {
 								found = false;
 								break;
@@ -105,7 +105,7 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, ssize_t l
 					break;
 				}
 				bool found = true;
-				for(ssize_t j = 0; j < state->end.size(); j++) {
+				for(lng j = 0; j < state->end.size(); j++) {
 					if (text[i + j] != state->end[j]) {
 						found = false;
 						break;
@@ -184,7 +184,7 @@ bool KeywordHighlighter::StateEquivalent(const PGParserState aa, const PGParserS
 }
 
 void KeywordHighlighter::DeleteParserState(PGParserState state) {
-	delete state;
+	delete (KWParserState*) state;
 }
 
 void KeywordHighlighter::GenerateIndex(

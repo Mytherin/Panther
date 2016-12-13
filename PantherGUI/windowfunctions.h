@@ -4,6 +4,7 @@
 #pragma once
 
 #include "utils.h"
+#include <string>
 #include <vector>
 
 struct PGWindow;
@@ -118,15 +119,15 @@ typedef enum {
 	PGButtonEnter
 } PGButton;
 
-typedef long long time_t;
+typedef long long PGTime;
 
-time_t GetTime();
+PGTime GetTime();
 
 class MouseClickInstance {
 public:
 	PGScalar x;
 	PGScalar y;
-	time_t time;
+	PGTime time;
 	int clicks;
 
 	MouseClickInstance() : x(0), y(0), time(0), clicks(0) { }
@@ -215,8 +216,8 @@ void RenderText(PGRendererHandle renderer, const char* text, size_t length, PGSc
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color);
 PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length);
 PGScalar GetTextHeight(PGRendererHandle renderer);
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t characternr, PGScalar line_height);
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t start, ssize_t end, PGColor selection_color, PGScalar line_height);
+void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height);
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height);
 // Sets the color of the text rendered with the RenderText method
 void SetTextColor(PGRendererHandle window, PGColor color);
 // Sets the font used by the RenderText method

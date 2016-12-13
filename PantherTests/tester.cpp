@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 
+#include <Windows.h>
 
 void Tester::RunTest(TestFunction testFunction) {
 	std::string result = testFunction();
@@ -22,7 +23,8 @@ void Tester::RunTextFieldTest(std::string name, TextFieldTestFunction testFuncti
 	fwrite(input.c_str(), input.size(), 1, f);
 	fclose(f);
 	// create a temporary text field
-	TextField* testField = new TextField(NULL, std::string(TEMPORARY_FILE));
+	TextField* testField = new TextField(NULL, std::string(TEMPORARY_FILE), true);
+	assert(testField->GetTextFile().IsLoaded());
 	// run the actual test
 	std::string result = testFunction(testField);
 	if (result.size() != 0) {

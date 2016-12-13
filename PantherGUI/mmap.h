@@ -14,7 +14,7 @@ typedef enum {
 	PGFileReadWrite
 } PGFileAccess;
 
-namespace mmap {
+namespace PGmmap {
 	PGMemoryMappedFileHandle MemoryMapFile(std::string filename);
 	void* OpenMemoryMappedFile(PGMemoryMappedFileHandle);
 	void CloseMemoryMappedFile(void* address);
@@ -23,8 +23,8 @@ namespace mmap {
 
 	PGFileHandle OpenFile(std::string filename, PGFileAccess access);
 	void CloseFile(PGFileHandle handle);
-	void WriteToFile(PGFileHandle handle, const char* text, ssize_t length);
+	void WriteToFile(PGFileHandle handle, const char* text, lng length);
 	void Flush(PGFileHandle handle);
-	void* ReadFile(std::string filename, ssize_t& result_size);
+	void* ReadFile(std::string filename, lng& result_size);
 	void DestroyFileContents(void* address);
 }

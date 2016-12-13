@@ -4,7 +4,6 @@
 #include "windowfunctions.h"
 #include "control.h"
 #include "textfield.h"
-#include "time.h"
 #include "scheduler.h"
 
 #include <malloc.h>
@@ -657,17 +656,17 @@ PGScalar GetTextHeight(PGRendererHandle renderer) {
 	return metrics.fDescent - metrics.fAscent;
 }
 
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t characternr, PGScalar line_height) {
+void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height) {
 	PGScalar width = MeasureTextWidth(renderer, text, characternr);
 	SkColor color = renderer->textpaint->getColor();
 	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color)));
 }
 
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, ssize_t start, ssize_t end, PGColor selection_color, PGScalar line_height) {
+void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height) {
 	if (start == end) return;
 	PGScalar selection_start = MeasureTextWidth(renderer, text, start);
-	PGScalar selection_width = MeasureTextWidth(renderer, text, end > (ssize_t) len ? len : end);
-	if (end > (ssize_t) len) {
+	PGScalar selection_width = MeasureTextWidth(renderer, text, end > (lng) len ? len : end);
+	if (end > (lng) len) {
 		assert(end == len + 1);
 		selection_width += renderer->character_width;
 	}
@@ -727,8 +726,8 @@ void RegisterMouseScroll(PGWindowHandle window, PGScrollFunction callback) {
 
 }
 
-time_t GetTime() {
-	return GetTickCount();
+PGTime GetTime() {
+	return (PGTime) GetTickCount();
 }
 
 void SetWindowTitle(PGWindowHandle window, char* title) {

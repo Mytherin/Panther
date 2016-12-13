@@ -12,10 +12,10 @@ class Cursor {
 	friend class TextFile;
 	friend class TextField;
 public:
-	void OffsetLine(ssize_t offset);
-	void OffsetCharacter(ssize_t offset);
-	void OffsetSelectionLine(ssize_t offset);
-	void OffsetSelectionCharacter(ssize_t offset);
+	void OffsetLine(lng offset);
+	void OffsetCharacter(lng offset);
+	void OffsetSelectionLine(lng offset);
+	void OffsetSelectionCharacter(lng offset);
 	void OffsetStartOfLine();
 	void OffsetEndOfLine();
 	void SelectStartOfLine();
@@ -28,21 +28,21 @@ public:
 	void OffsetSelectionWord(PGDirection direction);
 	void SelectWord();
 	void SelectLine();
-	int GetSelectedWord(ssize_t& word_start, ssize_t& word_end);
+	int GetSelectedWord(lng& word_start, lng& word_end);
 
-	ssize_t SelectedCharacter() { return start_character; }
-	ssize_t SelectedLine() { return start_line; }
-	ssize_t BeginCharacter();
-	ssize_t BeginLine();
-	ssize_t EndCharacter();
-	ssize_t EndLine();
+	lng SelectedCharacter() { return start_character; }
+	lng SelectedLine() { return start_line; }
+	lng BeginCharacter();
+	lng BeginLine();
+	lng EndCharacter();
+	lng EndLine();
 
 	std::string GetText();
 
 	bool SelectionIsEmpty();
 
 	void RestoreCursor(Cursor cursor);
-	bool Contains(ssize_t linenr, ssize_t characternr);
+	bool Contains(lng linenr, lng characternr);
 	bool OverlapsWith(Cursor& cursor);
 	void Merge(Cursor& cursor);
 
@@ -50,22 +50,22 @@ public:
 	static bool CursorOccursFirst (Cursor* a, Cursor* b) { return (a->BeginLine() < b->BeginLine() || (a->BeginLine() == b->BeginLine() && a->BeginCharacter() < b->BeginCharacter())); }
 	static void VerifyCursors(TextField* textfield, std::vector<Cursor*>& cursors);
 
-	void SetCursorStartLocation(ssize_t linenr, ssize_t characternr);
-	void SetCursorEndLocation(ssize_t linenr, ssize_t characternr);
-	void SetCursorLocation(ssize_t linenr, ssize_t characternr);
-	void SetCursorLine(ssize_t linenr);
-	void SetCursorCharacter(ssize_t characternr);
+	void SetCursorStartLocation(lng linenr, lng characternr);
+	void SetCursorEndLocation(lng linenr, lng characternr);
+	void SetCursorLocation(lng linenr, lng characternr);
+	void SetCursorLine(lng linenr);
+	void SetCursorCharacter(lng characternr);
 
 	Cursor(TextFile* file);
-	Cursor(TextFile* file, ssize_t line, ssize_t character);
+	Cursor(TextFile* file, lng line, lng character);
 private:
 	TextFile* file;
-	ssize_t start_line;
-	ssize_t start_character;
-	ssize_t end_line;
-	ssize_t end_character;
-	ssize_t min_character;
-	ssize_t min_line;
-	ssize_t max_character;
-	ssize_t max_line;
+	lng start_line;
+	lng start_character;
+	lng end_line;
+	lng end_character;
+	lng min_character;
+	lng min_line;
+	lng max_character;
+	lng max_line;
 };

@@ -8,6 +8,7 @@
 #include "textfile.h"
 #include "textblock.h"
 #include "scheduler.h"
+#include "syntaxhighlighter.h"
 #include <string>
 #include <vector>
 
@@ -33,10 +34,10 @@ struct Interval;
 class TextFile {
 public:
 	TextFile(std::string filename);
-	TextFile(std::string filename, TextField* textfield);
+	TextFile(std::string filename, TextField* textfield, bool immediate_load = false);
 	~TextFile();
 
-	TextLine* GetLine(ssize_t linenumber);
+	TextLine* GetLine(lng linenumber);
 	void InsertText(char character, std::vector<Cursor*>& cursors);
 	void InsertText(std::string text, std::vector<Cursor*>& cursors);
 	void DeleteCharacter(std::vector<Cursor*>& cursors, PGDirection direction);
@@ -63,13 +64,13 @@ public:
 	void SaveChanges();
 
 	PGLineEnding GetLineEnding() { return lineending; }
-	ssize_t GetLineCount();
+	lng GetLineCount();
 
-	void LockBlock(ssize_t block);
-	void UnlockBlock(ssize_t block);
-	ssize_t GetBlock(ssize_t linenr) { return linenr / TEXTBLOCK_SIZE; }
-	ssize_t GetMaximumBlocks() { return lines.size() % TEXTBLOCK_SIZE == 0 ? GetBlock(lines.size()) : GetBlock(lines.size()) + 1; }
-	bool BlockIsParsed(ssize_t block) { return parsed_blocks[block].parsed; }
+	void LockBlock(lng block);
+	void UnlockBlock(lng block);
+	lng GetBlock(lng linenr) { return linenr / TEXTBLOCK_SIZE; }
+	lng GetMaximumBlocks() { return lines.size() % TEXTBLOCK_SIZE == 0 ? GetBlock(lines.size()) : GetBlock(lines.size()) + 1; }
+	bool BlockIsParsed(lng block) { return parsed_blocks[block].parsed; }
 
 	bool IsLoaded() { return is_loaded; }
 	double LoadPercentage() { return loaded; }
@@ -82,17 +83,17 @@ private:
 	void AddDelta(TextDelta* delta);
 
 	void PerformOperation(TextDelta* delta, bool adjust_delta = true);
-	void PerformOperation(TextDelta* delta, std::vector<ssize_t>& invalidated_lines, bool adjust_delta = true);
-	void Undo(TextDelta* delta, std::vector<ssize_t>& invalidated_lines, std::vector<Cursor*>& cursors);
+	void PerformOperation(TextDelta* delta, std::vector<lng>& invalidated_lines, bool adjust_delta = true);
+	void Undo(TextDelta* delta, std::vector<lng>& invalidated_lines, std::vector<Cursor*>& cursors);
 	void Redo(TextDelta* delta, std::vector<Cursor*>& cursors);
 	std::vector<Interval> GetCursorIntervals(std::vector<Cursor*>& cursors);
 
 	Task* current_task;
-	static void TextFile::RunHighlighter(Task* task, TextFile* textfile);
-	static void TextFile::OpenFileAsync(Task* task, void* info);
+	static void RunHighlighter(Task* task, TextFile* textfile);
+	static void OpenFileAsync(Task* task, void* info);
 
-	void InvalidateParsing(ssize_t line);
-	void InvalidateParsing(std::vector<ssize_t>& lines);
+	void InvalidateParsing(lng line);
+	void InvalidateParsing(std::vector<lng>& lines);
 
 	bool is_loaded;
 	double loaded;

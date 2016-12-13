@@ -7,9 +7,9 @@
 #define TEXTBLOCK_SIZE 64
 
 struct TextBlock {
-	ssize_t line_start;
+	lng line_start;
 	PGParserState state;
 	bool parsed;
 
-	TextBlock(ssize_t line) : line_start(line), state(PGParserErrorState), parsed(false) { }
+	TextBlock(lng line) : line_start(line), state(PGParserErrorState), parsed(false) { }
 };

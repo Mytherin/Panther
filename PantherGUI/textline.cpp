@@ -21,7 +21,7 @@ TextLine::~TextLine() {
 	}
 }
 
-ssize_t TextLine::GetLength(void) {
+lng TextLine::GetLength(void) {
 	if (!deltas) return line.size(); // no deltas, return original length
 	ApplyDeltas();
 	return line.size();

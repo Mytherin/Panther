@@ -2,7 +2,11 @@
 
 #include "mmap.h"
 
+#ifdef WIN32
 #define LOG_FILE "C:\\Users\\wieis\\Desktop\\log.txt"
+#else
+#define LOG_FILE "/Users/myth/log.txt"
+#endif
 
 class Logger {
 public:
