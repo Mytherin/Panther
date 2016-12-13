@@ -140,6 +140,7 @@
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
+    <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
     <ClCompile Include="text.cpp" />
@@ -161,6 +162,7 @@
     <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
+    <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="syntax.h" />
     <ClInclude Include="syntaxhighlighter.h" />

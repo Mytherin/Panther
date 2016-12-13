@@ -232,12 +232,8 @@ bool WindowHasFocus(PGWindowHandle window);
 PGPoint GetMousePosition(PGWindowHandle window);
 void SetWindowTitle(PGWindowHandle window, char* title);
 void RegisterRefresh(PGWindowHandle window, Control *callback);
-void UnregisterRefresh(PGWindowHandle window, Control *callback);
-void RegisterMouseClick(PGWindowHandle window, PGClickFunction callback);
-void RegisterMouseDown(PGWindowHandle window, PGClickFunction callback);
-void RegisterButtonPress(PGWindowHandle window, PGButtonPress callback);
-void RegisterMouseScroll(PGWindowHandle window, PGScrollFunction callback);
 
 
 void SetClipboardText(PGWindowHandle window, std::string);
 std::string GetClipboardText(PGWindowHandle window);
+
