@@ -6,8 +6,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <Windows.h>
-
 void Tester::RunTest(TestFunction testFunction) {
 	std::string result = testFunction();
 	if (result.size() != 0) {
@@ -19,7 +17,11 @@ void Tester::RunTest(TestFunction testFunction) {
 void Tester::RunTextFieldTest(std::string name, TextFieldTestFunction testFunction, std::string input, std::string expectedOutput) {
 	// write the input to the file
 	FILE* f;
+#ifdef WIN32
 	fopen_s(&f, TEMPORARY_FILE, "wb+");
+#else
+	f = fopen(TEMPORARY_FILE, "wb+");
+#endif
 	fwrite(input.c_str(), input.size(), 1, f);
 	fclose(f);
 	// create a temporary text field
