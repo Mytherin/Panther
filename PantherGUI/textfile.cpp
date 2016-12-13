@@ -569,13 +569,17 @@ void TextFile::AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::strin
 	MultipleDelta* delta = new MultipleDelta();
 	if (CursorsContainSelection(cursors)) {
 		// if any of the cursors select text, we delete that text before inserting the characters
-		DeleteCharacter(delta, cursors, PGDirectionLeft);
-		for (int i = 0; i < delta->deltas.size(); i++) {
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			if (!(*it)->SelectionIsEmpty()) {
+				DeleteCharacter(delta, *it, PGDirectionLeft, true, false);
+			}
+		}
+		/*for (int i = 0; i < delta->deltas.size(); i++) {
 			if (delta->deltas[i]->TextDeltaType() == PGDeltaAddText) {
 				delta->deltas.erase(delta->deltas.begin() + i);
 				i--;
 			}
-		}
+		}*/
 	}
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		ssize_t characternumber = (*it)->EndCharacter();

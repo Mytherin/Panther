@@ -112,7 +112,9 @@ int main() {
 
 	tester.RunTextFieldTest("Multi Cursor Multi Line Delete", MultiCursorMultiLineDelete, "hello world\nhow are you doing\n\nI am doing well", "hello world\nhow are you doing\n\nI am doing well");
 
-	tester.RunTextFieldFileTest("Testerino", Testerino, "mserver.txt", "");
+	//tester.RunTextFieldFileTest("Testerino", Testerino, "mserver.txt", "");
+
+	std::cout << "Successfully completed all tests!" << std::endl;
 
 	std::string line;
 	std::getline(std::cin, line);
