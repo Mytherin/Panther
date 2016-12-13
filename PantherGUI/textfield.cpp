@@ -53,6 +53,10 @@ void TextField::PeriodicRender(void) {
 			this->InvalidateBetweenLines(start_line, end_line);
 		}
 	}
+
+	if (!textfile.IsLoaded()) {
+		Invalidate();
+	}
 }
 
 void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
@@ -77,7 +81,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	if (!minimap) {
 		if (cursors[0]->GetSelectedWord(word_start, word_end) >= 0) {
 			// successfully found a word
-			selected_word = (char*) calloc(1, word_end - word_start + 1);
+			selected_word = (char*)calloc(1, word_end - word_start + 1);
 			memcpy(selected_word, textfile.GetLine(cursors[0]->BeginLine())->GetLine() + word_start, word_end - word_start);
 		}
 	}
@@ -207,7 +211,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 				position_x_text,
 				position_y,
 				start,
-				end, 
+				end,
 				selection_color,
 				line_height);
 			position_y += line_height;
@@ -265,7 +269,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 				// if the line is selected by a cursor, render an overlay
 				for (auto it = cursors.begin(); it != cursors.end(); it++) {
 					if (linenr == (*it)->SelectedLine()) {
-						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGColor(32,32,255,64), PGStyleFill);
+						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGColor(32, 32, 255, 64), PGStyleFill);
 						break;
 					}
 				}
@@ -279,9 +283,19 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar minimap_width = this->display_minimap ? GetMinimapWidth() : 0;
 	PGScalar textfield_width = this->width - minimap_width;
 
-	DrawTextField(renderer, rectangle, false, this->x + this->offset_x + text_offset, this->y, textfield_width, false);
+	if (textfile.IsLoaded()) {
+		DrawTextField(renderer, rectangle, false, this->x + this->offset_x + text_offset, this->y, textfield_width, false);
+	} else {
+		PGScalar offset = this->width / 10;
+		PGScalar width = this->width - offset * 2;
+		PGScalar height = 5;
+		PGScalar padding = 1;
+
+		RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGStyleFill);
+		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * textfile.LoadPercentage(), height), PGColor(20, 60, 255), PGStyleFill);
+	}
 	// render the minimap
-	if (this->display_minimap) {
+	if (textfile.IsLoaded() && this->display_minimap) {
 		bool mouse_in_minimap = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH - minimap_width && mouse.x <= this->width - SCROLLBAR_WIDTH;
 		PGIRect minimap_rect = PGIRect(this->x + textfield_width, this->y, minimap_width, this->height);
 
@@ -311,7 +325,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		if (this->drag_type == PGDragScrollbar)
 			scrollbar_color = PGColor(0, 122, 204);
 		else if (mouse_in_scrollbar && mouse.y >= scrollbar_offset && mouse.y <= scrollbar_offset + scrollbar_height)
-		scrollbar_color = PGColor(28, 151, 234);
+			scrollbar_color = PGColor(28, 151, 234);
 		RenderRectangle(renderer, PGRect(x + this->width - 12, y + scrollbar_offset, 8, scrollbar_height), scrollbar_color, PGStyleFill);
 	}
 }
@@ -345,7 +359,7 @@ PGScalar TextField::GetMinimapOffset() {
 ssize_t TextField::GetMinimapStartLine() {
 	ssize_t lines_rendered = this->height / minimap_line_height;
 	// percentage of text
-	double percentage = (double) lineoffset_y / textfile.GetLineCount();
+	double percentage = (double)lineoffset_y / textfile.GetLineCount();
 	return std::max((ssize_t)(lineoffset_y - (lines_rendered * percentage)), (ssize_t)0);
 }
 
@@ -355,7 +369,7 @@ void TextField::SetMinimapOffset(PGScalar offset) {
 	ssize_t start_line = GetMinimapStartLine();
 	ssize_t lines_rendered = this->height / minimap_line_height;
 	this->lineoffset_y = start_line + (ssize_t)(lines_rendered * percentage);
-	this->lineoffset_y = std::max((ssize_t) 0, std::min(this->lineoffset_y, this->textfile.GetLineCount() - 1));
+	this->lineoffset_y = std::max((ssize_t)0, std::min(this->lineoffset_y, this->textfile.GetLineCount() - 1));
 }
 
 void TextField::SetScrollbarOffset(PGScalar offset) {
@@ -363,13 +377,13 @@ void TextField::SetScrollbarOffset(PGScalar offset) {
 	// offset = SCROLLBAR_BASE_OFFSET + ((this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((ssize_t)1, (this->textfile.GetLineCount() - 1)));
 	// offset - SCROLLBAR_BASE_OFFSET = (this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((ssize_t)1, this->textfile.GetLineCount() - 1);
 	// std::max((ssize_t)1, this->textfile.GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET) = this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)
-	this->lineoffset_y = (ssize_t) ((std::max((ssize_t)1, this->textfile.GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET)) / (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET));
-	this->lineoffset_y = std::max((ssize_t) 0, std::min(this->lineoffset_y, this->textfile.GetLineCount() - 1));
+	this->lineoffset_y = (ssize_t)((std::max((ssize_t)1, this->textfile.GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET)) / (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET));
+	this->lineoffset_y = std::max((ssize_t)0, std::min(this->lineoffset_y, this->textfile.GetLineCount() - 1));
 }
 
 void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, ssize_t& line, ssize_t& character, bool clip_character) {
 	// find the line position of the mouse
-	ssize_t line_offset = std::max(std::min((ssize_t)(y / this->line_height), textfile.GetLineCount() - this->lineoffset_y - 1), (ssize_t) 0);
+	ssize_t line_offset = std::max(std::min((ssize_t)(y / this->line_height), textfile.GetLineCount() - this->lineoffset_y - 1), (ssize_t)0);
 	line = this->lineoffset_y + line_offset;
 	// find the character position within the line
 	x = x - this->text_offset - this->offset_x;
@@ -390,7 +404,7 @@ void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, ssize_t& li
 			width += char_width;
 		}
 	} else {
-		character = (int) (x / character_width);
+		character = (int)(x / character_width);
 	}
 }
 
@@ -405,6 +419,7 @@ void TextField::ClearExtraCursors() {
 }
 
 void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+	if (!textfile.IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
 	if (button == PGLeftMouseButton) {
 		if (this->display_scrollbar && mouse.x > this->width - SCROLLBAR_WIDTH) {
@@ -439,7 +454,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			return;
 		}
 		if (this->display_minimap) {
-			ssize_t minimap_width = (ssize_t) GetMinimapWidth();
+			ssize_t minimap_width = (ssize_t)GetMinimapWidth();
 			ssize_t minimap_position = this->width - (this->display_scrollbar ? SCROLLBAR_WIDTH : 0) - minimap_width;
 			if (mouse.x > minimap_position && mouse.x <= minimap_position + minimap_width) {
 				PGScalar minimap_offset = GetMinimapOffset();
@@ -466,10 +481,10 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		drag_type = PGDragSelection;
 		ssize_t line = 0, character = 0;
 		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-		
+
 		time_t time = GetTime();
-		if (time - last_click.time < DOUBLE_CLICK_TIME && 
-			std::abs(x - last_click.x) < 2 && 
+		if (time - last_click.time < DOUBLE_CLICK_TIME &&
+			std::abs(x - last_click.x) < 2 &&
 			std::abs(y - last_click.y) < 2) {
 			last_click.clicks = last_click.clicks == 2 ? 0 : last_click.clicks + 1;
 		} else {
@@ -478,7 +493,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		last_click.time = time;
 		last_click.x = x;
 		last_click.y = y;
-		
+
 		if (modifier == PGModifierNone && last_click.clicks == 0) {
 			ClearExtraCursors();
 			cursors[0]->SetCursorLocation(line, character);
@@ -489,7 +504,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 		} else if (modifier == PGModifierCtrl) {
 			Logger::GetInstance()->WriteLogMessage(std::string("active_cursor = new Cursor(&textfile, ") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\n") + std::string("cursors.push_back(active_cursor);"));
-			
+
 			cursors.push_back(new Cursor(&textfile, line, character));
 			active_cursor = cursors.back();
 			Cursor::NormalizeCursors(this, cursors, false);
@@ -530,6 +545,7 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 }
 
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
+	if (!textfile.IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
 	// FIXME: changing the cursor probably shouldn't be done here, but in the main form
 	if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= (6 * this->width / 7) && mouse.y <= this->height) {
@@ -629,7 +645,7 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		Cursor::NormalizeCursors(this, cursors);
 		Invalidate();
 		break;
-	case PGButtonUp: 
+	case PGButtonUp:
 		if (modifier == PGModifierCtrlShift) {
 			textfile.MoveLines(cursors, -1);
 		} else {
@@ -777,6 +793,8 @@ void TextField::ClearCursors(std::vector<Cursor*>& cursors) {
 }
 
 void TextField::KeyboardCharacter(char character, PGModifier modifier) {
+	if (!textfile.IsLoaded()) return;
+
 	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardCharacter(") + std::to_string(character) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
 
 	if (modifier == PGModifierNone) {

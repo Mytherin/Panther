@@ -25,6 +25,6 @@ namespace mmap {
 	void CloseFile(PGFileHandle handle);
 	void WriteToFile(PGFileHandle handle, const char* text, ssize_t length);
 	void Flush(PGFileHandle handle);
-	void* ReadFile(std::string filename);
+	void* ReadFile(std::string filename, ssize_t& result_size);
 	void DestroyFileContents(void* address);
 }

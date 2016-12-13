@@ -67,7 +67,8 @@ namespace mmap {
 		fclose(handle->f);
 	}
 
-	void* ReadFile(std::string filename) {
+	void* ReadFile(std::string filename, ssize_t& result_size) {
+		result_size = -1;
 		PGFileHandle handle = OpenFile(filename, PGFileReadOnly);
 		if (!handle) {
 			return nullptr;
@@ -84,6 +85,7 @@ namespace mmap {
 		}
 		fread(string, fsize, 1, f);
 		CloseFile(handle);
+		result_size = (ssize_t)fsize;
 
 		string[fsize] = 0;
 		return string;

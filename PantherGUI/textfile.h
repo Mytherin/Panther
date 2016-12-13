@@ -65,13 +65,14 @@ public:
 	PGLineEnding GetLineEnding() { return lineending; }
 	ssize_t GetLineCount();
 
-	void InvalidateParsing(ssize_t line);
-	void InvalidateParsing(std::vector<ssize_t>& lines);
 	void LockBlock(ssize_t block);
 	void UnlockBlock(ssize_t block);
 	ssize_t GetBlock(ssize_t linenr) { return linenr / TEXTBLOCK_SIZE; }
 	ssize_t GetMaximumBlocks() { return lines.size() % TEXTBLOCK_SIZE == 0 ? GetBlock(lines.size()) : GetBlock(lines.size()) + 1; }
 	bool BlockIsParsed(ssize_t block) { return parsed_blocks[block].parsed; }
+
+	bool IsLoaded() { return is_loaded; }
+	double LoadPercentage() { return loaded; }
 private:
 	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction);
 	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection, bool include_cursor = true);
@@ -88,6 +89,13 @@ private:
 
 	Task* current_task;
 	static void TextFile::RunHighlighter(Task* task, TextFile* textfile);
+	static void TextFile::OpenFileAsync(Task* task, void* info);
+
+	void InvalidateParsing(ssize_t line);
+	void InvalidateParsing(std::vector<ssize_t>& lines);
+
+	bool is_loaded;
+	double loaded;
 
 	TextField* textfield;
 	//PGMemoryMappedFileHandle file;
