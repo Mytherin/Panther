@@ -124,32 +124,47 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\PantherGUI\blockingconcurrentqueue.h" />
+    <ClInclude Include="..\PantherGUI\c.h" />
+    <ClInclude Include="..\PantherGUI\concurrentqueue.h" />
     <ClInclude Include="..\PantherGUI\control.h" />
     <ClInclude Include="..\PantherGUI\cursor.h" />
     <ClInclude Include="..\PantherGUI\encoding.h" />
+    <ClInclude Include="..\PantherGUI\keywords.h" />
     <ClInclude Include="..\PantherGUI\logger.h" />
     <ClInclude Include="..\PantherGUI\main.h" />
     <ClInclude Include="..\PantherGUI\mmap.h" />
+    <ClInclude Include="..\PantherGUI\scheduler.h" />
+    <ClInclude Include="..\PantherGUI\syntax.h" />
+    <ClInclude Include="..\PantherGUI\syntaxhighlighter.h" />
     <ClInclude Include="..\PantherGUI\text.h" />
+    <ClInclude Include="..\PantherGUI\textblock.h" />
     <ClInclude Include="..\PantherGUI\textdelta.h" />
     <ClInclude Include="..\PantherGUI\textfield.h" />
     <ClInclude Include="..\PantherGUI\textfile.h" />
     <ClInclude Include="..\PantherGUI\textline.h" />
-    <ClInclude Include="..\PantherGUI\time.h" />
+    <ClInclude Include="..\PantherGUI\thread.h" />
     <ClInclude Include="..\PantherGUI\utils.h" />
     <ClInclude Include="..\PantherGUI\windowfunctions.h" />
+    <ClInclude Include="..\PantherGUI\xml.h" />
     <ClInclude Include="tester.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\PantherGUI\c.cpp" />
     <ClCompile Include="..\PantherGUI\control.cpp" />
     <ClCompile Include="..\PantherGUI\cursor.cpp" />
+    <ClCompile Include="..\PantherGUI\keywords.cpp" />
     <ClCompile Include="..\PantherGUI\logger.cpp" />
     <ClCompile Include="..\PantherGUI\mmap.cpp" />
+    <ClCompile Include="..\PantherGUI\scheduler.cpp" />
+    <ClCompile Include="..\PantherGUI\syntaxhighlighter.cpp" />
     <ClCompile Include="..\PantherGUI\text.cpp" />
     <ClCompile Include="..\PantherGUI\textfield.cpp" />
     <ClCompile Include="..\PantherGUI\textfile.cpp" />
     <ClCompile Include="..\PantherGUI\textline.cpp" />
+    <ClCompile Include="..\PantherGUI\thread.cpp" />
     <ClCompile Include="..\PantherGUI\windowfunctions.cpp" />
+    <ClCompile Include="..\PantherGUI\xml.cpp" />
     <ClCompile Include="dummywindowfunctions.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="tester.cpp" />

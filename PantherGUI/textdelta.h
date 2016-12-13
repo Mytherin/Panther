@@ -58,6 +58,7 @@ public:
 class RemoveText : public CursorDelta {
 public:
 	ssize_t charactercount;
+	std::string removed_text;
 
 	PGTextType TextDeltaType() { return PGDeltaRemoveText; }
 	RemoveText(Cursor* cursor, ssize_t linenr, ssize_t characternr, ssize_t charactercount) : CursorDelta(cursor, linenr, characternr), charactercount(charactercount) {}

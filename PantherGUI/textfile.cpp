@@ -8,12 +8,12 @@
 #include "xml.h"
 #include "c.h"
 
-TextFile::TextFile(std::string path) : textfield(nullptr), base(nullptr), highlighter(nullptr), current_task(nullptr) {
+TextFile::TextFile(std::string path) : textfield(nullptr), highlighter(nullptr), current_task(nullptr) {
 	OpenFile(path);
 }
 
-TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), base(nullptr), highlighter(nullptr), current_task(nullptr) {
-	highlighter = new CHighlighter();
+TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield), highlighter(nullptr), current_task(nullptr) {
+	highlighter = new XMLHighlighter();
 	OpenFile(path);
 	if (highlighter) {
 		// we parse the first 10 blocks before opening the textfield for viewing
@@ -54,9 +54,6 @@ TextFile::TextFile(std::string path, TextField* textfield) : textfield(textfield
 }
 
 TextFile::~TextFile() {
-	if (base) {
-		mmap::DestroyFileContents(base);
-	}
 	if (current_task) {
 		current_task->active = false;
 	}
@@ -138,8 +135,8 @@ void TextFile::UnlockBlock(ssize_t block) {
 
 void TextFile::OpenFile(std::string path) {
 	this->path = path;
-	this->base = (char*)mmap::ReadFile(path);
-	if (!this->base) {
+	char* base = (char*)mmap::ReadFile(path);
+	if (!base) {
 		// FIXME: proper error message
 		return;
 	}
@@ -147,8 +144,7 @@ void TextFile::OpenFile(std::string path) {
 	this->lineending = PGLineEndingUnknown;
 	this->indentation = PGIndentionTabs;
 	char* ptr = base;
-	lines.push_back(TextLine(base, 0));
-	TextLine* current_line = &lines[0];
+	char* prev = base;
 	int offset = 0;
 	while (*ptr) {
 		if (*ptr == '\n') {
@@ -179,21 +175,18 @@ void TextFile::OpenFile(std::string path) {
 			}
 		}
 		if (*ptr == '\r' || *ptr == '\n') {
-			current_line->length = (ptr - current_line->line) - offset;
-			lines.push_back(TextLine(ptr + 1, 0));
-			current_line = &lines.back();
+			lines.push_back(TextLine(prev, (ptr - prev) - offset));
+			prev = ptr + 1;
 			offset = 0;
 		}
 		ptr++;
 	}
-	if (lines.size() == 1) {
+	if (lines.size() == 0) {
 		lineending = GetSystemLineEnding();
 	}
-	current_line->length = (ptr - current_line->line) - offset;
-}
+	lines.push_back(TextLine(prev, (ptr - prev) - offset));
 
-std::string TextFile::GetText() {
-	return std::string(base);
+	mmap::DestroyFileContents(base);
 }
 
 // FIXME: "file has been modified without us being the one that modified it"

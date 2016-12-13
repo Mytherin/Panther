@@ -162,3 +162,7 @@ bool WindowHasFocus(PGWindowHandle window) {
 PGPoint GetMousePosition(PGWindowHandle window) {
 	return PGPoint(0, 0);
 }
+
+void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle) {}
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle style) {}
+void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color) {}

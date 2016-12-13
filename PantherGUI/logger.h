@@ -11,9 +11,10 @@ public:
 		return &logger;
 	}
 
-	void WriteLogMessage(std::string message);
-
+	static void WriteLogMessage(std::string message) { Logger::GetInstance()->_WriteLogMessage(message); }
 private:
+	void _WriteLogMessage(std::string message);
+
 	Logger();
 	virtual ~Logger();
 

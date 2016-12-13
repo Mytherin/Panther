@@ -36,8 +36,6 @@ public:
 	TextFile(std::string filename, TextField* textfield);
 	~TextFile();
 
-	std::string GetText();
-
 	TextLine* GetLine(ssize_t linenumber);
 	void InsertText(char character, std::vector<Cursor*>& cursors);
 	void InsertText(std::string text, std::vector<Cursor*>& cursors);
@@ -99,7 +97,6 @@ private:
 	std::vector<TextBlock> parsed_blocks;
 	std::vector<PGMutexHandle> block_locks;
 	std::string path;
-	char* base;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
 

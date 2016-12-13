@@ -11,7 +11,7 @@ Logger::~Logger() {
 	mmap::CloseFile(file);
 }
 
-void Logger::WriteLogMessage(std::string message) {
+void Logger::_WriteLogMessage(std::string message) {
 	message = message + std::string("\n");
 	mmap::WriteToFile(file, message.c_str(), message.size());
 	mmap::Flush(file);

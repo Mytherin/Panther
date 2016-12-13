@@ -4,17 +4,14 @@
 #include <algorithm>
 
 TextLine::TextLine(const TextLine& other) {
-	this->line =  other.line;
-	this->length =  other.length;
-	this->modified_line = nullptr;
+	this->line = other.line;
 	this->deltas =  other.deltas;
+	this->applied_deltas = other.applied_deltas;
 	syntax.end = -1;
 	syntax.next = nullptr;
 }
 
 TextLine::~TextLine() {
-	if (modified_line) free(modified_line);
-	modified_line = nullptr;
 	PGSyntax* next = syntax.next;
 	syntax.next = nullptr;
 	while (next) {
@@ -25,63 +22,38 @@ TextLine::~TextLine() {
 }
 
 ssize_t TextLine::GetLength(void) {
-	if (!deltas) return length; // no deltas, return original length
-	if (modified_line) return strlen(modified_line); // deltas have already been computed
+	if (!deltas) return line.size(); // no deltas, return original length
 	ApplyDeltas();
-	return strlen(modified_line);
+	return line.size();
 }
 
 char* TextLine::GetLine(void) {
-	if (!deltas) return line; // no deltas, return original line
-	if (modified_line) return modified_line; // deltas have already been computed
+	if (!deltas) return (char*)line.c_str(); // no deltas, return original line
 	ApplyDeltas();
-	return modified_line;
+	return (char*)line.c_str();
 }
 
 void TextLine::ApplyDeltas() {
 	TextDelta* delta = this->deltas;
-	ssize_t length = this->length;
-	ssize_t maximum_length = this->length;
+	TextDelta* next;
+	this->deltas = nullptr;
 	while (delta) {
-		if (delta->TextDeltaType() == PGDeltaAddText) {
-			length += ((AddText*)delta)->text.size();
-			maximum_length = std::max(maximum_length, length);
-		}
-		else if (delta->TextDeltaType() == PGDeltaRemoveText) {
-			length -= ((RemoveText*)delta)->charactercount;
-		}
-		assert(length >= 0);
-		delta = delta->next;
-	}
-	modified_line = (char*) malloc(maximum_length * sizeof(char) + 1);
-	if (!modified_line) {
-		// FIXME
-		assert(0);
-	}
-
-	ssize_t current_length = this->length;
-	memcpy(modified_line, line, this->length);
-	delta = this->deltas;
-	while (delta) {
+		// apply the delta to the text line
 		if (delta->TextDeltaType() == PGDeltaAddText) {
 			AddText* add = (AddText*) delta;
-			if (current_length > add->characternr) {
-				// if the character is inserted in the middle of a line, we have to move the end of the line around
-				memmove(modified_line + add->characternr + add->text.size(), 
-					modified_line + add->characternr, 
-					current_length - add->characternr);
-			}
-			memcpy(modified_line + add->characternr, add->text.c_str(), add->text.size());
-			current_length += add->text.size();
+			line.insert(add->characternr, add->text.c_str(), add->text.size());
 		}
 		else if (delta->TextDeltaType() == PGDeltaRemoveText) {
 			RemoveText* remove = (RemoveText*) delta;
-			memmove(modified_line + remove->characternr - remove->charactercount, modified_line + remove->characternr, current_length - remove->characternr);
-			current_length -= remove->charactercount;
+			remove->removed_text = line.substr(remove->characternr - remove->charactercount, remove->charactercount);
+			line.erase(remove->characternr - remove->charactercount, remove->charactercount);
 		}
-		delta = delta->next;
+		next = delta->next;
+		// add the delta to the set of applied deltas
+		delta->next = this->applied_deltas;
+		this->applied_deltas = delta;
+		delta = next;
 	}
-	modified_line[current_length] = '\0';
 }
 
 void TextLine::AddDelta(TextDelta* delta) {
@@ -89,14 +61,13 @@ void TextLine::AddDelta(TextDelta* delta) {
 	assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
 	if (this->deltas == nullptr) {
 		this->deltas = delta;
+		delta->next = nullptr;
 	} else {
 		TextDelta* current = this->deltas;
 		while (current->next) current = current->next;
 		assert(current != delta);
 		current->next = delta;
 	}
-	if (modified_line) free(modified_line);
-	modified_line = nullptr;
 }
 
 void TextLine::RemoveDelta(TextDelta* delta) {
@@ -110,28 +81,60 @@ void TextLine::RemoveDelta(TextDelta* delta) {
 				prev->next = current->next;
 			}
 			delete current;
-			if (modified_line) free(modified_line);
-			modified_line = nullptr;
 			return;
 		}
 	} while ((prev = current) && (current = current->next) != nullptr);
+	// the delta has already been applied, reverse it
+	assert(this->applied_deltas == delta);
+	current = this->applied_deltas;
+	this->applied_deltas = this->applied_deltas->next;
+	if (current) {
+		UndoDelta(current);
+		delete current;
+		return;
+	}
 	// attempt to delete a delta that is not part of the current line
 	assert(0);
 }
 
-void TextLine::PopDelta() {
-	TextDelta *linedelta = this->deltas;
+TextDelta* TextLine::PopDelta() {
+	TextDelta *delta = this->deltas;
 	TextDelta *prev = nullptr;
-	assert(linedelta);
-	while (linedelta->next) {
-		prev = linedelta;
-		linedelta = linedelta->next;
-	}
-	if (!prev)
-		this->deltas = nullptr;
-	else
-		prev->next = nullptr;
+	if (delta) {
+		// there are unapplied deltas, remove the last unapplied delta
+		while (delta->next) {
+			prev = delta;
+			delta = delta->next;
+		}
+		if (!prev)
+			this->deltas = nullptr;
+		else
+			prev->next = nullptr;
+		return delta;
+	} else {
+		// otherwise, undo the last applied delta
+		delta = this->applied_deltas;
 
-	if (this->modified_line) free(this->modified_line);
-	this->modified_line = nullptr;
+		if (!delta) return nullptr;
+
+		this->applied_deltas = delta->next;
+		UndoDelta(delta);
+		return delta;
+	}
+}
+
+void TextLine::UndoDelta(TextDelta* delta) {
+	delta->next = nullptr;
+	// this function should only be called with Add/Remove deltas
+	assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
+	// the delta should be applied and be the last applied delta
+	if (delta->TextDeltaType() == PGDeltaRemoveText) {
+		RemoveText* remove = (RemoveText*) delta;
+		//remove->characternr - remove->charactercount
+		line.insert(remove->characternr - remove->charactercount, remove->removed_text.c_str(), remove->removed_text.size());
+	}
+	else if (delta->TextDeltaType() == PGDeltaAddText) {
+		AddText* add = (AddText*) delta;
+		line.erase(add->characternr, add->text.size());
+	}
 }

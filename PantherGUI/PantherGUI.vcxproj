@@ -168,7 +168,6 @@
     <ClInclude Include="textdelta.h" />
     <ClInclude Include="textline.h" />
     <ClInclude Include="thread.h" />
-    <ClInclude Include="time.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />
     <ClInclude Include="xml.h" />

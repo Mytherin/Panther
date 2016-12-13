@@ -16,4 +16,5 @@ struct PGSyntax {
 	PGSyntax* next;
 
 	PGSyntax() : type(0), end(-1), next(nullptr) { }
+	~PGSyntax() { }
 };

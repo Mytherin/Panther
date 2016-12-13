@@ -167,11 +167,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextField* textField = new TextField(res, "C:\\Users\\wieis\\Desktop\\syntaxtest.c");
+	TextField* textField = new TextField(res, "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml");
 	textField->width = 1000;
-	textField->height = 600;
+	textField->height = 670;
 	textField->x = 0;
-	textField->y = 100;
+	textField->y = 30;
 	textField->anchor = PGAnchorBottom | PGAnchorLeft | PGAnchorRight;
 
 

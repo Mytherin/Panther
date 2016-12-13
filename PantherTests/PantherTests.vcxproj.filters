@@ -45,9 +45,6 @@
     <ClInclude Include="..\PantherGUI\textline.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\PantherGUI\time.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\PantherGUI\utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -58,6 +55,36 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\PantherGUI\logger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\blockingconcurrentqueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\c.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\concurrentqueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\keywords.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\scheduler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\syntax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\syntaxhighlighter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\textblock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\PantherGUI\xml.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -96,6 +123,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\PantherGUI\logger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\c.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\keywords.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\scheduler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\syntaxhighlighter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\thread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\xml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
