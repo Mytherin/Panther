@@ -26,7 +26,7 @@ public:
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseMove(int x, int y, PGMouseButton buttons);
-	void KeyboardButton(PGButton button, PGModifier modifier);
+	bool KeyboardButton(PGButton button, PGModifier modifier);
 	void KeyboardCharacter(char character, PGModifier modifier);
 	void KeyboardUnicode(char *character, PGModifier modifier);
 	
@@ -40,6 +40,7 @@ public:
 	void RefreshCursors();
 	int GetLineHeight();
 
+	void SetTextFile(TextFile* textfile);
 	TextFile& GetTextFile() { return *textfile; }
 private:
 	PGScalar text_offset;

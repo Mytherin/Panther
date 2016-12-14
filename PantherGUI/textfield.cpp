@@ -6,7 +6,7 @@
 #include "text.h"
 
 TextField::TextField(PGWindowHandle window, TextFile* file) :
-	Control(window, true), display_carets(true), display_carets_count(0), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
+	Control(window, false), display_carets(true), display_carets_count(0), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
 	assert(file);
 	textfile = file;
 	textfile->SetTextField(this);
@@ -309,7 +309,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		bool mouse_in_scrollbar = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width;
 
 		// the background of the scrollbar
-		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, 0, SCROLLBAR_WIDTH, y + this->height), PGColor(62, 62, 62), PGStyleFill);
+		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, this->y, SCROLLBAR_WIDTH, this->y + this->height), PGColor(62, 62, 62), PGStyleFill);
 		// the arrows above/below the scrollbar
 		PGColor arrowColor(104, 104, 104);
 		if (mouse_in_scrollbar && mouse.y >= 0 && mouse.y <= 16)
@@ -608,7 +608,7 @@ int TextField::GetLineHeight() {
 	return (int)(this->height / line_height);
 }
 
-void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
+bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardButton(") + GetButtonName(button) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
 	switch (button) {
 		// FIXME: when moving up/down, count \t as multiple characters (equal to tab size)
@@ -622,9 +622,11 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			textfile->OffsetSelectionLine(1);
 		} else if (modifier == PGModifierCtrl) {
 			textfile->OffsetLineOffset(1);
+		} else {
+			return false;
 		}
 		Invalidate();
-		break;
+		return true;
 	case PGButtonUp:
 		if (modifier == PGModifierCtrlShift) {
 			textfile->MoveLines(-1);
@@ -634,9 +636,11 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			textfile->OffsetSelectionLine(-1);
 		} else if (modifier == PGModifierCtrl) {
 			textfile->OffsetLineOffset(-1);
+		} else {
+			return false;
 		}
 		Invalidate();
-		break;
+		return true;
 	case PGButtonLeft:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetCharacter(-1);
@@ -646,9 +650,11 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			textfile->OffsetWord(PGDirectionLeft);
 		} else if (modifier == PGModifierCtrlShift) {
 			textfile->OffsetSelectionWord(PGDirectionLeft);
+		} else {
+			return false;
 		}
 		Invalidate();
-		break;
+		return true;
 	case PGButtonRight:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetCharacter(1);
@@ -658,9 +664,11 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			textfile->OffsetWord(PGDirectionRight);
 		} else if (modifier == PGModifierCtrlShift) {
 			textfile->OffsetSelectionWord(PGDirectionRight);
+		} else {
+			return false;
 		}
 		Invalidate();
-		break;
+		return true;
 	case PGButtonEnd:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetEndOfLine();
@@ -670,9 +678,11 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			textfile->OffsetEndOfFile();
 		} else if (modifier == PGModifierCtrlShift) {
 			textfile->SelectEndOfFile();
+		} else {
+			return false;
 		}
 		Invalidate();
-		break;
+		return true;
 	case PGButtonHome:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetStartOfLine();
@@ -689,14 +699,16 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		if (modifier == PGModifierNone) {
 			textfile->OffsetLine(-GetLineHeight());
 			Invalidate();
+			return true;
 		}
-		break;
+		return false;
 	case PGButtonPageDown:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetLine(GetLineHeight());
 			Invalidate();
+			return true;
 		}
-		break;
+		return false;
 	case PGButtonDelete:
 		if (modifier == PGModifierNone) {
 			this->textfile->DeleteCharacter(PGDirectionRight);
@@ -706,9 +718,11 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			textfile->DeleteLines();
 		} else if (modifier == PGModifierCtrlShift) {
 			this->textfile->DeleteLine(PGDirectionRight);
+		} else {
+			return false;
 		}
 		this->Invalidate();
-		break;
+		return true;
 	case PGButtonBackspace:
 		if (modifier == PGModifierNone || modifier == PGModifierShift) {
 			this->textfile->DeleteCharacter(PGDirectionLeft);
@@ -716,9 +730,11 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			this->textfile->DeleteWord(PGDirectionLeft);
 		} else if (modifier == PGModifierCtrlShift) {
 			this->textfile->DeleteLine(PGDirectionLeft);
+		}  else {
+			return false;
 		}
 		this->Invalidate();
-		break;
+		return true;
 	case PGButtonEnter:
 		if (modifier == PGModifierNone) {
 			this->textfile->AddNewLine();
@@ -726,10 +742,13 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			this->textfile->AddEmptyLine(PGDirectionRight);
 		} else if (modifier == PGModifierCtrlShift) {
 			this->textfile->AddEmptyLine(PGDirectionLeft);
+		} else {
+			return false;
 		}
 		this->Invalidate();
+		return true;
 	default:
-		break;
+		return false;
 	}
 }
 
@@ -835,4 +854,9 @@ void TextField::InvalidateScrollbar() {
 void TextField::InvalidateMinimap() {
 	PGScalar minimap_width = GetMinimapWidth();
 	this->Invalidate(PGRect(this->width - SCROLLBAR_WIDTH - minimap_width, 0, minimap_width, this->height));
+}
+
+void TextField::SetTextFile(TextFile* textfile) {
+	this->textfile = textfile;
+	this->Invalidate();
 }

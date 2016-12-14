@@ -110,6 +110,7 @@ public:
 private:
 	std::string path;
 	std::string name;
+	std::string ext;
 
 	TextField* textfield;
 

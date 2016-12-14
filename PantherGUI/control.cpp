@@ -13,6 +13,7 @@ Control::Control(PGWindowHandle handle, bool reg) {
 	this->x = 0;
 	this->y = 0;
 	this->anchor = PGAnchorNone;
+	this->parent = nullptr;
 	this->visible = true;
 }
 
@@ -46,8 +47,8 @@ void Control::MouseMove(int x, int y, PGMouseButton buttons) {
 
 }
 
-void Control::KeyboardButton(PGButton button, PGModifier modifier) {
-
+bool Control::KeyboardButton(PGButton button, PGModifier modifier) {
+	return false;
 }
 
 void Control::KeyboardCharacter(char character, PGModifier modifier) {
@@ -72,4 +73,34 @@ void Control::Invalidate(PGRect rectangle) {
 
 bool Control::HasFocus() {
 	return GetFocusedControl(this->window) == this;
+}
+
+void Control::OnResize(PGSize old_size, PGSize new_size) {
+
+}
+
+void Control::UpdateParentSize(PGSize old_size, PGSize new_size) {
+	PGSize current_size = PGSize(this->width, this->height);
+	int width = new_size.width;
+	int height = new_size.height;
+	if (anchor & PGAnchorLeft && anchor & PGAnchorRight) {
+		this->width = width;
+	} else if (anchor & PGAnchorRight) {
+		this->width = width - this->x;
+	} else if (anchor & PGAnchorLeft) {
+		int old = old_size.width - (this->x + this->width);
+		this->width = (old - width) + this->x;
+	}
+
+	if (anchor & PGAnchorBottom && anchor & PGAnchorTop) {
+		this->height = height;
+	} else if (anchor & PGAnchorBottom) {
+		this->height = height - this->y;
+	} else if (anchor & PGAnchorTop) {
+		int old = old_size.width - (this->y + this->width);
+		this->height = (old - height) + this->y;
+	}
+	if (this->width != current_size.width || this->height != current_size.height) {
+		this->OnResize(current_size, PGSize(this->width, this->height));
+	}
 }

@@ -145,6 +145,7 @@
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
+    <ClCompile Include="tabbedtextfield.cpp" />
     <ClCompile Include="tabcontrol.cpp" />
     <ClCompile Include="text.cpp" />
     <ClCompile Include="textfield.cpp" />
@@ -172,6 +173,7 @@
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="syntax.h" />
     <ClInclude Include="syntaxhighlighter.h" />
+    <ClInclude Include="tabbedtextfield.h" />
     <ClInclude Include="tabcontrol.h" />
     <ClInclude Include="text.h" />
     <ClInclude Include="textblock.h" />

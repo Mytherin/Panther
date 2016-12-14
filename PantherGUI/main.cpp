@@ -8,6 +8,7 @@
 #include "filemanager.h"
 #include "tabcontrol.h"
 #include "controlmanager.h"
+#include "tabbedtextfield.h"
 
 #include <malloc.h>
 
@@ -122,10 +123,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
 	res->cursor_type = PGCursorStandard;
-	res->manager = nullptr;
 	global_handle = res;
 
-	res->manager = new ControlManager(res);
+	ControlManager* manager = new ControlManager(res);
+	manager->SetPosition(PGPoint(0, 0));
+	manager->SetSize(PGSize(1000, 700));
+	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+	res->manager = manager;
 
 	CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
@@ -136,6 +140,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
+	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
+	TextFile* textfile2 = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
+	TabbedTextField* tabbed = new TabbedTextField(res, textfile);
+	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
+	/*
 	TabControl* tabs = new TabControl(res);
 	tabs->width = 1000;
 	tabs->height = 20;
@@ -143,13 +153,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	tabs->y = 0;
 	tabs->anchor = PGAnchorLeft | PGAnchorRight;
 
-	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
 	TextField* textField = new TextField(res, textfile);
 	textField->width = 1000;
 	textField->height = 670;
 	textField->x = 0;
 	textField->y = 20;
-	textField->anchor = PGAnchorBottom | PGAnchorLeft | PGAnchorRight;
+	textField->anchor = PGAnchorBottom | PGAnchorLeft | PGAnchorRight;*/
 
 
 
@@ -223,6 +232,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			break;
 		case VK_MENU:
 			global_handle->modifier |= PGModifierAlt;
+			break;
+		case VK_TAB:
+			button = PGButtonTab;
 			break;
 		case VK_LEFT:
 			button = PGButtonLeft;
@@ -409,7 +421,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			int width = LOWORD(lParam);
 			int height = HIWORD(lParam);
 			PGSize old_size = GetWindowSize(global_handle);
-			global_handle->manager->Resize(old_size, PGSize(width, height));
+			global_handle->manager->UpdateParentSize(old_size, PGSize(width, height));
 			RedrawWindow(global_handle);
 		}
 		break;

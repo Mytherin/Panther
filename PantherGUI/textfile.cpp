@@ -24,10 +24,16 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr), path(path) {
 	cursors.push_back(new Cursor(this));
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
+	lng pos = path.find_last_of('.');
+	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
 	this->current_task = nullptr;
 	this->text_lock = CreateMutex();
 	loaded = 0;
-	highlighter = new XMLHighlighter();
+	if (ext == "xml") {
+		highlighter = new XMLHighlighter();
+	} else if (ext == "c") {
+		highlighter = new CHighlighter();
+	}
 	is_loaded = false;
 	// FIXME: switch to immediate_load for small files
 	if (!immediate_load) {

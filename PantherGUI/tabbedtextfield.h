@@ -1,16 +1,19 @@
 #pragma once
 
+// A composite control that contains both a TextField and a TabControl
+// This control exists because both the TabControl and TextField can be controlled at
+// the same time using keys (e.g. Ctrl+Tab to move tabs while typing in a textfield)
+
 #include "control.h"
 #include "textfield.h"
+#include "tabcontrol.h"
+#include "windowfunctions.h"
 
-// FIXME: this class should manage all the controls, and handle keypresses/mouse clicks/drawings/etc
+#define TEXT_TAB_HEIGHT 20
 
-
-class ControlManager : public Control {
+class TabbedTextField : public Control {
 public:
-	ControlManager(PGWindowHandle window);
-
-	void AddControl(Control* control);
+	TabbedTextField(PGWindowHandle window, TextFile* file);
 
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
@@ -25,17 +28,8 @@ public:
 	void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseMove(int x, int y, PGMouseButton buttons);
 
-	Control* GetMouseOverControl(int x, int y);
-
-	void RefreshWindow();
-	void RefreshWindow(PGIRect rectangle);
-
 	void OnResize(PGSize old_size, PGSize new_size);
-
-	Control* GetFocusedControl() { return focused_control; }
 private:
-	PGIRect invalidated_area;
-	bool invalidated;
-	std::vector<Control*> controls;
-	Control* focused_control;
+	TextField* textfield;
+	TabControl* tabs;
 };

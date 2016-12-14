@@ -1,8 +1,6 @@
 
 #include "controlmanager.h"
 
-
-
 ControlManager::ControlManager(PGWindowHandle window) : Control(window, false), controls(), focused_control(nullptr) {
 
 }
@@ -15,15 +13,15 @@ void ControlManager::AddControl(Control* control) {
 
 Control* ControlManager::GetMouseOverControl(int x, int y) {
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		if (PGRectangleContains(PGRect((*it)->x, (*it)->y, (*it)->width, (*it)->height), PGPoint(x, y))) {
+		if (PGRectangleContains((*it)->GetRectangle(), PGPoint(x, y))) {
 			return *it;
 		}
 	}
 	return nullptr;
 }
 
-void ControlManager::KeyboardButton(PGButton button, PGModifier modifier) {
-	focused_control->KeyboardButton(button, modifier);
+bool ControlManager::KeyboardButton(PGButton button, PGModifier modifier) {
+	return focused_control->KeyboardButton(button, modifier);
 }
 
 void ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
@@ -68,28 +66,9 @@ void ControlManager::RefreshWindow(PGIRect rectangle) {
 	}
 }
 
-void ControlManager::Resize(PGSize old_size, PGSize new_size) {
-	int width = new_size.width;
-	int height = new_size.height;
+void ControlManager::OnResize(PGSize old_size, PGSize new_size) {
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		PGAnchor anchor = (*it)->anchor;
-		if (anchor & PGAnchorLeft && anchor & PGAnchorRight) {
-			(*it)->width = width;
-		} else if (anchor & PGAnchorRight) {
-			(*it)->width = width - (*it)->x;
-		} else if (anchor & PGAnchorLeft) {
-			int old = old_size.width - ((*it)->x + (*it)->width);
-			(*it)->width = (old - width) + (*it)->x;
-		}
-
-		if (anchor & PGAnchorBottom && anchor & PGAnchorTop) {
-			(*it)->height = height;
-		} else if (anchor & PGAnchorBottom) {
-			(*it)->height = height - (*it)->y;
-		} else if (anchor & PGAnchorTop) {
-			int old = old_size.width - ((*it)->y + (*it)->width);
-			(*it)->height = (old - height) + (*it)->y;
-		}
+		(*it)->UpdateParentSize(old_size, new_size);
 	}
 }
 

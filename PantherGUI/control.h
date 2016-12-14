@@ -13,14 +13,11 @@ extern const PGAnchor PGAnchorBottom;
 
 class Control {
 public:
-	PGScalar x, y;
-	PGScalar width, height;
-	PGAnchor anchor;
-
 	Control(PGWindowHandle window, bool reg);
 
 	virtual void MouseWheel(int x, int y, int distance, PGModifier modifier);
-	virtual void KeyboardButton(PGButton button, PGModifier modifier);
+	// Returns true if the button has been consumed by the control, false if it has been ignored
+	virtual bool KeyboardButton(PGButton button, PGModifier modifier);
 	virtual void KeyboardCharacter(char character, PGModifier modifier);
 	virtual void KeyboardUnicode(char* character, PGModifier modifier);
 	virtual void PeriodicRender(void);
@@ -36,8 +33,27 @@ public:
 	virtual void Invalidate(PGIRect);
 	virtual void Invalidate(PGRect);
 
+	void SetSize(PGSize size) { this->width = size.width; this->height = size.height; }
+	void SetPosition(PGPoint point) { this->x = point.x; this->y = point.y; }
+	void SetAnchor(PGAnchor anchor) { this->anchor = anchor; }
+	PGSize GetSize() { return PGSize(this->width, this->height); }
+
+	PGRect GetRectangle() { 
+		return PGRect(x, y, width, height); 
+	}
+
+	virtual void OnResize(PGSize old_size, PGSize new_size);
+
+	void UpdateParentSize(PGSize old_size, PGSize new_size);
+
 	bool visible;
 protected:
+	Control* parent;
+
+	PGScalar x, y;
+	PGScalar width, height;
+	PGAnchor anchor;
+
 	PGWindowHandle window;
 	bool HasFocus();
 };
