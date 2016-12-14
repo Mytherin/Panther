@@ -57,7 +57,6 @@ std::string Testerino(TextField* textField);
 
 int main() {
 	Tester tester;
-	// FIXME: highlighting leads to non-deterministic test failures
 	
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(8);
@@ -423,7 +422,7 @@ std::string MixedUndoRedo(TextField* textField) {
 std::string MultiCursorInsert(TextField* textField) {
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonRight, PGModifierNone);
 	textField->KeyboardCharacter('a', PGModifierNone);
 
@@ -433,7 +432,7 @@ std::string MultiCursorInsert(TextField* textField) {
 std::string MultiCursorNewline(TextField* textField) {
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonRight, PGModifierNone);
 	textField->KeyboardButton(PGButtonEnter, PGModifierNone);
 
@@ -443,7 +442,7 @@ std::string MultiCursorNewline(TextField* textField) {
 std::string MultiCursorDeletion(TextField* textField) {
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonRight, PGModifierNone);
 	textField->KeyboardButton(PGButtonDelete, PGModifierNone);
 
@@ -453,7 +452,7 @@ std::string MultiCursorDeletion(TextField* textField) {
 std::string MultiCursorSelectionDeletion(TextField* textField) {
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonRight, PGModifierNone);
 	textField->KeyboardButton(PGButtonRight, PGModifierShift);
 	textField->KeyboardButton(PGButtonRight, PGModifierShift);
@@ -465,7 +464,7 @@ std::string MultiCursorSelectionDeletion(TextField* textField) {
 std::string MultiCursorWordDeletion(TextField* textField) {
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
 	textField->KeyboardButton(PGButtonBackspace, PGModifierCtrl);
 	textField->KeyboardCharacter('a', PGModifierNone);
@@ -476,7 +475,7 @@ std::string MultiCursorWordDeletion(TextField* textField) {
 std::string MultiCursorOverlappingCursors(TextField* textField) {
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonHome, PGModifierNone);
 	textField->KeyboardCharacter('a', PGModifierNone);
 
@@ -486,7 +485,7 @@ std::string MultiCursorOverlappingCursors(TextField* textField) {
 std::string MultiCursorOverlappingSelection(TextField* textField) {
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
 	textField->KeyboardButton(PGButtonRight, PGModifierCtrl);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonRight, PGModifierNone);
 	textField->KeyboardButton(PGButtonEnd, PGModifierShift);
 	textField->KeyboardButton(PGButtonBackspace, PGModifierNone);
@@ -515,11 +514,11 @@ std::string MultiCursorUndoComplex(TextField* textField) {
 	textField->KeyboardCharacter('C', PGModifierCtrl);
 	textField->KeyboardButton(PGButtonLeft, PGModifierNone);
 	textField->KeyboardButton(PGButtonDown, PGModifierNone);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonDown, PGModifierNone);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonDown, PGModifierNone);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	TypeWord("hello", textField);
 	textField->KeyboardButton(PGButtonLeft, PGModifierCtrlShift);
 	textField->KeyboardCharacter('V', PGModifierCtrl);
@@ -537,11 +536,11 @@ std::string MultiCursorRedoComplex(TextField* textField) {
 	textField->KeyboardCharacter('C', PGModifierCtrl);
 	textField->KeyboardButton(PGButtonLeft, PGModifierNone);
 	textField->KeyboardButton(PGButtonDown, PGModifierNone);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonDown, PGModifierNone);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	textField->KeyboardButton(PGButtonDown, PGModifierNone);
-	textField->GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
+	textField->GetTextFile().GetCursors().push_back(new Cursor(&textField->GetTextFile(), 0, 0));
 	TypeWord("hello", textField);
 	textField->KeyboardButton(PGButtonLeft, PGModifierCtrlShift);
 	textField->KeyboardCharacter('V', PGModifierCtrl);
@@ -572,7 +571,7 @@ std::string PasteInsertUndoPaste(TextField* textField) {
 }
 
 std::string MultiLineDelete(TextField* textField) {
-	std::vector<Cursor*>& cursors = textField->GetCursors();
+	std::vector<Cursor*>& cursors = textField->GetTextFile().GetCursors();
 	cursors[0]->SetCursorLocation(14, 16);
 	cursors[0]->SetCursorStartLocation(12, 0);
 	textField->KeyboardCharacter('a', PGModifierNone);
@@ -582,7 +581,7 @@ std::string MultiLineDelete(TextField* textField) {
 }
 
 std::string MultiLineMultiCursorDelete(TextField* textField) {
-	std::vector<Cursor*>& cursors = textField->GetCursors();
+	std::vector<Cursor*>& cursors = textField->GetTextFile().GetCursors();
 	cursors[0]->SetCursorLocation(14, 16);
 	cursors[0]->SetCursorStartLocation(12, 0);
 	cursors.push_back(new Cursor(&textField->GetTextFile(), 20, 16));
@@ -594,8 +593,8 @@ std::string MultiLineMultiCursorDelete(TextField* textField) {
 }
 
 std::string MultiCursorDeleteInsert(TextField* textField) {
-	std::vector<Cursor*>& cursors = textField->GetCursors();
-	Cursor*& active_cursor = textField->GetActiveCursor();
+	std::vector<Cursor*>& cursors = textField->GetTextFile().GetCursors();
+	Cursor*& active_cursor = textField->GetTextFile().GetActiveCursor();
 	TextFile& textfile = textField->GetTextFile();
 
 	cursors[0]->SetCursorLocation(1, 3);
@@ -609,8 +608,8 @@ std::string MultiCursorDeleteInsert(TextField* textField) {
 }
 
 std::string PartialDeleteCursorSameLine(TextField* textField) {
-	std::vector<Cursor*>& cursors = textField->GetCursors();
-	Cursor*& active_cursor = textField->GetActiveCursor();
+	std::vector<Cursor*>& cursors = textField->GetTextFile().GetCursors();
+	Cursor*& active_cursor = textField->GetTextFile().GetActiveCursor();
 	TextFile& textfile = textField->GetTextFile();
 
 	cursors[0]->SetCursorStartLocation(3, 1);
@@ -622,8 +621,8 @@ std::string PartialDeleteCursorSameLine(TextField* textField) {
 }
 
 std::string MultiCursorPasteSameLine(TextField* textField) {
-	std::vector<Cursor*>& cursors = textField->GetCursors();
-	Cursor*& active_cursor = textField->GetActiveCursor();
+	std::vector<Cursor*>& cursors = textField->GetTextFile().GetCursors();
+	Cursor*& active_cursor = textField->GetTextFile().GetActiveCursor();
 	TextFile& textfile = textField->GetTextFile();
 
 	textField->KeyboardCharacter('A', PGModifierCtrl);
@@ -637,8 +636,8 @@ std::string MultiCursorPasteSameLine(TextField* textField) {
 
 std::string UndoMultiNewLine(TextField* textfield) {
 	TextField* textField = textfield;
-	std::vector<Cursor*>& cursors = textfield->GetCursors();
-	Cursor*& active_cursor = textfield->GetActiveCursor();
+	std::vector<Cursor*>& cursors = textField->GetTextFile().GetCursors();
+	Cursor*& active_cursor = textField->GetTextFile().GetActiveCursor();
 	TextFile& textfile = textfield->GetTextFile();
 
 	cursors[0]->SetCursorLocation(2, 5);
@@ -651,7 +650,7 @@ std::string UndoMultiNewLine(TextField* textfield) {
 }
 
 std::string MultiCursorMultiLineDelete(TextField* textField) {
-	std::vector<Cursor*>& cursors = textField->GetCursors();
+	std::vector<Cursor*>& cursors = textField->GetTextFile().GetCursors();
 	TextFile& textFile = textField->GetTextFile();
 	cursors[0]->SetCursorLocation(0, 1);
 	cursors[0]->SetCursorStartLocation(1, 5);

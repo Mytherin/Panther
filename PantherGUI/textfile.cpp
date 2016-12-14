@@ -12,7 +12,7 @@ struct OpenFileInformation {
 	TextFile* textfile;
 	std::string path;
 
-	OpenFileInformation(TextFile* file, std::string path) : textfile(file), path(path) { }
+	OpenFileInformation(TextFile* file, std::string path) : textfile(file), path(path) {}
 };
 
 void TextFile::OpenFileAsync(Task* task, void* inp) {
@@ -21,16 +21,8 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 	delete info;
 }
 
-TextFile::TextFile(std::string path) : textfield(nullptr), highlighter(nullptr) {
-	this->current_task = nullptr;
-	this->text_lock = CreateMutex();
-	loaded = 0;
-	is_loaded = false;
-	OpenFile(path);
-	is_loaded = true;
-}
-
-TextFile::TextFile(std::string path, TextField* textfield, bool immediate_load) : textfield(textfield), highlighter(nullptr) {
+TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr) {
+	cursors.push_back(new Cursor(this));
 	this->current_task = nullptr;
 	this->text_lock = CreateMutex();
 	loaded = 0;
@@ -93,6 +85,14 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 		}
 	}
 	textfile->current_task = nullptr;
+}
+
+void TextFile::RefreshCursors() {
+	textfield->RefreshCursors();
+}
+
+int TextFile::GetLineHeight() {
+	return textfield->GetLineHeight();
 }
 
 void TextFile::InvalidateParsing(lng line) {
@@ -227,7 +227,6 @@ void TextFile::OpenFile(std::string path) {
 }
 
 // FIXME: "file has been modified without us being the one that modified it"
-// FIXME: use memory mapping on big files and only parse initial lines
 TextLine* TextFile::GetLine(lng linenumber) {
 	if (!is_loaded) return nullptr;
 	if (linenumber < 0 || linenumber >= (lng)lines.size())
@@ -250,12 +249,12 @@ CursorsContainSelection(std::vector<Cursor*>& cursors) {
 	return false;
 }
 
-void TextFile::InsertText(char character, std::vector<Cursor*>& cursors) {
+void TextFile::InsertText(char character) {
 	if (!is_loaded) return;
-	InsertText(std::string(1, character), cursors);
+	InsertText(std::string(1, character));
 }
 
-void TextFile::InsertText(std::string text, std::vector<Cursor*>& cursors) {
+void TextFile::InsertText(std::string text) {
 	if (!is_loaded) return;
 	// FIXME: merge delta if it already exists
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
@@ -272,7 +271,160 @@ void TextFile::InsertText(std::string text, std::vector<Cursor*>& cursors) {
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(textfield, cursors);
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetLineOffset(lng offset) {
+	lineoffset_y = lineoffset_y + offset;
+	lineoffset_y = std::max(std::min(lineoffset_y, (lng)lines.size() - 1), (lng)0);
+}
+
+void TextFile::SetCursorLocation(lng line, lng character) {
+	ClearExtraCursors();
+	cursors[0]->SetCursorLocation(line, character);
+}
+
+void TextFile::AddNewCursor(lng line, lng character) {
+	cursors.push_back(new Cursor(this, line, character));
+	active_cursor = cursors.back();
+	Cursor::NormalizeCursors(this, cursors, false);
+}
+
+void TextFile::OffsetLine(lng offset) {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetLine(1);
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetSelectionLine(lng offset) {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetSelectionLine(1);
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetCharacter(lng offset) {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		if ((*it)->SelectionIsEmpty()) {
+			(*it)->OffsetCharacter(offset);
+		} else {
+			if (offset < 0) {
+				(*it)->SetCursorLocation((*it)->BeginLine(), (*it)->BeginCharacter());
+			} else {
+				(*it)->SetCursorLocation((*it)->EndLine(), (*it)->EndCharacter());
+			}
+		}
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetSelectionCharacter(lng offset) {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetSelectionCharacter(offset);
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetWord(PGDirection direction) {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetWord(direction);
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetSelectionWord(PGDirection direction) {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetSelectionWord(direction);
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetStartOfLine() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetStartOfLine();
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::SelectStartOfLine() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->SelectStartOfLine();
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetStartOfFile() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetStartOfFile();
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::SelectStartOfFile() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->SelectStartOfFile();
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetEndOfLine() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetEndOfLine();
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::SelectEndOfLine() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->SelectEndOfLine();
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::OffsetEndOfFile() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->OffsetEndOfFile();
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::SelectEndOfFile() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		(*it)->SelectEndOfFile();
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+void TextFile::ClearExtraCursors() {
+	if (cursors.size() > 1) {
+		for (auto it = cursors.begin() + 1; it != cursors.end(); it++) {
+			delete *it;
+		}
+		cursors.erase(cursors.begin() + 1, cursors.end());
+	}
+	active_cursor = cursors.front();
+}
+
+void TextFile::ClearCursors() {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		delete *it;
+	}
+	cursors.clear();
+	active_cursor = nullptr;
+}
+
+Cursor*& TextFile::GetActiveCursor() {
+	if (active_cursor == nullptr)
+		active_cursor = cursors.front();
+	return active_cursor;
+}
+
+void TextFile::SelectEverything() {
+	ClearCursors();
+	this->cursors.push_back(new Cursor(this, lines.size() - 1, lines.back()->GetLength()));
+	this->cursors.back()->end_character = 0;
+	this->cursors.back()->end_line = 0;
 }
 
 struct Interval {
@@ -282,7 +434,7 @@ struct Interval {
 	Interval(lng start, lng end, Cursor* cursor) : start_line(start), end_line(end) { cursors.push_back(cursor); }
 };
 
-std::vector<Interval> TextFile::GetCursorIntervals(std::vector<Cursor*>& cursors) {
+std::vector<Interval> TextFile::GetCursorIntervals() {
 	assert(is_loaded);
 	std::vector<Interval> intervals;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -309,7 +461,7 @@ std::vector<Interval> TextFile::GetCursorIntervals(std::vector<Cursor*>& cursors
 	return intervals;
 }
 
-void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
+void TextFile::MoveLines(int offset) {
 	if (!is_loaded) return;
 	assert(offset == 1 || offset == -1); // we only support single line moves
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -320,7 +472,7 @@ void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
 		}
 	}
 	// we keep track of all the line intervals that we have to move up/down
-	std::vector<Interval> intervals = GetCursorIntervals(cursors);
+	std::vector<Interval> intervals = GetCursorIntervals();
 	MultipleDelta* delta = new MultipleDelta();
 	// now each of the intervals are separate
 	// we must perform a RemoveLine and AddLine operation for each interval
@@ -339,20 +491,20 @@ void TextFile::MoveLines(std::vector<Cursor*>& cursors, int offset) {
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(textfield, cursors);
+	Cursor::NormalizeCursors(this, cursors);
 }
 
-void TextFile::DeleteLines(std::vector<Cursor*>& cursors) {
+void TextFile::DeleteLines() {
 	if (!is_loaded) return;
 	if (CursorsContainSelection(cursors)) {
 		// if any of the cursors contain a selection, delete only the selection
-		DeleteCharacter(cursors, PGDirectionLeft);
+		DeleteCharacter(PGDirectionLeft);
 		return;
 	}
 	// otherwise, delete each of the lines
 	// first get the set of intervals covered by the cursors
 	MultipleDelta* delta = new MultipleDelta();
-	std::vector<Interval> intervals = GetCursorIntervals(cursors);
+	std::vector<Interval> intervals = GetCursorIntervals();
 	for (auto it = intervals.begin(); it != intervals.end(); it++) {
 		RemoveLines* remove = new RemoveLines(it->cursors.front(), it->start_line);
 		for (lng i = it->start_line; i <= it->end_line; i++) {
@@ -365,14 +517,14 @@ void TextFile::DeleteLines(std::vector<Cursor*>& cursors) {
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(textfield, cursors);
+	Cursor::NormalizeCursors(this, cursors);
 }
 
-void TextFile::DeleteLine(std::vector<Cursor*>& cursors, PGDirection direction) {
+void TextFile::DeleteLine(PGDirection direction) {
 	if (!is_loaded) return;
 	if (CursorsContainSelection(cursors)) {
 		// if any of the cursors contain a selection, delete only the selection
-		DeleteCharacter(cursors, PGDirectionLeft);
+		DeleteCharacter(PGDirectionLeft);
 		return;
 	}
 	MultipleDelta* delta = new MultipleDelta();
@@ -385,7 +537,7 @@ void TextFile::DeleteLine(std::vector<Cursor*>& cursors, PGDirection direction) 
 		}
 	}
 	if (delete_lines) {
-		DeleteCharacter(cursors, direction);
+		DeleteCharacter(direction);
 		return;
 	}
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -411,10 +563,10 @@ void TextFile::DeleteLine(std::vector<Cursor*>& cursors, PGDirection direction) 
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(textfield, cursors);
+	Cursor::NormalizeCursors(this, cursors);
 }
 
-void TextFile::AddEmptyLine(std::vector<Cursor*>& cursors, PGDirection direction) {
+void TextFile::AddEmptyLine(PGDirection direction) {
 	if (!is_loaded) return;
 	MultipleDelta* delta = new MultipleDelta();
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -438,10 +590,10 @@ void TextFile::AddEmptyLine(std::vector<Cursor*>& cursors, PGDirection direction
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(textfield, cursors);
+	Cursor::NormalizeCursors(this, cursors);
 }
 
-std::string TextFile::CopyText(std::vector<Cursor*>& cursors) {
+std::string TextFile::CopyText() {
 	std::string text = "";
 	if (!is_loaded) return text;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -453,7 +605,7 @@ std::string TextFile::CopyText(std::vector<Cursor*>& cursors) {
 	return text;
 }
 
-void TextFile::PasteText(std::vector<Cursor*>& cursors, std::string text) {
+void TextFile::PasteText(std::string text) {
 	if (!is_loaded) return;
 	std::vector<std::string> pasted_lines;
 	lng start = 0;
@@ -480,9 +632,9 @@ void TextFile::PasteText(std::vector<Cursor*>& cursors, std::string text) {
 	pasted_lines.push_back(text.substr(start, current - start));
 
 	if (pasted_lines.size() == 1) {
-		InsertText(pasted_lines[0], cursors);
+		InsertText(pasted_lines[0]);
 	} else {
-		AddNewLines(cursors, pasted_lines, false);
+		AddNewLines(pasted_lines, false);
 	}
 }
 
@@ -550,7 +702,7 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 	}
 }
 void
-TextFile::DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction) {
+TextFile::DeleteCharacter(MultipleDelta* delta, PGDirection direction) {
 	if (!is_loaded) return;
 	bool delete_selection = CursorsContainSelection(cursors);
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -558,20 +710,20 @@ TextFile::DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, P
 	}
 }
 
-void TextFile::DeleteCharacter(std::vector<Cursor*>& cursors, PGDirection direction) {
+void TextFile::DeleteCharacter(PGDirection direction) {
 	if (!is_loaded) return;
 	MultipleDelta* delta = new MultipleDelta();
-	DeleteCharacter(delta, cursors, direction);
+	DeleteCharacter(delta, direction);
 	if (delta->deltas.size() == 0) {
 		delete delta;
 		return;
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(textfield, cursors);
+	Cursor::NormalizeCursors(this, cursors);
 }
 
-void TextFile::DeleteWord(std::vector<Cursor*>& cursors, PGDirection direction) {
+void TextFile::DeleteWord(PGDirection direction) {
 	if (!is_loaded) return;
 	MultipleDelta* delta = new MultipleDelta();
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -601,22 +753,22 @@ void TextFile::DeleteWord(std::vector<Cursor*>& cursors, PGDirection direction) 
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(textfield, cursors);
+	Cursor::NormalizeCursors(this, cursors);
 }
 
-void TextFile::AddNewLine(std::vector<Cursor*>& cursors) {
+void TextFile::AddNewLine() {
 	if (!is_loaded) return;
-	AddNewLine(cursors, "");
+	AddNewLine("");
 }
 
-void TextFile::AddNewLine(std::vector<Cursor*>& cursors, std::string text) {
+void TextFile::AddNewLine(std::string text) {
 	if (!is_loaded) return;
 	std::vector<std::string> lines;
 	lines.push_back(text);
-	AddNewLines(cursors, lines, true);
+	AddNewLines(lines, true);
 }
 
-void TextFile::AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::string>& added_text, bool first_is_newline) {
+void TextFile::AddNewLines(std::vector<std::string>& added_text, bool first_is_newline) {
 	if (!is_loaded) return;
 	MultipleDelta* delta = new MultipleDelta();
 	if (CursorsContainSelection(cursors)) {
@@ -654,17 +806,17 @@ void TextFile::AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::strin
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
-	Cursor::NormalizeCursors(textfield, cursors);
+	Cursor::NormalizeCursors(this, cursors);
 }
 
-void TextFile::Undo(std::vector<Cursor*>& cursors) {
+void TextFile::Undo() {
 	if (!is_loaded) return;
 	if (this->deltas.size() == 0) return;
 	TextDelta* delta = this->deltas.back();
-	textfield->ClearCursors(cursors);
+	this->ClearCursors();
 	std::vector<lng> invalidated_lines;
 	Lock();
-	this->Undo(delta, invalidated_lines, cursors);
+	this->Undo(delta, invalidated_lines);
 	Unlock();
 	InvalidateParsing(invalidated_lines);
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
@@ -672,15 +824,17 @@ void TextFile::Undo(std::vector<Cursor*>& cursors) {
 	this->redos.push_back(delta);
 }
 
-void TextFile::Redo(std::vector<Cursor*>& cursors) {
+void TextFile::Redo() {
 	if (!is_loaded) return;
 	if (this->redos.size() == 0) return;
 	TextDelta* delta = this->redos.back();
-	textfield->ClearCursors(cursors);
-	this->Redo(delta, cursors);
+	this->ClearCursors();
+	this->Redo(delta);
 	this->PerformOperation(delta, false);
 	this->redos.pop_back();
 	this->deltas.push_back(delta);
+	// FIXME is this necessary?
+	//Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::AddDelta(TextDelta* delta) {
@@ -943,7 +1097,7 @@ void TextFile::PerformOperation(TextDelta* delta, std::vector<lng>& invalidated_
 	}
 }
 
-void TextFile::Undo(TextDelta* delta, std::vector<lng>& invalidated_lines, std::vector<Cursor*>& cursors) {
+void TextFile::Undo(TextDelta* delta, std::vector<lng>& invalidated_lines) {
 	assert(delta);
 	CursorDelta* cursor_delta = dynamic_cast<CursorDelta*>(delta);
 	if (cursor_delta && cursor_delta->cursor) {
@@ -1024,7 +1178,7 @@ void TextFile::Undo(TextDelta* delta, std::vector<lng>& invalidated_lines, std::
 		MultipleDelta* multi = (MultipleDelta*)delta;
 		assert(multi->deltas.size() > 0);
 		for (lng index = multi->deltas.size() - 1; index >= 0; index--) {
-			Undo(multi->deltas[index], invalidated_lines, cursors);
+			Undo(multi->deltas[index], invalidated_lines);
 		}
 		break;
 	}
@@ -1033,7 +1187,7 @@ void TextFile::Undo(TextDelta* delta, std::vector<lng>& invalidated_lines, std::
 	}
 }
 
-void TextFile::Redo(TextDelta* delta, std::vector<Cursor*>& cursors) {
+void TextFile::Redo(TextDelta* delta) {
 	assert(delta);
 	CursorDelta* cursor_delta = dynamic_cast<CursorDelta*>(delta);
 	if (cursor_delta && cursor_delta->cursor) {
@@ -1057,7 +1211,7 @@ void TextFile::Redo(TextDelta* delta, std::vector<Cursor*>& cursors) {
 		MultipleDelta* multi = (MultipleDelta*)delta;
 		assert(multi->deltas.size() > 0);
 		for (auto it = multi->deltas.begin(); it != multi->deltas.end(); it++) {
-			Redo(*it, cursors);
+			Redo(*it);
 		}
 		break;
 	}

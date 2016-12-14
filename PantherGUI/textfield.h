@@ -16,7 +16,6 @@ struct TextSelection {
 #define SCROLLBAR_WIDTH 16
 
 class TextField : public Control {
-	friend class Cursor;
 public:
 	TextField(PGWindowHandle, std::string filename, bool immediate_load = false);
 
@@ -38,20 +37,11 @@ public:
 	void InvalidateScrollbar();
 	void InvalidateMinimap();
 
-	lng GetLineOffset() { return lineoffset_y; }
-	void SetLineOffset(lng offset) { lineoffset_y = offset; }
+	void RefreshCursors();
 	int GetLineHeight();
-	void DisplayCarets();
 
-	void ClearCursors(std::vector<Cursor*>&);
-
-	Cursor*& GetActiveCursor() { return active_cursor; }
 	TextFile& GetTextFile() { return textfile; }
-	std::vector<Cursor*>& GetCursors() { return cursors; }
 private:
-	int offset_x;
-	lng lineoffset_y;
-	std::vector<Cursor*> cursors;
 	PGScalar text_offset;
 	PGScalar line_height;
 	PGScalar minimap_line_height;
@@ -87,14 +77,12 @@ private:
 	lng GetMinimapStartLine();
 	void SetMinimapOffset(PGScalar offset);
 
-	Cursor* active_cursor;
 	TextFile textfile;
 
 	MouseClickInstance last_click;
 
 	void DrawTextField(PGRendererHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
-	void ClearExtraCursors();
 	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character, bool clip_character = true);
 	bool SetScrollOffset(lng offset);
 };

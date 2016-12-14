@@ -32,34 +32,34 @@ class TextField;
 struct Interval;
 
 class TextFile {
+	friend class Cursor;
 public:
-	TextFile(std::string filename);
-	TextFile(std::string filename, TextField* textfield, bool immediate_load = false);
+	TextFile(TextField* textfield, std::string filename, bool immediate_load = false);
 	~TextFile();
 
 	TextLine* GetLine(lng linenumber);
-	void InsertText(char character, std::vector<Cursor*>& cursors);
-	void InsertText(std::string text, std::vector<Cursor*>& cursors);
-	void DeleteCharacter(std::vector<Cursor*>& cursors, PGDirection direction);
-	void DeleteWord(std::vector<Cursor*>& cursors, PGDirection direction);
-	void AddNewLine(std::vector<Cursor*>& cursors);
-	void AddNewLine(std::vector<Cursor*>& cursors, std::string text);
-	void AddNewLines(std::vector<Cursor*>& cursors, std::vector<std::string>& lines, bool first_is_newline);
-	void DeleteLines(std::vector<Cursor*>& cursors);
-	void DeleteLine(std::vector<Cursor*>& cursors, PGDirection direction);
-	void AddEmptyLine(std::vector<Cursor*>& cursors, PGDirection direction);
-	void MoveLines(std::vector<Cursor*>& cursors, int offset);
+	void InsertText(char character);
+	void InsertText(std::string text);
+	void DeleteCharacter(PGDirection direction);
+	void DeleteWord(PGDirection direction);
+	void AddNewLine();
+	void AddNewLine(std::string text);
+	void AddNewLines(std::vector<std::string>& lines, bool first_is_newline);
+	void DeleteLines();
+	void DeleteLine(PGDirection direction);
+	void AddEmptyLine(PGDirection direction);
+	void MoveLines(int offset);
 
-	std::string CopyText(std::vector<Cursor*>& cursors);
-	void PasteText(std::vector<Cursor*>& cursors, std::string text);
+	std::string CopyText();
+	void PasteText(std::string text);
 
 	void ChangeLineEnding(PGLineEnding lineending);
 	void ChangeFileEncoding(PGFileEncoding encoding);
 	void ChangeIndentation(PGLineIndentation indentation);
 	void RemoveTrailingWhitespace();
 
-	void Undo(std::vector<Cursor*>& cursors);
-	void Redo(std::vector<Cursor*>& cursors);
+	void Undo();
+	void Redo();
 
 	void SaveChanges();
 
@@ -74,8 +74,44 @@ public:
 
 	bool IsLoaded() { return is_loaded; }
 	double LoadPercentage() { return loaded; }
+
+	void ClearExtraCursors();
+	void ClearCursors();
+	void SetCursorLocation(lng line, lng character);
+	void AddNewCursor(lng line, lng character);
+	void SelectEverything();
+	void OffsetLine(lng offset);
+	void OffsetSelectionLine(lng offset);
+	void OffsetCharacter(lng offset);
+	void OffsetSelectionCharacter(lng offset);
+	void OffsetWord(PGDirection);
+	void OffsetSelectionWord(PGDirection);
+	void OffsetStartOfLine();
+	void SelectStartOfLine();
+	void OffsetStartOfFile();
+	void SelectStartOfFile();
+	void OffsetEndOfLine();
+	void SelectEndOfLine();
+	void OffsetEndOfFile();
+	void SelectEndOfFile();
+
+	void RefreshCursors();
+	int GetLineHeight();
+
+	lng GetLineOffset() { return lineoffset_y; }
+	void SetLineOffset(lng offset) { lineoffset_y = offset; }
+	void OffsetLineOffset(lng offset);
+	Cursor*& GetActiveCursor();
+	std::vector<Cursor*>& GetCursors() { return cursors; }
 private:
-	void DeleteCharacter(MultipleDelta* delta, std::vector<Cursor*>& cursors, PGDirection direction);
+	TextField* textfield;
+
+	int offset_x;
+	lng lineoffset_y;
+	std::vector<Cursor*> cursors;
+	Cursor* active_cursor;
+
+	void DeleteCharacter(MultipleDelta* delta, PGDirection direction);
 	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection, bool include_cursor = true);
 
 	void OpenFile(std::string filename);
@@ -84,9 +120,9 @@ private:
 
 	void PerformOperation(TextDelta* delta, bool adjust_delta = true);
 	void PerformOperation(TextDelta* delta, std::vector<lng>& invalidated_lines, bool adjust_delta = true);
-	void Undo(TextDelta* delta, std::vector<lng>& invalidated_lines, std::vector<Cursor*>& cursors);
-	void Redo(TextDelta* delta, std::vector<Cursor*>& cursors);
-	std::vector<Interval> GetCursorIntervals(std::vector<Cursor*>& cursors);
+	void Undo(TextDelta* delta, std::vector<lng>& invalidated_lines);
+	void Redo(TextDelta* delta);
+	std::vector<Interval> GetCursorIntervals();
 
 	Task* current_task;
 	static void RunHighlighter(Task* task, TextFile* textfile);
@@ -98,7 +134,6 @@ private:
 	bool is_loaded;
 	double loaded;
 
-	TextField* textfield;
 	std::vector<TextLine*> lines;
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;

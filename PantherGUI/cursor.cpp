@@ -316,14 +316,14 @@ std::string Cursor::GetText() {
 	return text;
 }
 
-void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursors, bool scroll_textfield) {
-	textfield->DisplayCarets();
+void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield) {
+	// FIXME
 	for (int i = 0; i < cursors.size(); i++) {
 		for (int j = i + 1; j < cursors.size(); j++) {
 			if (cursors[i]->OverlapsWith(*cursors[j])) {
 				cursors[i]->Merge(*cursors[j]);
-				if (textfield->active_cursor == cursors[j]) {
-					textfield->active_cursor = cursors[i];
+				if (textfile->active_cursor == cursors[j]) {
+					textfile->active_cursor = cursors[i];
 				}
 				delete cursors[j];
 				cursors.erase(cursors.begin() + j);
@@ -332,8 +332,8 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 			}
 		}
 		if (cursors[i]->start_line >= cursors[i]->file->GetLineCount()) {
-			if (textfield->active_cursor == cursors[i]) {
-				textfield->active_cursor = nullptr;
+			if (textfile->active_cursor == cursors[i]) {
+				textfile->active_cursor = nullptr;
 			}
 			delete cursors[i];
 			cursors.erase(cursors.begin() + i);
@@ -342,8 +342,8 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 		}
 		assert(cursors[i]->start_character >= 0);
 		if (cursors[i]->start_character > cursors[i]->file->GetLine(cursors[i]->start_line)->GetLength()) {
-			if (textfield->active_cursor == cursors[i]) {
-				textfield->active_cursor = nullptr;
+			if (textfile->active_cursor == cursors[i]) {
+				textfile->active_cursor = nullptr;
 			}
 			delete cursors[i];
 			cursors.erase(cursors.begin() + i);
@@ -353,9 +353,10 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 	}
 	assert(cursors.size() > 0);
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
+	textfile->RefreshCursors();
 	if (scroll_textfield) {
-		lng line_offset = textfield->GetLineOffset();
-		lng line_height = textfield->GetLineHeight();
+		lng line_offset = textfile->GetLineOffset();
+		lng line_height = textfile->GetLineHeight();
 		lng line_start = line_offset;
 		lng line_end = line_start + line_height;
 		lng cursor_min = INT_MAX, cursor_max = 0;
@@ -364,7 +365,7 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 			cursor_min = std::min(cursor_min, cursor_line);
 			cursor_max = std::max(cursor_max, cursor_line);
 		}
-		if (cursor_max - cursor_min > textfield->GetLineHeight()) {
+		if (cursor_max - cursor_min > textfile->GetLineHeight()) {
 			// cursors are too far apart to show everything, just show the first one
 			line_offset = cursor_min;
 		} else if (cursor_max > line_end) {
@@ -374,12 +375,12 @@ void Cursor::NormalizeCursors(TextField* textfield, std::vector<Cursor*>& cursor
 			// cursor is located before the start of what is visible, offset the view
 			line_offset = cursor_min;
 		}
-		textfield->SetLineOffset(line_offset);
+		textfile->SetLineOffset(line_offset);
 	}
-	VerifyCursors(textfield, cursors);
+	VerifyCursors(cursors);
 }
 
-void Cursor::VerifyCursors(TextField* textfield, std::vector<Cursor*>& cursors) {
+void Cursor::VerifyCursors(std::vector<Cursor*>& cursors) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		assert((*it)->start_character >= 0 && (*it)->end_character >= 0 &&
 			(*it)->start_character <= (*it)->file->GetLine((*it)->start_line)->GetLength() &&
