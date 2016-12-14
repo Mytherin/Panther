@@ -142,7 +142,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextField* textField = new TextField(res, "E:\\killinginthenameof.xml");
+	TextField* textField = new TextField(res, "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
 	textField->width = 1000;
 	textField->height = 670;
 	textField->x = 0;

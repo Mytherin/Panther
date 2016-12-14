@@ -12,14 +12,12 @@ struct TextLine {
 	friend class TextFile;
 public:
 	lng GetLength(void);
-	char* GetLine(void); // FIXME std::string&
+	char* GetLine(void);
 	void AddDelta(TextDelta* delta);
 	void RemoveDelta(TextDelta* delta);
 	TextDelta* PopDelta();
-
-	void ApplyDeltas();
-
-	TextLine(char* line, lng length) : line(line, length), deltas(nullptr), syntax(), applied_deltas(nullptr) {}
+	
+	TextLine(char* line, lng length) : line(line, length), syntax(), applied_deltas(nullptr) {}
 	TextLine(const TextLine&);
 	~TextLine();
 
@@ -28,6 +26,5 @@ private:
 	void UndoDelta(TextDelta* delta);
 
 	std::string line;
-	TextDelta* deltas;
 	TextDelta* applied_deltas;
 };

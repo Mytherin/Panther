@@ -87,6 +87,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	}
 	lng block = -1;
 	bool parsed = false;
+	textfile.Lock();
 	while ((current_line = textfile.GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
 		if (position_y > rectangle->y + rectangle->height) break;
@@ -94,9 +95,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 			// render the actual text
 			lng new_block = textfile.GetBlock(linenr);
 			if (new_block != block) {
-				if (block >= 0)
-					textfile.UnlockBlock(block);
-				textfile.LockBlock(new_block);
 				block = new_block;
 				parsed = textfile.BlockIsParsed(block);
 			}
@@ -171,8 +169,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 		linenr++;
 		position_y += line_height;
 	}
-	if (block >= 0)
-		textfile.UnlockBlock(block);
+	textfile.Unlock();
 	// render the selection and carets
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		lng startline = std::max((*it)->BeginLine(), start_line);

@@ -5,7 +5,6 @@
 
 TextLine::TextLine(const TextLine& other) {
 	this->line = other.line;
-	this->deltas =  other.deltas;
 	this->applied_deltas = other.applied_deltas;
 	syntax.end = -1;
 	syntax.next = nullptr;
@@ -22,22 +21,19 @@ TextLine::~TextLine() {
 }
 
 lng TextLine::GetLength(void) {
-	if (!deltas) return line.size(); // no deltas, return original length
-	ApplyDeltas();
 	return line.size();
 }
 
 char* TextLine::GetLine(void) {
-	if (!deltas) return (char*)line.c_str(); // no deltas, return original line
-	ApplyDeltas();
 	return (char*)line.c_str();
 }
 
-void TextLine::ApplyDeltas() {
-	TextDelta* delta = this->deltas;
+void TextLine::AddDelta(TextDelta* delta) {
+	// check for invalid delta
+	assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
 	TextDelta* next;
-	this->deltas = nullptr;
 	while (delta) {
+		assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
 		// apply the delta to the text line
 		if (delta->TextDeltaType() == PGDeltaAddText) {
 			AddText* add = (AddText*) delta;
@@ -56,37 +52,10 @@ void TextLine::ApplyDeltas() {
 	}
 }
 
-void TextLine::AddDelta(TextDelta* delta) {
-	// check for invalid delta
-	assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
-	if (this->deltas == nullptr) {
-		this->deltas = delta;
-		delta->next = nullptr;
-	} else {
-		TextDelta* current = this->deltas;
-		while (current->next) current = current->next;
-		assert(current != delta);
-		current->next = delta;
-	}
-}
-
 void TextLine::RemoveDelta(TextDelta* delta) {
-	TextDelta* current = this->deltas;
-	TextDelta* prev = nullptr;
-	do {
-		if (current == delta) {
-			if (!prev) {
-				this->deltas = current->next;
-			} else {
-				prev->next = current->next;
-			}
-			delete current;
-			return;
-		}
-	} while ((prev = current) && (current = current->next) != nullptr);
-	// the delta has already been applied, reverse it
+	// we only support removing the most recently applied delta
 	assert(this->applied_deltas == delta);
-	current = this->applied_deltas;
+	TextDelta* current = this->applied_deltas;
 	this->applied_deltas = this->applied_deltas->next;
 	if (current) {
 		UndoDelta(current);
@@ -98,29 +67,14 @@ void TextLine::RemoveDelta(TextDelta* delta) {
 }
 
 TextDelta* TextLine::PopDelta() {
-	TextDelta *delta = this->deltas;
-	TextDelta *prev = nullptr;
-	if (delta) {
-		// there are unapplied deltas, remove the last unapplied delta
-		while (delta->next) {
-			prev = delta;
-			delta = delta->next;
-		}
-		if (!prev)
-			this->deltas = nullptr;
-		else
-			prev->next = nullptr;
-		return delta;
-	} else {
-		// otherwise, undo the last applied delta
-		delta = this->applied_deltas;
+	// undo the last applied delta
+	TextDelta* delta = this->applied_deltas;
 
-		if (!delta) return nullptr;
+	if (!delta) return nullptr;
 
-		this->applied_deltas = delta->next;
-		UndoDelta(delta);
-		return delta;
-	}
+	this->applied_deltas = delta->next;
+	UndoDelta(delta);
+	return delta;
 }
 
 void TextLine::UndoDelta(TextDelta* delta) {

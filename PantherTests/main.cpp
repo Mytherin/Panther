@@ -58,10 +58,14 @@ std::string Testerino(TextField* textField);
 int main() {
 	Tester tester;
 	// FIXME: highlighting leads to non-deterministic test failures
-	/*
+	
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(8);
-	*/
+	
+	for (int i = 0; i < 100; i++) {
+		tester.RunTextFieldTest("Simple Insert Newline", SimpleInsertNewline, "hello world", "hello\n\n world");
+	}
+	
 	tester.RunTextFieldTest("Simple Deletion", SimpleDeletion, "hello world", "hllo world");
 	tester.RunTextFieldTest("Forward Deletion", ForwardDeletion, "hello world", "ello world");
 	tester.RunTextFieldTest("Forward Word Deletion", ForwardWordDeletion, "hello world", " world");

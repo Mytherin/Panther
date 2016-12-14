@@ -66,8 +66,8 @@ public:
 	PGLineEnding GetLineEnding() { return lineending; }
 	lng GetLineCount();
 
-	void LockBlock(lng block);
-	void UnlockBlock(lng block);
+	void Lock();
+	void Unlock();
 	lng GetBlock(lng linenr) { return linenr / TEXTBLOCK_SIZE; }
 	lng GetMaximumBlocks() { return lines.size() % TEXTBLOCK_SIZE == 0 ? GetBlock(lines.size()) : GetBlock(lines.size()) + 1; }
 	bool BlockIsParsed(lng block) { return parsed_blocks[block].parsed; }
@@ -99,12 +99,11 @@ private:
 	double loaded;
 
 	TextField* textfield;
-	//PGMemoryMappedFileHandle file;
-	std::vector<TextLine> lines;
+	std::vector<TextLine*> lines;
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
 	std::vector<TextBlock> parsed_blocks;
-	std::vector<PGMutexHandle> block_locks;
+	PGMutexHandle text_lock;
 	std::string path;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
