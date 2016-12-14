@@ -24,7 +24,7 @@ static SkPaint::Style PGStyleConvert(PGStyle style) {
 	return SkPaint::kFill_Style;
 }
 
-void RenderControlsToBitmap(SkBitmap& bitmap, PGIRect rect, std::vector<Control*> controls, char* default_font) {
+void RenderControlsToBitmap(SkBitmap& bitmap, PGIRect rect, ControlManager* manager, char* default_font) {
 	SkPaint paint;
 	SkPaint textpaint;
 	PGRenderer renderer;
@@ -48,9 +48,7 @@ void RenderControlsToBitmap(SkBitmap& bitmap, PGIRect rect, std::vector<Control*
 	renderer.paint = &paint;
 	renderer.textpaint = &textpaint;
 
-	for (auto it = controls.begin(); it != controls.end(); it++) {
-		(*it)->Draw(&renderer, &rect);
-	}
+	manager->Draw(&renderer, &rect);
 }
 
 

@@ -17,7 +17,7 @@ public:
 	PGScalar width, height;
 	PGAnchor anchor;
 
-	Control(PGWindowHandle window);
+	Control(PGWindowHandle window, bool reg);
 
 	virtual void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	virtual void KeyboardButton(PGButton button, PGModifier modifier);
@@ -35,6 +35,8 @@ public:
 	virtual void Invalidate();
 	virtual void Invalidate(PGIRect);
 	virtual void Invalidate(PGRect);
+
+	bool visible;
 protected:
 	PGWindowHandle window;
 	bool HasFocus();

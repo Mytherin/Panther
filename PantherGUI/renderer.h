@@ -10,5 +10,6 @@
 #include <SkSurface.h>
 #include <SkPath.h>
 #include <SkTypeface.h>
+#include "controlmanager.h"
 
-void RenderControlsToBitmap(SkBitmap& bitmap, PGIRect rect, std::vector<Control*> controls, char* default_font);
+void RenderControlsToBitmap(SkBitmap& bitmap, PGIRect rect, ControlManager* manager, char* default_font);

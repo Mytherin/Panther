@@ -17,7 +17,7 @@ struct TextSelection {
 
 class TextField : public Control {
 public:
-	TextField(PGWindowHandle, std::string filename, bool immediate_load = false);
+	TextField(PGWindowHandle, TextFile* file);
 
 	void PeriodicRender(void);
 	void Draw(PGRendererHandle, PGIRect*);
@@ -40,7 +40,7 @@ public:
 	void RefreshCursors();
 	int GetLineHeight();
 
-	TextFile& GetTextFile() { return textfile; }
+	TextFile& GetTextFile() { return *textfile; }
 private:
 	PGScalar text_offset;
 	PGScalar line_height;
@@ -77,7 +77,7 @@ private:
 	lng GetMinimapStartLine();
 	void SetMinimapOffset(PGScalar offset);
 
-	TextFile textfile;
+	TextFile* textfile;
 
 	MouseClickInstance last_click;
 

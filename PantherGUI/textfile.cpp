@@ -21,8 +21,9 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 	delete info;
 }
 
-TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr) {
+TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr), path(path) {
 	cursors.push_back(new Cursor(this));
+	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	this->current_task = nullptr;
 	this->text_lock = CreateMutex();
 	loaded = 0;
@@ -88,10 +89,12 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 }
 
 void TextFile::RefreshCursors() {
+	if (!textfield) return;
 	textfield->RefreshCursors();
 }
 
 int TextFile::GetLineHeight() {
+	if (!textfield) return -1;
 	return textfield->GetLineHeight();
 }
 
@@ -130,7 +133,6 @@ void TextFile::Unlock() {
 
 void TextFile::OpenFile(std::string path) {
 	lng size = 0;
-	this->path = path;
 	char* base = (char*)PGmmap::ReadFile(path, size);
 	if (!base || size < 0) {
 		// FIXME: proper error message

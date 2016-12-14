@@ -21,6 +21,7 @@ typedef enum {
 } PGLineEnding;
 
 PGLineEnding GetSystemLineEnding();
+char GetSystemPathSeparator();
 
 typedef enum {
 	PGIndentionSpaces,
@@ -103,7 +104,13 @@ public:
 	void OffsetLineOffset(lng offset);
 	Cursor*& GetActiveCursor();
 	std::vector<Cursor*>& GetCursors() { return cursors; }
+	void SetTextField(TextField* textfield) { this->textfield = textfield; }
+	std::string GetFullPath() { return path; }
+	std::string GetName() { return name; }
 private:
+	std::string path;
+	std::string name;
+
 	TextField* textfield;
 
 	int offset_x;
@@ -139,7 +146,6 @@ private:
 	std::vector<TextDelta*> redos;
 	std::vector<TextBlock> parsed_blocks;
 	PGMutexHandle text_lock;
-	std::string path;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
 

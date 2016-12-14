@@ -5,6 +5,9 @@
 #include "control.h"
 #include "textfield.h"
 #include "scheduler.h"
+#include "filemanager.h"
+#include "tabcontrol.h"
+#include "controlmanager.h"
 
 #include <malloc.h>
 
@@ -17,13 +20,10 @@ struct PGWindow {
 public:
 	PGModifier modifier;
 	HWND hwnd;
-	std::vector<Control*> registered_refresh;
-	Control *focused_control;
-	PGIRect invalidated_area;
+	ControlManager* manager;
 	PGCursorType cursor_type;
-	bool invalidated;
 
-	PGWindow() : modifier(PGModifierNone), invalidated_area(0, 0, 0, 0), invalidated(false) {}
+	PGWindow() : modifier(PGModifierNone) {}
 };
 
 struct PGTimer {
@@ -41,16 +41,7 @@ HCURSOR cursor_wait = nullptr;
 #define MAX_REFRESH_FREQUENCY 1000/30
 
 void PeriodicWindowRedraw(void) {
-	for (auto it = global_handle->registered_refresh.begin(); it != global_handle->registered_refresh.end(); it++) {
-		(*it)->PeriodicRender();
-	}
-	if (global_handle->invalidated) {
-		RedrawWindow(global_handle);
-	} else if (global_handle->invalidated_area.width != 0) {
-		RedrawWindow(global_handle, global_handle->invalidated_area);
-	}
-	global_handle->invalidated = 0;
-	global_handle->invalidated_area.width = 0;
+	global_handle->manager->PeriodicRender();
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -80,7 +71,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
-	
+
 	if (!RegisterClassEx(&wcex)) {
 		MessageBox(nullptr,
 			_T("Call to RegisterClassEx failed!"),
@@ -131,10 +122,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
 	res->cursor_type = PGCursorStandard;
+	res->manager = nullptr;
 	global_handle = res;
 
+	res->manager = new ControlManager(res);
+
 	CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
-	
+
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(8);
 
@@ -142,12 +136,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextField* textField = new TextField(res, "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
+	TabControl* tabs = new TabControl(res);
+	tabs->width = 1000;
+	tabs->height = 20;
+	tabs->x = 0;
+	tabs->y = 0;
+	tabs->anchor = PGAnchorLeft | PGAnchorRight;
+
+	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
+	TextField* textField = new TextField(res, textfile);
 	textField->width = 1000;
 	textField->height = 670;
 	textField->x = 0;
-	textField->y = 30;
+	textField->y = 20;
 	textField->anchor = PGAnchorBottom | PGAnchorLeft | PGAnchorRight;
+
+
+
+
 
 
 	// The parameters to ShowWindow explained:
@@ -178,17 +184,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ps.rcPaint.right - ps.rcPaint.left,
 			ps.rcPaint.bottom - ps.rcPaint.top);
 
-		RenderControlsToBitmap(bitmap, rect, global_handle->registered_refresh, "Consolas");
+		RenderControlsToBitmap(bitmap, rect, global_handle->manager, "Consolas");
 
 		BITMAPINFO bmi;
 		memset(&bmi, 0, sizeof(bmi));
-		bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-		bmi.bmiHeader.biWidth       = bitmap.width();
-		bmi.bmiHeader.biHeight      = -bitmap.height(); // top-down image
-		bmi.bmiHeader.biPlanes      = 1;
-		bmi.bmiHeader.biBitCount    = 32;
+		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bmi.bmiHeader.biWidth = bitmap.width();
+		bmi.bmiHeader.biHeight = -bitmap.height(); // top-down image
+		bmi.bmiHeader.biPlanes = 1;
+		bmi.bmiHeader.biBitCount = 32;
 		bmi.bmiHeader.biCompression = BI_RGB;
-		bmi.bmiHeader.biSizeImage   = 0;
+		bmi.bmiHeader.biSizeImage = 0;
 
 		assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
 		bitmap.lockPixels();
@@ -295,11 +301,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		}
 		if (button != PGButtonNone) {
 			// FIXME modifier
-			global_handle->focused_control->KeyboardButton(button, global_handle->modifier);
+			global_handle->manager->KeyboardButton(button, global_handle->modifier);
 		} else if (wParam >= 0x41 && wParam <= 0x5A) {
-			character = (char) wParam;
+			character = (char)wParam;
 			if (global_handle->modifier != PGModifierNone) {
-				global_handle->focused_control->KeyboardCharacter((char)wParam, global_handle->modifier);
+				global_handle->manager->KeyboardCharacter((char)wParam, global_handle->modifier);
 			}
 		}
 		break;
@@ -320,7 +326,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
 	case WM_CHAR:
 		if (wParam < 0x20 || wParam >= 0x7F) break;
-		global_handle->focused_control->KeyboardCharacter((char)wParam, PGModifierNone);
+		global_handle->manager->KeyboardCharacter((char)wParam, PGModifierNone);
 		break;
 	case WM_UNICHAR:
 		assert(0);
@@ -333,9 +339,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
 		int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-		for (auto it = global_handle->registered_refresh.begin(); it != global_handle->registered_refresh.end(); it++) {
-			(*it)->MouseWheel(x, y, zDelta, modifier);
-		}
+		global_handle->manager->MouseWheel(x, y, zDelta, modifier);
 		break;
 	}
 	case WM_LBUTTONDOWN: {
@@ -345,7 +349,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->focused_control->MouseDown(x, y, PGLeftMouseButton, modifier);
+		global_handle->manager->MouseDown(x, y, PGLeftMouseButton, modifier);
 		break;
 	}
 	case WM_LBUTTONUP: {
@@ -355,7 +359,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->focused_control->MouseUp(x, y, PGLeftMouseButton, modifier);
+		global_handle->manager->MouseUp(x, y, PGLeftMouseButton, modifier);
 		break;
 	}
 	case WM_MBUTTONDOWN: {
@@ -365,7 +369,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->focused_control->MouseDown(x, y, PGMiddleMouseButton, modifier);
+		global_handle->manager->MouseDown(x, y, PGMiddleMouseButton, modifier);
 		break;
 	}
 	case WM_MBUTTONUP: {
@@ -375,7 +379,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->focused_control->MouseUp(x, y, PGMiddleMouseButton, modifier);
+		global_handle->manager->MouseUp(x, y, PGMiddleMouseButton, modifier);
 		break;
 	}
 	case WM_MOUSEMOVE: {
@@ -390,7 +394,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		if (wParam & MK_MBUTTON) buttons |= PGMiddleMouseButton;
 		if (wParam & MK_XBUTTON1) buttons |= PGXButton1;
 		if (wParam & MK_XBUTTON2) buttons |= PGXButton2;
-		global_handle->focused_control->MouseMove(x, y, buttons);
+		global_handle->manager->MouseMove(x, y, buttons);
 		break;
 	}
 	case WM_SETCURSOR:
@@ -405,26 +409,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			int width = LOWORD(lParam);
 			int height = HIWORD(lParam);
 			PGSize old_size = GetWindowSize(global_handle);
-			for (auto it = global_handle->registered_refresh.begin(); it != global_handle->registered_refresh.end(); it++) {
-				PGAnchor anchor = (*it)->anchor;
-				if (anchor & PGAnchorLeft && anchor & PGAnchorRight) {
-					(*it)->width = width;
-				} else if (anchor & PGAnchorRight) {
-					(*it)->width = width - (*it)->x;
-				} else if (anchor & PGAnchorLeft) {
-					int old = old_size.width - ((*it)->x + (*it)->width);
-					(*it)->width = (old - width) + (*it)->x;
-				}
-
-				if (anchor & PGAnchorBottom && anchor & PGAnchorTop) {
-					(*it)->height = height;
-				} else if (anchor & PGAnchorBottom) {
-					(*it)->height = height - (*it)->y;
-				} else if (anchor & PGAnchorTop) {
-					int old = old_size.width - ((*it)->y + (*it)->width);
-					(*it)->height = (old - height) + (*it)->y;
-				}
-			}
+			global_handle->manager->Resize(old_size, PGSize(width, height));
 			RedrawWindow(global_handle);
 		}
 		break;
@@ -445,7 +430,7 @@ PGPoint GetMousePosition(PGWindowHandle window) {
 	if (!ScreenToClient(window->hwnd, &point)) {
 		return PGPoint(-1, -1);
 	}
-	return PGPoint((PGScalar) point.x, (PGScalar) point.y);
+	return PGPoint((PGScalar)point.x, (PGScalar)point.y);
 }
 
 PGWindowHandle PGCreateWindow(void) {
@@ -489,24 +474,11 @@ void HideWindow(PGWindowHandle window) {
 }
 
 void RefreshWindow(PGWindowHandle window) {
-	window->invalidated = true;
+	window->manager->RefreshWindow();
 }
 
 void RefreshWindow(PGWindowHandle window, PGIRect rectangle) {
-	// FIXME do not invalidate entire window here
-	window->invalidated = true;
-	if (window->invalidated_area.width == 0) {
-		window->invalidated_area = rectangle;
-	} else {
-		window->invalidated_area.x = min(window->invalidated_area.x, rectangle.x);
-		window->invalidated_area.y = min(window->invalidated_area.y, rectangle.y);
-		window->invalidated_area.width = max(window->invalidated_area.x + window->invalidated_area.width, rectangle.x + rectangle.width) - window->invalidated_area.x;
-		window->invalidated_area.height = max(window->invalidated_area.y + window->invalidated_area.height, rectangle.y + rectangle.height) - window->invalidated_area.y;
-		assert(window->invalidated_area.x <= rectangle.x &&
-			window->invalidated_area.y <= rectangle.y &&
-			window->invalidated_area.x + window->invalidated_area.width >= rectangle.x + rectangle.width &&
-			window->invalidated_area.y + window->invalidated_area.height >= rectangle.y + rectangle.height);
-	}
+	window->manager->RefreshWindow(rectangle);
 }
 
 void RedrawWindow(PGWindowHandle window) {
@@ -529,16 +501,16 @@ PGSize GetWindowSize(PGWindowHandle window) {
 }
 
 Control* GetFocusedControl(PGWindowHandle window) {
-	return window->focused_control;
+	return window->manager->GetFocusedControl();
 }
 
-void RegisterRefresh(PGWindowHandle window, Control *control) {
-	window->focused_control = control;
-	window->registered_refresh.push_back(control);
+void RegisterControl(PGWindowHandle window, Control *control) {
+	if (window->manager != nullptr)
+		window->manager->AddControl(control);
 }
 
 PGTime GetTime() {
-	return (PGTime) GetTickCount();
+	return (PGTime)GetTickCount();
 }
 
 void SetWindowTitle(PGWindowHandle window, char* title) {
@@ -572,6 +544,9 @@ PGLineEnding GetSystemLineEnding() {
 	return PGLineEndingWindows;
 }
 
+char GetSystemPathSeparator() {
+	return '\\';
+}
 
 VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN TimerOrWaitFired) {
 	((PGTimerCallback)lpParam)();

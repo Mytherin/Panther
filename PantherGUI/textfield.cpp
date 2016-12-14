@@ -5,9 +5,12 @@
 #include "logger.h"
 #include "text.h"
 
-TextField::TextField(PGWindowHandle window, std::string filename, bool immediate_load) :
-	Control(window), textfile(this, filename, immediate_load), display_carets(true), display_carets_count(0), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
-	RegisterRefresh(window, this);
+TextField::TextField(PGWindowHandle window, TextFile* file) :
+	Control(window, true), display_carets(true), display_carets_count(0), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
+	assert(file);
+	textfile = file;
+	textfile->SetTextField(this);
+
 	drag_type = PGDragNone;
 	line_height = 19;
 	character_width = 8;
@@ -44,7 +47,7 @@ void TextField::PeriodicRender(void) {
 		display_carets_count = 0;
 		display_carets = !display_carets;
 		lng start_line = LLONG_MAX, end_line = -LLONG_MAX;
-		std::vector<Cursor*> cursors = textfile.GetCursors();
+		std::vector<Cursor*> cursors = textfile->GetCursors();
 		for (auto it = cursors.begin(); it != cursors.end(); it++) {
 			start_line = std::min((*it)->start_line, start_line);
 			end_line = std::max((*it)->start_line, end_line);
@@ -54,15 +57,15 @@ void TextField::PeriodicRender(void) {
 		}
 	}
 
-	if (!textfile.IsLoaded()) {
+	if (!textfile->IsLoaded()) {
 		Invalidate();
 	}
 }
 
 void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
 	// FIXME: respect Width while rendering
-	lng start_line = textfile.GetLineOffset();
-	std::vector<Cursor*> cursors = textfile.GetCursors();
+	lng start_line = textfile->GetLineOffset();
+	std::vector<Cursor*> cursors = textfile->GetCursors();
 	lng linenr = start_line;
 	TextLine *current_line;
 	PGColor selection_color = PGColor(20, 60, 255, 125);
@@ -83,21 +86,21 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 		if (cursors[0]->GetSelectedWord(word_start, word_end) >= 0) {
 			// successfully found a word
 			selected_word = (char*)calloc(1, word_end - word_start + 1);
-			memcpy(selected_word, textfile.GetLine(cursors[0]->BeginLine())->GetLine() + word_start, word_end - word_start);
+			memcpy(selected_word, textfile->GetLine(cursors[0]->BeginLine())->GetLine() + word_start, word_end - word_start);
 		}
 	}
 	lng block = -1;
 	bool parsed = false;
-	textfile.Lock();
-	while ((current_line = textfile.GetLine(linenr)) != nullptr) {
+	textfile->Lock();
+	while ((current_line = textfile->GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
 		if (position_y > rectangle->y + rectangle->height) break;
 		if (!(position_y + line_height < rectangle->y)) {
 			// render the actual text
-			lng new_block = textfile.GetBlock(linenr);
+			lng new_block = textfile->GetBlock(linenr);
 			if (new_block != block) {
 				block = new_block;
-				parsed = textfile.BlockIsParsed(block);
+				parsed = textfile->BlockIsParsed(block);
 			}
 			char* line = current_line->GetLine();
 			lng length = current_line->GetLength();
@@ -170,14 +173,14 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 		linenr++;
 		position_y += line_height;
 	}
-	textfile.Unlock();
+	textfile->Unlock();
 	// render the selection and carets
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		lng startline = std::max((*it)->BeginLine(), start_line);
 		lng endline = std::min((*it)->EndLine(), linenr);
 		position_y = this->y + (startline - start_line) * line_height;
 		for (; startline <= endline; startline++) {
-			current_line = textfile.GetLine(startline);
+			current_line = textfile->GetLine(startline);
 			assert(current_line);
 			lng start, end;
 			if (startline == (*it)->BeginLine()) {
@@ -237,11 +240,11 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	//SetTextAlign(renderer, PGTextAlignRight);
 
 	// determine the width of the line numbers
-	std::vector<Cursor*> cursors = textfile.GetCursors();
-	lng line_count = textfile.GetLineCount();
+	std::vector<Cursor*> cursors = textfile->GetCursors();
+	lng line_count = textfile->GetLineCount();
 	text_offset = 0;
 	if (this->display_linenumbers) {
-		auto line_number = std::to_string(std::max((lng)10, textfile.GetLineCount() + 1));
+		auto line_number = std::to_string(std::max((lng)10, textfile->GetLineCount() + 1));
 		text_offset = 10 + MeasureTextWidth(renderer, line_number.c_str(), line_number.size());
 	}
 	// get the mouse position (for rendering hovers)
@@ -253,10 +256,10 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	// render the line numbers
 	PGScalar position_x = this->x;
 	PGScalar position_y = this->y;
-	lng linenr = textfile.GetLineOffset();
+	lng linenr = textfile->GetLineOffset();
 	if (this->display_linenumbers) {
 		TextLine *current_line;
-		while ((current_line = textfile.GetLine(linenr)) != nullptr) {
+		while ((current_line = textfile->GetLine(linenr)) != nullptr) {
 			// only render lines that fall within the render rectangle
 			if (rectangle && position_y > rectangle->y + rectangle->height) break;
 			if (!rectangle || !(position_y + line_height < rectangle->y)) {
@@ -281,7 +284,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar minimap_width = this->display_minimap ? GetMinimapWidth() : 0;
 	PGScalar textfield_width = this->width - minimap_width;
 
-	if (textfile.IsLoaded()) {
+	if (textfile->IsLoaded()) {
 		DrawTextField(renderer, rectangle, false, this->x + text_offset, this->y, textfield_width, false);
 	} else {
 		PGScalar offset = this->width / 10;
@@ -290,10 +293,10 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		PGScalar padding = 1;
 
 		RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGStyleFill);
-		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * textfile.LoadPercentage(), height), PGColor(20, 60, 255), PGStyleFill);
+		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * textfile->LoadPercentage(), height), PGColor(20, 60, 255), PGStyleFill);
 	}
 	// render the minimap
-	if (textfile.IsLoaded() && this->display_minimap) {
+	if (textfile->IsLoaded() && this->display_minimap) {
 		bool mouse_in_minimap = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH - minimap_width && mouse.x <= this->width - SCROLLBAR_WIDTH;
 		PGIRect minimap_rect = PGIRect(this->x + textfield_width, this->y, minimap_width, this->height);
 
@@ -332,11 +335,11 @@ void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifi
 }
 
 PGScalar TextField::GetScrollbarHeight() {
-	return std::max((PGScalar)16, (this->GetLineHeight() * (this->height - SCROLLBAR_BASE_OFFSET * 2)) / (this->textfile.GetLineCount() + this->GetLineHeight()));;
+	return std::max((PGScalar)16, (this->GetLineHeight() * (this->height - SCROLLBAR_BASE_OFFSET * 2)) / (this->textfile->GetLineCount() + this->GetLineHeight()));;
 }
 
 PGScalar TextField::GetScrollbarOffset() {
-	return SCROLLBAR_BASE_OFFSET + ((textfile.GetLineOffset() * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((lng)1, (this->textfile.GetLineCount() - 1)));
+	return SCROLLBAR_BASE_OFFSET + ((textfile->GetLineOffset() * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((lng)1, (this->textfile->GetLineCount() - 1)));
 }
 
 PGScalar TextField::GetMinimapWidth() {
@@ -350,15 +353,15 @@ PGScalar TextField::GetMinimapHeight() {
 PGScalar TextField::GetMinimapOffset() {
 	lng start_line = GetMinimapStartLine();
 	lng lines_rendered = this->height / minimap_line_height;
-	double percentage = (textfile.GetLineOffset() - start_line) / (double)lines_rendered;
+	double percentage = (textfile->GetLineOffset() - start_line) / (double)lines_rendered;
 	return this->height * percentage;;
 }
 
 lng TextField::GetMinimapStartLine() {
 	lng lines_rendered = this->height / minimap_line_height;
 	// percentage of text
-	double percentage = (double)textfile.GetLineOffset() / textfile.GetLineCount();
-	return std::max((lng)(textfile.GetLineOffset() - (lines_rendered * percentage)), (lng)0);
+	double percentage = (double)textfile->GetLineOffset() / textfile->GetLineCount();
+	return std::max((lng)(textfile->GetLineOffset() - (lines_rendered * percentage)), (lng)0);
 }
 
 void TextField::SetMinimapOffset(PGScalar offset) {
@@ -367,32 +370,32 @@ void TextField::SetMinimapOffset(PGScalar offset) {
 	lng start_line = GetMinimapStartLine();
 	lng lines_rendered = this->height / minimap_line_height;
 	lng lineoffset_y = start_line + (lng)(lines_rendered * percentage);
-	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile.GetLineCount() - 1));
-	textfile.SetLineOffset(lineoffset_y);
+	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile->GetLineCount() - 1));
+	textfile->SetLineOffset(lineoffset_y);
 }
 
 void TextField::SetScrollbarOffset(PGScalar offset) {
 	// compute lineoffset_y from scrollbar offset
-	// offset = SCROLLBAR_BASE_OFFSET + ((this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((lng)1, (this->textfile.GetLineCount() - 1)));
-	// offset - SCROLLBAR_BASE_OFFSET = (this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((lng)1, this->textfile.GetLineCount() - 1);
-	// std::max((lng)1, this->textfile.GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET) = this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)
-	lng lineoffset_y = (lng)((std::max((lng)1, this->textfile.GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET)) / (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET));
-	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile.GetLineCount() - 1));
-	textfile.SetLineOffset(lineoffset_y);
+	// offset = SCROLLBAR_BASE_OFFSET + ((this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((lng)1, (this->textfile->GetLineCount() - 1)));
+	// offset - SCROLLBAR_BASE_OFFSET = (this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((lng)1, this->textfile->GetLineCount() - 1);
+	// std::max((lng)1, this->textfile->GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET) = this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)
+	lng lineoffset_y = (lng)((std::max((lng)1, this->textfile->GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET)) / (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET));
+	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile->GetLineCount() - 1));
+	textfile->SetLineOffset(lineoffset_y);
 }
 
 void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character, bool clip_character) {
 	// find the line position of the mouse
 	// FIXME: account for horizontal scroll
-	lng lineoffset_y = textfile.GetLineOffset();
-	lng line_offset = std::max(std::min((lng)(y / this->line_height), textfile.GetLineCount() - lineoffset_y - 1), (lng)0);
+	lng lineoffset_y = textfile->GetLineOffset();
+	lng line_offset = std::max(std::min((lng)(y / this->line_height), textfile->GetLineCount() - lineoffset_y - 1), (lng)0);
 	line = lineoffset_y + line_offset;
 	// find the character position within the line
 	x = x - this->text_offset;
 	PGScalar width = 0;
 	if (clip_character) {
-		char* text = textfile.GetLine(line)->GetLine();
-		lng length = textfile.GetLine(line)->GetLength();
+		char* text = textfile->GetLine(line)->GetLine();
+		lng length = textfile->GetLine(line)->GetLength();
 		character = length;
 		for (lng i = 0; i < length; i++) {
 			PGScalar char_width = character_width;
@@ -411,16 +414,16 @@ void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, 
 }
 
 void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
-	if (!textfile.IsLoaded()) return;
+	if (!textfile->IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
 	if (button == PGLeftMouseButton) {
 		if (this->display_scrollbar && mouse.x > this->width - SCROLLBAR_WIDTH) {
 			// scrollbar
 			if (mouse.y <= SCROLLBAR_BASE_OFFSET) {
-				textfile.OffsetLineOffset(-1);
+				textfile->OffsetLineOffset(-1);
 				this->Invalidate();
 			} else if (mouse.y >= this->height - SCROLLBAR_BASE_OFFSET) {
-				textfile.OffsetLineOffset(1);
+				textfile->OffsetLineOffset(1);
 				this->Invalidate();
 			} else {
 				PGScalar scrollbar_offset = GetScrollbarOffset();
@@ -433,11 +436,11 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 					this->Invalidate();
 				} else if (mouse.y <= scrollbar_offset) {
 					// mouse click above the scrollbar
-					textfile.OffsetLineOffset(-GetLineHeight());
+					textfile->OffsetLineOffset(-GetLineHeight());
 					this->Invalidate();
 				} else {
 					// mouse click below the scrollbar
-					textfile.OffsetLineOffset(GetLineHeight());
+					textfile->OffsetLineOffset(GetLineHeight());
 					this->Invalidate();
 				}
 			}
@@ -451,11 +454,11 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				PGScalar minimap_height = GetMinimapHeight();
 				if (mouse.y < minimap_offset) {
 					// mouse click above the minimap
-					textfile.OffsetLineOffset(-GetLineHeight());
+					textfile->OffsetLineOffset(-GetLineHeight());
 					this->Invalidate();
 				} else if (mouse.y > minimap_offset + minimap_height) {
 					// mouse click below the minimap
-					textfile.OffsetLineOffset(GetLineHeight());
+					textfile->OffsetLineOffset(GetLineHeight());
 					this->Invalidate();
 				} else {
 					// mouse is on the minimap; enable dragging of the scrollbar
@@ -485,21 +488,21 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		last_click.y = mouse.y;
 
 		if (modifier == PGModifierNone && last_click.clicks == 0) {
-			textfile.SetCursorLocation(line, character);
+			textfile->SetCursorLocation(line, character);
 			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SetCursorLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 		} else if (modifier == PGModifierShift) {
-			textfile.GetActiveCursor()->SetCursorStartLocation(line, character);
+			textfile->GetActiveCursor()->SetCursorStartLocation(line, character);
 			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");"));
 		} else if (modifier == PGModifierCtrl) {
 			Logger::GetInstance()->WriteLogMessage(std::string("active_cursor = new Cursor(&textfile, ") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\n") + std::string("cursors.push_back(active_cursor);"));
-			textfile.AddNewCursor(line, character);
+			textfile->AddNewCursor(line, character);
 		} else if (last_click.clicks == 1) {
-			textfile.SetCursorLocation(line, character);
-			textfile.GetActiveCursor()->SelectWord();
+			textfile->SetCursorLocation(line, character);
+			textfile->GetActiveCursor()->SelectWord();
 			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SetCursorLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\ncursors[0].SelectWord();"));
 		} else if (last_click.clicks == 2) {
-			textfile.SetCursorLocation(line, character);
-			textfile.GetActiveCursor()->SelectLine();
+			textfile->SetCursorLocation(line, character);
+			textfile->GetActiveCursor()->SelectLine();
 			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SelectLine();"));
 		}
 		this->Invalidate();
@@ -508,7 +511,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		drag_type = PGDragSelectionCursors;
 		lng line, character;
 		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-		textfile.SetCursorLocation(line, character);
+		textfile->SetCursorLocation(line, character);
 		this->Invalidate();
 	}
 }
@@ -527,7 +530,7 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 }
 
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
-	if (!textfile.IsLoaded()) return;
+	if (!textfile->IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
 	// FIXME: changing the cursor probably shouldn't be done here, but in the main form
 	if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= (6 * this->width / 7) && mouse.y <= this->height) {
@@ -541,41 +544,41 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			// the active cursor can never "consume" the other selections (they should always stay)
 			lng line, character;
 			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-			Cursor* active_cursor = textfile.GetActiveCursor();
+			Cursor* active_cursor = textfile->GetActiveCursor();
 			if (active_cursor->start_line != line || active_cursor->start_character != character) {
 				lng old_line = active_cursor->start_line;
 				active_cursor->SetCursorStartLocation(line, character);
 				Logger::GetInstance()->WriteLogMessage(std::string("if (!active_cursor) active_cursor = cursors.front();\nactive_cursor->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\nCursor::NormalizeCursors(textfield, cursors, false);"));
-				Cursor::NormalizeCursors(&textfile, textfile.GetCursors(), false);
+				Cursor::NormalizeCursors(textfile, textfile->GetCursors(), false);
 				this->InvalidateBetweenLines(old_line, line);
 			}
 		} else if (drag_type == PGDragScrollbar) {
-			lng current_offset = textfile.GetLineOffset();
+			lng current_offset = textfile->GetLineOffset();
 			SetScrollbarOffset(mouse.y - drag_offset);
-			if (current_offset != textfile.GetLineOffset())
+			if (current_offset != textfile->GetLineOffset())
 				this->Invalidate();
 		} else if (drag_type == PGDragMinimap) {
-			lng current_offset = textfile.GetLineOffset();
+			lng current_offset = textfile->GetLineOffset();
 			SetMinimapOffset(mouse.y - drag_offset);
-			if (current_offset != textfile.GetLineOffset())
+			if (current_offset != textfile->GetLineOffset())
 				this->Invalidate();
 		}
 	} else if (buttons & PGMiddleMouseButton) {
 		if (drag_type == PGDragSelectionCursors) {
 			lng line, character;
 			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character, false);
-			std::vector<Cursor*>& cursors = textfile.GetCursors();
-			Cursor* active_cursor = textfile.GetActiveCursor();
+			std::vector<Cursor*>& cursors = textfile->GetCursors();
+			Cursor* active_cursor = textfile->GetActiveCursor();
 			lng start_character = active_cursor->end_character;
 			lng start_line = active_cursor->end_line;
 			lng increment = line > active_cursor->end_line ? 1 : -1;
 			cursors[0] = active_cursor;
-			textfile.ClearExtraCursors();
+			textfile->ClearExtraCursors();
 			for (auto it = active_cursor->end_line; ; it += increment) {
 				if (it != active_cursor->end_line) {
-					lng line_length = textfile.GetLine(it)->GetLength();
+					lng line_length = textfile->GetLine(it)->GetLength();
 					if (start_character == character || line_length >= start_character) {
-						Cursor* cursor = new Cursor(&textfile, it, start_character);
+						Cursor* cursor = new Cursor(textfile, it, start_character);
 						cursor->end_character = std::min(start_character, line_length);
 						cursor->start_character = std::min(character, line_length);
 						cursors.push_back(cursor);
@@ -586,7 +589,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				}
 			}
 
-			cursors[0]->start_character = std::min(character, textfile.GetLine(cursors[0]->start_line)->GetLength());
+			cursors[0]->start_character = std::min(character, textfile->GetLine(cursors[0]->start_line)->GetLength());
 			this->InvalidateBetweenLines(cursors[0]->start_line, line);
 		}
 	} else {
@@ -612,117 +615,117 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		// FIXME: when moving up/down, maintain the current character number (even though a line is shorter than that number)
 	case PGButtonDown:
 		if (modifier == PGModifierCtrlShift) {
-			textfile.MoveLines(1);
+			textfile->MoveLines(1);
 		} else if (modifier == PGModifierNone) {
-			textfile.OffsetLine(1);
+			textfile->OffsetLine(1);
 		} else if (modifier == PGModifierShift) {
-			textfile.OffsetSelectionLine(1);
+			textfile->OffsetSelectionLine(1);
 		} else if (modifier == PGModifierCtrl) {
-			textfile.OffsetLineOffset(1);
+			textfile->OffsetLineOffset(1);
 		}
 		Invalidate();
 		break;
 	case PGButtonUp:
 		if (modifier == PGModifierCtrlShift) {
-			textfile.MoveLines(-1);
+			textfile->MoveLines(-1);
 		} else if (modifier == PGModifierNone) {
-			textfile.OffsetLine(-1);
+			textfile->OffsetLine(-1);
 		} else if (modifier == PGModifierShift) {
-			textfile.OffsetSelectionLine(-1);
+			textfile->OffsetSelectionLine(-1);
 		} else if (modifier == PGModifierCtrl) {
-			textfile.OffsetLineOffset(-1);
+			textfile->OffsetLineOffset(-1);
 		}
 		Invalidate();
 		break;
 	case PGButtonLeft:
 		if (modifier == PGModifierNone) {
-			textfile.OffsetCharacter(-1);
+			textfile->OffsetCharacter(-1);
 		} else if (modifier == PGModifierShift) {
-			textfile.OffsetSelectionCharacter(-1);
+			textfile->OffsetSelectionCharacter(-1);
 		} else if (modifier == PGModifierCtrl) {
-			textfile.OffsetWord(PGDirectionLeft);
+			textfile->OffsetWord(PGDirectionLeft);
 		} else if (modifier == PGModifierCtrlShift) {
-			textfile.OffsetSelectionWord(PGDirectionLeft);
+			textfile->OffsetSelectionWord(PGDirectionLeft);
 		}
 		Invalidate();
 		break;
 	case PGButtonRight:
 		if (modifier == PGModifierNone) {
-			textfile.OffsetCharacter(1);
+			textfile->OffsetCharacter(1);
 		} else if (modifier == PGModifierShift) {
-			textfile.OffsetSelectionCharacter(1);
+			textfile->OffsetSelectionCharacter(1);
 		} else if (modifier == PGModifierCtrl) {
-			textfile.OffsetWord(PGDirectionRight);
+			textfile->OffsetWord(PGDirectionRight);
 		} else if (modifier == PGModifierCtrlShift) {
-			textfile.OffsetSelectionWord(PGDirectionRight);
+			textfile->OffsetSelectionWord(PGDirectionRight);
 		}
 		Invalidate();
 		break;
 	case PGButtonEnd:
 		if (modifier == PGModifierNone) {
-			textfile.OffsetEndOfLine();
+			textfile->OffsetEndOfLine();
 		} else if (modifier == PGModifierShift) {
-			textfile.SelectEndOfLine();
+			textfile->SelectEndOfLine();
 		} else if (modifier == PGModifierCtrl) {
-			textfile.OffsetEndOfFile();
+			textfile->OffsetEndOfFile();
 		} else if (modifier == PGModifierCtrlShift) {
-			textfile.SelectEndOfFile();
+			textfile->SelectEndOfFile();
 		}
 		Invalidate();
 		break;
 	case PGButtonHome:
 		if (modifier == PGModifierNone) {
-			textfile.OffsetStartOfLine();
+			textfile->OffsetStartOfLine();
 		} else if (modifier == PGModifierShift) {
-			textfile.SelectStartOfLine();
+			textfile->SelectStartOfLine();
 		} else if (modifier == PGModifierCtrl) {
-			textfile.OffsetStartOfFile();
+			textfile->OffsetStartOfFile();
 		} else if (modifier == PGModifierCtrlShift) {
-			textfile.SelectStartOfFile();
+			textfile->SelectStartOfFile();
 		}
 		Invalidate();
 		break;
 	case PGButtonPageUp:
 		if (modifier == PGModifierNone) {
-			textfile.OffsetLine(-GetLineHeight());
+			textfile->OffsetLine(-GetLineHeight());
 			Invalidate();
 		}
 		break;
 	case PGButtonPageDown:
 		if (modifier == PGModifierNone) {
-			textfile.OffsetLine(GetLineHeight());
+			textfile->OffsetLine(GetLineHeight());
 			Invalidate();
 		}
 		break;
 	case PGButtonDelete:
 		if (modifier == PGModifierNone) {
-			this->textfile.DeleteCharacter(PGDirectionRight);
+			this->textfile->DeleteCharacter(PGDirectionRight);
 		} else if (modifier == PGModifierCtrl) {
-			this->textfile.DeleteWord(PGDirectionRight);
+			this->textfile->DeleteWord(PGDirectionRight);
 		} else if (modifier == PGModifierShift) {
-			textfile.DeleteLines();
+			textfile->DeleteLines();
 		} else if (modifier == PGModifierCtrlShift) {
-			this->textfile.DeleteLine(PGDirectionRight);
+			this->textfile->DeleteLine(PGDirectionRight);
 		}
 		this->Invalidate();
 		break;
 	case PGButtonBackspace:
 		if (modifier == PGModifierNone || modifier == PGModifierShift) {
-			this->textfile.DeleteCharacter(PGDirectionLeft);
+			this->textfile->DeleteCharacter(PGDirectionLeft);
 		} else if (modifier == PGModifierCtrl) {
-			this->textfile.DeleteWord(PGDirectionLeft);
+			this->textfile->DeleteWord(PGDirectionLeft);
 		} else if (modifier == PGModifierCtrlShift) {
-			this->textfile.DeleteLine(PGDirectionLeft);
+			this->textfile->DeleteLine(PGDirectionLeft);
 		}
 		this->Invalidate();
 		break;
 	case PGButtonEnter:
 		if (modifier == PGModifierNone) {
-			this->textfile.AddNewLine();
+			this->textfile->AddNewLine();
 		} else if (modifier == PGModifierCtrl) {
-			this->textfile.AddEmptyLine(PGDirectionRight);
+			this->textfile->AddEmptyLine(PGDirectionRight);
 		} else if (modifier == PGModifierCtrlShift) {
-			this->textfile.AddEmptyLine(PGDirectionLeft);
+			this->textfile->AddEmptyLine(PGDirectionLeft);
 		}
 		this->Invalidate();
 	default:
@@ -731,30 +734,30 @@ void TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 }
 
 void TextField::KeyboardCharacter(char character, PGModifier modifier) {
-	if (!textfile.IsLoaded()) return;
+	if (!textfile->IsLoaded()) return;
 
 	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardCharacter(") + std::to_string(character) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
 
 	if (modifier == PGModifierNone) {
-		this->textfile.InsertText(character);
+		this->textfile->InsertText(character);
 		this->Invalidate();
 	} else {
 		if (modifier & PGModifierCtrl) {
 			switch (character) {
 			case 'Z':
-				this->textfile.Undo();
+				this->textfile->Undo();
 				this->Invalidate();
 				break;
 			case 'Y':
-				this->textfile.Redo();
+				this->textfile->Redo();
 				this->Invalidate();
 				break;
 			case 'A':
-				this->textfile.SelectEverything();
+				this->textfile->SelectEverything();
 				this->Invalidate();
 				break;
 			case 'C': {
-				std::string text = textfile.CopyText();
+				std::string text = textfile->CopyText();
 				SetClipboardText(window, text);
 				break;
 			}
@@ -762,13 +765,13 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				if (modifier & PGModifierShift) {
 					// FIXME: cycle through previous copy-pastes
 				} else {
-					textfile.PasteText(GetClipboardText(window));
+					textfile->PasteText(GetClipboardText(window));
 				}
 				this->Invalidate();
 				break;
 			}
 			case 'S': {
-				textfile.SaveChanges();
+				textfile->SaveChanges();
 				break;
 			}
 			}
@@ -782,7 +785,7 @@ void TextField::KeyboardUnicode(char *character, PGModifier modifier) {
 
 void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
-		lng lineoffset_y = textfile.GetLineOffset();
+		lng lineoffset_y = textfile->GetLineOffset();
 		if (SetScrollOffset(lineoffset_y - (distance / 120) * 2)) {
 			this->Invalidate();
 		}
@@ -791,27 +794,27 @@ void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 
 bool
 TextField::SetScrollOffset(lng offset) {
-	lng lineoffset_y = textfile.GetLineOffset();
-	lng new_y = std::min(std::max(offset, (lng)0), (lng)(textfile.GetLineCount() - 1));
+	lng lineoffset_y = textfile->GetLineOffset();
+	lng new_y = std::min(std::max(offset, (lng)0), (lng)(textfile->GetLineCount() - 1));
 	if (new_y != lineoffset_y) {
-		textfile.SetLineOffset(new_y);
+		textfile->SetLineOffset(new_y);
 		return true;
 	}
 	return false;
 }
 
 void TextField::InvalidateLine(lng line) {
-	lng lineoffset_y = textfile.GetLineOffset();
+	lng lineoffset_y = textfile->GetLineOffset();
 	this->Invalidate(PGRect(0, (line - lineoffset_y) * line_height, this->width, line_height));
 }
 
 void TextField::InvalidateBeforeLine(lng line) {
-	lng lineoffset_y = textfile.GetLineOffset();
+	lng lineoffset_y = textfile->GetLineOffset();
 	this->Invalidate(PGRect(0, 0, this->width, (line - lineoffset_y) * line_height));
 }
 
 void TextField::InvalidateAfterLine(lng line) {
-	lng lineoffset_y = textfile.GetLineOffset();
+	lng lineoffset_y = textfile->GetLineOffset();
 	this->Invalidate(PGRect(0, (line - lineoffset_y) * line_height, this->width, this->height));
 }
 
@@ -820,7 +823,7 @@ void TextField::InvalidateBetweenLines(lng start, lng end) {
 		InvalidateBetweenLines(end, start);
 		return;
 	}
-	lng lineoffset_y = textfile.GetLineOffset();
+	lng lineoffset_y = textfile->GetLineOffset();
 	this->Invalidate(PGRect(0, (start - lineoffset_y) * line_height, this->width,
 		(end - lineoffset_y) * line_height - (start - lineoffset_y) * line_height + line_height));
 }

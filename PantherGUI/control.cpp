@@ -7,11 +7,13 @@ const PGAnchor PGAnchorRight = 0x02;
 const PGAnchor PGAnchorTop = 0x04;
 const PGAnchor PGAnchorBottom = 0x08;
 
-Control::Control(PGWindowHandle handle) {
+Control::Control(PGWindowHandle handle, bool reg) {
+	if (reg) RegisterControl(handle, this);
 	this->window = handle;
 	this->x = 0;
 	this->y = 0;
 	this->anchor = PGAnchorNone;
+	this->visible = true;
 }
 
 void Control::Draw(PGRendererHandle handle, PGIRect* rectangle) {

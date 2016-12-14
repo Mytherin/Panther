@@ -43,6 +43,7 @@ struct PGIRect {
 	int width;
 	int height;
 
+	PGIRect() : x(0), y(0), width(0), height(0) { }
 	PGIRect(int x, int y, int width, int height) : x(x), y(y), width(width), height(height) { }
 };
 
@@ -52,9 +53,9 @@ struct PGRect {
 	PGScalar width;
 	PGScalar height;
 
+	PGRect() : x(0), y(0), width(0), height(0) { }
 	PGRect(PGScalar x, PGScalar y, PGScalar width, PGScalar height) : x(x), y(y), width(width), height(height) { }
 };
-
 struct PGLine {
 	PGPoint start;
 	PGPoint end;
@@ -62,6 +63,9 @@ struct PGLine {
 	PGLine(PGPoint start, PGPoint end) : start(start), end(end) { }
 	PGLine(PGScalar startx, PGScalar starty, PGScalar endx, PGScalar endy) : start(startx, starty), end(endx, endy) { }
 };
+
+bool PGRectangleContains(PGRect, PGPoint);
+bool PGRectangleContains(PGIRect, PGPoint);
 
 typedef int PGTextAlign;
 
@@ -231,7 +235,7 @@ bool WindowHasFocus(PGWindowHandle window);
 
 PGPoint GetMousePosition(PGWindowHandle window);
 void SetWindowTitle(PGWindowHandle window, char* title);
-void RegisterRefresh(PGWindowHandle window, Control *callback);
+void RegisterControl(PGWindowHandle window, Control *control);
 
 
 void SetClipboardText(PGWindowHandle window, std::string);
