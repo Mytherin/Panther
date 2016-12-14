@@ -663,7 +663,9 @@ void TextFile::Undo(std::vector<Cursor*>& cursors) {
 	TextDelta* delta = this->deltas.back();
 	textfield->ClearCursors(cursors);
 	std::vector<lng> invalidated_lines;
+	Lock();
 	this->Undo(delta, invalidated_lines, cursors);
+	Unlock();
 	InvalidateParsing(invalidated_lines);
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	this->deltas.pop_back();
