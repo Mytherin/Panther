@@ -35,6 +35,9 @@ struct Interval;
 class TextFile {
 	friend class Cursor;
 public:
+	// create an in-memory textfile with currently unspecified path
+	TextFile(TextField* textfield);
+	// load textfile from a file
 	TextFile(TextField* textfield, std::string filename, bool immediate_load = false);
 	~TextFile();
 
@@ -71,7 +74,7 @@ public:
 	void Unlock();
 	lng GetBlock(lng linenr) { return linenr / TEXTBLOCK_SIZE; }
 	lng GetMaximumBlocks() { return lines.size() % TEXTBLOCK_SIZE == 0 ? GetBlock(lines.size()) : GetBlock(lines.size()) + 1; }
-	bool BlockIsParsed(lng block) { return parsed_blocks[block].parsed; }
+	bool BlockIsParsed(lng block) { return highlighter && parsed_blocks[block].parsed; }
 
 	bool IsLoaded() { return is_loaded; }
 	double LoadPercentage() { return loaded; }

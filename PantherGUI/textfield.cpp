@@ -851,5 +851,6 @@ void TextField::InvalidateMinimap() {
 
 void TextField::SetTextFile(TextFile* textfile) {
 	this->textfile = textfile;
+	textfile->SetTextField(this);
 	this->Invalidate();
 }

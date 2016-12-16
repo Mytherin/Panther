@@ -145,11 +145,11 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 				SwitchToFile(tabs[active_tab].file);
 			} else if (selected_tab == active_tab) {
 				if (tabs.size() == 1) {
-					assert(0);
-					// FIXME: open new file 
-				} else {
-					SwitchToFile(tabs[1].file);
+					// open an in-memory file to replace the current file
+					TextFile* file = FileManager::OpenFile();
+					tabs.push_back(Tab(file));
 				}
+				SwitchToFile(tabs[1].file);
 			}
 			FileManager::CloseFile(tabs[selected_tab].file);
 			tabs.erase(tabs.begin() + selected_tab);

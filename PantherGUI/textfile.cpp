@@ -21,6 +21,15 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 	delete info;
 }
 
+TextFile::TextFile(TextField* textfield) : textfield(textfield), highlighter(nullptr) {
+	cursors.push_back(new Cursor(this));
+	this->path = "";
+	this->name = std::string("untitled");
+	this->text_lock = CreateMutex();
+	this->lines.push_back(new TextLine("", 0));
+	is_loaded = true;
+}
+
 TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr), path(path) {
 	cursors.push_back(new Cursor(this));
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
@@ -116,6 +125,7 @@ void TextFile::InvalidateParsing(lng line) {
 
 void TextFile::InvalidateParsing(std::vector<lng>& invalidated_lines) {
 	assert(is_loaded);
+	if (!highlighter) return;
 	// add any necessary blocks
 	lng maximum_line = parsed_blocks.back().line_start + TEXTBLOCK_SIZE;
 	while (maximum_line <= lines.size()) {
@@ -1242,6 +1252,7 @@ void TextFile::Redo(TextDelta* delta) {
 
 void TextFile::SaveChanges() {
 	if (!is_loaded) return;
+	if (this->path == "") return; // FIXME: in-memory file
 	this->Lock();
 	PGLineEnding line_ending = lineending;
 	if (line_ending != PGLineEndingWindows && line_ending != PGLineEndingMacOS && line_ending != PGLineEndingUnix) {
