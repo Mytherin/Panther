@@ -166,11 +166,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	textField->y = 20;
 	textField->anchor = PGAnchorBottom | PGAnchorLeft | PGAnchorRight;*/
 
-
-
-
-
-
 	// The parameters to ShowWindow explained:
 	// hWnd: the value returned from CreateWindow
 	// nCmdShow: the fourth parameter from WinMain
@@ -404,21 +399,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		global_handle->manager->MouseUp(x, y, PGMiddleMouseButton, modifier);
 		break;
 	}
-	case WM_MOUSEMOVE: {
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-		PGModifier modifier = 0;
-		PGMouseButton buttons = PGMouseButtonNone;
-		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
-		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		if (wParam & MK_LBUTTON) buttons |= PGLeftMouseButton;
-		if (wParam & MK_RBUTTON) buttons |= PGRightMouseButton;
-		if (wParam & MK_MBUTTON) buttons |= PGMiddleMouseButton;
-		if (wParam & MK_XBUTTON1) buttons |= PGXButton1;
-		if (wParam & MK_XBUTTON2) buttons |= PGXButton2;
-		global_handle->manager->MouseMove(x, y, buttons);
-		break;
-	}
 	case WM_SETCURSOR:
 		return 1;
 	case WM_ERASEBKGND:
@@ -453,6 +433,20 @@ PGPoint GetMousePosition(PGWindowHandle window) {
 		return PGPoint(-1, -1);
 	}
 	return PGPoint((PGScalar)point.x, (PGScalar)point.y);
+}
+
+PGMouseButton GetMouseState(PGWindowHandle window) {
+	PGMouseButton button = PGMouseButtonNone;
+	if ((GetKeyState(VK_LBUTTON) & 0x80) != 0) {
+		button |= PGLeftMouseButton;
+	}
+	if ((GetKeyState(VK_RBUTTON) & 0x80) != 0) {
+		button |= PGRightMouseButton;
+	}
+	if ((GetKeyState(VK_MBUTTON) & 0x80) != 0) {
+		button |= PGMiddleMouseButton;
+	}
+	return button;
 }
 
 PGWindowHandle PGCreateWindow(void) {

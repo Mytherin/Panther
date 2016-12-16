@@ -97,8 +97,8 @@ void PGContainer::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 	PGPoint mouse(x - this->x, y - this->y);
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		if (PGRectangleContains((*it)->GetRectangle(), mouse)) {
-			(*it)->MouseMove(x, y, buttons);
+		if ((*it)->IsDragging()) {
+			(*it)->MouseMove(mouse.x, mouse.y, buttons);
 		}
 	}
 }

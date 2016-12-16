@@ -3,7 +3,7 @@
 #include "filemanager.h"
 
 
-TabControl::TabControl(PGWindowHandle window, TextField* textfield) : Control(window, false), active_tab(0), textfield(textfield), drag_tab(false) {
+TabControl::TabControl(PGWindowHandle window, TextField* textfield) : Control(window, false), active_tab(0), textfield(textfield) {
 	std::vector<TextFile*>& files = FileManager::GetFiles();
 	for (auto it = files.begin(); it != files.end(); it++) {
 		this->tabs.push_back(Tab(*it));
@@ -87,34 +87,32 @@ bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
 
 void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 	if (buttons & PGLeftMouseButton) {
-		if (drag_tab) {
-			tabs[active_tab].x = x - drag_offset;
-			if (active_tab != 0) {
-				Tab left_tab = tabs[active_tab - 1];
-				if (tabs[active_tab].x < (left_tab.target_x + left_tab.width / 4)) {
-					Tab current_tab = tabs[active_tab];
-					// switch tabs
-					tabs.erase(tabs.begin() + active_tab);
-					tabs.insert(tabs.begin() + active_tab - 1, current_tab);
-					active_tab--;
-					tabs[active_tab].target_x = tabs[active_tab + 1].target_x;
-					tabs[active_tab + 1].target_x = tabs[active_tab].target_x + tabs[active_tab].width;
-				}
+		tabs[active_tab].x = x - drag_offset;
+		if (active_tab != 0) {
+			Tab left_tab = tabs[active_tab - 1];
+			if (tabs[active_tab].x < (left_tab.target_x + left_tab.width / 4)) {
+				Tab current_tab = tabs[active_tab];
+				// switch tabs
+				tabs.erase(tabs.begin() + active_tab);
+				tabs.insert(tabs.begin() + active_tab - 1, current_tab);
+				active_tab--;
+				tabs[active_tab].target_x = tabs[active_tab + 1].target_x;
+				tabs[active_tab + 1].target_x = tabs[active_tab].target_x + tabs[active_tab].width;
 			}
-			if (active_tab != tabs.size() - 1) {
-				Tab right_tab = tabs[active_tab + 1];
-				if ((tabs[active_tab].x + tabs[active_tab].width) > (right_tab.target_x + right_tab.width / 4)) {
-					Tab current_tab = tabs[active_tab];
-					// switch tabs
-					tabs.erase(tabs.begin() + active_tab);
-					tabs.insert(tabs.begin() + active_tab + 1, current_tab);
-					active_tab++;
-					tabs[active_tab - 1].target_x = tabs[active_tab].target_x;
-					tabs[active_tab].target_x = tabs[active_tab - 1].target_x + tabs[active_tab - 1].width;
-				}
-			}
-			this->Invalidate();
 		}
+		if (active_tab != tabs.size() - 1) {
+			Tab right_tab = tabs[active_tab + 1];
+			if ((tabs[active_tab].x + tabs[active_tab].width) > (right_tab.target_x + right_tab.width / 4)) {
+				Tab current_tab = tabs[active_tab];
+				// switch tabs
+				tabs.erase(tabs.begin() + active_tab);
+				tabs.insert(tabs.begin() + active_tab + 1, current_tab);
+				active_tab++;
+				tabs[active_tab - 1].target_x = tabs[active_tab].target_x;
+				tabs[active_tab].target_x = tabs[active_tab - 1].target_x + tabs[active_tab - 1].width;
+			}
+		}
+		this->Invalidate();
 	} else {
 		drag_tab = false;
 	}

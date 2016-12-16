@@ -46,6 +46,8 @@ public:
 
 	void UpdateParentSize(PGSize old_size, PGSize new_size);
 
+	virtual bool IsDragging();
+
 	bool visible;
 protected:
 	Control* parent;

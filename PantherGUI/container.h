@@ -30,6 +30,8 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
+	bool IsDragging() { return true; }
+
 	void AddControl(Control* control);
 private:
 	std::vector<Control*> controls;

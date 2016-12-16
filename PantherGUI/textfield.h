@@ -42,6 +42,8 @@ public:
 
 	void SetTextFile(TextFile* textfile);
 	TextFile& GetTextFile() { return *textfile; }
+
+	bool IsDragging() { return drag_type != PGDragNone; }
 private:
 	PGScalar text_offset;
 	PGScalar line_height;

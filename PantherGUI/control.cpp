@@ -104,3 +104,8 @@ void Control::UpdateParentSize(PGSize old_size, PGSize new_size) {
 		this->OnResize(current_size, PGSize(this->width, this->height));
 	}
 }
+
+bool Control::IsDragging() {
+	return false;
+}
+

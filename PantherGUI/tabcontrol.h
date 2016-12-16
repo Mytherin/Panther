@@ -29,6 +29,10 @@ public:
 	void PrevTab();
 	void NextTab();
 	void CloseTab();
+
+	bool IsDragging() {
+		return drag_tab;
+	}
 protected:
 	int TabControl::GetSelectedTab(int x);
 
@@ -41,6 +45,6 @@ protected:
 	PGScalar tab_offset;
 	int active_tab;
 
+	bool drag_tab = false;
 	PGScalar drag_offset;
-	bool drag_tab;
 };

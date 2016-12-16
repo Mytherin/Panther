@@ -33,7 +33,12 @@ void ControlManager::KeyboardUnicode(char* character, PGModifier modifier) {
 }
 
 void ControlManager::PeriodicRender(void) {
+	PGPoint mouse = GetMousePosition(window);
+	PGMouseButton buttons = GetMouseState(window);
 	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if ((*it)->IsDragging()) {
+			(*it)->MouseMove(mouse.x, mouse.y, buttons);
+		}
 		(*it)->PeriodicRender();
 	}
 	if (this->invalidated) {

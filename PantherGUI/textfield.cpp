@@ -533,12 +533,6 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 	if (!textfile->IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
-	// FIXME: changing the cursor probably shouldn't be done here, but in the main form
-	if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= (6 * this->width / 7) && mouse.y <= this->height) {
-		SetCursor(this->window, PGCursorIBeam);
-	} else {
-		SetCursor(this->window, PGCursorStandard);
-	}
 	if (buttons & PGLeftMouseButton) {
 		if (drag_type == PGDragSelection) {
 			// FIXME: when having multiple cursors and we are altering the active cursor,
@@ -594,9 +588,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			this->InvalidateBetweenLines(cursors[0]->start_line, line);
 		}
 	} else {
-		if (drag_type != PGDragSelectionCursors) {
-			drag_type = PGDragNone;
-		}
+		drag_type = PGDragNone;
 		if (this->display_scrollbar && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width) {
 			this->InvalidateScrollbar();
 		} else if (this->display_minimap && mouse.x >= this->width - SCROLLBAR_WIDTH - GetMinimapWidth() && mouse.x <= this->width - SCROLLBAR_WIDTH) {
