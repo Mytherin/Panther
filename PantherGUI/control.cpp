@@ -60,11 +60,11 @@ void Control::KeyboardUnicode(char *character, PGModifier modifier) {
 }
 
 void Control::Invalidate() {
-	RefreshWindow(this->window);
+	RefreshWindow(this->window, PGIRect(this->x, this->y, this->width, this->height));
 }
 
 void Control::Invalidate(PGIRect rectangle) {
-	RefreshWindow(this->window, rectangle);
+	RefreshWindow(this->window, PGIRect(this->x, this->y, this->width, this->height));
 }
 
 void Control::Invalidate(PGRect rectangle) {

@@ -8,7 +8,8 @@
 #include "filemanager.h"
 #include "tabcontrol.h"
 #include "controlmanager.h"
-#include "tabbedtextfield.h"
+#include "container.h"
+#include "droptarget.h"
 
 #include <malloc.h>
 
@@ -48,6 +49,8 @@ void PeriodicWindowRedraw(void) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	static TCHAR szWindowClass[] = _T("Panther");
 	static TCHAR szTitle[] = _T("Panther");
+
+	OleInitialize(nullptr);
 
 	WNDCLASSEX wcex;
 
@@ -120,6 +123,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_COMPOSITED);
 
+	IDropTarget* drop_target;
+	RegisterDropWindow(hWnd, &drop_target);
+
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
 	res->cursor_type = PGCursorStandard;
@@ -142,7 +148,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
 	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
 	TextFile* textfile2 = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
-	TabbedTextField* tabbed = new TabbedTextField(res, textfile);
+	PGContainer* tabbed = new PGContainer(res, textfile);
 	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
 	/*
@@ -176,6 +182,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
+	UnregisterDropWindow(hWnd, drop_target);
+
 	//GdiplusShutdown(gdiplusToken);
 	return (int)msg.wParam;
 }
@@ -345,13 +353,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	case WM_MOUSEWHEEL: {
 		// FIXME: control over which the mouse is
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
+		POINT point;
+		point.x = GET_X_LPARAM(lParam);
+		point.y = GET_Y_LPARAM(lParam);
+		ScreenToClient(global_handle->hwnd, &point);
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
 		int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-		global_handle->manager->MouseWheel(x, y, zDelta, modifier);
+		global_handle->manager->MouseWheel(point.x, point.y, zDelta, modifier);
 		break;
 	}
 	case WM_LBUTTONDOWN: {

@@ -37,16 +37,6 @@ struct PGSize {
 	PGSize(PGScalar width, PGScalar height) : width(width), height(height) { }
 };
 
-struct PGIRect {
-	int x;
-	int y;
-	int width;
-	int height;
-
-	PGIRect() : x(0), y(0), width(0), height(0) { }
-	PGIRect(int x, int y, int width, int height) : x(x), y(y), width(width), height(height) { }
-};
-
 struct PGRect {
 	PGScalar x;
 	PGScalar y;
@@ -56,6 +46,18 @@ struct PGRect {
 	PGRect() : x(0), y(0), width(0), height(0) { }
 	PGRect(PGScalar x, PGScalar y, PGScalar width, PGScalar height) : x(x), y(y), width(width), height(height) { }
 };
+
+struct PGIRect {
+	int x;
+	int y;
+	int width;
+	int height;
+
+	PGIRect() : x(0), y(0), width(0), height(0) { }
+	PGIRect(int x, int y, int width, int height) : x(x), y(y), width(width), height(height) { }
+	PGIRect(PGRect rect) : x((int) rect.x), y((int) rect.y), width((int) rect.width), height((int) rect.height) { }
+};
+
 struct PGLine {
 	PGPoint start;
 	PGPoint end;
@@ -66,6 +68,7 @@ struct PGLine {
 
 bool PGRectangleContains(PGRect, PGPoint);
 bool PGRectangleContains(PGIRect, PGPoint);
+bool PGIRectanglesOverlap(PGIRect, PGIRect);
 
 typedef int PGTextAlign;
 

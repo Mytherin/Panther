@@ -94,8 +94,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	textfile->Lock();
 	while ((current_line = textfile->GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
-		if (position_y > rectangle->y + rectangle->height) break;
-		if (!(position_y + line_height < rectangle->y)) {
+		if (position_y > rectangle->height) break;
+		if (!(position_y + line_height < 0)) {
 			// render the actual text
 			lng new_block = textfile->GetBlock(linenr);
 			if (new_block != block) {
@@ -178,7 +178,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		lng startline = std::max((*it)->BeginLine(), start_line);
 		lng endline = std::min((*it)->EndLine(), linenr);
-		position_y = this->y + (startline - start_line) * line_height;
+		position_y = this->y + (startline - start_line) * line_height - rectangle->y;
 		for (; startline <= endline; startline++) {
 			current_line = textfile->GetLine(startline);
 			assert(current_line);
@@ -254,15 +254,15 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	// determine the character width
 	character_width = MeasureTextWidth(renderer, "a", 1);
 	// render the line numbers
-	PGScalar position_x = this->x;
-	PGScalar position_y = this->y;
+	PGScalar position_x = this->x - rectangle->x;
+	PGScalar position_y = this->y - rectangle->y;
 	lng linenr = textfile->GetLineOffset();
 	if (this->display_linenumbers) {
 		TextLine *current_line;
 		while ((current_line = textfile->GetLine(linenr)) != nullptr) {
 			// only render lines that fall within the render rectangle
-			if (rectangle && position_y > rectangle->y + rectangle->height) break;
-			if (!rectangle || !(position_y + line_height < rectangle->y)) {
+			if (rectangle && position_y > rectangle->height) break;
+			if (!rectangle || position_y + line_height >= 0) {
 				// render the line number
 				auto line_number = std::to_string(linenr + 1);
 				RenderText(renderer, line_number.c_str(), line_number.size(), position_x, position_y);
@@ -285,7 +285,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar textfield_width = this->width - minimap_width;
 
 	if (textfile->IsLoaded()) {
-		DrawTextField(renderer, rectangle, false, this->x + text_offset, this->y, textfield_width, false);
+		DrawTextField(renderer, rectangle, false, this->x + text_offset - rectangle->x, this->y - rectangle->y, textfield_width, false);
 	} else {
 		PGScalar offset = this->width / 10;
 		PGScalar width = this->width - offset * 2;
@@ -301,15 +301,16 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		PGIRect minimap_rect = PGIRect(this->x + textfield_width, this->y, minimap_width, this->height);
 
 		SetTextFont(renderer, nullptr, 2.5f);
-		DrawTextField(renderer, &minimap_rect, true, this->x + textfield_width, this->y, minimap_width, mouse_in_minimap);
+		DrawTextField(renderer, &minimap_rect, true, this->x + textfield_width - rectangle->x, this->y - rectangle->y, minimap_width, mouse_in_minimap);
 	}
 
 	// render the scrollbar
 	if (this->display_scrollbar) {
 		bool mouse_in_scrollbar = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width;
+		int y = this->y - rectangle->y;
 
 		// the background of the scrollbar
-		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, this->y, SCROLLBAR_WIDTH, this->y + this->height), PGColor(62, 62, 62), PGStyleFill);
+		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, y, SCROLLBAR_WIDTH, y + this->height), PGColor(62, 62, 62), PGStyleFill);
 		// the arrows above/below the scrollbar
 		PGColor arrowColor(104, 104, 104);
 		if (mouse_in_scrollbar && mouse.y >= 0 && mouse.y <= 16)

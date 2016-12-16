@@ -11,9 +11,9 @@
 
 #define TEXT_TAB_HEIGHT 20
 
-class TabbedTextField : public Control {
+class PGContainer : public Control {
 public:
-	TabbedTextField(PGWindowHandle window, TextFile* file);
+	PGContainer(PGWindowHandle window, TextFile* file);
 
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
@@ -29,7 +29,8 @@ public:
 	void MouseMove(int x, int y, PGMouseButton buttons);
 
 	void OnResize(PGSize old_size, PGSize new_size);
+
+	void AddControl(Control* control);
 private:
-	TextField* textfield;
-	TabControl* tabs;
+	std::vector<Control*> controls;
 };

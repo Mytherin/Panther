@@ -136,6 +136,7 @@
     <ClCompile Include="control.cpp" />
     <ClCompile Include="controlmanager.cpp" />
     <ClCompile Include="cursor.cpp" />
+    <ClCompile Include="droptarget.cpp" />
     <ClCompile Include="file.cpp" />
     <ClCompile Include="filemanager.cpp" />
     <ClCompile Include="keywords.cpp" />
@@ -145,7 +146,7 @@
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
-    <ClCompile Include="tabbedtextfield.cpp" />
+    <ClCompile Include="container.cpp" />
     <ClCompile Include="tabcontrol.cpp" />
     <ClCompile Include="text.cpp" />
     <ClCompile Include="textfield.cpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="control.h" />
     <ClInclude Include="controlmanager.h" />
     <ClInclude Include="cursor.h" />
+    <ClInclude Include="droptarget.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
     <ClInclude Include="keywords.h" />
@@ -173,7 +175,7 @@
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="syntax.h" />
     <ClInclude Include="syntaxhighlighter.h" />
-    <ClInclude Include="tabbedtextfield.h" />
+    <ClInclude Include="container.h" />
     <ClInclude Include="tabcontrol.h" />
     <ClInclude Include="text.h" />
     <ClInclude Include="textblock.h" />

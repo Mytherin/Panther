@@ -35,9 +35,9 @@ void TabControl::PeriodicRender() {
 	}
 }
 
-void TabControl::Draw(PGRendererHandle renderer, PGIRect* rect) {
-	PGScalar position_x = this->x;
-	PGScalar position_y = this->y;
+void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
+	PGScalar position_x = this->x - rectangle->x;
+	PGScalar position_y = this->y - rectangle->y;
 	PGScalar tab_padding = 5;
 	PGColor color = PGColor(0, 102, 204);
 	SetTextFont(renderer, nullptr, 13);
@@ -65,7 +65,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		RenderText(renderer, filename.c_str(), filename.length(), tabs[active_tab].x + tab_padding, position_y);
 
 	}
-	RenderLine(renderer, PGLine(0, this->height - 1, this->width, this->height - 1), PGColor(80, 150, 200));
+	RenderLine(renderer, PGLine(0, this->height - 1 - rectangle->y, this->width, this->height - 1 - rectangle->y), PGColor(80, 150, 200));
 }
 
 bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -73,10 +73,13 @@ bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
 	case PGButtonTab:
 		if (modifier == PGModifierCtrlShift) {
 			PrevTab();
+			this->Invalidate();
+			return true;
 		} else if (modifier == PGModifierCtrl) {
 			NextTab();
+			this->Invalidate();
+			return true;
 		}
-		return true;
 	default:
 		return false;
 	}

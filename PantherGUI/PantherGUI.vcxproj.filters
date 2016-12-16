@@ -90,7 +90,10 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tabbedtextfield.cpp">
+    <ClCompile Include="droptarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="container.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -176,7 +179,10 @@
     <ClInclude Include="controlmanager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tabbedtextfield.h">
+    <ClInclude Include="droptarget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="container.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

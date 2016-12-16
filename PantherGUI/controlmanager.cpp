@@ -50,8 +50,6 @@ void ControlManager::RefreshWindow() {
 }
 
 void ControlManager::RefreshWindow(PGIRect rectangle) {
-	// FIXME do not invalidate entire window here
-	this->invalidated = true;
 	if (this->invalidated_area.width == 0) {
 		this->invalidated_area = rectangle;
 	} else {
@@ -74,6 +72,9 @@ void ControlManager::OnResize(PGSize old_size, PGSize new_size) {
 
 void ControlManager::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if (rect && !PGIRectanglesOverlap(PGIRect((*it)->GetRectangle()), *rect)) {
+			continue;
+		}
 		(*it)->Draw(renderer, rect);
 	}
 }
