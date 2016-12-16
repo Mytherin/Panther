@@ -47,11 +47,14 @@ TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) 
 }
 
 TextFile::~TextFile() {
+	pending_delete = true;
 	if (current_task) {
 		current_task->active = false;
 	}
-	if (text_lock) {
-		DestroyMutex(text_lock);
+	LockMutex(text_lock);
+	DestroyMutex(text_lock);
+	for (auto it = lines.begin(); it != lines.end(); it++) {
+		delete *it;
 	}
 }
 
@@ -151,6 +154,7 @@ void TextFile::OpenFile(std::string path) {
 	char* prev = base;
 	int offset = 0;
 	loaded = 0;
+	LockMutex(text_lock);
 	while (*ptr) {
 		if (*ptr == '\n') {
 			// Unix line ending: \n
@@ -185,6 +189,13 @@ void TextFile::OpenFile(std::string path) {
 
 			prev = ptr + 1;
 			offset = 0;
+			
+			if (pending_delete) {
+				PGmmap::DestroyFileContents(base);
+				UnlockMutex(text_lock);
+				return;
+			}
+
 		}
 		ptr++;
 	}
@@ -232,6 +243,7 @@ void TextFile::OpenFile(std::string path) {
 		}
 	}
 	is_loaded = true;
+	UnlockMutex(text_lock);
 }
 
 // FIXME: "file has been modified without us being the one that modified it"

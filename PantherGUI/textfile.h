@@ -108,6 +108,8 @@ public:
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
 private:
+	bool pending_delete = false;
+
 	std::string path;
 	std::string name;
 	std::string ext;

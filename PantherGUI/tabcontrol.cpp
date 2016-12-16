@@ -140,12 +140,19 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 	} else if (button == PGMiddleMouseButton) {
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
-			FileManager::CloseFile(tabs[selected_tab].file);
-			tabs.erase(tabs.begin() + selected_tab);
 			if (selected_tab == active_tab && active_tab > 0) {
 				active_tab--;
 				SwitchToFile(tabs[active_tab].file);
+			} else if (selected_tab == active_tab) {
+				if (tabs.size() == 1) {
+					assert(0);
+					// FIXME: open new file 
+				} else {
+					SwitchToFile(tabs[1].file);
+				}
 			}
+			FileManager::CloseFile(tabs[selected_tab].file);
+			tabs.erase(tabs.begin() + selected_tab);
 			this->Invalidate();
 		}
 	}
