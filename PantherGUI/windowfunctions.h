@@ -240,6 +240,7 @@ PGPoint GetMousePosition(PGWindowHandle window);
 void SetWindowTitle(PGWindowHandle window, char* title);
 void RegisterControl(PGWindowHandle window, Control *control);
 
+void* GetControlManager(PGWindowHandle window);
 
 void SetClipboardText(PGWindowHandle window, std::string);
 std::string GetClipboardText(PGWindowHandle window);

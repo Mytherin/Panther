@@ -23,7 +23,7 @@ public:
 	PGModifier modifier;
 	HWND hwnd;
 	ControlManager* manager;
-	PGCursorType cursor_type;
+	HCURSOR cursor;
 
 	PGWindow() : modifier(PGModifierNone) {}
 };
@@ -70,7 +70,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		LR_DEFAULTSIZE |   // default metrics based on the type (IMAGE_ICON, 32x32)
 		LR_SHARED         // let the system release the handle when it's no longer used
 		);
-	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wcex.hCursor = NULL;
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = szWindowClass;
@@ -128,7 +128,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
-	res->cursor_type = PGCursorStandard;
+	res->cursor = cursor_standard;
 	global_handle = res;
 
 	ControlManager* manager = new ControlManager(res);
@@ -400,7 +400,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_SETCURSOR:
-		return 1;
+		SetCursor(global_handle->cursor);
+		return true;
 	case WM_ERASEBKGND:
 		return 1;
 	case WM_DESTROY:
@@ -598,7 +599,6 @@ bool WindowHasFocus(PGWindowHandle window) {
 }
 
 void SetCursor(PGWindowHandle window, PGCursorType type) {
-	if (window->cursor_type == type) return;
 	HCURSOR cursor = nullptr;
 	switch (type) {
 	case PGCursorStandard:
@@ -619,6 +619,9 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 	default:
 		return;
 	}
-	window->cursor_type = type;
-	SetCursor(cursor);
+	window->cursor = cursor;
+}
+
+void* GetControlManager(PGWindowHandle window) {
+	return window->manager;
 }

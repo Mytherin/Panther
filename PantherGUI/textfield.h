@@ -18,6 +18,7 @@ struct TextSelection {
 class TextField : public Control {
 public:
 	TextField(PGWindowHandle, TextFile* file);
+	~TextField();
 
 	void PeriodicRender(void);
 	void Draw(PGRendererHandle, PGIRect*);
@@ -43,8 +44,17 @@ public:
 	void SetTextFile(TextFile* textfile);
 	TextFile& GetTextFile() { return *textfile; }
 
+	void OnResize(PGSize old_size, PGSize new_size);
+
 	bool IsDragging() { return drag_type != PGDragNone; }
+
+	void MinimapMouseEvent(bool mouse_enter);
+	void ScrollbarMouseEvent(bool mouse_enter);
 private:
+	PGIRect scrollbar_region;
+	PGIRect minimap_region;
+	PGIRect textfield_region;
+
 	PGScalar text_offset;
 	PGScalar line_height;
 	PGScalar minimap_line_height;

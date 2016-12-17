@@ -5,6 +5,16 @@
 
 // FIXME: this class should manage all the controls, and handle keypresses/mouse clicks/drawings/etc
 
+typedef void(*PGMouseCallback)(Control* control, bool);
+
+struct PGMouseRegion {
+	bool mouse_inside = false;
+	PGIRect* rect = nullptr;
+	Control* control;
+	PGMouseCallback mouse_event;
+
+	PGMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event) : rect(rect), control(control), mouse_event(mouse_event) { }
+};
 
 class ControlManager : public Control {
 public:
@@ -33,9 +43,14 @@ public:
 	void OnResize(PGSize old_size, PGSize new_size);
 
 	Control* GetFocusedControl() { return focused_control; }
+
+	void RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event);
+	void UnregisterMouseRegion(PGIRect* rect);
 private:
 	PGIRect invalidated_area;
 	bool invalidated;
 	std::vector<Control*> controls;
 	Control* focused_control;
+
+	std::vector<PGMouseRegion> regions;
 };

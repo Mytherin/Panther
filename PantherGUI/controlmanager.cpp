@@ -32,15 +32,34 @@ void ControlManager::KeyboardUnicode(char* character, PGModifier modifier) {
 	focused_control->KeyboardUnicode(character, modifier);
 }
 
+#include "logger.h"
+
 void ControlManager::PeriodicRender(void) {
 	PGPoint mouse = GetMousePosition(window);
 	PGMouseButton buttons = GetMouseState(window);
+	// for any registered mouse regions, check if the mouse status has changed (mouse has entered or left the area)
+	for (auto it = regions.begin(); it != regions.end(); it++) {
+		bool contains = PGRectangleContains(*(*it).rect, mouse);
+		if (!(*it).mouse_inside && contains) {
+			// mouse enter
+			(*it).mouse_event((*it).control, true);
+		} else if ((*it).mouse_inside && !contains) {
+			// mouse leave
+			(*it).mouse_event((*it).control, false);
+		}
+		(*it).mouse_inside = contains;
+	}
+	// for any controls, trigger the periodic render
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)->IsDragging()) {
+			// if child the control is listening to MouseMove events, send a MouseMove message 
 			(*it)->MouseMove(mouse.x, mouse.y, buttons);
 		}
+		// trigger the periodic render of the child control
+		// this is mostly used for animations
 		(*it)->PeriodicRender();
 	}
+	// after the periodic render, render anything that needs to be rerendered (if any)
 	if (this->invalidated) {
 		RedrawWindow(window);
 	} else if (this->invalidated_area.width != 0) {
@@ -55,9 +74,13 @@ void ControlManager::RefreshWindow() {
 }
 
 void ControlManager::RefreshWindow(PGIRect rectangle) {
+	// invalidate a rectangle
 	if (this->invalidated_area.width == 0) {
+		// if there is no currently invalidated rectangle,
+		// the invalidated rectangle is simply the supplied rectangle
 		this->invalidated_area = rectangle;
 	} else {
+		// otherwise we merge the two rectangles into one big one
 		this->invalidated_area.x = std::min(this->invalidated_area.x, rectangle.x);
 		this->invalidated_area.y = std::min(this->invalidated_area.y, rectangle.y);
 		this->invalidated_area.width = std::max(this->invalidated_area.x + this->invalidated_area.width, rectangle.x + rectangle.width) - this->invalidated_area.x;
@@ -113,4 +136,18 @@ void ControlManager::MouseMove(int x, int y, PGMouseButton buttons) {
 void ControlManager::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 	Control* c = GetMouseOverControl(x, y);
 	if (c) c->MouseWheel(x, y, distance, modifier);
+}
+
+void ControlManager::RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event) {
+	regions.push_back(PGMouseRegion(rect, control, mouse_event));
+}
+
+void ControlManager::UnregisterMouseRegion(PGIRect* rect) {
+	for (auto it = regions.begin(); it != regions.end(); it++) {
+		if ((*it).rect == rect) {
+			regions.erase(it);
+			return;
+		}
+	}
+	assert(0);
 }

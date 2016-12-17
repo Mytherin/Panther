@@ -4,6 +4,19 @@
 #include <algorithm>
 #include "logger.h"
 #include "text.h"
+#include "controlmanager.h"
+
+void TextField::MinimapMouseEvent(bool mouse_enter) {
+	this->InvalidateMinimap();
+}
+
+void TextField::ScrollbarMouseEvent(bool mouse_enter) {
+
+}
+
+void MMMouseEvent(TextField* textfield, bool mouse_enter) {
+	return textfield->MinimapMouseEvent(mouse_enter);
+}
 
 TextField::TextField(PGWindowHandle window, TextFile* file) :
 	Control(window, false), display_carets(true), display_carets_count(0), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
@@ -15,6 +28,14 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 	line_height = 19;
 	character_width = 8;
 	tabwidth = 5;
+
+	ControlManager* manager = (ControlManager*)GetControlManager(window);
+	manager->RegisterMouseRegion(&minimap_region, this, (PGMouseCallback)MMMouseEvent);
+
+}
+
+TextField::~TextField() {
+
 }
 
 #define FLICKER_CARET_INTERVAL 15
@@ -853,4 +874,12 @@ void TextField::SetTextFile(TextFile* textfile) {
 	this->textfile = textfile;
 	textfile->SetTextField(this);
 	this->Invalidate();
+}
+
+void TextField::OnResize(PGSize old_size, PGSize new_size) {
+	minimap_region.width = GetMinimapWidth();
+	minimap_region.height = new_size.height;
+	textfield_region.width = new_size.width - GetMinimapWidth() - SCROLLBAR_WIDTH;
+	textfield_region.height = new_size.height;
+	minimap_region.x = textfield_region.width;
 }
