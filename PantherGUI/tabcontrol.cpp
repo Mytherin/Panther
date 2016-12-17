@@ -88,6 +88,21 @@ bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
 			this->Invalidate();
 			return true;
 		}
+		break;
+	case PGButtonPageUp:
+		if (modifier == PGModifierCtrl) {
+			PrevTab();
+			this->Invalidate();
+			return true;
+		}
+		break;
+	case PGButtonPageDown:
+		if (modifier == PGModifierCtrl) {
+			NextTab();
+			this->Invalidate();
+			return true;
+		}
+		break;
 	default:
 		return false;
 	}
