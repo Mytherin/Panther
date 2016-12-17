@@ -65,6 +65,12 @@ TextFile::~TextFile() {
 	for (auto it = lines.begin(); it != lines.end(); it++) {
 		delete *it;
 	}
+	for (auto it = deltas.begin(); it != deltas.end(); it++) {
+		delete *it;
+	}
+	for (auto it = redos.begin(); it != redos.end(); it++) {
+		delete *it;
+	}
 }
 
 void TextFile::RunHighlighter(Task* task, TextFile* textfile) {

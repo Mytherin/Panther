@@ -131,7 +131,11 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 				PGSyntax* syntax = &current_line->syntax;
 				while (syntax && syntax->end > 0) {
 					bool squiggles = false;
-					assert(syntax->end > position);
+					//assert(syntax->end > position);
+					if (syntax->end <= position) {
+						syntax = syntax->next;
+						continue;
+					}
 					switch (syntax->type) {
 					case -1:
 						squiggles = true;
@@ -857,7 +861,7 @@ void TextField::InvalidateBetweenLines(lng start, lng end) {
 		return;
 	}
 	lng lineoffset_y = textfile->GetLineOffset();
-	this->Invalidate(PGRect(0, (start - lineoffset_y) * line_height, this->width,
+	this->Invalidate(PGRect(this->x, this->y + (start - lineoffset_y) * line_height, this->width,
 		(end - lineoffset_y) * line_height - (start - lineoffset_y) * line_height + line_height));
 }
 
