@@ -24,8 +24,8 @@ bool ControlManager::KeyboardButton(PGButton button, PGModifier modifier) {
 	return focused_control->KeyboardButton(button, modifier);
 }
 
-void ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
-	focused_control->KeyboardCharacter(character, modifier);
+bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
+	return focused_control->KeyboardCharacter(character, modifier);
 }
 
 void ControlManager::KeyboardUnicode(char* character, PGModifier modifier) {

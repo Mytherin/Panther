@@ -126,6 +126,25 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
+bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
+	if (modifier & PGModifierCtrl) {
+		switch (character) {
+		case 'W':
+			CloseTab(active_tab);
+			this->Invalidate();
+			return true;
+		case 'N':
+			TextFile* file = FileManager::OpenFile();
+			tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
+			active_tab++;
+			SwitchToFile(tabs[active_tab].file);
+			this->Invalidate();
+			return true;
+		}
+	}
+	return false;
+}
+
 int TabControl::GetSelectedTab(int x) {
 	for (int i = 0; i < tabs.size(); i++) {
 		if (x >= tabs[i].x && x <= tabs[i].x + tabs[i].width) {
@@ -148,19 +167,7 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 	} else if (button == PGMiddleMouseButton) {
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
-			if (selected_tab == active_tab && active_tab > 0) {
-				active_tab--;
-				SwitchToFile(tabs[active_tab].file);
-			} else if (selected_tab == active_tab) {
-				if (tabs.size() == 1) {
-					// open an in-memory file to replace the current file
-					TextFile* file = FileManager::OpenFile();
-					tabs.push_back(Tab(file));
-				}
-				SwitchToFile(tabs[1].file);
-			}
-			FileManager::CloseFile(tabs[selected_tab].file);
-			tabs.erase(tabs.begin() + selected_tab);
+			CloseTab(selected_tab);
 			this->Invalidate();
 		}
 	}
@@ -189,8 +196,20 @@ void TabControl::NextTab() {
 	SwitchToFile(files[active_tab]);
 }
 
-void TabControl::CloseTab() {
-
+void TabControl::CloseTab(int tab) {
+	if (tab == active_tab && active_tab > 0) {
+		active_tab--;
+		SwitchToFile(tabs[active_tab].file);
+	} else if (tab == active_tab) {
+		if (tabs.size() == 1) {
+			// open an in-memory file to replace the current file
+			TextFile* file = FileManager::OpenFile();
+			tabs.push_back(Tab(file));
+		}
+		SwitchToFile(tabs[1].file);
+	}
+	FileManager::CloseFile(tabs[tab].file);
+	tabs.erase(tabs.begin() + tab);
 }
 
 void TabControl::SwitchToFile(TextFile* file) {

@@ -18,7 +18,7 @@ public:
 	virtual void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	// Returns true if the button has been consumed by the control, false if it has been ignored
 	virtual bool KeyboardButton(PGButton button, PGModifier modifier);
-	virtual void KeyboardCharacter(char character, PGModifier modifier);
+	virtual bool KeyboardCharacter(char character, PGModifier modifier);
 	virtual void KeyboardUnicode(char* character, PGModifier modifier);
 	virtual void PeriodicRender(void);
 	virtual void Draw(PGRendererHandle, PGIRect*);

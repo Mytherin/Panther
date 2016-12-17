@@ -51,8 +51,8 @@ bool Control::KeyboardButton(PGButton button, PGModifier modifier) {
 	return false;
 }
 
-void Control::KeyboardCharacter(char character, PGModifier modifier) {
-
+bool Control::KeyboardCharacter(char character, PGModifier modifier) {
+	return false;
 }
 
 void Control::KeyboardUnicode(char *character, PGModifier modifier) {

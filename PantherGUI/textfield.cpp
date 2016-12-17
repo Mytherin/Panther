@@ -779,33 +779,34 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	}
 }
 
-void TextField::KeyboardCharacter(char character, PGModifier modifier) {
-	if (!textfile->IsLoaded()) return;
+bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
+	if (!textfile->IsLoaded()) return false;
 
 	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardCharacter(") + std::to_string(character) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
 
 	if (modifier == PGModifierNone) {
 		this->textfile->InsertText(character);
 		this->Invalidate();
+		return true;
 	} else {
 		if (modifier & PGModifierCtrl) {
 			switch (character) {
 			case 'Z':
 				this->textfile->Undo();
 				this->Invalidate();
-				break;
+				return true;
 			case 'Y':
 				this->textfile->Redo();
 				this->Invalidate();
-				break;
+				return true;
 			case 'A':
 				this->textfile->SelectEverything();
 				this->Invalidate();
-				break;
+				return true;
 			case 'C': {
 				std::string text = textfile->CopyText();
 				SetClipboardText(window, text);
-				break;
+				return true;
 			}
 			case 'V': {
 				if (modifier & PGModifierShift) {
@@ -814,15 +815,16 @@ void TextField::KeyboardCharacter(char character, PGModifier modifier) {
 					textfile->PasteText(GetClipboardText(window));
 				}
 				this->Invalidate();
-				break;
+				return true;
 			}
 			case 'S': {
 				textfile->SaveChanges();
-				break;
+				return true;
 			}
 			}
 		}
 	}
+	return false;
 }
 
 void TextField::KeyboardUnicode(char *character, PGModifier modifier) {

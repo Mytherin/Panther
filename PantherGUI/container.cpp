@@ -27,10 +27,13 @@ bool PGContainer::KeyboardButton(PGButton button, PGModifier modifier) {
 	return false;
 }
 
-void PGContainer::KeyboardCharacter(char character, PGModifier modifier) {
+bool PGContainer::KeyboardCharacter(char character, PGModifier modifier) {
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		(*it)->KeyboardCharacter(character, modifier);
+		if ((*it)->KeyboardCharacter(character, modifier)) {
+			return true;
+		}
 	}
+	return false;
 }
 
 void PGContainer::KeyboardUnicode(char* character, PGModifier modifier) {

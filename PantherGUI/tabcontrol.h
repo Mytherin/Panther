@@ -20,6 +20,8 @@ public:
 	void PeriodicRender(void);
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
+	bool KeyboardCharacter(char character, PGModifier modifier);
+
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
@@ -28,7 +30,7 @@ public:
 
 	void PrevTab();
 	void NextTab();
-	void CloseTab();
+	void CloseTab(int tab);
 
 	bool IsDragging() {
 		return drag_tab;
