@@ -37,6 +37,7 @@ public:
 	void SetPosition(PGPoint point) { this->x = point.x; this->y = point.y; }
 	void SetAnchor(PGAnchor anchor) { this->anchor = anchor; }
 	PGSize GetSize() { return PGSize(this->width, this->height); }
+	PGWindowHandle GetWindow() { return window; }
 
 	PGRect GetRectangle() { 
 		return PGRect(x, y, width, height); 

@@ -146,7 +146,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
+	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml");
 	TextFile* textfile2 = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
 	PGContainer* tabbed = new PGContainer(res, textfile);
 	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);

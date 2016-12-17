@@ -28,6 +28,7 @@ TextFile::TextFile(TextField* textfield) : textfield(textfield), highlighter(nul
 	this->text_lock = CreateMutex();
 	this->lines.push_back(new TextLine("", 0));
 	is_loaded = true;
+	unsaved_changes = true;
 }
 
 TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr), path(path) {
@@ -43,6 +44,7 @@ TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) 
 	} else if (ext == "c") {
 		highlighter = new CHighlighter();
 	}
+	unsaved_changes = false;
 	is_loaded = false;
 	// FIXME: switch to immediate_load for small files
 	if (!immediate_load) {
@@ -848,8 +850,16 @@ void TextFile::AddNewLines(std::vector<std::string>& added_text, bool first_is_n
 	Cursor::NormalizeCursors(this, cursors);
 }
 
+void TextFile::SetUnsavedChanges(bool changes) {
+	if (changes != unsaved_changes) {
+		RefreshWindow(textfield->GetWindow());
+	}
+	unsaved_changes = changes;
+}
+
 void TextFile::Undo() {
 	if (!is_loaded) return;
+	SetUnsavedChanges(true);
 	if (this->deltas.size() == 0) return;
 	TextDelta* delta = this->deltas.back();
 	this->ClearCursors();
@@ -960,6 +970,7 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 	// set the current_task to the nullptr, this will cause any active syntax highlighting to end
 	// this prevents long syntax highlighting tasks (e.g. highlighting a long document) from 
 	// locking us out of editing
+	SetUnsavedChanges(true);
 	current_task = nullptr;
 	std::vector<lng> invalidated_lines;
 	// lock the blocks
@@ -1262,6 +1273,7 @@ void TextFile::Redo(TextDelta* delta) {
 void TextFile::SaveChanges() {
 	if (!is_loaded) return;
 	if (this->path == "") return; // FIXME: in-memory file
+	SetUnsavedChanges(false);
 	this->Lock();
 	PGLineEnding line_ending = lineending;
 	if (line_ending != PGLineEndingWindows && line_ending != PGLineEndingMacOS && line_ending != PGLineEndingUnix) {

@@ -110,7 +110,11 @@ public:
 	void SetTextField(TextField* textfield) { this->textfield = textfield; }
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
+	bool HasUnsavedChanges() { return unsaved_changes; }
 private:
+	void SetUnsavedChanges(bool changes);
+
+	bool unsaved_changes = false;
 	bool pending_delete = false;
 
 	std::string path;
