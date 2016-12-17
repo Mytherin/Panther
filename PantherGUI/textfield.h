@@ -54,7 +54,6 @@ public:
 private:
 	PGIRect scrollbar_region;
 	PGIRect minimap_region;
-	PGIRect textfield_region;
 
 	PGScalar text_offset;
 	PGScalar line_height;

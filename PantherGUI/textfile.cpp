@@ -71,6 +71,9 @@ TextFile::~TextFile() {
 	for (auto it = redos.begin(); it != redos.end(); it++) {
 		delete *it;
 	}
+	if (highlighter) {
+		delete highlighter;
+	}
 }
 
 void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
