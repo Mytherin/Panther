@@ -44,6 +44,8 @@ public:
 
 	Control* GetFocusedControl() { return focused_control; }
 
+	PGCursorType GetCursor(PGPoint mouse);
+
 	void RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event);
 	void UnregisterMouseRegion(PGIRect* rect);
 private:

@@ -189,6 +189,7 @@ void RedrawWindow(PGWindowHandle window, PGIRect);
 PGSize GetWindowSize(PGWindowHandle window);
 
 typedef enum {
+	PGCursorNone,
 	PGCursorStandard,
 	PGCursorCrosshair,
 	PGCursorHand,

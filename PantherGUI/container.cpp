@@ -108,3 +108,24 @@ void PGContainer::OnResize(PGSize old_size, PGSize new_size) {
 		(*it)->UpdateParentSize(old_size, new_size);
 	}
 }
+
+PGCursorType PGContainer::GetCursor(PGPoint mouse) {
+	mouse.x -= this->x;
+	mouse.y -= this->y;
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if (PGRectangleContains((*it)->GetRectangle(), mouse)) {
+			return (*it)->GetCursor(mouse);
+		}
+	}
+	return PGCursorNone;
+}
+
+bool PGContainer::IsDragging() {
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if ((*it)->IsDragging()) {
+			return true;
+		}
+	}
+	return false;
+
+}

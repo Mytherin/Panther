@@ -48,6 +48,8 @@ public:
 
 	virtual bool IsDragging();
 
+	virtual PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
+
 	bool visible;
 protected:
 	Control* parent;

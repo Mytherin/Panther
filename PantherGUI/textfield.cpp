@@ -883,3 +883,15 @@ void TextField::OnResize(PGSize old_size, PGSize new_size) {
 	textfield_region.height = new_size.height;
 	minimap_region.x = textfield_region.width;
 }
+
+PGCursorType TextField::GetCursor(PGPoint mouse) {
+	mouse.x -= x;
+	mouse.y -= y;
+	if (!textfile->IsLoaded()) {
+		return PGCursorWait;
+	}
+	if (mouse.x <= textfield_region.width) {
+		return PGCursorIBeam;
+	}
+	return PGCursorStandard;
+}

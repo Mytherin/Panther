@@ -47,6 +47,7 @@ public:
 	void OnResize(PGSize old_size, PGSize new_size);
 
 	bool IsDragging() { return drag_type != PGDragNone; }
+	PGCursorType GetCursor(PGPoint mouse);
 
 	void MinimapMouseEvent(bool mouse_enter);
 	void ScrollbarMouseEvent(bool mouse_enter);

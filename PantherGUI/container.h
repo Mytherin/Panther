@@ -30,7 +30,8 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
-	bool IsDragging() { return true; }
+	PGCursorType GetCursor(PGPoint mouse);
+	bool IsDragging();
 
 	void AddControl(Control* control);
 private:

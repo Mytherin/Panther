@@ -49,9 +49,11 @@ void ControlManager::PeriodicRender(void) {
 		}
 		(*it).mouse_inside = contains;
 	}
+	bool is_dragging = false;
 	// for any controls, trigger the periodic render
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)->IsDragging()) {
+			is_dragging = true;
 			// if child the control is listening to MouseMove events, send a MouseMove message 
 			(*it)->MouseMove(mouse.x, mouse.y, buttons);
 		}
@@ -59,6 +61,11 @@ void ControlManager::PeriodicRender(void) {
 		// this is mostly used for animations
 		(*it)->PeriodicRender();
 	}
+	PGCursorType cursor = PGCursorStandard;
+	if (!is_dragging) {
+		cursor = GetCursor(mouse);
+	}
+	SetCursor(this->window, cursor);
 	// after the periodic render, render anything that needs to be rerendered (if any)
 	if (this->invalidated) {
 		RedrawWindow(window);
@@ -67,6 +74,17 @@ void ControlManager::PeriodicRender(void) {
 	}
 	this->invalidated = 0;
 	this->invalidated_area.width = 0;
+}
+
+PGCursorType ControlManager::GetCursor(PGPoint mouse) {
+	mouse.x -= this->x;
+	mouse.y -= this->y;
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if (PGRectangleContains((*it)->GetRectangle(), mouse)) {
+			return (*it)->GetCursor(mouse);
+		}
+	}
+	return PGCursorNone;
 }
 
 void ControlManager::RefreshWindow() {
