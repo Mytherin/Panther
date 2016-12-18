@@ -1,20 +1,18 @@
 
 #include "unicode.h"
 
-lng utf8_strlen(std::string& utf8_str, PGUnicodeType& type) {
+lng utf8_strlen(std::string& utf8_str) {
 	lng utf8_char_count = 0;
 	lng i = 0;
-	type = PGInvalidUTF8;
 	//we traverse the string and simply count the amount of utf8 characters in the string
 	for (lng i = 0; i < utf8_str.size(); ) {
 		int offset = utf8_character_length(utf8_str[i]);
-		if (offset < 0) {
+		if (offset < 0 || i + offset > utf8_str.size()) {
 			return -1; //invalid utf8 character
 		}
 		i += offset;
 		utf8_char_count++;
 	}
-	type = i == utf8_char_count ? PGASCII : PGUTF8;
 	return utf8_char_count;
 }
 

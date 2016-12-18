@@ -99,6 +99,9 @@
     <ClCompile Include="unicode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="encoding.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">

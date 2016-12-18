@@ -10,6 +10,8 @@
 #include "controlmanager.h"
 #include "container.h"
 #include "droptarget.h"
+#include "encoding.h"
+#include "unicode.h"
 
 #include <malloc.h>
 
@@ -148,8 +150,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
-	TextFile* textfile2 = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
+	TextFile* textfile = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
+	TextFile* textfile2 = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
 	PGContainer* tabbed = new PGContainer(res, textfile);
 	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
@@ -524,27 +526,47 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 
 void SetClipboardText(PGWindowHandle window, std::string text) {
 	if (OpenClipboard(window->hwnd)) {
-		// FIXME: convert UTF8 to UTF16
+		char* result = nullptr;
+		size_t length = PGConvertText(text, &result, PGEncodingUTF8, PGEncodingUTF16Platform);
+		assert(length > 0);
 		HGLOBAL clipbuffer;
 		char * buffer;
 		EmptyClipboard();
-		clipbuffer = GlobalAlloc(GMEM_DDESHARE, text.length() + 1);
+		clipbuffer = GlobalAlloc(GMEM_DDESHARE, length);
 		buffer = (char*)GlobalLock(clipbuffer);
-		memcpy(buffer, text.c_str(), text.length() * sizeof(char));
+		memcpy(buffer, result, length * sizeof(char));
 		GlobalUnlock(clipbuffer);
-		SetClipboardData(CF_TEXT, clipbuffer);
+		SetClipboardData(CF_UNICODETEXT, clipbuffer);
 		CloseClipboard();
+		free(result);
+	}
+}
+
+size_t ucs2length(char* data) {
+	int i = 0;
+	while (true) {
+		if (!data[i] && !data[i + 1]) {
+			return i;
+		}
+		i += 2;
 	}
 }
 
 std::string GetClipboardText(PGWindowHandle window) {
 	if (OpenClipboard(window->hwnd)) {
-		// FIXME: convert UTF16 to UTF8
+		char* result = nullptr;
+
 		// get the text from the clipboard
-		std::string text = std::string((char*)GetClipboardData(CF_TEXT));
-		// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
+		HANDLE data = GetClipboardData(CF_UNICODETEXT);
+		std::string text = std::string(((char*)data), ucs2length((char*)data));
 
 		CloseClipboard();
+		// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
+		size_t length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
+		assert(length > 0);
+		text = std::string(result, length);
+		free(result);
+		assert(utf8_strlen(text) >= 0);
 		return text;
 	}
 	return nullptr;

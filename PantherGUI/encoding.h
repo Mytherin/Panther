@@ -1,12 +1,23 @@
 #pragma once
 
+#include "utils.h"
+
+#include <string>
+
 typedef enum {
 	PGEncodingUTF8,
 	PGEncodingUTF8BOM,
+	PGEncodingUTF16,
+	PGEncodingUTF32,
 	PGEncodingUTF16LE,
 	PGEncodingUTF16LEBOM,
-	PGEncodingUTF16GE,
-	PGEncodingUTF16GEBOM,
+	PGEncodingUTF16BE,
+	PGEncodingUTF16BEBOM,
+	PGEncodingUTF16Platform,
+	PGEncodingUTF32LE,
+	PGEncodingUTF32LEBOM,
+	PGEncodingUTF32BE,
+	PGEncodingUTF32BEBOM,
 	PGEncodingWesternWindows1252,
 	PGEncodingWesternISO8859_1,
 	PGEncodingWesternISO8859_3,
@@ -36,3 +47,5 @@ typedef enum {
 	PGEncodingTurkishISO8859_9,
 	PGEncodingVietnameseWindows1258
 } PGFileEncoding;
+
+lng PGConvertText(std::string input, char** output, PGFileEncoding source_encoding, PGFileEncoding target_encoding);
