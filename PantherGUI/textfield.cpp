@@ -190,9 +190,9 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 						if (found) {
 							if ((i + (word_end - word_start) == length ||
 								GetCharacterClass(line[i + (word_end - word_start)]) != PGCharacterTypeText)) {
-								PGScalar char_width = MeasureTextWidth(renderer, "x", 1);
+								PGScalar x_offset = MeasureTextWidth(renderer, line, i);
 								PGScalar width = MeasureTextWidth(renderer, selected_word, word_end - word_start);
-								PGRect rect(position_x_text + i * char_width, position_y, width, line_height);
+								PGRect rect(position_x_text + x_offset, position_y, width, line_height);
 								RenderRectangle(renderer, rect, PGColor(191, 191, 191), PGStyleStroke);
 							}
 						}
