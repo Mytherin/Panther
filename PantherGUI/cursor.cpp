@@ -3,6 +3,7 @@
 #include "textfile.h"
 #include "textfield.h"
 #include "text.h"
+#include "unicode.h"
 
 #include <algorithm>
 
@@ -27,31 +28,31 @@ void Cursor::OffsetSelectionLine(lng offset) {
 	start_character = std::min(start_character, file->GetLine(start_line)->GetLength());
 }
 
-void Cursor::OffsetCharacter(lng offset) {
-	OffsetSelectionCharacter(offset);
+void Cursor::OffsetCharacter(PGDirection direction) {
+	OffsetSelectionCharacter(direction);
 	end_character = start_character;
 	end_line = start_line;
 	min_character = -1;
 }
 
-void Cursor::OffsetSelectionCharacter(lng offset) {
-	start_character += offset;
-	while (start_character < 0) {
-		if (start_line > 0) {
-			start_line--;
-			start_character += this->file->GetLine(start_line)->GetLength() + 1;
+void Cursor::OffsetSelectionCharacter(PGDirection direction) {
+	if (direction == PGDirectionLeft) {
+		if (start_character <= 0) {
+			if (start_line > 0) {
+				start_line--;
+				start_character = this->file->GetLine(start_line)->GetLength();
+			}
 		} else {
-			start_character = 0;
-			break;
+			start_character = utf8_prev_character(this->file->GetLine(start_line)->GetLine(), start_character);
 		}
-	}
-	while (start_character > this->file->GetLine(start_line)->GetLength()) {
-		if (start_line < this->file->GetLineCount() - 1) {
-			start_character -= this->file->GetLine(start_line)->GetLength() + 1;
-			start_line++;
+	} else if (direction == PGDirectionRight) {
+		if (start_character >= this->file->GetLine(start_line)->GetLength()) {
+			if (start_line < this->file->GetLineCount() - 1) {
+				start_character = 0;
+				start_line++;
+			}
 		} else {
-			start_character = this->file->GetLine(start_line)->GetLength();
-			break;
+			start_character += utf8_character_length(this->file->GetLine(start_line)->GetLine()[start_character]);
 		}
 	}
 }
@@ -68,9 +69,9 @@ void Cursor::OffsetEndOfLine() {
 
 void Cursor::OffsetSelectionWord(PGDirection direction) {
 	if (direction == PGDirectionLeft && this->SelectedCharacter() == 0) {
-		OffsetSelectionCharacter(-1);
+		OffsetSelectionCharacter(direction);
 	} else if (direction == PGDirectionRight && start_character == this->file->GetLine(start_line)->GetLength()) {
-		OffsetSelectionCharacter(1);
+		OffsetSelectionCharacter(direction);
 	} else {
 		TextLine* textline = this->file->GetLine(start_line);
 		char* line = textline->GetLine();

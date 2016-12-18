@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "xml.h"
 #include "c.h"
+#include "unicode.h"
 
 struct OpenFileInformation {
 	TextFile* textfile;
@@ -39,10 +40,12 @@ TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) 
 	this->current_task = nullptr;
 	this->text_lock = CreateMutex();
 	loaded = 0;
-	if (ext == "xml") {
-		highlighter = new XMLHighlighter();
-	} else if (ext == "c") {
-		highlighter = new CHighlighter();
+	if (false) {
+		if (ext == "xml") {
+			highlighter = new XMLHighlighter();
+		} else if (ext == "c") {
+			highlighter = new CHighlighter();
+		}
 	}
 	unsaved_changes = false;
 	is_loaded = false;
@@ -177,6 +180,8 @@ void TextFile::OpenFile(std::string path) {
 	loaded = 0;
 	LockMutex(text_lock);
 	while (*ptr) {
+		int character_offset = utf8_character_length(*ptr);
+		assert(character_offset >= 0); // invalid UTF8, FIXME: throw error message or something else
 		if (*ptr == '\n') {
 			// Unix line ending: \n
 			if (this->lineending == PGLineEndingUnknown) {
@@ -218,7 +223,7 @@ void TextFile::OpenFile(std::string path) {
 			}
 
 		}
-		ptr++;
+		ptr += character_offset;
 	}
 	if (lines.size() == 0) {
 		lineending = GetSystemLineEnding();
@@ -297,7 +302,7 @@ void TextFile::InsertText(char character) {
 
 void TextFile::InsertText(std::string text) {
 	if (!is_loaded) return;
-	// FIXME: merge delta if it already exists
+	// FIXME: merge delta if it already exists in sublime-text mode
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	MultipleDelta* delta = new MultipleDelta();
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -345,12 +350,12 @@ void TextFile::OffsetSelectionLine(lng offset) {
 	Cursor::NormalizeCursors(this, cursors);
 }
 
-void TextFile::OffsetCharacter(lng offset) {
+void TextFile::OffsetCharacter(PGDirection direction) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		if ((*it)->SelectionIsEmpty()) {
-			(*it)->OffsetCharacter(offset);
+			(*it)->OffsetCharacter(direction);
 		} else {
-			if (offset < 0) {
+			if (direction == PGDirectionLeft) {
 				(*it)->SetCursorLocation((*it)->BeginLine(), (*it)->BeginCharacter());
 			} else {
 				(*it)->SetCursorLocation((*it)->EndLine(), (*it)->EndCharacter());
@@ -360,9 +365,9 @@ void TextFile::OffsetCharacter(lng offset) {
 	Cursor::NormalizeCursors(this, cursors);
 }
 
-void TextFile::OffsetSelectionCharacter(lng offset) {
+void TextFile::OffsetSelectionCharacter(PGDirection direction) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetSelectionCharacter(offset);
+		(*it)->OffsetSelectionCharacter(direction);
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
@@ -733,11 +738,20 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 				delta->AddDelta(addText);
 			}
 		} else {
-			// FIXME: merge delta if it already exists
-			RemoveText* remove = new RemoveText(include_cursor ? &*it : nullptr,
-				linenumber,
-				direction == PGDirectionRight ? characternumber + 1 : characternumber,
-				1);
+			// FIXME: merge delta if it already exists in sublime-text mode
+			RemoveText* remove;
+			if (direction == PGDirectionLeft) {
+				remove = new RemoveText(include_cursor ? &*it : nullptr,
+					linenumber,
+					characternumber,
+					characternumber - utf8_prev_character(lines[linenumber]->GetLine(), characternumber));
+			} else {
+				int offset = utf8_character_length(lines[linenumber]->GetLine()[characternumber]);
+				remove = new RemoveText(include_cursor ? &*it : nullptr,
+					linenumber,
+					characternumber + offset,
+					offset);
+			}
 			delta->AddDelta(remove);
 		}
 	}

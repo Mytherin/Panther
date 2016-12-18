@@ -86,8 +86,8 @@ public:
 	void SelectEverything();
 	void OffsetLine(lng offset);
 	void OffsetSelectionLine(lng offset);
-	void OffsetCharacter(lng offset);
-	void OffsetSelectionCharacter(lng offset);
+	void OffsetCharacter(PGDirection);
+	void OffsetSelectionCharacter(PGDirection);
 	void OffsetWord(PGDirection);
 	void OffsetSelectionWord(PGDirection);
 	void OffsetStartOfLine();

@@ -23,6 +23,7 @@ public:
 	PGModifier modifier;
 	HWND hwnd;
 	ControlManager* manager;
+	PGRendererHandle renderer;
 	HCURSOR cursor;
 
 	PGWindow() : modifier(PGModifierNone) {}
@@ -129,6 +130,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
 	res->cursor = cursor_standard;
+	res->renderer = InitializeRenderer("Consolas");
 	global_handle = res;
 
 	ControlManager* manager = new ControlManager(res);
@@ -146,25 +148,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml");
-	TextFile* textfile2 = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
+	TextFile* textfile2 = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml");
+	TextFile* textfile = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
 	PGContainer* tabbed = new PGContainer(res, textfile);
 	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
-	/*
-	TabControl* tabs = new TabControl(res);
-	tabs->width = 1000;
-	tabs->height = 20;
-	tabs->x = 0;
-	tabs->y = 0;
-	tabs->anchor = PGAnchorLeft | PGAnchorRight;
-
-	TextField* textField = new TextField(res, textfile);
-	textField->width = 1000;
-	textField->height = 670;
-	textField->x = 0;
-	textField->y = 20;
-	textField->anchor = PGAnchorBottom | PGAnchorLeft | PGAnchorRight;*/
 
 	// The parameters to ShowWindow explained:
 	// hWnd: the value returned from CreateWindow
@@ -196,7 +184,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ps.rcPaint.right - ps.rcPaint.left,
 			ps.rcPaint.bottom - ps.rcPaint.top);
 
-		RenderControlsToBitmap(bitmap, rect, global_handle->manager, "Consolas");
+		RenderControlsToBitmap(global_handle->renderer, bitmap, rect, global_handle->manager);
 
 		BITMAPINFO bmi;
 		memset(&bmi, 0, sizeof(bmi));
@@ -624,4 +612,9 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 
 void* GetControlManager(PGWindowHandle window) {
 	return window->manager;
+}
+
+
+PGRendererHandle GetRendererHandle(PGWindowHandle window) {
+	return window->renderer;
 }

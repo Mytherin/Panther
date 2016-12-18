@@ -153,6 +153,7 @@
     <ClCompile Include="textfile.cpp" />
     <ClCompile Include="textline.cpp" />
     <ClCompile Include="thread.cpp" />
+    <ClCompile Include="unicode.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="windowfunctions.cpp" />
     <ClCompile Include="xml.cpp" />
@@ -184,6 +185,7 @@
     <ClInclude Include="textdelta.h" />
     <ClInclude Include="textline.h" />
     <ClInclude Include="thread.h" />
+    <ClInclude Include="unicode.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />
     <ClInclude Include="xml.h" />

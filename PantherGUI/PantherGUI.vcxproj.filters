@@ -96,6 +96,9 @@
     <ClCompile Include="container.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="unicode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -183,6 +186,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="container.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unicode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

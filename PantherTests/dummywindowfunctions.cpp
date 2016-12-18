@@ -14,8 +14,6 @@ struct PGFont {
 	int x;
 };
 
-
-
 // Window Functions
 PGWindowHandle PGCreateWindow(void) {
 	return NULL;

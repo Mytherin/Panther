@@ -214,6 +214,9 @@ typedef void (*PGTimerCallback)(void);
 PGTimerHandle CreateTimer(int ms, PGTimerCallback, PGTimerFlags);
 void DeleteTimer(PGTimerHandle);
 
+PGRendererHandle GetRendererHandle(PGWindowHandle window);
+lng GetPositionInLine(PGRendererHandle renderer, PGScalar x, const char* text, size_t length);
+
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle);
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle style);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);

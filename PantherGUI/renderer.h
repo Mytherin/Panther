@@ -12,4 +12,5 @@
 #include <SkTypeface.h>
 #include "controlmanager.h"
 
-void RenderControlsToBitmap(SkBitmap& bitmap, PGIRect rect, ControlManager* manager, char* default_font);
+void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager);
+PGRendererHandle InitializeRenderer(char* default_font);

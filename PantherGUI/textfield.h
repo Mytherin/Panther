@@ -58,7 +58,6 @@ private:
 	PGScalar text_offset;
 	PGScalar line_height;
 	PGScalar minimap_line_height;
-	PGScalar character_width;
 	int display_carets_count;
 	bool display_carets;
 	enum PGDragType {
@@ -69,8 +68,6 @@ private:
 		PGDragMinimap
 	};
 	PGDragType drag_type;
-
-	lng tabwidth;
 
 	bool current_focus;
 
@@ -96,6 +93,8 @@ private:
 
 	void DrawTextField(PGRendererHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
-	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character, bool clip_character = true);
+	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
+	void GetLineFromPosition(PGScalar y, lng& line);
+	void GetCharacterFromPosition(PGScalar x, TextLine* line, lng& character);
 	bool SetScrollOffset(lng offset);
 };

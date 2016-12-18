@@ -13,9 +13,9 @@ class Cursor {
 	friend class TextField;
 public:
 	void OffsetLine(lng offset);
-	void OffsetCharacter(lng offset);
+	void OffsetCharacter(PGDirection direction);
 	void OffsetSelectionLine(lng offset);
-	void OffsetSelectionCharacter(lng offset);
+	void OffsetSelectionCharacter(PGDirection direction);
 	void OffsetStartOfLine();
 	void OffsetEndOfLine();
 	void SelectStartOfLine();

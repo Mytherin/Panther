@@ -30,8 +30,6 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 
 	drag_type = PGDragNone;
 	line_height = 19;
-	character_width = 8;
-	tabwidth = 5;
 
 	ControlManager* manager = (ControlManager*)GetControlManager(window);
 	manager->RegisterMouseRegion(&minimap_region, this, (PGMouseCallback)MMMouseEvent);
@@ -282,8 +280,6 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGPoint mouse = GetMousePosition(window);
 	mouse.x -= this->x;
 	mouse.y -= this->y;
-	// determine the character width
-	character_width = MeasureTextWidth(renderer, "a", 1);
 	// render the line numbers
 	PGScalar position_x = this->x - rectangle->x;
 	PGScalar position_y = this->y - rectangle->y;
@@ -419,34 +415,31 @@ void TextField::SetScrollbarOffset(PGScalar offset) {
 	scrollbar_region.y = this->y + GetScrollbarOffset();
 }
 
-void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character, bool clip_character) {
+void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character) {
+	GetLineFromPosition(y, line);
+	GetCharacterFromPosition(x, textfile->GetLine(line), character);
+}
+
+void TextField::GetLineFromPosition(PGScalar y, lng& line) {
 	// find the line position of the mouse
-	// FIXME: account for horizontal scroll
 	lng lineoffset_y = textfile->GetLineOffset();
 	lng line_offset = std::max(std::min((lng)(y / this->line_height), textfile->GetLineCount() - lineoffset_y - 1), (lng)0);
 	line = lineoffset_y + line_offset;
-	// find the character position within the line
-	x = x - this->text_offset;
-	PGScalar width = 0;
-	if (clip_character) {
-		char* text = textfile->GetLine(line)->GetLine();
-		lng length = textfile->GetLine(line)->GetLength();
-		character = length;
-		for (lng i = 0; i < length; i++) {
-			PGScalar char_width = character_width;
-			if (text[i] == '\t') {
-				char_width = character_width * tabwidth;
-			}
-			if (width <= x && width + char_width > x) {
-				character = i;
-				break;
-			}
-			width += char_width;
-		}
-	} else {
-		character = (int)(x / character_width);
-	}
 }
+
+void TextField::GetCharacterFromPosition(PGScalar x, TextLine* line, lng& character) {
+	// FIXME: account for horizontal scroll
+	if (!line) {
+		character = 0;
+		return;
+	}
+	x -= text_offset - this->x;
+	char* text = line->GetLine();
+	lng length = line->GetLength();
+	SetTextFont(GetRendererHandle(this->window), nullptr, 15);
+	character = GetPositionInLine(GetRendererHandle(this->window), x, text, length);
+}
+
 
 void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
 	if (!textfile->IsLoaded()) return;
@@ -594,13 +587,15 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		}
 	} else if (buttons & PGMiddleMouseButton) {
 		if (drag_type == PGDragSelectionCursors) {
-			lng line, character;
-			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character, false);
+			lng line;
+			GetLineFromPosition(mouse.y, line);
 			std::vector<Cursor*>& cursors = textfile->GetCursors();
 			Cursor* active_cursor = textfile->GetActiveCursor();
 			lng start_character = active_cursor->end_character;
 			lng start_line = active_cursor->end_line;
 			lng increment = line > active_cursor->end_line ? 1 : -1;
+			lng character;
+			GetCharacterFromPosition(mouse.x, textfile->GetLine(active_cursor->end_line), character);
 			cursors[0] = active_cursor;
 			textfile->ClearExtraCursors();
 			for (auto it = active_cursor->end_line; ; it += increment) {
@@ -670,9 +665,9 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		return true;
 	case PGButtonLeft:
 		if (modifier == PGModifierNone) {
-			textfile->OffsetCharacter(-1);
+			textfile->OffsetCharacter(PGDirectionLeft);
 		} else if (modifier == PGModifierShift) {
-			textfile->OffsetSelectionCharacter(-1);
+			textfile->OffsetSelectionCharacter(PGDirectionLeft);
 		} else if (modifier == PGModifierCtrl) {
 			textfile->OffsetWord(PGDirectionLeft);
 		} else if (modifier == PGModifierCtrlShift) {
@@ -684,9 +679,9 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		return true;
 	case PGButtonRight:
 		if (modifier == PGModifierNone) {
-			textfile->OffsetCharacter(1);
+			textfile->OffsetCharacter(PGDirectionRight);
 		} else if (modifier == PGModifierShift) {
-			textfile->OffsetSelectionCharacter(1);
+			textfile->OffsetSelectionCharacter(PGDirectionRight);
 		} else if (modifier == PGModifierCtrl) {
 			textfile->OffsetWord(PGDirectionRight);
 		} else if (modifier == PGModifierCtrlShift) {
