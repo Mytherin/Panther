@@ -4,6 +4,7 @@
 #include "utils.h"
 
 #include <vector>
+#include "windowfunctions.h"
 
 class TextFile;
 class TextField;
@@ -68,4 +69,6 @@ private:
 	lng min_line;
 	lng max_character;
 	lng max_line;
+
+	PGScalar x_position;
 };

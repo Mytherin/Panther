@@ -108,18 +108,18 @@ void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScala
 			if (renderer->main_font->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
 				// if not, we first render the previous characters using the main font
 				if (position != i) {
+					renderer->textpaint->setTypeface(renderer->main_font);
 					renderer->canvas->drawText(text + position, i - position, x, y + renderer->text_offset, *renderer->textpaint);
 					x += renderer->textpaint->measureText(text + position, i - position);
 				}
 				position = i + offset;
-				// then we switch fonts to a fallback font
+				// then we switch to a fallback font to render this character
 				bool found_fallback = false;
 				for (auto it = renderer->fallback_fonts.begin(); it != renderer->fallback_fonts.end(); it++) {
 					if ((*it)->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
 						renderer->textpaint->setTypeface(*it);
 						renderer->canvas->drawText(text + i, offset, x, y + renderer->text_offset, *renderer->textpaint);
 						x += renderer->textpaint->measureText(text + i, offset);
-						renderer->textpaint->setTypeface(renderer->main_font);
 						found_fallback = true;
 						break;
 					}
@@ -128,6 +128,7 @@ void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScala
 			}
 		} else {
 			if (text[i] == '\t') {
+				renderer->textpaint->setTypeface(renderer->main_font);
 				if (position != i) {
 					renderer->canvas->drawText(text + position, i - position, x, y + renderer->text_offset, *renderer->textpaint);
 					x += renderer->textpaint->measureText(text + position, i - position);
@@ -141,7 +142,7 @@ void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScala
 		assert(offset > 0); // invalid UTF8 
 		i += offset;
 	}
-	// FIXME: render tabs correctly
+	renderer->textpaint->setTypeface(renderer->main_font);
 	if (position != i) {
 		renderer->canvas->drawText(text + position, i - position, x, y + renderer->text_offset, *renderer->textpaint);
 	}
@@ -243,6 +244,7 @@ lng GetPositionInLine(PGRendererHandle renderer, PGScalar x, const char* text, s
 			i += offset;
 		}
 	} else {
+		// FIXME: main font is not monospace
 		assert(0);
 	}
 	return length;
@@ -279,7 +281,7 @@ void SetTextColor(PGRendererHandle renderer, PGColor color) {
 void SetTextFont(PGRendererHandle renderer, PGFontHandle font, PGScalar height) {
 	renderer->textpaint->setTextSize(height);
 	renderer->character_width = renderer->textpaint->measureText("i", 1);
-	if (renderer->character_width != renderer->textpaint->measureText("W", 1)) {
+	if (std::abs(renderer->character_width - renderer->textpaint->measureText("W", 1)) > 0.1) {
 		// only monospace fonts are supported for now
 		assert(0);
 		// non monospace font, set character_width to a negative number

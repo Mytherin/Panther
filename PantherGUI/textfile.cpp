@@ -338,14 +338,14 @@ void TextFile::AddNewCursor(lng line, lng character) {
 
 void TextFile::OffsetLine(lng offset) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetLine(1);
+		(*it)->OffsetLine(offset);
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetSelectionLine(lng offset) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetSelectionLine(1);
+		(*it)->OffsetSelectionLine(offset);
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }

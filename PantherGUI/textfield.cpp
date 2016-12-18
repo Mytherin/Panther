@@ -436,6 +436,7 @@ void TextField::GetCharacterFromPosition(PGScalar x, TextLine* line, lng& charac
 	x -= text_offset - this->x;
 	char* text = line->GetLine();
 	lng length = line->GetLength();
+	// FIXME: this shouldn't happen here
 	SetTextFont(GetRendererHandle(this->window), nullptr, 15);
 	character = GetPositionInLine(GetRendererHandle(this->window), x, text, length);
 }

@@ -8,12 +8,12 @@
 #include <algorithm>
 
 Cursor::Cursor(TextFile* file) :
-	file(file), start_line(0), start_character(0), end_line(0), end_character(0), min_character(-1) {
+	file(file), start_line(0), start_character(0), end_line(0), end_character(0), min_character(-1), x_position(-1) {
 
 }
 
 Cursor::Cursor(TextFile* file, lng line, lng character) :
-	file(file), start_line(line), start_character(character), end_line(line), end_character(character), min_character(-1) {
+	file(file), start_line(line), start_character(character), end_line(line), end_character(character), min_character(-1), x_position(-1) {
 }
 
 void Cursor::OffsetLine(lng offset) {
@@ -24,8 +24,17 @@ void Cursor::OffsetLine(lng offset) {
 }
 
 void Cursor::OffsetSelectionLine(lng offset) {
-	start_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
-	start_character = std::min(start_character, file->GetLine(start_line)->GetLength());
+	PGRendererHandle renderer = GetRendererHandle(file->textfield->GetWindow());
+	// FIXME: this shouldn't happen here
+	SetTextFont(renderer, nullptr, 15);
+	if (x_position < 0) {
+		x_position = MeasureTextWidth(renderer, this->file->GetLine(start_line)->GetLine(), start_character);
+	}
+	lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
+	if (new_line != start_line) {
+		start_line = new_line;
+		start_character = GetPositionInLine(renderer, x_position, this->file->GetLine(start_line)->GetLine(), this->file->GetLine(start_line)->GetLength());
+	}
 }
 
 void Cursor::OffsetCharacter(PGDirection direction) {
@@ -33,6 +42,7 @@ void Cursor::OffsetCharacter(PGDirection direction) {
 	end_character = start_character;
 	end_line = start_line;
 	min_character = -1;
+	x_position = -1;
 }
 
 void Cursor::OffsetSelectionCharacter(PGDirection direction) {
@@ -116,6 +126,7 @@ void Cursor::SelectWord() {
 	min_line = this->BeginLine();
 	max_character = this->EndCharacter();
 	max_line = this->EndLine();
+	x_position = -1;
 }
 
 int Cursor::GetSelectedWord(lng& word_start, lng& word_end) {
@@ -174,6 +185,7 @@ void Cursor::SelectLine() {
 	min_line = this->BeginLine();
 	max_character = this->EndCharacter();
 	max_line = this->EndLine();
+	x_position = -1;
 }
 
 void Cursor::OffsetWord(PGDirection direction) {
@@ -225,6 +237,7 @@ void Cursor::SetCursorLocation(lng linenr, lng characternr) {
 	this->start_line = this->end_line = std::max(std::min((lng)  linenr, this->file->GetLineCount() - 1), (lng) 0);
 	this->start_character = this->end_character = std::max(std::min((lng) characternr, file->GetLine(start_line)->GetLength()), (lng) 0);
 	min_character = -1;
+	x_position = -1;
 }
 
 void Cursor::SetCursorStartLocation(lng linenr, lng characternr) {

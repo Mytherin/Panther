@@ -148,8 +148,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextFile* textfile2 = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml");
-	TextFile* textfile = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
+	TextFile* textfile = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
+	TextFile* textfile2 = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
 	PGContainer* tabbed = new PGContainer(res, textfile);
 	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
@@ -524,6 +524,7 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 
 void SetClipboardText(PGWindowHandle window, std::string text) {
 	if (OpenClipboard(window->hwnd)) {
+		// FIXME: convert UTF8 to UTF16
 		HGLOBAL clipbuffer;
 		char * buffer;
 		EmptyClipboard();
@@ -538,7 +539,11 @@ void SetClipboardText(PGWindowHandle window, std::string text) {
 
 std::string GetClipboardText(PGWindowHandle window) {
 	if (OpenClipboard(window->hwnd)) {
+		// FIXME: convert UTF16 to UTF8
+		// get the text from the clipboard
 		std::string text = std::string((char*)GetClipboardData(CF_TEXT));
+		// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
+
 		CloseClipboard();
 		return text;
 	}
