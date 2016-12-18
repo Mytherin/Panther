@@ -284,6 +284,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar position_x = this->x - rectangle->x;
 	PGScalar position_y = this->y - rectangle->y;
 	lng linenr = textfile->GetLineOffset();
+	line_height = GetTextHeight(renderer);
 	if (this->display_linenumbers) {
 		TextLine *current_line;
 		while ((current_line = textfile->GetLine(linenr)) != nullptr) {
