@@ -55,8 +55,8 @@ bool Control::KeyboardCharacter(char character, PGModifier modifier) {
 	return false;
 }
 
-void Control::KeyboardUnicode(char *character, PGModifier modifier) {
-
+bool Control::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
+	return false;
 }
 
 void Control::Invalidate() {

@@ -7,6 +7,13 @@
 
 #include <unicode/ucnv.h>
 
+struct PGEncoder {
+	PGFileEncoding source_encoding;
+	PGFileEncoding target_encoding;
+	UConverter* source = nullptr;
+	UConverter* target = nullptr;
+};
+
 char* GetEncodingName(PGFileEncoding encoding) {
 	switch (encoding) {
 	case PGEncodingUTF8:
@@ -50,61 +57,101 @@ void LogAvailableEncodings() {
 	}
 }
 
-lng PGConvertText(std::string input, char** output, PGFileEncoding source_encoding, PGFileEncoding target_encoding) {
+PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding target_encoding) {
+	UErrorCode error = U_ZERO_ERROR;
+
 	// assure that both encodings are implemented
 	assert(GetEncodingName(source_encoding) && GetEncodingName(target_encoding));
-	UErrorCode error;
-	UChar* buffer = nullptr;
-	char* result_buffer = nullptr;
-	UConverter* conv = nullptr;
-	lng return_size = -1;
 
-	*output = nullptr;
+	PGEncoderHandle handle = new PGEncoder();
+	handle->source_encoding = source_encoding;
+	handle->target_encoding = target_encoding;
 
-	size_t length = input.size();
-	// first we convert the source encoding to the internal ICU representation (UChars)
-	// create the converter
-	conv = ucnv_open(GetEncodingName(source_encoding), &error);
+	// create the converters
+	handle->source = ucnv_open(GetEncodingName(source_encoding), &error);
 	if (U_FAILURE(error)) {
 		// failed to create a converter
-		goto wrapup;
+		delete handle;
+		return nullptr;
 	}
-	size_t targetsize = length * sizeof(UChar);
-	buffer = (UChar*)malloc(targetsize * sizeof(UChar));
-	targetsize = ucnv_toUChars(conv, buffer, targetsize, input.c_str(), input.size(), &error);
+	handle->target = ucnv_open(GetEncodingName(target_encoding), &error);
+	if (U_FAILURE(error)) { 
+		// failed to create a converter
+		ucnv_close(handle->source);
+		delete handle;
+		return nullptr;
+	}
+
+	return handle;
+}
+
+lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
+	lng return_size = -1;
+	char* result_buffer = nullptr;
+	UChar* buffer = nullptr;
+	UErrorCode error = U_ZERO_ERROR;
+
+	// first we convert the source encoding to the internal ICU representation (UChars)
+	size_t targetsize = *intermediate_size;
+	buffer = *((UChar**)intermediate_buffer);
+	targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input.c_str(), input.size(), &error);
 	if (error == U_BUFFER_OVERFLOW_ERROR) {
 		error = U_ZERO_ERROR;
-		free(buffer);
+		if (buffer)
+			free(buffer);
 		buffer = (UChar*)malloc(targetsize * sizeof(UChar));
-		targetsize = ucnv_toUChars(conv, buffer, targetsize, input.c_str(), input.size(), &error);
+		*intermediate_buffer = (char*) buffer;
+		*intermediate_size = targetsize;
+		targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input.c_str(), input.size(), &error);
 	}
 	if (U_FAILURE(error)) {
 		// failed source conversion
-		goto wrapup;
+		return -1;
 	}
-	ucnv_close(conv); 
-	conv = ucnv_open(GetEncodingName(target_encoding), &error);
-	if (U_FAILURE(error)) {
-		// failed to create a converter
-		goto wrapup;
-	}
-	size_t result_size = targetsize * 4;
 	// now convert the source to the target encoding
-	result_buffer = (char*)malloc(targetsize * 4);
-	result_size = ucnv_fromUChars(conv, result_buffer, result_size, buffer, targetsize, &error);
+	size_t result_size = targetsize * 4;
+	if (*output_size < result_size) {
+		result_buffer = (char*)malloc(result_size);
+		*output_size = result_size;
+		*output = result_buffer;
+	} else {
+		result_buffer = *output;
+	}
+	result_size = ucnv_fromUChars(encoder->target, result_buffer, result_size, buffer, targetsize, &error);
 	if (U_FAILURE(error)) {
 		// failed source conversion
-		if (result_buffer) free(result_buffer);
-		return_size = -1;
-		goto wrapup;
+		return -1;
 	}
+	return result_size;
+}
 
-	*output = result_buffer;
-	return_size = result_size;
-wrapup:
-	if (buffer)
-		free(buffer);
-	if (conv)
-		ucnv_close(conv); 
+
+lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output) {
+	lng output_size = 0;
+	char* intermediate_buffer = nullptr;
+	lng intermediate_size = 0;
+
+	lng result_size = PGConvertText(encoder, input, output, &output_size, &intermediate_buffer, &intermediate_size);
+	if (intermediate_buffer) free(intermediate_buffer);
+	return result_size;
+}
+
+void PGDestroyEncoder(PGEncoderHandle handle) {
+	if (handle) {
+		if (handle->source) {
+			ucnv_close(handle->source);
+		}
+		if (handle->target) {
+			ucnv_close(handle->target);
+		}
+		delete handle;
+	}
+}
+
+lng PGConvertText(std::string input, char** output, PGFileEncoding source_encoding, PGFileEncoding target_encoding) {
+	PGEncoderHandle encoder = PGCreateEncoder(source_encoding, target_encoding);
+	if (!encoder) return -1;
+	lng return_size = PGConvertText(encoder, input, output);
+	PGDestroyEncoder(encoder);
 	return return_size;
 }

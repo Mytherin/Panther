@@ -36,10 +36,13 @@ bool PGContainer::KeyboardCharacter(char character, PGModifier modifier) {
 	return false;
 }
 
-void PGContainer::KeyboardUnicode(char* character, PGModifier modifier) {
+bool PGContainer::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		(*it)->KeyboardUnicode(character, modifier);
+		if ((*it)->KeyboardUnicode(character, modifier)) {
+			return true;
+		}
 	}
+	return false;
 }
 
 void PGContainer::PeriodicRender(void) {

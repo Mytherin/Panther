@@ -140,7 +140,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	manager->SetSize(PGSize(1000, 700));
 	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	res->manager = manager;
-
+	
 	CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
 	Scheduler::Initialize();
@@ -305,12 +305,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			break;
 		}
 		if (button != PGButtonNone) {
-			// FIXME modifier
 			global_handle->manager->KeyboardButton(button, global_handle->modifier);
+			return 0;
 		} else if (wParam >= 0x41 && wParam <= 0x5A) {
 			character = (char)wParam;
 			if (global_handle->modifier != PGModifierNone) {
 				global_handle->manager->KeyboardCharacter((char)wParam, global_handle->modifier);
+				return 0;
 			}
 		}
 		break;
@@ -328,16 +329,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			break;
 		}
 		break;
+	case WM_CHAR: {
+		// FIXME: more efficient conversion
+		wchar_t w = (wchar_t)wParam;
+		std::string str = std::string((char*) &w, 2);
+		char* output;
+		lng size = PGConvertText(str, &output, PGEncodingUTF16Platform, PGEncodingUTF8);
 
-	case WM_CHAR:
-		if (wParam < 0x20 || wParam >= 0x7F) break;
-		global_handle->manager->KeyboardCharacter((char)wParam, PGModifierNone);
+		if (size == 1) {
+			if (wParam < 0x20 || wParam >= 0x7F)
+				break;
+			global_handle->manager->KeyboardCharacter(output[0], PGModifierNone);
+		} else {
+			PGUTF8Character u;
+			u.length = size;
+			memcpy(u.character, output, size);
+
+			global_handle->manager->KeyboardUnicode(u, PGModifierNone);
+		}
+		free(output);
 		break;
+	}
 	case WM_UNICHAR:
-		assert(0);
-		break;
+		// we handle WM_CHAR (UTF16), not WM_UNICHAR (UTF32)
+		return false;
 	case WM_MOUSEWHEEL: {
-		// FIXME: control over which the mouse is
 		POINT point;
 		point.x = GET_X_LPARAM(lParam);
 		point.y = GET_Y_LPARAM(lParam);
@@ -350,7 +366,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_LBUTTONDOWN: {
-		// FIXME: control over which the mouse is
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);
 		PGModifier modifier = 0;
@@ -360,7 +375,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_LBUTTONUP: {
-		// FIXME: control over which the mouse is
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);
 		PGModifier modifier = 0;
@@ -370,7 +384,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_MBUTTONDOWN: {
-		// FIXME: control over which the mouse is
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);
 		PGModifier modifier = 0;
@@ -532,9 +545,11 @@ void SetClipboardText(PGWindowHandle window, std::string text) {
 		HGLOBAL clipbuffer;
 		char * buffer;
 		EmptyClipboard();
-		clipbuffer = GlobalAlloc(GMEM_DDESHARE, length);
+		clipbuffer = GlobalAlloc(GMEM_DDESHARE, length + 2);
 		buffer = (char*)GlobalLock(clipbuffer);
 		memcpy(buffer, result, length * sizeof(char));
+		buffer[length] = '\0';
+		buffer[length + 1] = '\0';
 		GlobalUnlock(clipbuffer);
 		SetClipboardData(CF_UNICODETEXT, clipbuffer);
 		CloseClipboard();
@@ -559,7 +574,7 @@ std::string GetClipboardText(PGWindowHandle window) {
 		// get the text from the clipboard
 		HANDLE data = GetClipboardData(CF_UNICODETEXT);
 		std::string text = std::string(((char*)data), ucs2length((char*)data));
-
+		
 		CloseClipboard();
 		// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
 		size_t length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
@@ -640,7 +655,6 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 void* GetControlManager(PGWindowHandle window) {
 	return window->manager;
 }
-
 
 PGRendererHandle GetRendererHandle(PGWindowHandle window) {
 	return window->renderer;

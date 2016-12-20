@@ -300,6 +300,11 @@ void TextFile::InsertText(char character) {
 	InsertText(std::string(1, character));
 }
 
+void TextFile::InsertText(PGUTF8Character u) {
+	if (!is_loaded) return;
+	InsertText(std::string((char*) u.character, u.length));
+}
+
 void TextFile::InsertText(std::string text) {
 	if (!is_loaded) return;
 	// FIXME: merge delta if it already exists in sublime-text mode

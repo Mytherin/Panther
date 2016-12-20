@@ -48,4 +48,14 @@ typedef enum {
 	PGEncodingVietnameseWindows1258
 } PGFileEncoding;
 
+struct PGEncoder;
+typedef PGEncoder* PGEncoderHandle;
+
+// Tools for incremental conversion, can be used if you want to repeatedly encode chunks of text
+PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding target_encoding);
+lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output);
+void PGDestroyEncoder(PGEncoderHandle);
+
+lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
+// Performs a single conversion, useful if you just want to convert some text
 lng PGConvertText(std::string input, char** output, PGFileEncoding source_encoding, PGFileEncoding target_encoding);

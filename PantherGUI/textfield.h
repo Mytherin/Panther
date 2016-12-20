@@ -29,7 +29,7 @@ public:
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	bool KeyboardCharacter(char character, PGModifier modifier);
-	void KeyboardUnicode(char *character, PGModifier modifier);
+	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 	
 	void InvalidateLine(lng line);
 	void InvalidateBeforeLine(lng line);

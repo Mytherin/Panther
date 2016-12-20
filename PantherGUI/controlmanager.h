@@ -25,7 +25,7 @@ public:
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	bool KeyboardCharacter(char character, PGModifier modifier);
-	void KeyboardUnicode(char* character, PGModifier modifier);
+	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 	void PeriodicRender(void);
 	void Draw(PGRendererHandle, PGIRect*);
 

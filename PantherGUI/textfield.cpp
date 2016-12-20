@@ -824,8 +824,14 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 	return false;
 }
 
-void TextField::KeyboardUnicode(char *character, PGModifier modifier) {
-	// FIXME
+bool TextField::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
+	if (!textfile->IsLoaded()) return false;
+
+	if (modifier == PGModifierNone) {
+		this->textfile->InsertText(character);
+		this->Invalidate();
+		return true;
+	}
 }
 
 void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {

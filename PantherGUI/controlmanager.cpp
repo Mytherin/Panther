@@ -28,8 +28,8 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 	return focused_control->KeyboardCharacter(character, modifier);
 }
 
-void ControlManager::KeyboardUnicode(char* character, PGModifier modifier) {
-	focused_control->KeyboardUnicode(character, modifier);
+bool ControlManager::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
+	return focused_control->KeyboardUnicode(character, modifier);
 }
 
 #include "logger.h"

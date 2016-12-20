@@ -43,6 +43,7 @@ public:
 
 	TextLine* GetLine(lng linenumber);
 	void InsertText(char character);
+	void InsertText(PGUTF8Character character);
 	void InsertText(std::string text);
 	void DeleteCharacter(PGDirection direction);
 	void DeleteWord(PGDirection direction);
