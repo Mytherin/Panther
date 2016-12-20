@@ -51,7 +51,12 @@ public:
 
 	void MinimapMouseEvent(bool mouse_enter);
 	void ScrollbarMouseEvent(bool mouse_enter);
+
+	PGFontHandle GetTextfieldFont() { return textfield_font; }
 private:
+	PGFontHandle textfield_font;
+	PGFontHandle minimap_font;
+
 	PGIRect scrollbar_region;
 	PGIRect minimap_region;
 
@@ -91,7 +96,7 @@ private:
 
 	MouseClickInstance last_click;
 
-	void DrawTextField(PGRendererHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
+	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
 	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
 	void GetLineFromPosition(PGScalar y, lng& line);

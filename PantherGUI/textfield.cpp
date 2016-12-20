@@ -37,6 +37,12 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 	scrollbar_region.x = this->width - SCROLLBAR_WIDTH;
 	scrollbar_region.y = SCROLLBAR_BASE_OFFSET;
 	scrollbar_region.width = SCROLLBAR_WIDTH;
+
+	textfield_font = PGCreateFont();
+	minimap_font = PGCreateFont();
+
+	SetTextFontSize(textfield_font, 15);
+	SetTextFontSize(minimap_font, 2.5f);
 }
 
 TextField::~TextField() {
@@ -88,14 +94,14 @@ void TextField::PeriodicRender(void) {
 	}
 }
 
-void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
+void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
 	// FIXME: respect Width while rendering
 	lng start_line = textfile->GetLineOffset();
 	std::vector<Cursor*> cursors = textfile->GetCursors();
 	lng linenr = start_line;
 	TextLine *current_line;
 	PGColor selection_color = PGColor(20, 60, 255, 125);
-	PGScalar line_height = GetTextHeight(renderer);
+	PGScalar line_height = GetTextHeight(font);
 	PGScalar start_position_y = position_y;
 	if (minimap) {
 		// fill in the background of the minimap
@@ -147,23 +153,23 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 					case 0:
 					case 255:
 					case 4:
-						SetTextColor(renderer, PGColor(191, 191, 191));
+						SetTextColor(font, PGColor(191, 191, 191));
 						break;
 					case 1:
-						SetTextColor(renderer, PGColor(255, 255, 0));
+						SetTextColor(font, PGColor(255, 255, 0));
 						break;
 					case 2:
-						SetTextColor(renderer, PGColor(166, 226, 46));
+						SetTextColor(font, PGColor(166, 226, 46));
 						break;
 					case 3:
-						SetTextColor(renderer, PGColor(230, 219, 116));
+						SetTextColor(font, PGColor(230, 219, 116));
 						break;
 					case 5:
-						SetTextColor(renderer, PGColor(128, 128, 128));
+						SetTextColor(font, PGColor(128, 128, 128));
 						break;
 					}
-					RenderText(renderer, line + position, syntax->end - position, xpos, position_y);
-					PGScalar text_width = MeasureTextWidth(renderer, line + position, syntax->end - position);
+					RenderText(renderer, font, line + position, syntax->end - position, xpos, position_y);
+					PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
 					if (!minimap) {
 						if (squiggles) {
 							RenderSquiggles(renderer, text_width, xpos, position_y + line_height * 1.2f, PGColor(255, 0, 0));
@@ -174,8 +180,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 					syntax = syntax->next;
 				}
 			}
-			SetTextColor(renderer, PGColor(191, 191, 191));
-			RenderText(renderer, line + position, length - position, xpos, position_y);
+			SetTextColor(font, PGColor(191, 191, 191));
+			RenderText(renderer, font, line + position, length - position, xpos, position_y);
 			if (selected_word) {
 				for (lng i = 0; i <= length - (word_end - word_start); i++) {
 					if ((i == 0 || GetCharacterClass(line[i - 1]) != PGCharacterTypeText) &&
@@ -190,8 +196,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 						if (found) {
 							if ((i + (word_end - word_start) == length ||
 								GetCharacterClass(line[i + (word_end - word_start)]) != PGCharacterTypeText)) {
-								PGScalar x_offset = MeasureTextWidth(renderer, line, i);
-								PGScalar width = MeasureTextWidth(renderer, selected_word, word_end - word_start);
+								PGScalar x_offset = MeasureTextWidth(font, line, i);
+								PGScalar width = MeasureTextWidth(font, selected_word, word_end - word_start);
 								PGRect rect(position_x_text + x_offset, position_y, width, line_height);
 								RenderRectangle(renderer, rect, PGColor(191, 191, 191), PGStyleStroke);
 							}
@@ -233,10 +239,11 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 			if (!minimap && startline == (*it)->SelectedLine()) {
 				if (display_carets) {
 					// render the caret on the selected line
-					RenderCaret(renderer, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter(), line_height);
+					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter(), line_height, PGColor(0,0,0));
 				}
 			}
 			RenderSelection(renderer,
+				font,
 				current_line->GetLine(),
 				current_line->GetLength(),
 				position_x_text,
@@ -264,8 +271,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGIRect* rectangle, boo
 void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	bool window_has_focus = WindowHasFocus(window);
 
-	SetTextFont(renderer, nullptr, 15);
-	SetTextColor(renderer, PGColor(200, 200, 182));
+	SetTextColor(textfield_font, PGColor(200, 200, 182));
 	//SetTextAlign(renderer, PGTextAlignRight);
 
 	// determine the width of the line numbers
@@ -274,7 +280,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	text_offset = 0;
 	if (this->display_linenumbers) {
 		auto line_number = std::to_string(std::max((lng)10, textfile->GetLineCount() + 1));
-		text_offset = 10 + MeasureTextWidth(renderer, line_number.c_str(), line_number.size());
+		text_offset = 10 + MeasureTextWidth(textfield_font, line_number.c_str(), line_number.size());
 	}
 	// get the mouse position (for rendering hovers)
 	PGPoint mouse = GetMousePosition(window);
@@ -284,7 +290,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar position_x = this->x - rectangle->x;
 	PGScalar position_y = this->y - rectangle->y;
 	lng linenr = textfile->GetLineOffset();
-	line_height = GetTextHeight(renderer);
+	line_height = GetTextHeight(textfield_font);
 	if (this->display_linenumbers) {
 		TextLine *current_line;
 		while ((current_line = textfile->GetLine(linenr)) != nullptr) {
@@ -293,7 +299,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 			if (!rectangle || position_y + line_height >= 0) {
 				// render the line number
 				auto line_number = std::to_string(linenr + 1);
-				RenderText(renderer, line_number.c_str(), line_number.size(), position_x, position_y);
+				RenderText(renderer, textfield_font, line_number.c_str(), line_number.size(), position_x, position_y);
 
 				// if the line is selected by a cursor, render an overlay
 				for (auto it = cursors.begin(); it != cursors.end(); it++) {
@@ -313,7 +319,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar textfield_width = this->width - minimap_width;
 
 	if (textfile->IsLoaded()) {
-		DrawTextField(renderer, rectangle, false, this->x + text_offset - rectangle->x, this->y - rectangle->y, textfield_width, false);
+		DrawTextField(renderer, textfield_font, rectangle, false, this->x + text_offset - rectangle->x, this->y - rectangle->y, textfield_width, false);
 	} else {
 		PGScalar offset = this->width / 10;
 		PGScalar width = this->width - offset * 2;
@@ -328,8 +334,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		bool mouse_in_minimap = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH - minimap_width && mouse.x <= this->width - SCROLLBAR_WIDTH;
 		PGIRect minimap_rect = PGIRect(this->x + textfield_width, this->y, minimap_width, this->height);
 
-		SetTextFont(renderer, nullptr, 2.5f);
-		DrawTextField(renderer, &minimap_rect, true, this->x + textfield_width - rectangle->x, this->y - rectangle->y, minimap_width, mouse_in_minimap);
+		DrawTextField(renderer, minimap_font, &minimap_rect, true, this->x + textfield_width - rectangle->x, this->y - rectangle->y, minimap_width, mouse_in_minimap);
 	}
 
 	// render the scrollbar
@@ -437,9 +442,7 @@ void TextField::GetCharacterFromPosition(PGScalar x, TextLine* line, lng& charac
 	x -= text_offset - this->x;
 	char* text = line->GetLine();
 	lng length = line->GetLength();
-	// FIXME: this shouldn't happen here
-	SetTextFont(GetRendererHandle(this->window), nullptr, 15);
-	character = GetPositionInLine(GetRendererHandle(this->window), x, text, length);
+	character = GetPositionInLine(textfield_font, x, text, length);
 }
 
 

@@ -36,6 +36,8 @@ public:
 		return drag_tab;
 	}
 protected:
+	PGFontHandle font;
+
 	int TabControl::GetSelectedTab(int x);
 
 	std::vector<Tab> tabs;

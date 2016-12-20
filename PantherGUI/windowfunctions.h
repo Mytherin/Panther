@@ -215,26 +215,29 @@ PGTimerHandle CreateTimer(int ms, PGTimerCallback, PGTimerFlags);
 void DeleteTimer(PGTimerHandle);
 
 PGRendererHandle GetRendererHandle(PGWindowHandle window);
-lng GetPositionInLine(PGRendererHandle renderer, PGScalar x, const char* text, size_t length);
+lng GetPositionInLine(PGFontHandle font, PGScalar x, const char* text, size_t length);
 
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle);
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle style);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);
 // Render text at the specified location
-void RenderText(PGRendererHandle renderer, const char* text, size_t length, PGScalar x, PGScalar y);
+void RenderText(PGRendererHandle renderer, PGFontHandle font, const char* text, size_t length, PGScalar x, PGScalar y);
 // Render squiggles under text at the specified location
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color);
-PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length);
-PGScalar GetTextHeight(PGRendererHandle renderer);
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height);
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height);
+PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length);
+PGScalar GetTextHeight(PGFontHandle font);
+void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color);
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height);
+
+PGFontHandle PGCreateFont();
+void PGDestroyFont(PGFontHandle font);
 // Sets the color of the text rendered with the RenderText method
-void SetTextColor(PGRendererHandle window, PGColor color);
+void SetTextColor(PGFontHandle font, PGColor color);
 // Sets the font used by the RenderText method
-void SetTextFont(PGRendererHandle window, PGFontHandle font, PGScalar height);
+void SetTextFontSize(PGFontHandle font, PGScalar height);
 // Sets the text-alignment of text rendered with the RenderText method
-void SetTextAlign(PGRendererHandle window, PGTextAlign alignment);
+void SetTextAlign(PGFontHandle font, PGTextAlign alignment);
 
 Control* GetFocusedControl(PGWindowHandle window);
 bool WindowHasFocus(PGWindowHandle window);

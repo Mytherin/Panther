@@ -9,17 +9,16 @@ const char* _spaces_array = "                                                   
 struct PGRenderer {
 	SkCanvas* canvas;
 	SkPaint* paint;
-	SkPaint* textpaint;
-	PGScalar character_width;
-	PGScalar text_offset;
-	std::vector<SkPaint*> fallback_paints;
-	int tabwidth;
 
-	PGRenderer() : canvas(nullptr), paint(nullptr), tabwidth(4) {}
+	PGRenderer() : canvas(nullptr), paint(nullptr) {}
 };
 
 struct PGFont {
-	int x;
+	SkPaint* textpaint;
+	PGScalar character_width;
+	PGScalar text_offset;
+	int tabwidth = 4;
+	std::vector<SkPaint*> fallback_paints;
 };
 
 static SkPaint::Style PGStyleConvert(PGStyle style) {
@@ -39,24 +38,34 @@ SkPaint* CreateTextPaint() {
 	return textpaint;
 }
 
-PGRendererHandle InitializeRenderer(char* default_font) {
-	SkPaint* paint = new SkPaint();
-	PGRendererHandle renderer = new PGRenderer();
+PGFontHandle PGCreateFont() {
+	char* default_font = "Consolas";
+	PGFontHandle font = new PGFont();
+
 	SkFontStyle style(SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
-	SkPaint* textpaint = CreateTextPaint();
+
+	font->textpaint = CreateTextPaint();
 	auto main_font = SkTypeface::MakeFromName(default_font, style);
-	textpaint->setTypeface(main_font);
+	font->textpaint->setTypeface(main_font);
 
 	SkPaint* fallback_paint = CreateTextPaint();
 	auto fallback_font = SkTypeface::MakeFromFile("NotoSansHans-Regular.otf");
 	fallback_paint->setTypeface(fallback_font);
+	font->fallback_paints.push_back(fallback_paint);
+	return font;
+}
 
-	renderer->fallback_paints.push_back(fallback_paint);
+void PGDestroyFont(PGFontHandle font) {
+	delete font->textpaint;
+	delete font;
+}
 
+PGRendererHandle InitializeRenderer() {
+	SkPaint* paint = new SkPaint();
+	PGRendererHandle renderer = new PGRenderer();
 	paint->setStyle(SkPaint::kFill_Style);
 	renderer->canvas = nullptr;
 	renderer->paint = paint;
-	renderer->textpaint = textpaint;
 	return renderer;
 }
 
@@ -102,7 +111,7 @@ void RenderImage(PGRendererHandle renderer, void* image, int x, int y) {
 
 }
 
-void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y) {
+void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y) {
 	/*if (len == 0) {
 		len = 1;
 		text = " ";
@@ -113,18 +122,18 @@ void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScala
 		int offset = utf8_character_length(text[i]);
 		if (offset > 1) {
 			// for special unicode characters, we check if the main font can render the character
-			if (renderer->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
+			if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
 				// if not, we first render the previous characters using the main font
 				if (position < i) {
-					renderer->canvas->drawText(text + position, i - position, x, y + renderer->text_offset, *renderer->textpaint);
-					x += renderer->textpaint->measureText(text + position, i - position);
+					renderer->canvas->drawText(text + position, i - position, x, y + font->text_offset, *font->textpaint);
+					x += font->textpaint->measureText(text + position, i - position);
 				}
 				position = i + offset;
 				// then we switch to a fallback font to render this character
 				bool found_fallback = false;
-				for (auto it = renderer->fallback_paints.begin(); it != renderer->fallback_paints.end(); it++) {
+				for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 					if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
-						renderer->canvas->drawText(text + i, offset, x, y + renderer->text_offset, **it);
+						renderer->canvas->drawText(text + i, offset, x, y + font->text_offset, **it);
 						x += (*it)->measureText(text + i, offset);
 						found_fallback = true;
 						break;
@@ -135,20 +144,19 @@ void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScala
 		} else {
 			if (text[i] == '\t') {
 				if (position < i) {
-					renderer->canvas->drawText(text + position, i - position, x, y + renderer->text_offset, *renderer->textpaint);
-					x += renderer->textpaint->measureText(text + position, i - position);
+					renderer->canvas->drawText(text + position, i - position, x, y + font->text_offset, *font->textpaint);
+					x += font->textpaint->measureText(text + position, i - position);
 				}
 				position = i + offset;
-				assert(renderer->tabwidth > 0 && renderer->tabwidth < 100);
-				renderer->canvas->drawText(_spaces_array, renderer->tabwidth, x, y, *renderer->textpaint);
-				x += renderer->textpaint->measureText(_spaces_array, renderer->tabwidth);
+				renderer->canvas->drawText(_spaces_array, font->tabwidth, x, y, *font->textpaint);
+				x += font->textpaint->measureText(_spaces_array, font->tabwidth);
 			}
 		}
 		assert(offset > 0); // invalid UTF8 
 		i += offset;
 	}
 	if (position < i) {
-		renderer->canvas->drawText(text + position, i - position, x, y + renderer->text_offset, *renderer->textpaint);
+		renderer->canvas->drawText(text + position, i - position, x, y + font->text_offset, *font->textpaint);
 	}
 }
 
@@ -168,24 +176,24 @@ void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGSc
 	renderer->canvas->drawPath(path, *renderer->paint);
 }
 
-PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length) {
+PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 	PGScalar text_size = 0;
-	if (renderer->character_width > 0) {
+	if (font->character_width > 0) {
 		// main font is a monospace font
 		int regular_elements = 0;
 		for (size_t i = 0; i < length; ) {
 			int offset = utf8_character_length(text[i]);
 			if (offset == 1) {
 				if (text[i] == '\t') {
-					regular_elements += renderer->tabwidth;
+					regular_elements += font->tabwidth;
 				} else {
 					regular_elements++;
 				}
 			} else {
-				if (renderer->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
+				if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
 					// if the main font does not support the current glyph, look into the fallback fonts
 					bool found_fallback = false;
-					for (auto it = renderer->fallback_paints.begin(); it != renderer->fallback_paints.end(); it++) {
+					for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 						if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
 							text_size += (*it)->measureText(text + i, offset);
 							found_fallback = true;
@@ -200,7 +208,7 @@ PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t le
 			assert(offset > 0);
 			i += offset;
 		}
-		text_size += regular_elements * renderer->character_width;
+		text_size += regular_elements * font->character_width;
 	} else {
 		// FIXME: main font is not monospace
 		assert(0);
@@ -208,24 +216,24 @@ PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t le
 	return text_size;
 }
 
-lng GetPositionInLine(PGRendererHandle renderer, PGScalar x, const char* text, size_t length) {
+lng GetPositionInLine(PGFontHandle font, PGScalar x, const char* text, size_t length) {
 	PGScalar text_size = 0;
-	if (renderer->character_width > 0) {
+	if (font->character_width > 0) {
 		// main font is a monospace font
 		for (size_t i = 0; i < length; ) {
 			PGScalar old_size = text_size;
 			int offset = utf8_character_length(text[i]);
 			if (offset == 1) {
 				if (text[i] == '\t') {
-					text_size += renderer->character_width * renderer->tabwidth;
+					text_size += font->character_width * font->tabwidth;
 				} else {
-					text_size += renderer->character_width;
+					text_size += font->character_width;
 				}
 			} else {
-				if (renderer->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
+				if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
 					// if the main font does not support the current glyph, look into the fallback fonts
 					bool found_fallback = false;
-					for (auto it = renderer->fallback_paints.begin(); it != renderer->fallback_paints.end(); it++) {
+					for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 						if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
 							text_size += (*it)->measureText(text + i, offset);
 							found_fallback = true;
@@ -234,7 +242,7 @@ lng GetPositionInLine(PGRendererHandle renderer, PGScalar x, const char* text, s
 					}
 					assert(found_fallback);
 				} else {
-					text_size += renderer->character_width;
+					text_size += font->character_width;
 				}
 			}
 			assert(offset > 0);
@@ -251,47 +259,46 @@ lng GetPositionInLine(PGRendererHandle renderer, PGScalar x, const char* text, s
 }
 
 
-PGScalar GetTextHeight(PGRendererHandle renderer) {
+PGScalar GetTextHeight(PGFontHandle font) {
 	SkPaint::FontMetrics metrics;
-	renderer->textpaint->getFontMetrics(&metrics, 0);
+	font->textpaint->getFontMetrics(&metrics, 0);
 	return metrics.fDescent - metrics.fAscent;
 }
 
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height) {
-	PGScalar width = MeasureTextWidth(renderer, text, characternr);
-	SkColor color = renderer->textpaint->getColor();
-	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color)));
+void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color) {
+	PGScalar width = MeasureTextWidth(font, text, characternr);
+	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), color);
 }
 
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height) {
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height) {
 	if (start == end) return;
-	PGScalar selection_start = MeasureTextWidth(renderer, text, start);
-	PGScalar selection_width = MeasureTextWidth(renderer, text, end > (lng) len ? len : end);
+	PGScalar selection_start = MeasureTextWidth(font, text, start);
+	PGScalar selection_width = MeasureTextWidth(font, text, end > (lng) len ? len : end);
 	if (end > (lng) len) {
 		assert(end == len + 1);
-		selection_width += renderer->character_width;
+		selection_width += font->character_width;
 	}
-	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, GetTextHeight(renderer)), selection_color, PGStyleFill);
+	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, GetTextHeight(font)), selection_color, PGStyleFill);
 }
 
-void SetTextColor(PGRendererHandle renderer, PGColor color) {
-	renderer->textpaint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
-	for (auto it = renderer->fallback_paints.begin(); it != renderer->fallback_paints.end(); it++) {
+void SetTextColor(PGFontHandle font, PGColor color) {
+	font->textpaint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 		(*it)->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	}
 }
 
-void SetTextFont(PGRendererHandle renderer, PGFontHandle font, PGScalar height) {
-	renderer->textpaint->setTextSize(height);
-	renderer->character_width = renderer->textpaint->measureText("i", 1);
+void SetTextFontSize(PGFontHandle font, PGScalar height) {
+	font->textpaint->setTextSize(height);
+	font->character_width = font->textpaint->measureText("i", 1);
 	// FIXME: set renderer->character_width to -1 for non-monospace fonts
-	renderer->text_offset = renderer->textpaint->getFontBounds().height() / 2 + renderer->textpaint->getFontBounds().height() / 4;
-	for (auto it = renderer->fallback_paints.begin(); it != renderer->fallback_paints.end(); it++) {
+	font->text_offset = font->textpaint->getFontBounds().height() / 2 + font->textpaint->getFontBounds().height() / 4;
+	for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 		(*it)->setTextSize(height);
 	}
 }
 
-void SetTextAlign(PGRendererHandle renderer, PGTextAlign alignment) {
+void SetTextAlign(PGFontHandle font, PGTextAlign alignment) {
 	if (alignment & PGTextAlignBottom) {
 		assert(0);
 	} else if (alignment & PGTextAlignTop) {
@@ -301,10 +308,10 @@ void SetTextAlign(PGRendererHandle renderer, PGTextAlign alignment) {
 	}
 
 	if (alignment & PGTextAlignLeft) {
-		renderer->textpaint->setTextAlign(SkPaint::kLeft_Align);
+		font->textpaint->setTextAlign(SkPaint::kLeft_Align);
 	} else if (alignment & PGTextAlignRight) {
-		renderer->textpaint->setTextAlign(SkPaint::kRight_Align);
+		font->textpaint->setTextAlign(SkPaint::kRight_Align);
 	} else if (alignment & PGTextAlignHorizontalCenter) {
-		renderer->textpaint->setTextAlign(SkPaint::kCenter_Align);
+		font->textpaint->setTextAlign(SkPaint::kCenter_Align);
 	}
 }

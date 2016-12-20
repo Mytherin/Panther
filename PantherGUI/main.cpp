@@ -132,7 +132,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
 	res->cursor = cursor_standard;
-	res->renderer = InitializeRenderer("Consolas");
+	res->renderer = InitializeRenderer();
 	global_handle = res;
 
 	ControlManager* manager = new ControlManager(res);

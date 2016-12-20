@@ -24,16 +24,14 @@ void Cursor::OffsetLine(lng offset) {
 }
 
 void Cursor::OffsetSelectionLine(lng offset) {
-	PGRendererHandle renderer = GetRendererHandle(file->textfield->GetWindow());
-	// FIXME: this shouldn't happen here
-	SetTextFont(renderer, nullptr, 15);
+	PGFontHandle textfield_font = file->textfield->GetTextfieldFont();
 	if (x_position < 0) {
-		x_position = MeasureTextWidth(renderer, this->file->GetLine(start_line)->GetLine(), start_character);
+		x_position = MeasureTextWidth(textfield_font, this->file->GetLine(start_line)->GetLine(), start_character);
 	}
 	lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
 	if (new_line != start_line) {
 		start_line = new_line;
-		start_character = GetPositionInLine(renderer, x_position, this->file->GetLine(start_line)->GetLine(), this->file->GetLine(start_line)->GetLength());
+		start_character = GetPositionInLine(textfield_font, x_position, this->file->GetLine(start_line)->GetLine(), this->file->GetLine(start_line)->GetLength());
 	}
 }
 

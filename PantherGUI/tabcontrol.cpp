@@ -8,6 +8,8 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield) : Control(wi
 	for (auto it = files.begin(); it != files.end(); it++) {
 		this->tabs.push_back(Tab(*it));
 	}
+	this->font = PGCreateFont();
+	SetTextFontSize(this->font, 13);
 }
 
 void TabControl::PeriodicRender() {
@@ -40,21 +42,20 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar position_y = this->y - rectangle->y;
 	PGScalar tab_padding = 5;
 	PGColor color = PGColor(0, 102, 204);
-	SetTextFont(renderer, nullptr, 13);
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		TextFile* file = (*it).file;
 		std::string filename = file->GetName();
 		(*it).target_x = position_x;
-		(*it).width = MeasureTextWidth(renderer, filename.c_str(), filename.size());
+		(*it).width = MeasureTextWidth(font, filename.c_str(), filename.size());
 		if (index != active_tab) {
 			PGRect rect((*it).x, position_y, (*it).width + tab_padding * 2, this->height);
 			if (file->HasUnsavedChanges()) {
-				SetTextColor(renderer, PGColor(255, 69, 0));
+				SetTextColor(font, PGColor(255, 69, 0));
 			} else {
-				SetTextColor(renderer, PGColor(255, 255, 255));
+				SetTextColor(font, PGColor(255, 255, 255));
 			}
-			RenderText(renderer, filename.c_str(), filename.length(), (*it).x + tab_padding, position_y);
+			RenderText(renderer, font, filename.c_str(), filename.length(), (*it).x + tab_padding, position_y);
 		}
 		position_x += (*it).width + tab_padding * 2;
 		index++;
@@ -67,11 +68,11 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		PGRect rect(tabs[active_tab].x, position_y, tabs[active_tab].width + tab_padding * 2, this->height);
 		RenderRectangle(renderer, rect, color, PGStyleFill);
 		if (file->HasUnsavedChanges()) {
-			SetTextColor(renderer, PGColor(255, 69, 0));
+			SetTextColor(font, PGColor(255, 69, 0));
 		} else {
-			SetTextColor(renderer, PGColor(255, 255, 255));
+			SetTextColor(font, PGColor(255, 255, 255));
 		}
-		RenderText(renderer, filename.c_str(), filename.length(), tabs[active_tab].x + tab_padding, position_y);
+		RenderText(renderer, font, filename.c_str(), filename.length(), tabs[active_tab].x + tab_padding, position_y);
 	}
 	RenderLine(renderer, PGLine(0, this->height - 1 - rectangle->y, this->width, this->height - 1 - rectangle->y), PGColor(80, 150, 200));
 }

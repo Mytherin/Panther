@@ -1,4 +1,5 @@
 
+#include "unicode.h"
 #include "xml.h"
 #include <vector>
 
@@ -49,6 +50,12 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 	current = &line.syntax;
 	current->end = -1;
 	for (lng i = 0; i < size; i++) {
+		int utf8_length = utf8_character_length(text[i]);
+		if (utf8_length > 1) {
+			// special characters are not supported in the keyword highlighter (for now)
+			i += utf8_length - 1;
+			continue;
+		}
 		if (text[i] == '<') {
 			if (state->state == PGParserXMLDefault) {
 				current->type = PGXMLEmpty;

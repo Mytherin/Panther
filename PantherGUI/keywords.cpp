@@ -1,5 +1,6 @@
 
 #include "keywords.h"
+#include "unicode.h"
 
 const PGSyntaxType PGKWKeyword = 1;
 const PGSyntaxType PGKWString = 3;
@@ -37,6 +38,12 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 	bool escaped = false;
 	// parse the actual keywords
 	for (lng i = 0; i < size; i++) {
+		int utf8_length = utf8_character_length(text[i]);
+		if (utf8_length > 1) {
+			// special characters are not supported in the keyword highlighter (for now)
+			i += utf8_length - 1;
+			continue;
+		}
 		if (state->state == PGParserKWDefault) {
 			if (KeywordCharacter(text[i])) {
 				lng start = i;

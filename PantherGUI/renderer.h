@@ -13,4 +13,4 @@
 #include "controlmanager.h"
 
 void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager);
-PGRendererHandle InitializeRenderer(char* default_font);
+PGRendererHandle InitializeRenderer();

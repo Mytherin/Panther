@@ -40,12 +40,10 @@ TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) 
 	this->current_task = nullptr;
 	this->text_lock = CreateMutex();
 	loaded = 0;
-	if (false) {
-		if (ext == "xml") {
-			highlighter = new XMLHighlighter();
-		} else if (ext == "c") {
-			highlighter = new CHighlighter();
-		}
+	if (ext == "xml") {
+		highlighter = new XMLHighlighter();
+	} else if (ext == "c") {
+		highlighter = new CHighlighter();
 	}
 	unsaved_changes = false;
 	is_loaded = false;
