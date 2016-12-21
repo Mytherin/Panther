@@ -239,7 +239,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			if (!minimap && startline == (*it)->SelectedLine()) {
 				if (display_carets) {
 					// render the caret on the selected line
-					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter(), line_height, PGColor(0,0,0));
+					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter(), line_height, PGColor(191, 191, 191));
 				}
 			}
 			RenderSelection(renderer,
@@ -494,8 +494,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 					textfile->OffsetLineOffset(GetLineHeight());
 					this->Invalidate();
 				} else {
-					// mouse is on the minimap; enable dragging of the scrollbar
-					// FIXME: drag minimap
+					// mouse is on the minimap; enable dragging
 					drag_type = PGDragMinimap;
 					drag_offset = mouse.y - minimap_offset;
 					this->Invalidate();
@@ -638,8 +637,6 @@ int TextField::GetLineHeight() {
 bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardButton(") + GetButtonName(button) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
 	switch (button) {
-		// FIXME: when moving up/down, count \t as multiple characters (equal to tab size)
-		// FIXME: when moving up/down, maintain the current character number (even though a line is shorter than that number)
 	case PGButtonDown:
 		if (modifier == PGModifierCtrlShift) {
 			textfile->MoveLines(1);
@@ -777,6 +774,7 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	default:
 		return false;
 	}
+	return false;
 }
 
 bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
@@ -835,6 +833,7 @@ bool TextField::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) 
 		this->Invalidate();
 		return true;
 	}
+	return false;
 }
 
 void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {

@@ -23,12 +23,12 @@ void TabControl::PeriodicRender() {
 		PGScalar current_x = (*it).x;
 		PGScalar offset = ((*it).target_x - (*it).x) / 3;
 		if (((*it).x < (*it).target_x && (*it).x + offset > (*it).target_x) || 
-			(std::abs((*it).x + offset - (*it).target_x) < 1)) {
+			(PG::abs((*it).x + offset - (*it).target_x) < 1)) {
 			(*it).x = (*it).target_x;
 		} else {
 			(*it).x = (*it).x < 0 ? (*it).target_x : (*it).x + offset;
 		}
-		if (std::abs(current_x - (*it).x) > 0.1)
+		if (PG::abs(current_x - (*it).x) > 0.1)
 			invalidate = true;
 		index++;
 	}
@@ -107,6 +107,7 @@ bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
 	default:
 		return false;
 	}
+	return false;
 }
 
 void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {

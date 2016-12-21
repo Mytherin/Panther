@@ -123,6 +123,7 @@ void ControlManager::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		}
 		(*it)->Draw(renderer, rect);
 	}
+	//RenderRectangle(renderer, PGRect(0, this->height - 32, this->width, 32), PGColor(0, 122, 204), PGStyleFill);
 }
 
 

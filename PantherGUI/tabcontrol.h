@@ -38,7 +38,7 @@ public:
 protected:
 	PGFontHandle font;
 
-	int TabControl::GetSelectedTab(int x);
+	int GetSelectedTab(int x);
 
 	std::vector<Tab> tabs;
 

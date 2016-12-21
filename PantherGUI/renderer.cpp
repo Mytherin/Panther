@@ -39,7 +39,7 @@ SkPaint* CreateTextPaint() {
 }
 
 PGFontHandle PGCreateFont() {
-	char* default_font = "Consolas";
+	char* default_font = "menlo";
 	PGFontHandle font = new PGFont();
 
 	SkFontStyle style(SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
@@ -50,6 +50,12 @@ PGFontHandle PGCreateFont() {
 
 	SkPaint* fallback_paint = CreateTextPaint();
 	auto fallback_font = SkTypeface::MakeFromFile("NotoSansHans-Regular.otf");
+	fallback_paint->setTypeface(fallback_font);
+	font->fallback_paints.push_back(fallback_paint);
+
+
+	fallback_paint = CreateTextPaint();
+	fallback_font = SkTypeface::MakeFromFile("NotoSansHans-Regular.otf");
 	fallback_paint->setTypeface(fallback_font);
 	font->fallback_paints.push_back(fallback_paint);
 	return font;
@@ -139,7 +145,10 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 						break;
 					}
 				}
-				assert(found_fallback);
+				if (!found_fallback) {
+					renderer->canvas->drawText("?", 1, x, y + font->text_offset, *font->textpaint);
+					x += font->character_width;
+				}
 			}
 		} else {
 			if (text[i] == '\t') {
@@ -200,7 +209,8 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 							break;
 						}
 					}
-					assert(found_fallback);
+					if (!found_fallback)
+						regular_elements++;
 				} else {
 					regular_elements++;
 				}
@@ -240,7 +250,8 @@ lng GetPositionInLine(PGFontHandle font, PGScalar x, const char* text, size_t le
 							break;
 						}
 					}
-					assert(found_fallback);
+					if (!found_fallback)
+						text_size += font->character_width;
 				} else {
 					text_size += font->character_width;
 				}

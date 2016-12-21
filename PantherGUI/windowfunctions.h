@@ -211,7 +211,7 @@ typedef enum {
 
 typedef void (*PGTimerCallback)(void);
 
-PGTimerHandle CreateTimer(int ms, PGTimerCallback, PGTimerFlags);
+PGTimerHandle CreateTimer(PGWindowHandle handle, int ms, PGTimerCallback, PGTimerFlags);
 void DeleteTimer(PGTimerHandle);
 
 PGRendererHandle GetRendererHandle(PGWindowHandle window);

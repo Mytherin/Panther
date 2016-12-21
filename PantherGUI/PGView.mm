@@ -4,124 +4,106 @@
 #include "textfield.h"
 #include "time.h"
 #include "scheduler.h"
+#include "renderer.h"
+#include "controlmanager.h"
+#include "filemanager.h"
+#include "container.h"
+
+#include <sys/time.h>
+#include <cctype>
 
 #import "PGView.h"
-
-#include <SkBitmap.h>
-#include <SkDevice.h>
-#include <SkPaint.h>
-#include <SkRect.h>
-#include <SkData.h>
-#include <SkImage.h>
-#include <SkStream.h>
-#include <SkSurface.h>
-#include <SkPath.h>
-#include <SkTypeface.h>
 
 #include "control.h"
 
 #import "PGDrawBitmap.h"
 
+// clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm c.cpp control.cpp cursor.cpp keywords.cpp logger.cpp scheduler.cpp text.cpp syntaxhighlighter.cpp textfield.cpp textfile.cpp textline.cpp thread.cpp windowfunctions.cpp xml.cpp file.cpp tabcontrol.cpp tabbedtextfield.cpp renderer.cpp filemanager.cpp controlmanager.cpp utils.cpp  -o main
+
 struct PGWindow {
+    NSWindow *window;
 	PGView* view;
-	std::vector<Control*> controls;
-	Control *focused_control;
-	PGIRect invalidated_area;
-	bool invalidated;
-
-	PGWindow() : invalidated_area(0,0,0,0) { }
+	ControlManager* manager;
+	PGRendererHandle renderer;
 };
 
-struct PGRenderer {
-	SkCanvas* canvas;
-	SkPaint* paint;
-	SkPaint* textpaint;
-	PGScalar character_width;
-	PGScalar text_offset;
-
-	PGRenderer() : canvas(nullptr), paint(nullptr) {}
+struct PGMouseFlags {
+	int x;
+	int y;
+	PGMouseButton button;
+	PGModifier modifiers;
 };
 
+@interface PGTimerObject : NSObject {
+	PGTimerCallback callback;
+}
+-(id)initWithCallback:(PGTimerCallback)callback;
+-(void)callFunction;
+@end
+
+@implementation PGTimerObject
+-(id)initWithCallback:(PGTimerCallback)cb {
+	self = [super init];
+	if (self) {
+		callback = cb;
+	}
+	return self;
+}
+-(void)callFunction {
+	callback();
+}
+@end
 
 PGWindowHandle global_handle;
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
 void PeriodicWindowRedraw(void) {
-	for (auto it = global_handle->controls.begin(); it != global_handle->controls.end(); it++) {
-		(*it)->PeriodicRender();
-	}
-	if (global_handle->invalidated) {
-		RedrawWindow(global_handle);
-	} else if (global_handle->invalidated_area.width != 0) {
-		RedrawWindow(global_handle, global_handle->invalidated_area);
-	}
-	global_handle->invalidated = 0;
-	global_handle->invalidated_area.width = 0;
+	global_handle->manager->PeriodicRender();
 }
 
 @implementation PGView : NSView
 
-- (instancetype)initWithFrame:(NSRect)frameRect 
+- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window
 {
     if(self = [super initWithFrame:frameRect]) {
+		NSRect rect = [self getBounds];
     	PGWindowHandle res = new PGWindow();
+    	res->window = window;
 		res->view = self;
-
-		//CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
+		ControlManager* manager = new ControlManager(res);
+		manager->SetPosition(PGPoint(0, 0));
+		manager->SetSize(PGSize(rect.size.width, rect.size.height));
+		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+		res->manager = manager;
+		res->renderer = InitializeRenderer();
 		
 		Scheduler::Initialize();
 		Scheduler::SetThreadCount(8);
 
-		CreateTimer(MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
+		CreateTimer(res, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 	
-		TextField* textField = new TextField(res, "/Users/myth/cities.xml");
-		textField->width = 1000;
-		textField->height = 670;
-		textField->x = 0;
-		textField->y = 30;
-		textField->anchor = PGAnchorBottom | PGAnchorLeft | PGAnchorRight;
+		TextFile* textfile = FileManager::OpenFile("/Users/myth/Data/tibiawiki_pages_current.xml");
+		TextFile* textfile2 = FileManager::OpenFile("/Users/myth/pyconversion.c");
+		PGContainer* tabbed = new PGContainer(res, textfile);
+		tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+		tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
 
 		global_handle = res;
     }
     return self;
 }
 
-- (void)drawRect:(NSRect)invalidateRect
-{
+- (void)drawRect:(NSRect)invalidateRect {
 	SkBitmap bitmap;
-	SkPaint paint;
-	SkPaint textpaint;
 
-	PGRenderer renderer;
 	PGIRect rect(
 		invalidateRect.origin.x,
 		invalidateRect.origin.y,
 		invalidateRect.size.width,
-		invalidateRect.size.width);
+		invalidateRect.size.height);
 
-	bitmap.allocN32Pixels(rect.width, rect.height);
-	bitmap.allocPixels();
-
-	SkCanvas canvas(bitmap);
-	textpaint.setTextSize(SkIntToScalar(15));
-	textpaint.setAntiAlias(true);
-	textpaint.setStyle(SkPaint::kFill_Style);
-	textpaint.setTextEncoding(SkPaint::kUTF8_TextEncoding);
-	textpaint.setTextAlign(SkPaint::kLeft_Align);
-	SkFontStyle style(SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
-	auto font = SkTypeface::MakeFromName("Courier New", style);
-	textpaint.setTypeface(font);
-	paint.setStyle(SkPaint::kFill_Style);
-	canvas.clear(SkColorSetRGB(30, 30, 30));
-
-	renderer.canvas = &canvas;
-	renderer.paint = &paint;
-	renderer.textpaint = &textpaint;
-
-	for (auto it = global_handle->controls.begin(); it != global_handle->controls.end(); it++) {
-		(*it)->Draw(&renderer, &rect);
-	}
+	RenderControlsToBitmap(global_handle->renderer, bitmap, rect, global_handle->manager);
 
 	// draw bitmap
 	CGContextRef context = (CGContextRef) [[NSGraphicsContext currentContext] graphicsPort];
@@ -131,20 +113,197 @@ void PeriodicWindowRedraw(void) {
 -(NSRect)getBounds {
 	return self.bounds;
 }
-/*- 
-- (void)mouseDown:(NSEvent *)event;
-- (void)mouseUp:(NSEvent *)event;
-- (void)mouseMoved:(NSEvent *)event;
-- (void)keyDown:(NSEvent *)event;
-- (void)keyUp:(NSEvent *)event;*/
 
+-(PGModifier)getModifierFlags:(NSEvent *)event {
+	PGModifier modifiers = PGModifierNone;
+	NSEventModifierFlags modifierFlags = [event modifierFlags];
+	if (modifierFlags & NSShiftKeyMask) {
+		modifiers |= PGModifierShift;
+	}
+	if (modifierFlags & NSControlKeyMask) {
+		modifiers |= PGModifierCtrl;
+	}
+	if (modifierFlags & NSCommandKeyMask) {
+		modifiers |= PGModifierCmd;
+	}
+	if (modifierFlags & NSAlternateKeyMask) {
+		modifiers |= PGModifierAlt;
+	}
+	return modifiers;
+}
+
+-(PGMouseFlags)getMouseFlags:(NSEvent *)event {
+	PGMouseFlags flags;
+	flags.x = (int) [event locationInWindow].x;
+	flags.y = self.bounds.size.height - (int) [event locationInWindow].y;
+	PGMouseButton button = PGMouseButtonNone;
+	PGModifier modifiers = [self getModifierFlags:event];
+	NSUInteger pressedButtonMask = [NSEvent pressedMouseButtons];
+	if ((pressedButtonMask & (1 << 0)) != 0) {
+		button |= PGLeftMouseButton;
+	} else if ((pressedButtonMask & (1 << 1)) != 0) {
+		button |= PGRightMouseButton;
+	} else if ((pressedButtonMask & (1 << 2)) != 0) {
+		button |= PGMiddleMouseButton;
+	}
+	flags.button = button;
+	flags.modifiers = modifiers;
+	return flags;
+}
+
+- (void)mouseDown:(NSEvent *)event {
+	PGMouseFlags flags = [self getMouseFlags:event];
+	global_handle->manager->MouseDown(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
+}
+
+- (void)mouseUp:(NSEvent *)event {
+	PGMouseFlags flags = [self getMouseFlags:event];
+	global_handle->manager->MouseUp(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
+}
+
+- (void)rightMouseDown:(NSEvent *)event {
+	PGMouseFlags flags = [self getMouseFlags:event];
+	global_handle->manager->MouseDown(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
+}
+
+- (void)rightMouseUp:(NSEvent *)event {
+	PGMouseFlags flags = [self getMouseFlags:event];
+	global_handle->manager->MouseUp(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
+}
+
+- (void)otherMouseDown:(NSEvent *)event {
+	// FIXME: not just middle mouse button
+	PGMouseFlags flags = [self getMouseFlags:event];
+	global_handle->manager->MouseDown(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
+}
+
+- (void)otherMouseUp:(NSEvent *)event {
+	// FIXME: not just middle mouse button
+	PGMouseFlags flags = [self getMouseFlags:event];
+	global_handle->manager->MouseUp(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
+}
+
+- (void)scrollWheel:(NSEvent *)event {
+	PGMouseFlags flags = [self getMouseFlags:event];
+	global_handle->manager->MouseWheel(flags.x, flags.y, [event deltaY] < 0 ? -120 : 120, flags.modifiers);
+}
+/*
+- (void)mouseDragged:(NSEvent *)event {
+	PGMouseFlags flags = [self getMouseFlags:event];
+	global_handle->manager->MouseMove(flags.x, flags.y,  flags.button);
+}*/
+
+- (void)keyDown:(NSEvent *)event {
+	PGButton button = PGButtonNone;
+	PGModifier modifiers = [self getModifierFlags:event];
+	NSString *string = [event charactersIgnoringModifiers];
+	unichar keyChar = 0;
+	if ( [string length] == 0 )
+		return; // reject dead keys
+	if ( [string length] == 1 ) {
+		// see: https://developer.apple.com/reference/appkit/nsevent/1535851-function_key_unicodes
+		keyChar = [string characterAtIndex:0];
+		if (keyChar == 127) {
+			button = PGButtonBackspace;
+		} else if (keyChar == '\r') {
+			button = PGButtonEnter;
+		} else if (keyChar == NSLeftArrowFunctionKey) {
+			button = PGButtonLeft;
+		} else if (keyChar == NSRightArrowFunctionKey) {
+			button = PGButtonRight;
+		} else if (keyChar == NSUpArrowFunctionKey) {
+			button = PGButtonUp;
+		} else if (keyChar == NSDownArrowFunctionKey) {
+			button = PGButtonDown;
+		} else if (keyChar == NSInsertFunctionKey) {
+
+		} else if (keyChar == NSDeleteFunctionKey) {
+			button = PGButtonDelete;
+		} else if (keyChar == NSHomeFunctionKey) {
+			button = PGButtonHome;
+		} else if (keyChar == NSEndFunctionKey) {
+			button = PGButtonEnd;	
+		} else if (keyChar == NSPageUpFunctionKey) {
+			button = PGButtonPageUp;
+		} else if (keyChar == NSPageDownFunctionKey) {
+			button = PGButtonPageDown;
+		} else if (keyChar == NSPrintScreenFunctionKey) {
+			
+		} else if (keyChar == NSScrollLockFunctionKey) {
+			
+		} else if (keyChar == NSPauseFunctionKey) {
+			
+		} else if (keyChar == NSUndoFunctionKey) {
+			
+		} else if (keyChar == NSRedoFunctionKey) {
+			
+		} else if (keyChar == NSFindFunctionKey) {
+			
+		}
+		if (button != PGButtonNone) {
+			global_handle->manager->KeyboardButton(button, modifiers);
+		} else if (keyChar >= 0x20 && keyChar <= 0x7E) {
+			if (modifiers == PGModifierShift)
+				modifiers = PGModifierNone;
+			if (modifiers != PGModifierNone)
+				keyChar = toupper(keyChar);
+			global_handle->manager->KeyboardCharacter(keyChar, modifiers);
+		}
+	}
+	/*
+	int key = [event keyCode];
+    NSLog(@"Characters: %@", [event characters]);
+    NSLog(@"KeyCode: %hu", [event keyCode]);
+	
+	if (key == kUpArrowCharCode) {
+		button = PGButtonUp;
+	} else if (key == kDownArrowCharCode) {
+		button = PGButtonDown;
+	} else if (key == NSKeyCodeLeftArrow) {
+		button = PGButtonLeft;
+	} else if (key == NSKeyCodeRightArrow) {
+		button = PGButtonRight;
+	}*/
+}
+
+- (void)keyUp:(NSEvent *)event {
+
+}
+
+- (void)targetMethod:(NSTimer*)theTimer {
+	[[theTimer userInfo] callFunction];
+}
+
+- (void)scheduleTimer:(int)ms :(PGTimerCallback)callback :(PGTimerFlags)flags {
+	PGTimerObject* object = [[PGTimerObject alloc] initWithCallback:callback];
+	[NSTimer scheduledTimerWithTimeInterval:ms / 1000.0
+		target:self
+		selector:@selector(targetMethod:)
+		userInfo:object
+		repeats:flags & PGTimerExecuteOnce ? NO : YES];
+}
 @end
 
 PGPoint GetMousePosition(PGWindowHandle window) {
-	// FIXME
-	return PGPoint(0,0);
+	//get current mouse position
+	NSPoint mouseLoc = [NSEvent mouseLocation];
+	// convert screen coordinates to local coordinates of the window
+	NSRect mouseScreen = [window->window convertRectFromScreen:NSMakeRect(mouseLoc.x, mouseLoc.y, 0, 0)];
+	return PGPoint(mouseScreen.origin.x, [window->view getBounds].size.height - mouseScreen.origin.y);
 }
 
+PGMouseButton GetMouseState(PGWindowHandle window) {
+	PGMouseButton button = PGMouseButtonNone;
+	NSUInteger pressedButtonMask = [NSEvent pressedMouseButtons];
+	if ((pressedButtonMask & (1 << 0)) != 0) {
+		button |= PGLeftMouseButton;
+	} else if ((pressedButtonMask & (1 << 1)) != 0) {
+		button |= PGRightMouseButton;
+	} else if ((pressedButtonMask & (1 << 2)) != 0) {
+		button |= PGMiddleMouseButton;
+	}
+	return button;
+}
 
 PGWindowHandle PGCreateWindow(void) {
 	assert(0);
@@ -162,151 +321,27 @@ void RefreshWindow(PGWindowHandle window, PGIRect rectangle) {
 
 
 void RedrawWindow(PGWindowHandle window) {
-	[window->view needsToDrawRect:[window->view getBounds]];
+	[window->view setNeedsDisplay:YES];
 }
 
 void RedrawWindow(PGWindowHandle window, PGIRect rectangle) {
-	[window->view needsToDrawRect:[window->view getBounds]];
-}
-
-
-static SkPaint::Style PGStyleConvert(PGStyle style) {
-	if (style == PGStyleStroke) {
-		return SkPaint::kStroke_Style;
-	}
-	return SkPaint::kFill_Style;
-}
-
-void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle) {
-	SkPath path;
-	SkPoint points[] = {{a.x, a.y}, {b.x, b.y}, {c.x, c.y}}; // triangle
-	path.addPoly(points, 3, true);
-	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
-	handle->paint->setStyle(PGStyleConvert(drawStyle));
-	handle->canvas->drawPath(path, *handle->paint);
-}
-
-void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle drawStyle) {
-	SkRect rect;
-	rect.fLeft = rectangle.x;
-	rect.fTop = rectangle.y;
-	rect.fRight = rectangle.x + rectangle.width;
-	rect.fBottom = rectangle.y + rectangle.height;
-	handle->paint->setStyle(PGStyleConvert(drawStyle));
-	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
-	handle->canvas->drawRect(rect, *handle->paint);
-}
-
-void RenderLine(PGRendererHandle handle, PGLine line, PGColor color) {
-	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
-	handle->canvas->drawLine(line.start.x, line.start.y, line.end.x, line.end.y, *handle->paint);
-}
-
-void RenderImage(PGRendererHandle renderer, void* image, int x, int y) {
-
-}
-
-void RenderText(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y) {
-	if (len == 0) {
-		len = 1;
-		text = " ";
-	}
-	// FIXME: render tabs correctly
-	renderer->canvas->drawText(text, len, x, y + renderer->text_offset, *renderer->textpaint);
-}
-
-void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color) {
-	SkPath path;
-	PGScalar offset = 3; // FIXME: depend on text height
-	PGScalar end = x + width;
-	path.moveTo(x, y);
-	while (x < end) {
-		path.quadTo(x + 1, y + offset, x + 2, y);
-		offset = -offset;
-		x += 2;
-	}
-	renderer->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
-	renderer->paint->setAntiAlias(true);
-	renderer->paint->setAutohinted(true);
-	renderer->canvas->drawPath(path, *renderer->paint);
-}
-
-PGScalar MeasureTextWidth(PGRendererHandle renderer, const char* text, size_t length) {
-	//return renderer->textpaint->measureText(text, length);
-	int size = 0;
-	for (size_t i = 0; i < length; i++) {
-		if (text[i] == '\t') {
-			size += 5; // FIXME: tab width
-		} else {
-			size += 1;
-		}
-	}
-	return size * renderer->character_width;
-}
-
-PGScalar GetTextHeight(PGRendererHandle renderer) {
-	SkPaint::FontMetrics metrics;
-	renderer->textpaint->getFontMetrics(&metrics, 0);
-	return metrics.fDescent - metrics.fAscent;
-}
-
-void RenderCaret(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height) {
-	PGScalar width = MeasureTextWidth(renderer, text, characternr);
-	SkColor color = renderer->textpaint->getColor();
-	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), PGColor(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color)));
-}
-
-void RenderSelection(PGRendererHandle renderer, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height) {
-	if (start == end) return;
-	PGScalar selection_start = MeasureTextWidth(renderer, text, start);
-	PGScalar selection_width = MeasureTextWidth(renderer, text, end > (lng) len ? len : end);
-	if (end > (lng) len) {
-		assert(end == len + 1);
-		selection_width += renderer->character_width;
-	}
-	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, GetTextHeight(renderer)), selection_color, PGStyleFill);
-}
-
-void SetTextColor(PGRendererHandle renderer, PGColor color) {
-	renderer->textpaint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
-}
-
-void SetTextFont(PGRendererHandle renderer, PGFontHandle font, PGScalar height) {
-	renderer->textpaint->setTextSize(height);
-	renderer->character_width = renderer->textpaint->measureText("x", 1);
-	renderer->text_offset = renderer->textpaint->getFontBounds().height() / 2 + renderer->textpaint->getFontBounds().height() / 4;
-}
-
-void SetTextAlign(PGRendererHandle renderer, PGTextAlign alignment) {
-	if (alignment & PGTextAlignBottom) {
-		assert(0);
-	} else if (alignment & PGTextAlignTop) {
-		assert(0);
-	} else if (alignment & PGTextAlignVerticalCenter) {
-		assert(0);
-	}
-
-	if (alignment & PGTextAlignLeft) {
-		renderer->textpaint->setTextAlign(SkPaint::kLeft_Align);
-	} else if (alignment & PGTextAlignRight) {
-		renderer->textpaint->setTextAlign(SkPaint::kRight_Align);
-	} else if (alignment & PGTextAlignHorizontalCenter) {
-		renderer->textpaint->setTextAlign(SkPaint::kCenter_Align);
-	}
+	[window->view setNeedsDisplayInRect:[window->view getBounds]];
 }
 
 Control* GetFocusedControl(PGWindowHandle window) {
-	return window->focused_control;
+	return window->manager->GetFocusedControl();
 }
 
-void RegisterRefresh(PGWindowHandle window, Control *control) {
-	window->focused_control = control;
-	window->controls.push_back(control);
+void RegisterControl(PGWindowHandle window, Control *control) {
+	if (window->manager != nullptr)
+		window->manager->AddControl(control);
 }
 
 PGTime GetTime() {
-	assert(0);
-	return -1;
+	timeval time;
+	gettimeofday(&time, NULL);
+	long millis = (time.tv_sec * 1000) + (time.tv_usec / 1000);
+	return millis;
 }
 
 void SetWindowTitle(PGWindowHandle window, char* title) {
@@ -314,6 +349,8 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 }
 
 void SetClipboardText(PGWindowHandle window, std::string text) {
+	//[[NSPasteboard generalPasteboard] clearContents];
+	//[[NSPasteboard generalPasteboard] setString:helloField.stringValue  forType:NSStringPboardType];
 	assert(0);
 }
 
@@ -326,6 +363,9 @@ PGLineEnding GetSystemLineEnding() {
 	return PGLineEndingMacOS;
 }
 
+char GetSystemPathSeparator() {
+	return '/';
+}
 
 bool WindowHasFocus(PGWindowHandle window) {
 	// FIXME
@@ -340,15 +380,22 @@ struct PGTimer {
 
 };
 
-PGTimerHandle CreateTimer(int ms, PGTimerCallback callback, PGTimerFlags flags) {
+PGTimerHandle CreateTimer(PGWindowHandle handle, int ms, PGTimerCallback callback, PGTimerFlags flags) {
+	[handle->view scheduleTimer:ms:callback:flags];
+	/*
 	dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(ms * NSEC_PER_MSEC));
 	dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
 		callback();
 		CreateTimer(ms, callback, flags);
-	});
+	});*/
 	return nullptr;
 }
 
 void DeleteTimer(PGTimerHandle handle) {
 
 }
+
+void* GetControlManager(PGWindowHandle window) {
+	return window->manager;
+}
+

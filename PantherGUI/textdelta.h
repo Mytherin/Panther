@@ -26,13 +26,13 @@ class TextDelta {
 public:
 	lng linenr;
 	lng characternr;
-	TextDelta* next;
+	TextDelta* next = nullptr;
 
 	TextDelta() : next(nullptr) {}
 	virtual ~TextDelta() { }
 
 	virtual PGTextType TextDeltaType() { return PGDeltaUnknown; }
-	TextDelta(lng linenr, lng characternr) : linenr(linenr), characternr(characternr) { }
+	TextDelta(lng linenr, lng characternr) : linenr(linenr), characternr(characternr), next(nullptr) { }
 };
 
 class CursorDelta : public TextDelta {

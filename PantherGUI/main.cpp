@@ -330,7 +330,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		}
 		break;
 	case WM_CHAR: {
-		// FIXME: more efficient conversion
+		// FIXME: more efficient UTF16 -> UTF8 conversion
 		wchar_t w = (wchar_t)wParam;
 		std::string str = std::string((char*) &w, 2);
 		char* output;

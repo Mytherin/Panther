@@ -27,6 +27,7 @@
         NSView *view = [[PGView alloc] initWithFrame:contentSize];
         [view setWantsLayer:YES];
         self.window.contentView = view;
+        [self.window makeFirstResponder:view];
     }
     return self;
  }
