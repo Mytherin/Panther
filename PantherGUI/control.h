@@ -45,14 +45,14 @@ public:
 
 	virtual void OnResize(PGSize old_size, PGSize new_size);
 
-	void UpdateParentSize(PGSize old_size, PGSize new_size);
+	virtual void UpdateParentSize(PGSize old_size, PGSize new_size);
 
 	virtual bool IsDragging();
 
 	virtual PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
 
 	bool visible;
-protected:
+
 	Control* parent;
 
 	PGScalar x, y;

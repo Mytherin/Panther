@@ -31,12 +31,15 @@ public:
 	void SelectLine();
 	int GetSelectedWord(lng& word_start, lng& word_end);
 
-	lng SelectedCharacter() { return start_character; }
+	lng SelectedPosition() { return start_character; }
 	lng SelectedLine() { return start_line; }
-	lng BeginCharacter();
+	lng BeginPosition();
 	lng BeginLine();
-	lng EndCharacter();
+	lng EndPosition();
 	lng EndLine();
+	lng BeginCharacter();
+	lng EndCharacter();
+	lng SelectedCharacter();
 
 	std::string GetText();
 
@@ -48,7 +51,7 @@ public:
 	void Merge(Cursor& cursor);
 
 	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield = true);
-	static bool CursorOccursFirst (Cursor* a, Cursor* b) { return (a->BeginLine() < b->BeginLine() || (a->BeginLine() == b->BeginLine() && a->BeginCharacter() < b->BeginCharacter())); }
+	static bool CursorOccursFirst (Cursor* a, Cursor* b) { return (a->BeginLine() < b->BeginLine() || (a->BeginLine() == b->BeginLine() && a->BeginPosition() < b->BeginPosition())); }
 	static void VerifyCursors(std::vector<Cursor*>& cursors);
 
 	void SetCursorStartLocation(lng linenr, lng characternr);

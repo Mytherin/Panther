@@ -146,6 +146,7 @@
     <ClCompile Include="mmap.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
+    <ClCompile Include="statusbar.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
     <ClCompile Include="container.cpp" />
     <ClCompile Include="tabcontrol.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="mmap.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />
+    <ClInclude Include="statusbar.h" />
     <ClInclude Include="syntax.h" />
     <ClInclude Include="syntaxhighlighter.h" />
     <ClInclude Include="container.h" />

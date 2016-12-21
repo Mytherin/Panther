@@ -222,15 +222,15 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			if (startline == (*it)->BeginLine()) {
 				if (startline == (*it)->EndLine()) {
 					// start and end are on the same line
-					start = (*it)->BeginCharacter();
-					end = (*it)->EndCharacter();
+					start = (*it)->BeginPosition();
+					end = (*it)->EndPosition();
 				} else {
-					start = (*it)->BeginCharacter();
+					start = (*it)->BeginPosition();
 					end = current_line->GetLength() + 1;
 				}
 			} else if (startline == (*it)->EndLine()) {
 				start = 0;
-				end = (*it)->EndCharacter();
+				end = (*it)->EndPosition();
 			} else {
 				start = 0;
 				end = current_line->GetLength() + 1;
@@ -239,7 +239,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			if (!minimap && startline == (*it)->SelectedLine()) {
 				if (display_carets) {
 					// render the caret on the selected line
-					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedCharacter(), line_height, PGColor(191, 191, 191));
+					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedPosition(), line_height, PGColor(191, 191, 191));
 				}
 			}
 			RenderSelection(renderer,
@@ -484,8 +484,9 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				PGScalar minimap_height = GetMinimapHeight();
 				if ((mouse.y < minimap_offset) || (mouse.y > minimap_offset + minimap_height)) {
 					// mouse click above/below the minimap, move the minimap to the mouse
-					// FIXME: animate this?
 					SetMinimapOffset(mouse.y - minimap_height / 2.0f);
+					drag_type = PGDragMinimap;
+					drag_offset = minimap_height / 2.0f;
 					this->Invalidate();
 				} else {
 					// mouse is on the minimap; enable dragging

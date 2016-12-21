@@ -32,3 +32,14 @@ lng utf8_prev_character(char* text, lng current_character) {
 	} while ((text[current_character] & 0xC0) == 0x80);
 	return current_character;
 }
+
+lng utf8_character_number(char* text, lng position) {
+	if (position == 0) return 0;
+	lng character = 0;
+	for (; position > 0; position--) {
+		if ((text[position] & 0xC0) != 0x80) {
+			character++;
+		}
+	}
+	return character;
+}

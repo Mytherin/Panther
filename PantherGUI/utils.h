@@ -1,6 +1,10 @@
 #pragma once
 
+#include <cstdio>
 #include <assert.h>
+#include <string>
+
+
 
 typedef enum {
 	PGDirectionLeft,
@@ -21,6 +25,19 @@ struct PGUTF8Character {
 namespace PG {
 	template<class T>
 	T abs(T t1) {
-	    return t1 < 0 ? t1 * -1 : t1;
+		return t1 < 0 ? t1 * -1 : t1;
 	}
+}
+
+template< typename... Args >
+std::string string_sprintf(const char* format, Args... args) {
+	int length = std::snprintf( nullptr, 0, format, args... );
+	assert( length >= 0 );
+
+	char* buf = new char[length + 1];
+	std::snprintf( buf, length + 1, format, args... );
+
+	std::string str( buf );
+	delete[] buf;
+	return std::move(str);
 }

@@ -1,5 +1,6 @@
 
 #include "container.h"
+#include "statusbar.h"
 
 
 PGContainer::PGContainer(PGWindowHandle window, TextFile* file) : Control(window, true) {
@@ -13,9 +14,14 @@ PGContainer::PGContainer(PGWindowHandle window, TextFile* file) : Control(window
 	tabs->SetAnchor(PGAnchorLeft | PGAnchorRight);
 	tabs->SetPosition(PGPoint(this->x, this->y));
 	tabs->SetSize(PGSize(this->width, TEXT_TAB_HEIGHT));
+	StatusBar* bar = new StatusBar(window, textfield);
+	bar->SetAnchor(PGAnchorLeft | PGAnchorRight);
+	bar->SetPosition(PGPoint(this->x, this->y + this->height - STATUSBAR_HEIGHT));
+	bar->SetSize(PGSize(this->width, STATUSBAR_HEIGHT));
 
-	controls.push_back(tabs);
-	controls.push_back(textfield);
+	AddControl(tabs);
+	AddControl(textfield);
+	AddControl(bar);
 }
 
 bool PGContainer::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -134,4 +140,10 @@ bool PGContainer::IsDragging() {
 	}
 	return false;
 
+}
+
+void PGContainer::AddControl(Control* control) {
+	assert(control);
+	control->parent = this;
+	controls.push_back(control);
 }

@@ -316,7 +316,7 @@ void TextFile::InsertText(std::string text) {
 		// now actually add the text
 		// note that we add it at the end of the selected area
 		// it will be shifted to the start of the selected area in PerformOperation
-		delta->AddDelta(new AddText(*it, (*it)->EndLine(), (*it)->EndCharacter(), text));
+		delta->AddDelta(new AddText(*it, (*it)->EndLine(), (*it)->EndPosition(), text));
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);
@@ -359,9 +359,9 @@ void TextFile::OffsetCharacter(PGDirection direction) {
 			(*it)->OffsetCharacter(direction);
 		} else {
 			if (direction == PGDirectionLeft) {
-				(*it)->SetCursorLocation((*it)->BeginLine(), (*it)->BeginCharacter());
+				(*it)->SetCursorLocation((*it)->BeginLine(), (*it)->BeginPosition());
 			} else {
-				(*it)->SetCursorLocation((*it)->EndLine(), (*it)->EndCharacter());
+				(*it)->SetCursorLocation((*it)->EndLine(), (*it)->EndPosition());
 			}
 		}
 	}
@@ -699,18 +699,18 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 				if (i == it->BeginLine()) {
 					if (i == it->EndLine()) {
 						delete remove_lines;
-						delta->AddDelta(new RemoveText(include_cursor ? &*it : nullptr, i, it->EndCharacter(), it->EndCharacter() - it->BeginCharacter()));
+						delta->AddDelta(new RemoveText(include_cursor ? &*it : nullptr, i, it->EndPosition(), it->EndPosition() - it->BeginPosition()));
 					} else {
-						delta->AddDelta(new RemoveText(include_cursor ? &*it : nullptr, i, lines[i]->GetLength(), lines[i]->GetLength() - it->BeginCharacter()));
+						delta->AddDelta(new RemoveText(include_cursor ? &*it : nullptr, i, lines[i]->GetLength(), lines[i]->GetLength() - it->BeginPosition()));
 					}
 				} else if (i == it->EndLine()) {
-					assert(it->EndCharacter() <= lines[i]->GetLength());
+					assert(it->EndPosition() <= lines[i]->GetLength());
 					// remove part of the last line
-					std::string text = std::string(lines[i]->GetLine() + it->EndCharacter(), lines[i]->GetLength() - it->EndCharacter());
+					std::string text = std::string(lines[i]->GetLine() + it->EndPosition(), lines[i]->GetLength() - it->EndPosition());
 					remove_lines->AddLine(*lines[i]);
-					remove_lines->last_line_offset = it->EndCharacter();
+					remove_lines->last_line_offset = it->EndPosition();
 					delta->AddDelta(remove_lines);
-					delta->AddDelta(new AddText(nullptr, it->BeginLine(), it->BeginCharacter(), text));
+					delta->AddDelta(new AddText(nullptr, it->BeginLine(), it->BeginPosition(), text));
 				} else {
 					// remove the entire line
 					remove_lines->AddLine(*lines[i]);
@@ -722,7 +722,7 @@ TextFile::DeleteCharacter(MultipleDelta* delta, Cursor* it, PGDirection directio
 			}
 		}
 	} else {
-		lng characternumber = it->SelectedCharacter();
+		lng characternumber = it->SelectedPosition();
 		lng linenumber = it->SelectedLine();
 		if (direction == PGDirectionLeft && characternumber == 0) {
 			if (linenumber > 0) {
@@ -785,11 +785,11 @@ void TextFile::DeleteWord(PGDirection direction) {
 	if (!is_loaded) return;
 	MultipleDelta* delta = new MultipleDelta();
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if ((*it)->SelectionIsEmpty() && (direction == PGDirectionLeft ? (*it)->SelectedCharacter() > 0 : (*it)->SelectedCharacter() < lines[(*it)->SelectedLine()]->GetLength())) {
+		if ((*it)->SelectionIsEmpty() && (direction == PGDirectionLeft ? (*it)->SelectedPosition() > 0 : (*it)->SelectedPosition() < lines[(*it)->SelectedLine()]->GetLength())) {
 			int offset = direction == PGDirectionLeft ? -1 : 1;
 			char* line = lines[(*it)->SelectedLine()]->GetLine();
 			lng length = lines[(*it)->SelectedLine()]->GetLength();
-			lng index = direction == PGDirectionLeft ? (*it)->SelectedCharacter() + offset : (*it)->SelectedCharacter();
+			lng index = direction == PGDirectionLeft ? (*it)->SelectedPosition() + offset : (*it)->SelectedPosition();
 			// a word is a series of characters of equal type (punctuation, spaces or everything else)
 			// we scan the string to find out where the word ends 
 			PGCharacterClass type = GetCharacterClass(line[index]);
@@ -800,7 +800,7 @@ void TextFile::DeleteWord(PGDirection direction) {
 				}
 			}
 			index = std::min(std::max(index, (lng)0), length);
-			delta->AddDelta(new RemoveText(*it, (*it)->SelectedLine(), std::max(index, (*it)->SelectedCharacter()), std::abs((*it)->SelectedCharacter() - index)));
+			delta->AddDelta(new RemoveText(*it, (*it)->SelectedLine(), std::max(index, (*it)->SelectedPosition()), std::abs((*it)->SelectedPosition() - index)));
 		} else {
 			DeleteCharacter(delta, *it, direction, !(*it)->SelectionIsEmpty());
 		}
@@ -845,22 +845,22 @@ void TextFile::AddNewLines(std::vector<std::string>& added_text, bool first_is_n
 		}*/
 	}
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		lng characternumber = (*it)->EndCharacter();
+		lng characternumber = (*it)->EndPosition();
 		lng linenumber = (*it)->EndLine();
 		lng length = lines[linenumber]->GetLength();
 		lng current_line = (*it)->BeginLine();
 
 		if (added_text.size() == 1) {
-			delta->AddDelta(new AddLine(*it, current_line, (*it)->BeginCharacter(), added_text.front()));
+			delta->AddDelta(new AddLine(*it, current_line, (*it)->BeginPosition(), added_text.front()));
 			continue;
 		}
 		std::vector<std::string> text = added_text;
 		if (!first_is_newline) {
 			assert(added_text.size() > 1); // if added_text == 1 and first_is_newline is false, use InsertText
-			delta->AddDelta(new AddText(nullptr, (*it)->BeginLine(), (*it)->BeginCharacter(), added_text.front()));
+			delta->AddDelta(new AddText(nullptr, (*it)->BeginLine(), (*it)->BeginPosition(), added_text.front()));
 			text.erase(text.begin());
 		}
-		delta->AddDelta(new AddLines(*it, (*it)->BeginLine(), (*it)->BeginCharacter(), text));
+		delta->AddDelta(new AddLines(*it, (*it)->BeginLine(), (*it)->BeginPosition(), text));
 	}
 	this->AddDelta(delta);
 	PerformOperation(delta);

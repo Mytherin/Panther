@@ -230,6 +230,8 @@ PGScalar GetTextHeight(PGFontHandle font);
 void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color);
 void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height);
 
+PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold);
+PGFontHandle PGCreateFont(char* filename);
 PGFontHandle PGCreateFont();
 void PGDestroyFont(PGFontHandle font);
 // Sets the color of the text rendered with the RenderText method

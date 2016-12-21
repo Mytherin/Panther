@@ -38,20 +38,40 @@ SkPaint* CreateTextPaint() {
 	return textpaint;
 }
 
-PGFontHandle PGCreateFont() {
-	char* default_font = "Consolas";
-	PGFontHandle font = new PGFont();
-
-	SkFontStyle style(SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
-
-	font->textpaint = CreateTextPaint();
-	auto main_font = SkTypeface::MakeFromName(default_font, style);
-	font->textpaint->setTypeface(main_font);
-
+static void CreateFallbackFonts(PGFontHandle font) {
 	SkPaint* fallback_paint = CreateTextPaint();
 	auto fallback_font = SkTypeface::MakeFromFile("NotoSansHans-Regular.otf");
 	fallback_paint->setTypeface(fallback_font);
 	font->fallback_paints.push_back(fallback_paint);
+}
+
+PGFontHandle PGCreateFont() {
+	char* default_font = "Consolas";
+	return PGCreateFont(default_font, false, false);
+}
+
+PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
+	PGFontHandle font = new PGFont();
+
+	SkFontStyle style(bold ? SkFontStyle::kBold_Weight : SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, italic ? SkFontStyle::kItalic_Slant : SkFontStyle::kUpright_Slant);
+
+	font->textpaint = CreateTextPaint();
+	auto main_font = SkTypeface::MakeFromName(fontname, style);
+	font->textpaint->setTypeface(main_font);
+
+	CreateFallbackFonts(font);
+
+	return font;
+}
+
+PGFontHandle PGCreateFont(char* filename) {
+	PGFontHandle font = new PGFont();
+
+	font->textpaint = CreateTextPaint();
+	auto main_font = SkTypeface::MakeFromFile(filename);
+	font->textpaint->setTypeface(main_font);
+
+	CreateFallbackFonts(font);
 
 	return font;
 }

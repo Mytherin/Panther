@@ -7,6 +7,7 @@ ControlManager::ControlManager(PGWindowHandle window) : Control(window, false), 
 
 void ControlManager::AddControl(Control* control) {
 	assert(control);
+	control->parent = this;
 	controls.push_back(control);
 	focused_control = control;
 }
@@ -123,7 +124,6 @@ void ControlManager::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		}
 		(*it)->Draw(renderer, rect);
 	}
-	//RenderRectangle(renderer, PGRect(0, this->height - 32, this->width, 32), PGColor(0, 122, 204), PGStyleFill);
 }
 
 

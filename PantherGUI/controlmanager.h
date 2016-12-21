@@ -49,8 +49,6 @@ public:
 	void RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event);
 	void UnregisterMouseRegion(PGIRect* rect);
 private:
-	TextField* active_textfield;
-
 	PGIRect invalidated_area;
 	bool invalidated;
 	std::vector<Control*> controls;

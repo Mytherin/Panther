@@ -76,7 +76,7 @@ void Cursor::OffsetEndOfLine() {
 }
 
 void Cursor::OffsetSelectionWord(PGDirection direction) {
-	if (direction == PGDirectionLeft && this->SelectedCharacter() == 0) {
+	if (direction == PGDirectionLeft && this->SelectedPosition() == 0) {
 		OffsetSelectionCharacter(direction);
 	} else if (direction == PGDirectionRight && start_character == this->file->GetLine(start_line)->GetLength()) {
 		OffsetSelectionCharacter(direction);
@@ -120,9 +120,9 @@ void Cursor::SelectWord() {
 	end_character = std::max(start_index, (lng)0);
 	start_character = std::min(end_index, textline->GetLength());
 	end_line = start_line;
-	min_character = this->BeginCharacter();
+	min_character = this->BeginPosition();
 	min_line = this->BeginLine();
-	max_character = this->EndCharacter();
+	max_character = this->EndPosition();
 	max_line = this->EndLine();
 	x_position = -1;
 }
@@ -157,7 +157,7 @@ int Cursor::GetSelectedWord(lng& word_start, lng& word_end) {
 		// no word found
 		return -1;
 	}
-	if (start_index != BeginCharacter() || end_index != EndCharacter()) {
+	if (start_index != BeginPosition() || end_index != EndPosition()) {
 		// only highlight if the entire word is selected
 		return -1;
 	}
@@ -179,9 +179,9 @@ void Cursor::SelectLine() {
 	} else {
 		this->start_character = file->GetLine(this->start_line)->GetLength();
 	}
-	min_character = this->BeginCharacter();
+	min_character = this->BeginPosition();
 	min_line = this->BeginLine();
-	max_character = this->EndCharacter();
+	max_character = this->EndPosition();
 	max_line = this->EndLine();
 	x_position = -1;
 }
@@ -291,7 +291,7 @@ bool Cursor::SelectionIsEmpty() {
 	return this->start_character == this->end_character && this->start_line == this->end_line;
 }
 
-lng Cursor::BeginCharacter() {
+lng Cursor::BeginPosition() {
 	if (start_line < end_line) return start_character;
 	if (end_line < start_line) return end_character;
 	return std::min(start_character, end_character);
@@ -301,7 +301,7 @@ lng Cursor::BeginLine() {
 	return std::min(start_line, end_line);
 }
 
-lng Cursor::EndCharacter() {
+lng Cursor::EndPosition() {
 	if (start_line < end_line) return end_character;
 	if (end_line < start_line) return start_character;
 	return std::max(start_character, end_character);
@@ -311,14 +311,33 @@ lng Cursor::EndLine() {
 	return std::max(start_line, end_line);
 }
 
+lng Cursor::BeginCharacter() {
+	// to find the character number, we have to backtrack to the start and check the UTF8 characters we pass
+	lng position = BeginPosition();
+	lng line = BeginLine();
+	return utf8_character_number(file->GetLine(line)->GetLine(), position);
+}
+
+lng Cursor::EndCharacter() {
+	lng position = EndPosition();
+	lng line = EndLine();
+	return utf8_character_number(file->GetLine(line)->GetLine(), position);
+}
+
+lng Cursor::SelectedCharacter() {
+	lng position = start_character;
+	lng line = start_line;
+	return utf8_character_number(file->GetLine(line)->GetLine(), position);
+}
+
 std::string Cursor::GetText() {
 	lng beginline = BeginLine();
 	lng endline = EndLine();
 	std::string text = "";
 	for (lng linenr = beginline; linenr <= endline; linenr++) {
 		TextLine* line = file->GetLine(linenr);
-		lng start = linenr == beginline ? BeginCharacter() : 0;
-		lng end = linenr == endline ? EndCharacter() : line->GetLength();
+		lng start = linenr == beginline ? BeginPosition() : 0;
+		lng end = linenr == endline ? EndPosition() : line->GetLength();
 
 		if (linenr != beginline) {
 			text += NEWLINE_CHARACTER;
@@ -405,11 +424,11 @@ void Cursor::VerifyCursors(std::vector<Cursor*>& cursors) {
 bool Cursor::Contains(lng linenr, lng characternr) {
 	if (this->BeginLine() == this->EndLine() && 
 		this->BeginLine() == linenr) {
-		return characternr >= this->BeginCharacter() && characternr <= this->EndCharacter();
+		return characternr >= this->BeginPosition() && characternr <= this->EndPosition();
 	} else if (this->BeginLine() == linenr) {
-		return characternr >= this->BeginCharacter();
+		return characternr >= this->BeginPosition();
 	} else if (this->EndLine() == linenr) {
-		return characternr <= this->EndCharacter();
+		return characternr <= this->EndPosition();
 	} else if (linenr > this->BeginLine() && linenr < this->EndLine()) {
 		return true;
 	}
@@ -418,36 +437,36 @@ bool Cursor::Contains(lng linenr, lng characternr) {
 
 bool Cursor::OverlapsWith(Cursor& cursor) {
 	return
-		this->Contains(cursor.BeginLine(), cursor.BeginCharacter()) ||
-		this->Contains(cursor.EndLine(), cursor.EndCharacter()) ||
-		cursor.Contains(BeginLine(), BeginCharacter()) ||
-		cursor.Contains(EndLine(), EndCharacter());
+		this->Contains(cursor.BeginLine(), cursor.BeginPosition()) ||
+		this->Contains(cursor.EndLine(), cursor.EndPosition()) ||
+		cursor.Contains(BeginLine(), BeginPosition()) ||
+		cursor.Contains(EndLine(), EndPosition());
 }
 
 void Cursor::Merge(Cursor& cursor) {
-	bool beginIsStart = BeginLine() == start_line && BeginCharacter() == start_character ? true : false;
+	bool beginIsStart = BeginLine() == start_line && BeginPosition() == start_character ? true : false;
 	lng beginline = BeginLine();
 	lng endline = EndLine();
-	lng begincharacter = BeginCharacter();
-	lng endcharacter = EndCharacter();
+	lng begincharacter = BeginPosition();
+	lng endcharacter = EndPosition();
 	if (beginline > cursor.BeginLine() ||
-		(beginline == cursor.BeginLine() && begincharacter > cursor.BeginCharacter())) {
+		(beginline == cursor.BeginLine() && begincharacter > cursor.BeginPosition())) {
 		if (beginIsStart) {
 			start_line = cursor.BeginLine();
-			start_character = cursor.BeginCharacter();
+			start_character = cursor.BeginPosition();
 		} else {
 			end_line = cursor.BeginLine();
-			end_character = cursor.BeginCharacter();
+			end_character = cursor.BeginPosition();
 		}
 	}
 	if (endline < cursor.EndLine() ||
-		(endline == cursor.EndLine() && endcharacter < cursor.EndCharacter())) {
+		(endline == cursor.EndLine() && endcharacter < cursor.EndPosition())) {
 		if (!beginIsStart) {
 			start_line = cursor.EndLine();
-			start_character = cursor.EndCharacter();
+			start_character = cursor.EndPosition();
 		} else {
 			end_line = cursor.EndLine();
-			end_character = cursor.EndCharacter();
+			end_character = cursor.EndPosition();
 		}
 	}
 }
