@@ -39,7 +39,7 @@ SkPaint* CreateTextPaint() {
 }
 
 PGFontHandle PGCreateFont() {
-	char* default_font = "menlo";
+	char* default_font = "Consolas";
 	PGFontHandle font = new PGFont();
 
 	SkFontStyle style(SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
@@ -53,11 +53,6 @@ PGFontHandle PGCreateFont() {
 	fallback_paint->setTypeface(fallback_font);
 	font->fallback_paints.push_back(fallback_paint);
 
-
-	fallback_paint = CreateTextPaint();
-	fallback_font = SkTypeface::MakeFromFile("NotoSansHans-Regular.otf");
-	fallback_paint->setTypeface(fallback_font);
-	font->fallback_paints.push_back(fallback_paint);
 	return font;
 }
 

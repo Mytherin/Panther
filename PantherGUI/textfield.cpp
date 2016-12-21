@@ -403,8 +403,8 @@ lng TextField::GetMinimapStartLine() {
 void TextField::SetMinimapOffset(PGScalar offset) {
 	// compute lineoffset_y from minimap offset
 	double percentage = (double)offset / this->height;
-	lng start_line = GetMinimapStartLine();
 	lng lines_rendered = this->height / minimap_line_height;
+	lng start_line = std::max((lng)(((lng)((std::max((lng)1, this->textfile->GetLineCount() - 1) * percentage))) - (lines_rendered * percentage)), (lng)0);
 	lng lineoffset_y = start_line + (lng)(lines_rendered * percentage);
 	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile->GetLineCount() - 1));
 	textfile->SetLineOffset(lineoffset_y);
@@ -412,9 +412,6 @@ void TextField::SetMinimapOffset(PGScalar offset) {
 
 void TextField::SetScrollbarOffset(PGScalar offset) {
 	// compute lineoffset_y from scrollbar offset
-	// offset = SCROLLBAR_BASE_OFFSET + ((this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((lng)1, (this->textfile->GetLineCount() - 1)));
-	// offset - SCROLLBAR_BASE_OFFSET = (this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)) / std::max((lng)1, this->textfile->GetLineCount() - 1);
-	// std::max((lng)1, this->textfile->GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET) = this->lineoffset_y * (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET)
 	lng lineoffset_y = (lng)((std::max((lng)1, this->textfile->GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET)) / (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET));
 	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile->GetLineCount() - 1));
 	textfile->SetLineOffset(lineoffset_y);
@@ -485,13 +482,10 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			if (mouse.x > minimap_position && mouse.x <= minimap_position + minimap_width) {
 				PGScalar minimap_offset = GetMinimapOffset();
 				PGScalar minimap_height = GetMinimapHeight();
-				if (mouse.y < minimap_offset) {
-					// mouse click above the minimap
-					textfile->OffsetLineOffset(-GetLineHeight());
-					this->Invalidate();
-				} else if (mouse.y > minimap_offset + minimap_height) {
-					// mouse click below the minimap
-					textfile->OffsetLineOffset(GetLineHeight());
+				if ((mouse.y < minimap_offset) || (mouse.y > minimap_offset + minimap_height)) {
+					// mouse click above/below the minimap, move the minimap to the mouse
+					// FIXME: animate this?
+					SetMinimapOffset(mouse.y - minimap_height / 2.0f);
 					this->Invalidate();
 				} else {
 					// mouse is on the minimap; enable dragging
