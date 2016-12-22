@@ -554,6 +554,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	} else if (button == PGMiddleMouseButton) {
 		if (drag_type == PGDragSelection) return;
 		drag_type = PGDragSelectionCursors;
+		drag_offset = mouse.x;
 		lng line, character;
 		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
 		textfile->SetCursorLocation(line, character);
@@ -604,33 +605,28 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		}
 	} else if (buttons & PGMiddleMouseButton) {
 		if (drag_type == PGDragSelectionCursors) {
+			// FIXME: account for UTF8 characters
+			// use GetCharacterFromPosition twice per line (once for start, once for end)
 			lng line;
 			GetLineFromPosition(mouse.y, line);
 			std::vector<Cursor*>& cursors = textfile->GetCursors();
 			Cursor* active_cursor = textfile->GetActiveCursor();
-			lng start_character = active_cursor->end_character;
 			lng start_line = active_cursor->end_line;
 			lng increment = line > active_cursor->end_line ? 1 : -1;
-			lng character;
-			GetCharacterFromPosition(mouse.x, textfile->GetLine(active_cursor->end_line), character);
 			cursors[0] = active_cursor;
 			textfile->ClearExtraCursors();
 			for (auto it = active_cursor->end_line; ; it += increment) {
-				if (it != active_cursor->end_line) {
-					lng line_length = textfile->GetLine(it)->GetLength();
-					if (start_character == character || line_length >= start_character) {
-						Cursor* cursor = new Cursor(textfile, it, start_character);
-						cursor->end_character = std::min(start_character, line_length);
-						cursor->start_character = std::min(character, line_length);
-						cursors.push_back(cursor);
-					}
+				lng start_character, end_character;
+				TextLine* current_line = textfile->GetLine(it);
+				GetCharacterFromPosition(drag_offset, current_line, start_character);
+				GetCharacterFromPosition(mouse.x, current_line, end_character);
+				if (start_character != end_character) {
+					Cursor* cursor = new Cursor(textfile, it, start_character);
+					cursor->end_character = end_character;
+					cursors.push_back(cursor);
 				}
-				if (it == line) {
-					break;
-				}
+				if (it == line) break;
 			}
-
-			cursors[0]->start_character = std::min(character, textfile->GetLine(cursors[0]->start_line)->GetLength());
 			this->InvalidateBetweenLines(cursors[0]->start_line, line);
 		}
 	} else {
