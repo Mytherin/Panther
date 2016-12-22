@@ -102,6 +102,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	TextLine *current_line;
 	PGColor selection_color = PGColor(38, 79, 120);
 	PGScalar line_height = GetTextHeight(font);
+	PGScalar initial_position_y = position_y;
 	PGScalar start_position_y = position_y;
 	if (minimap) {
 		// fill in the background of the minimap
@@ -168,7 +169,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		}
 	}
 	linenr = start_line;
-	position_y = start_position_y;
+	position_y = initial_position_y;
 	lng block = -1;
 	bool parsed = false;
 	textfile->Lock();

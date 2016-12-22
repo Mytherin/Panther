@@ -47,6 +47,15 @@ struct PGRect {
 	PGRect(PGScalar x, PGScalar y, PGScalar width, PGScalar height) : x(x), y(y), width(width), height(height) { }
 };
 
+struct PGCircle {
+	PGScalar x;
+	PGScalar y;
+	PGScalar radius;
+
+	PGCircle() : x(0), y(0), radius(0) { }
+	PGCircle(PGScalar x, PGScalar y, PGScalar radius) : x(x), y(y), radius(radius) { }
+};
+
 struct PGIRect {
 	int x;
 	int y;
@@ -219,7 +228,8 @@ lng GetPositionInLine(PGFontHandle font, PGScalar x, const char* text, size_t le
 
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle);
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle style);
-void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);
+void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGStyle style);
+void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width = 2);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);
 // Render text at the specified location with the specified alignment, returns the width of the rendered text
 PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGTextAlign);
@@ -238,6 +248,7 @@ PGFontHandle PGCreateFont();
 void PGDestroyFont(PGFontHandle font);
 // Sets the color of the text rendered with the RenderText method
 void SetTextColor(PGFontHandle font, PGColor color);
+PGColor GetTextColor(PGFontHandle font);
 // Sets the font used by the RenderText method
 void SetTextFontSize(PGFontHandle font, PGScalar height);
 

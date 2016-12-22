@@ -4,8 +4,6 @@
 #include "renderer.h"
 #include "unicode.h"
 
-const char* _spaces_array = "                                                                                                           ";
-
 struct PGRenderer {
 	SkCanvas* canvas;
 	SkPaint* paint;
@@ -25,7 +23,7 @@ static SkPaint::Style PGStyleConvert(PGStyle style) {
 	if (style == PGStyleStroke) {
 		return SkPaint::kStroke_Style;
 	}
-	return SkPaint::kFill_Style;
+	return SkPaint::kStrokeAndFill_Style;
 }
 
 SkPaint* CreateTextPaint() {
@@ -123,8 +121,16 @@ void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, P
 	handle->canvas->drawRect(rect, *handle->paint);
 }
 
-void RenderLine(PGRendererHandle handle, PGLine line, PGColor color) {
+void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGStyle drawStyle) {
+	handle->paint->setAntiAlias(true);
+	handle->paint->setStyle(PGStyleConvert(drawStyle));
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	handle->canvas->drawCircle(circle.x, circle.y, circle.radius, *handle->paint);
+}
+
+void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width) {
+	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	handle->paint->setStrokeWidth(width);
 	handle->canvas->drawLine(line.start.x, line.start.y, line.end.x, line.end.y, *handle->paint);
 }
 
@@ -172,8 +178,11 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 					x += font->textpaint->measureText(text + position, i - position);
 				}
 				position = i + offset;
-				renderer->canvas->drawText(_spaces_array, font->tabwidth, x, y, *font->textpaint);
-				x += font->textpaint->measureText(_spaces_array, font->tabwidth);
+				PGScalar offset = font->textpaint->measureText(" ", 1) * font->tabwidth;
+				// if (render_spaces_always)
+				// PGScalar lineheight = GetTextHeight(font);
+				// RenderLine(renderer, PGLine(x + 1, y + lineheight / 2, x + offset - 1, y + lineheight / 2), PGColor(255, 255, 255, 100), 0.5f);
+				x += offset;
 			}
 		}
 		assert(offset > 0); // invalid UTF8 
@@ -338,11 +347,32 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 	if (start == end) return;
 	PGScalar selection_start = MeasureTextWidth(font, text, start);
 	PGScalar selection_width = MeasureTextWidth(font, text, end > (lng) len ? len : end);
+	PGScalar lineheight = GetTextHeight(font);
 	if (end > (lng) len) {
 		assert(end == len + 1);
 		selection_width += font->character_width;
 	}
-	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, GetTextHeight(font)), selection_color, PGStyleFill);
+	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, lineheight), selection_color, PGStyleFill);
+	// if (!render_spaces_always)
+	PGScalar cumsiz = selection_start;
+	for (lng i = start; i < end;) {
+		int offset = utf8_character_length(text[i]);
+		if (offset == 1) {
+			if (text[i] == '\t') {
+				PGScalar text_size = font->textpaint->measureText(" ", 1) * font->tabwidth;
+				PGScalar lineheight = GetTextHeight(font);
+				RenderLine(renderer, PGLine(x + cumsiz + 1, y + lineheight / 2, x + cumsiz + text_size - 1, y + lineheight / 2), PGColor(255, 255, 255, 100), 1);
+			} else if (text[i] == ' ') {
+				char bullet_point[3] = { 0xE2, 0x88, 0x99 };
+				PGColor color = GetTextColor(font);
+				SetTextColor(font, PGColor(255, 255, 255, 64));
+				RenderText(renderer, font, bullet_point, 3, x + cumsiz, y);
+				SetTextColor(font, color);
+			}
+		}
+		cumsiz += MeasureTextWidth(font, text + i, offset);
+		i += offset;
+	}
 }
 
 void SetTextColor(PGFontHandle font, PGColor color) {
@@ -350,6 +380,11 @@ void SetTextColor(PGFontHandle font, PGColor color) {
 	for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 		(*it)->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	}
+}
+
+PGColor GetTextColor(PGFontHandle font) {
+	SkColor color = font->textpaint->getColor();
+	return PGColor(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color), SkColorGetA(color));
 }
 
 void SetTextFontSize(PGFontHandle font, PGScalar height) {
