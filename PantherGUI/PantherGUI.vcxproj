@@ -141,6 +141,7 @@
     <ClCompile Include="file.cpp" />
     <ClCompile Include="filemanager.cpp" />
     <ClCompile Include="keywords.cpp" />
+    <ClCompile Include="language.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
     <ClInclude Include="keywords.h" />
+    <ClInclude Include="language.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />

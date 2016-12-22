@@ -184,6 +184,17 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 	}
 }
 
+PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGTextAlign alignment) {
+	PGScalar width = MeasureTextWidth(font, text, len);
+	if (alignment & PGTextAlignRight) {
+		x -= width;
+	} else if (alignment & PGTextAlignHorizontalCenter) {
+		x -= width / 2;
+	}
+	RenderText(renderer, font, text, len, x, y);
+	return width;
+}
+
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color) {
 	SkPath path;
 	PGScalar offset = 3; // FIXME: depend on text height
@@ -235,8 +246,35 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 		}
 		text_size += regular_elements * font->character_width;
 	} else {
-		// FIXME: main font is not monospace
-		assert(0);
+		// main font is not monospace
+		for (size_t i = 0; i < length; ) {
+			int offset = utf8_character_length(text[i]);
+			if (offset == 1) {
+				if (text[i] == '\t') {
+					text_size += font->textpaint->measureText(" ", 1) * font->tabwidth;
+				} else {
+					text_size += font->textpaint->measureText(text + i, 1);
+				}
+			} else {
+				if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
+					// if the main font does not support the current glyph, look into the fallback fonts
+					bool found_fallback = false;
+					for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
+						if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
+							text_size += (*it)->measureText(text + i, offset);
+							found_fallback = true;
+							break;
+						}
+					}
+					if (!found_fallback)
+						text_size += font->textpaint->measureText("?", 1);
+				} else {
+					text_size += font->textpaint->measureText(text + i, offset);
+				}
+			}
+			assert(offset > 0);
+			i += offset;
+		}
 	}
 	return text_size;
 }
@@ -317,27 +355,13 @@ void SetTextColor(PGFontHandle font, PGColor color) {
 void SetTextFontSize(PGFontHandle font, PGScalar height) {
 	font->textpaint->setTextSize(height);
 	font->character_width = font->textpaint->measureText("i", 1);
-	// FIXME: set renderer->character_width to -1 for non-monospace fonts
+	PGScalar max_width = font->textpaint->measureText("W", 1);
+	if (PG::abs(font->character_width - max_width) > 0.1f) {
+		// Set renderer->character_width to -1 for non-monospace fonts
+		font->character_width = -1;
+	}
 	font->text_offset = font->textpaint->getFontBounds().height() / 2 + font->textpaint->getFontBounds().height() / 4;
 	for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 		(*it)->setTextSize(height);
-	}
-}
-
-void SetTextAlign(PGFontHandle font, PGTextAlign alignment) {
-	if (alignment & PGTextAlignBottom) {
-		assert(0);
-	} else if (alignment & PGTextAlignTop) {
-		assert(0);
-	} else if (alignment & PGTextAlignVerticalCenter) {
-		assert(0);
-	}
-
-	if (alignment & PGTextAlignLeft) {
-		font->textpaint->setTextAlign(SkPaint::kLeft_Align);
-	} else if (alignment & PGTextAlignRight) {
-		font->textpaint->setTextAlign(SkPaint::kRight_Align);
-	} else if (alignment & PGTextAlignHorizontalCenter) {
-		font->textpaint->setTextAlign(SkPaint::kCenter_Align);
 	}
 }

@@ -12,6 +12,12 @@
 #include "droptarget.h"
 #include "encoding.h"
 #include "unicode.h"
+#include "language.h"
+
+#include "c.h"
+#include "xml.h"
+
+
 
 #include <malloc.h>
 
@@ -142,6 +148,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	res->manager = manager;
 	
 	CreateTimer(res, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
+
+	PGLanguageManager::AddLanguage(new CLanguage());
+	PGLanguageManager::AddLanguage(new XMLLanguage());
 
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(8);

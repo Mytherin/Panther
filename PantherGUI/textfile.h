@@ -9,6 +9,8 @@
 #include "textblock.h"
 #include "scheduler.h"
 #include "syntaxhighlighter.h"
+#include "language.h"
+
 #include <string>
 #include <vector>
 
@@ -68,7 +70,11 @@ public:
 
 	void SaveChanges();
 
+	PGFileEncoding GetFileEncoding() { return encoding; }
 	PGLineEnding GetLineEnding() { return lineending; }
+	PGLineIndentation GetLineIndentation() { return indentation; }
+	PGLanguage* GetLanguage() { return language; }
+
 	lng GetLineCount();
 
 	void Lock();
@@ -124,8 +130,8 @@ private:
 
 	TextField* textfield;
 
-	int offset_x;
-	lng lineoffset_y;
+	int offset_x = 0;
+	lng lineoffset_y = 0;
 	std::vector<Cursor*> cursors;
 	Cursor* active_cursor;
 
@@ -159,6 +165,8 @@ private:
 	PGMutexHandle text_lock;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
+	PGFileEncoding encoding;
 
-	SyntaxHighlighter* highlighter;
+	PGLanguage* language = nullptr;
+	SyntaxHighlighter* highlighter = nullptr;
 };

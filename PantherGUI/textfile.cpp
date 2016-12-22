@@ -5,8 +5,6 @@
 #include <algorithm>
 #include <fstream>
 #include "scheduler.h"
-#include "xml.h"
-#include "c.h"
 #include "unicode.h"
 
 struct OpenFileInformation {
@@ -40,10 +38,10 @@ TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) 
 	this->current_task = nullptr;
 	this->text_lock = CreateMutex();
 	loaded = 0;
-	if (ext == "xml") {
-		highlighter = new XMLHighlighter();
-	} else if (ext == "c") {
-		highlighter = new CHighlighter();
+
+	this->language = PGLanguageManager::GetLanguage(ext);
+	if (this->language) {
+		highlighter = this->language->CreateHighlighter();
 	}
 	unsaved_changes = false;
 	is_loaded = false;

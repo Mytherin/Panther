@@ -221,6 +221,8 @@ void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PG
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle style);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);
+// Render text at the specified location with the specified alignment, returns the width of the rendered text
+PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGTextAlign);
 // Render text at the specified location
 void RenderText(PGRendererHandle renderer, PGFontHandle font, const char* text, size_t length, PGScalar x, PGScalar y);
 // Render squiggles under text at the specified location
@@ -238,8 +240,6 @@ void PGDestroyFont(PGFontHandle font);
 void SetTextColor(PGFontHandle font, PGColor color);
 // Sets the font used by the RenderText method
 void SetTextFontSize(PGFontHandle font, PGScalar height);
-// Sets the text-alignment of text rendered with the RenderText method
-void SetTextAlign(PGFontHandle font, PGTextAlign alignment);
 
 Control* GetFocusedControl(PGWindowHandle window);
 bool WindowHasFocus(PGWindowHandle window);
