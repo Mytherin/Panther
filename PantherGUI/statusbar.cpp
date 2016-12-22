@@ -1,5 +1,6 @@
 
 #include "statusbar.h"
+#include "encoding.h"
 
 StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) : active_textfield(textfield), Control(window, false) {
 	font = PGCreateFont("myriad", false, false);
@@ -42,7 +43,8 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			const int padding = 20;
 			int right_position = padding;
 
-			str = "UTF-8";
+			PGFileEncoding encoding = file.GetFileEncoding();
+			str = PGEncodingToString(encoding);
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
 			right_position += padding;
 			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), PGColor(255, 255, 255));

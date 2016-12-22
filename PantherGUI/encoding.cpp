@@ -14,7 +14,39 @@ struct PGEncoder {
 	UConverter* target = nullptr;
 };
 
-char* GetEncodingName(PGFileEncoding encoding) {
+std::string PGEncodingToString(PGFileEncoding encoding) {
+	switch (encoding) {
+	case PGEncodingUTF8:
+		return "UTF-8";
+	case PGEncodingUTF8BOM:
+		return "UTF-8 with BOM";
+	case PGEncodingUTF16:
+		return "UTF-16";
+	case PGEncodingUTF16Platform:
+		return "UTF-16 Platform";
+	case PGEncodingUTF32:
+		return "UTF-32";
+	case PGEncodingUTF16BE:
+		return "UTF-16 BE";
+	case PGEncodingUTF16BEBOM:
+		return "UTF-16 BE with BOM";
+	case PGEncodingUTF16LE:
+		return "UTF-16 LE";
+	case PGEncodingUTF16LEBOM:
+		return "UTF-16 LE with BOM";
+	case PGEncodingUTF32BE:
+		return "UTF-32 BE";
+	case PGEncodingUTF32BEBOM:
+		return "UTF-32 BE with BOM";
+	case PGEncodingUTF32LE:
+		return "UTF-32 LE";
+	case PGEncodingUTF32LEBOM:
+		return "UTF-32 LE with BOM";
+	}
+	return "";
+}
+
+static char* GetEncodingName(PGFileEncoding encoding) {
 	switch (encoding) {
 	case PGEncodingUTF8:
 	case PGEncodingUTF8BOM:

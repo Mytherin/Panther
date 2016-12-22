@@ -100,7 +100,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	std::vector<Cursor*> cursors = textfile->GetCursors();
 	lng linenr = start_line;
 	TextLine *current_line;
-	PGColor selection_color = PGColor(20, 60, 255, 125);
+	PGColor selection_color = PGColor(38, 79, 120);
 	PGScalar line_height = GetTextHeight(font);
 	PGScalar start_position_y = position_y;
 	if (minimap) {
@@ -121,6 +121,54 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			memcpy(selected_word, textfile->GetLine(cursors[0]->BeginLine())->GetLine() + word_start, word_end - word_start);
 		}
 	}
+	linenr = start_line + rectangle->height / line_height;
+	// render the selection and carets
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		lng startline = std::max((*it)->BeginLine(), start_line);
+		lng endline = std::min((*it)->EndLine(), linenr);
+		position_y = this->y + (startline - start_line) * line_height - rectangle->y;
+		for (; startline <= endline; startline++) {
+			current_line = textfile->GetLine(startline);
+			assert(current_line);
+			lng start, end;
+			if (startline == (*it)->BeginLine()) {
+				if (startline == (*it)->EndLine()) {
+					// start and end are on the same line
+					start = (*it)->BeginPosition();
+					end = (*it)->EndPosition();
+				} else {
+					start = (*it)->BeginPosition();
+					end = current_line->GetLength() + 1;
+				}
+			} else if (startline == (*it)->EndLine()) {
+				start = 0;
+				end = (*it)->EndPosition();
+			} else {
+				start = 0;
+				end = current_line->GetLength() + 1;
+			}
+
+			if (!minimap && startline == (*it)->SelectedLine()) {
+				if (display_carets) {
+					// render the caret on the selected line
+					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedPosition(), line_height, PGColor(191, 191, 191));
+				}
+			}
+			RenderSelection(renderer,
+				font,
+				current_line->GetLine(),
+				current_line->GetLength(),
+				position_x_text,
+				position_y,
+				start,
+				end,
+				selection_color,
+				line_height);
+			position_y += line_height;
+		}
+	}
+	linenr = start_line;
+	position_y = start_position_y;
 	lng block = -1;
 	bool parsed = false;
 	textfile->Lock();
@@ -210,51 +258,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		position_y += line_height;
 	}
 	textfile->Unlock();
-	// render the selection and carets
-	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		lng startline = std::max((*it)->BeginLine(), start_line);
-		lng endline = std::min((*it)->EndLine(), linenr);
-		position_y = this->y + (startline - start_line) * line_height - rectangle->y;
-		for (; startline <= endline; startline++) {
-			current_line = textfile->GetLine(startline);
-			assert(current_line);
-			lng start, end;
-			if (startline == (*it)->BeginLine()) {
-				if (startline == (*it)->EndLine()) {
-					// start and end are on the same line
-					start = (*it)->BeginPosition();
-					end = (*it)->EndPosition();
-				} else {
-					start = (*it)->BeginPosition();
-					end = current_line->GetLength() + 1;
-				}
-			} else if (startline == (*it)->EndLine()) {
-				start = 0;
-				end = (*it)->EndPosition();
-			} else {
-				start = 0;
-				end = current_line->GetLength() + 1;
-			}
-
-			if (!minimap && startline == (*it)->SelectedLine()) {
-				if (display_carets) {
-					// render the caret on the selected line
-					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text, position_y, (*it)->SelectedPosition(), line_height, PGColor(191, 191, 191));
-				}
-			}
-			RenderSelection(renderer,
-				font,
-				current_line->GetLine(),
-				current_line->GetLength(),
-				position_x_text,
-				position_y,
-				start,
-				end,
-				selection_color,
-				line_height);
-			position_y += line_height;
-		}
-	}
 	if (!minimap) {
 		this->line_height = line_height;
 	} else {

@@ -48,6 +48,9 @@ typedef enum {
 	PGEncodingVietnameseWindows1258
 } PGFileEncoding;
 
+//! Convert PGFileEncoding to a human-readable string
+std::string PGEncodingToString(PGFileEncoding);
+
 struct PGEncoder;
 typedef PGEncoder* PGEncoderHandle;
 
