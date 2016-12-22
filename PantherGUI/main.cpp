@@ -17,8 +17,6 @@
 #include "c.h"
 #include "xml.h"
 
-
-
 #include <malloc.h>
 
 #include <windowsx.h>

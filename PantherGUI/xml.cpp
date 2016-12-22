@@ -3,6 +3,9 @@
 #include "xml.h"
 #include <vector>
 
+const PGSyntaxType PGXMLElementName = PGSyntaxKeyword;
+const PGSyntaxType PGXMLAttributeName = PGSyntaxClass3;
+
 enum PGParserXMLState {
 	PGParserXMLDefault,
 	PGParserXMLComment,
@@ -14,12 +17,6 @@ enum PGParserXMLState {
 	PGParserXMLSpecialName,
 	PGParserXMLStartValue
 };
-
-const PGSyntaxType PGXMLElementName = 1;
-const PGSyntaxType PGXMLAttributeName = 2;
-const PGSyntaxType PGXMLAttributeValue = 3;
-const PGSyntaxType PGXMLComment = 5;
-const PGSyntaxType PGXMLEmpty = 255;
 
 struct XMLToken {
 	std::string name;
@@ -58,7 +55,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 		}
 		if (text[i] == '<') {
 			if (state->state == PGParserXMLDefault) {
-				current->type = PGXMLEmpty;
+				current->type = PGSyntaxNone;
 				current->end = i + 1;
 				current->next = new PGSyntax();
 				prev = current;
@@ -71,7 +68,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 		} else if (text[i] == '>') {
 			if (state->state == PGParserXMLInElement) {
 				state->state = PGParserXMLDefault;
-				current->type = PGXMLEmpty;
+				current->type = PGSyntaxNone;
 				current->end = i + 1;
 				prev = current;
 				current->next = new PGSyntax();
@@ -81,7 +78,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 				current->end = i;
 				current->next = new PGSyntax();
 				current = current->next;
-				current->type = PGXMLEmpty;
+				current->type = PGSyntaxNone;
 				current->end = i + 1;
 				prev = current;
 				current->next = new PGSyntax();
@@ -113,7 +110,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 			}
 		} else if (text[i] == '"' || text[i] == '\'') {
 			if (state->state == PGParserXMLStartValue) {
-				current->type = PGXMLEmpty;
+				current->type = PGSyntaxNone;
 				current->end = i;
 				prev = current;
 				current->next = new PGSyntax();
@@ -121,7 +118,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 				state->state = PGParserXMLOpenValue;
 			} else if (state->state == PGParserXMLOpenValue) {
 				// Attribute Value
-				current->type = PGXMLAttributeValue;
+				current->type = PGSyntaxString;
 				current->end = i + 1;
 				prev = current;
 				current->next = new PGSyntax();
@@ -144,7 +141,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 				if (i + 2 < size && text[i + 1] == '-' && text[i + 2] == '>') {
 					state->state = PGParserXMLDefault;
 					i += 2;
-					current->type = PGXMLComment;
+					current->type = PGSyntaxComment;
 					current->end = i;
 					prev = current;
 					current->next = new PGSyntax();
@@ -154,7 +151,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 		}
 	}
 	if (state->state == PGParserXMLComment) {
-		current->type = PGXMLComment;
+		current->type = PGSyntaxComment;
 		current->end = size;
 		current->next = new PGSyntax();
 		current = current->next;

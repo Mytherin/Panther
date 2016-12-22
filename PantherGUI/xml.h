@@ -3,12 +3,6 @@
 #include "syntaxhighlighter.h"
 #include "language.h"
 
-extern const PGSyntaxType PGXMLElementName;
-extern const PGSyntaxType PGXMLAttributeName;
-extern const PGSyntaxType PGXMLValue;
-extern const PGSyntaxType PGXMLComment;
-extern const PGSyntaxType PGXMLEmpty;
-
 class XMLHighlighter : public SyntaxHighlighter {
 public:
 	SyntaxHighlighterType GetType() { return PGSyntaxHighlighterIncremental; }

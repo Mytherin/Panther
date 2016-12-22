@@ -5,6 +5,8 @@
 #include "logger.h"
 #include "text.h"
 #include "controlmanager.h"
+#include "style.h"
+#include "syntax.h"
 
 void TextField::MinimapMouseEvent(bool mouse_enter) {
 	this->InvalidateMinimap();
@@ -100,14 +102,14 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	std::vector<Cursor*> cursors = textfile->GetCursors();
 	lng linenr = start_line;
 	TextLine *current_line;
-	PGColor selection_color = PGColor(38, 79, 120);
+	PGColor selection_color = PGStyleManager::GetColor(PGColorTextFieldSelection);
 	PGScalar line_height = GetTextHeight(font);
 	PGScalar initial_position_y = position_y;
 	PGScalar start_position_y = position_y;
 	if (minimap) {
 		// fill in the background of the minimap
 		PGRect rect(position_x_text, position_y, this->width - position_x_text, this->height - position_y);
-		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGStyleFill);
+		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGDrawStyleFill);
 		// start line of the minimap
 		start_line = GetMinimapStartLine();;
 		linenr = start_line;
@@ -196,26 +198,35 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 						syntax = syntax->next;
 						continue;
 					}
-					switch (syntax->type) {
-					case -1:
+					// FIXME
+					if (syntax->type == PGSyntaxError) {
 						squiggles = true;
-					case 0:
-					case 255:
-					case 4:
-						SetTextColor(font, PGColor(191, 191, 191));
-						break;
-					case 1:
-						SetTextColor(font, PGColor(255, 255, 0));
-						break;
-					case 2:
-						SetTextColor(font, PGColor(166, 226, 46));
-						break;
-					case 3:
-						SetTextColor(font, PGColor(230, 219, 116));
-						break;
-					case 5:
-						SetTextColor(font, PGColor(128, 128, 128));
-						break;
+					} else if (syntax->type == PGSyntaxNone) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+					} else if (syntax->type == PGSyntaxString) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
+					} else if (syntax->type == PGSyntaxConstant) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
+					} else if (syntax->type == PGSyntaxComment) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
+					} else if (syntax->type == PGSyntaxOperator) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
+					} else if (syntax->type == PGSyntaxFunction) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
+					} else if (syntax->type == PGSyntaxKeyword) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
+					} else if (syntax->type == PGSyntaxClass1) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
+					} else if (syntax->type == PGSyntaxClass2) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
+					} else if (syntax->type == PGSyntaxClass3) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
+					} else if (syntax->type == PGSyntaxClass4) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
+					} else if (syntax->type == PGSyntaxClass5) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
+					} else if (syntax->type == PGSyntaxClass6) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
 					}
 					RenderText(renderer, font, line + position, syntax->end - position, xpos, position_y);
 					PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
@@ -229,7 +240,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					syntax = syntax->next;
 				}
 			}
-			SetTextColor(font, PGColor(191, 191, 191));
+			SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
 			RenderText(renderer, font, line + position, length - position, xpos, position_y);
 			if (selected_word) {
 				for (lng i = 0; i <= length - (word_end - word_start); i++) {
@@ -248,7 +259,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 								PGScalar x_offset = MeasureTextWidth(font, line, i);
 								PGScalar width = MeasureTextWidth(font, selected_word, word_end - word_start);
 								PGRect rect(position_x_text + x_offset, position_y, width, line_height);
-								RenderRectangle(renderer, rect, PGColor(191, 191, 191), PGStyleStroke);
+								RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
 							}
 						}
 					}
@@ -266,7 +277,11 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		if (render_overlay) {
 			// render the overlay for the minimap
 			PGRect rect(position_x_text, start_position_y, this->width - position_x_text, line_height * GetLineHeight());
-			RenderRectangle(renderer, rect, PGColor(191, 191, 191, 50), PGStyleFill);
+			RenderRectangle(renderer, rect, 
+				this->drag_type == PGDragMinimap ? 
+					PGStyleManager::GetColor(PGColorMinimapDrag) : 
+					PGStyleManager::GetColor(PGColorMinimapHover)
+				, PGDrawStyleFill);
 		}
 	}
 	if (selected_word) free(selected_word);
@@ -274,9 +289,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	bool window_has_focus = WindowHasFocus(window);
-
-	SetTextColor(textfield_font, PGColor(200, 200, 182));
-	//SetTextAlign(renderer, PGTextAlignRight);
 
 	// determine the width of the line numbers
 	std::vector<Cursor*> cursors = textfile->GetCursors();
@@ -296,22 +308,24 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	lng linenr = textfile->GetLineOffset();
 	line_height = GetTextHeight(textfield_font);
 	if (this->display_linenumbers) {
+		SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldLineNumber));
+
 		TextLine *current_line;
 		while ((current_line = textfile->GetLine(linenr)) != nullptr) {
 			// only render lines that fall within the render rectangle
 			if (rectangle && position_y > rectangle->height) break;
 			if (!rectangle || position_y + line_height >= 0) {
-				// render the line number
-				auto line_number = std::to_string(linenr + 1);
-				RenderText(renderer, textfield_font, line_number.c_str(), line_number.size(), position_x, position_y);
-
 				// if the line is selected by a cursor, render an overlay
 				for (auto it = cursors.begin(); it != cursors.end(); it++) {
 					if (linenr == (*it)->SelectedLine()) {
-						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGColor(32, 32, 255, 64), PGStyleFill);
+						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height),  PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 						break;
 					}
 				}
+
+				// render the line number
+				auto line_number = std::to_string(linenr + 1);
+				RenderText(renderer, textfield_font, line_number.c_str(), line_number.size(), position_x, position_y);
 			}
 			linenr++;
 			position_y += line_height;
@@ -330,8 +344,8 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		PGScalar height = 5;
 		PGScalar padding = 1;
 
-		RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGStyleFill);
-		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * textfile->LoadPercentage(), height), PGColor(20, 60, 255), PGStyleFill);
+		RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGDrawStyleFill);
+		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * textfile->LoadPercentage(), height), PGColor(20, 60, 255), PGDrawStyleFill);
 	}
 	// render the minimap
 	if (textfile->IsLoaded() && this->display_minimap) {
@@ -347,27 +361,27 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		int y = this->y - rectangle->y;
 
 		// the background of the scrollbar
-		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, y, SCROLLBAR_WIDTH, y + this->height), PGColor(62, 62, 62), PGStyleFill);
+		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, y, SCROLLBAR_WIDTH, y + this->height), PGColor(62, 62, 62), PGDrawStyleFill);
 		// the arrows above/below the scrollbar
-		PGColor arrowColor(104, 104, 104);
+		PGColor arrowColor = PGStyleManager::GetColor(PGColorScrollbarForeground);
 		if (mouse_in_scrollbar && mouse.y >= 0 && mouse.y <= 16)
-			arrowColor = PGColor(28, 151, 234);
-		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + 4), PGPoint(x + this->width - 13, y + 12), PGPoint(x + this->width - 3, y + 12), arrowColor, PGStyleFill);
-		arrowColor = PGColor(104, 104, 104);
+			arrowColor = PGStyleManager::GetColor(PGColorScrollbarHover);
+		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + 4), PGPoint(x + this->width - 13, y + 12), PGPoint(x + this->width - 3, y + 12), arrowColor, PGDrawStyleFill);
+		arrowColor = PGStyleManager::GetColor(PGColorScrollbarForeground);
 		if (mouse_in_scrollbar && mouse.y >= this->height - 16 && mouse.y <= this->height)
-			arrowColor = PGColor(28, 151, 234);
-		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + this->height - 4), PGPoint(x + this->width - 13, y + this->height - 12), PGPoint(x + this->width - 3, y + this->height - 12), arrowColor, PGStyleFill);
+			arrowColor = PGStyleManager::GetColor(PGColorScrollbarHover);
+		RenderTriangle(renderer, PGPoint(x + this->width - 8, y + this->height - 4), PGPoint(x + this->width - 13, y + this->height - 12), PGPoint(x + this->width - 3, y + this->height - 12), arrowColor, PGDrawStyleFill);
 		// the actual scrollbar
 		PGScalar scrollbar_height = GetScrollbarHeight();
 		PGScalar scrollbar_offset = GetScrollbarOffset();
 		scrollbar_region.height = scrollbar_height;
 		scrollbar_region.y = this->y + scrollbar_offset;
-		PGColor scrollbar_color = PGColor(104, 104, 104);
+		PGColor scrollbar_color = PGStyleManager::GetColor(PGColorScrollbarForeground);
 		if (this->drag_type == PGDragScrollbar)
-			scrollbar_color = PGColor(0, 122, 204);
+			scrollbar_color = PGStyleManager::GetColor(PGColorScrollbarDrag);
 		else if (mouse_in_scrollbar && mouse.y >= scrollbar_offset && mouse.y <= scrollbar_offset + scrollbar_height)
-			scrollbar_color = PGColor(28, 151, 234);
-		RenderRectangle(renderer, PGRect(x + this->width - 12, y + scrollbar_offset, 8, scrollbar_height), scrollbar_color, PGStyleFill);
+			scrollbar_color = PGStyleManager::GetColor(PGColorScrollbarHover);
+		RenderRectangle(renderer, PGRect(x + this->width - 12, y + scrollbar_offset, 8, scrollbar_height), scrollbar_color, PGDrawStyleFill);
 	}
 }
 

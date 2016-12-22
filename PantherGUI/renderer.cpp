@@ -19,8 +19,8 @@ struct PGFont {
 	std::vector<SkPaint*> fallback_paints;
 };
 
-static SkPaint::Style PGStyleConvert(PGStyle style) {
-	if (style == PGStyleStroke) {
+static SkPaint::Style PGDrawStyleConvert(PGDrawStyle style) {
+	if (style == PGDrawStyleStroke) {
 		return SkPaint::kStroke_Style;
 	}
 	return SkPaint::kStrokeAndFill_Style;
@@ -101,29 +101,29 @@ void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect
 }
 
 
-void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle) {
+void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGDrawStyle drawStyle) {
 	SkPath path;
 	SkPoint points[] = {{a.x, a.y}, {b.x, b.y}, {c.x, c.y}}; // triangle
 	path.addPoly(points, 3, true);
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
-	handle->paint->setStyle(PGStyleConvert(drawStyle));
+	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
 	handle->canvas->drawPath(path, *handle->paint);
 }
 
-void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle drawStyle) {
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle drawStyle) {
 	SkRect rect;
 	rect.fLeft = rectangle.x;
 	rect.fTop = rectangle.y;
 	rect.fRight = rectangle.x + rectangle.width;
 	rect.fBottom = rectangle.y + rectangle.height;
-	handle->paint->setStyle(PGStyleConvert(drawStyle));
+	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	handle->canvas->drawRect(rect, *handle->paint);
 }
 
-void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGStyle drawStyle) {
+void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDrawStyle drawStyle) {
 	handle->paint->setAntiAlias(true);
-	handle->paint->setStyle(PGStyleConvert(drawStyle));
+	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	handle->canvas->drawCircle(circle.x, circle.y, circle.radius, *handle->paint);
 }
@@ -352,7 +352,7 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 		assert(end == len + 1);
 		selection_width += font->character_width;
 	}
-	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, lineheight), selection_color, PGStyleFill);
+	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, lineheight), selection_color, PGDrawStyleFill);
 	// if (!render_spaces_always)
 	PGScalar cumsiz = selection_start;
 	for (lng i = start; i < end;) {
@@ -361,7 +361,7 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 			if (text[i] == '\t') {
 				PGScalar text_size = font->textpaint->measureText(" ", 1) * font->tabwidth;
 				PGScalar lineheight = GetTextHeight(font);
-				RenderLine(renderer, PGLine(x + cumsiz + 1, y + lineheight / 2, x + cumsiz + text_size - 1, y + lineheight / 2), PGColor(255, 255, 255, 100), 1);
+				RenderLine(renderer, PGLine(x + cumsiz + 1, y + lineheight / 2, x + cumsiz + text_size - 1, y + lineheight / 2), PGColor(255, 255, 255, 64), 1);
 			} else if (text[i] == ' ') {
 				char bullet_point[3] = { 0xE2, 0x88, 0x99 };
 				PGColor color = GetTextColor(font);

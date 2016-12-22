@@ -28,11 +28,6 @@ struct PGKWEntry {
 	PGKWEntry(std::string entry, PGSyntaxType result_state) : entry(entry), result_state(result_state) { }
 };
 
-extern const PGSyntaxType PGKWString;
-extern const PGSyntaxType PGKWComment;
-extern const PGSyntaxType PGKWKeyword;
-extern const PGSyntaxType PGKWEmpty;
-
 class KeywordHighlighter : public SyntaxHighlighter {
 public:
 	virtual PGParserState IncrementalParseLine(TextLine& line, lng linenr, PGParserState state, PGParseErrors& errors);

@@ -2,11 +2,6 @@
 #include "keywords.h"
 #include "unicode.h"
 
-const PGSyntaxType PGKWKeyword = 1;
-const PGSyntaxType PGKWString = 3;
-const PGSyntaxType PGKWComment = 5;
-const PGSyntaxType PGKWEmpty = 255;
-
 struct KWParserState {
 	PGParserKWState state;
 	std::string end;
@@ -54,12 +49,12 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 				if (keyword_index.find(kw) != keyword_index.end()) {
  					PGSyntaxType type = keyword_index[kw];
 					if (start > 0 && (!prev || prev->end < start)) {
-						current->type = PGKWEmpty;
+						current->type = PGSyntaxNone;
 						current->end = start;
 						current->next = new PGSyntax();
 						current = current->next;
 					}
-					current->type = PGKWKeyword;
+					current->type = type;
 					current->end = i;
 					current->next = new PGSyntax();
 					prev = current;
@@ -83,7 +78,7 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 						}
 						if (found) {
 							if (i > 0 && (!prev || prev->end < i)) {
-								current->type = PGKWEmpty;
+								current->type = PGSyntaxNone;
 								current->end = i;
 								current->next = new PGSyntax();
 								prev = current;
@@ -120,7 +115,7 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 				}
 				if (found) {
 					i = i + state->end.size() - 1;
-					current->type = (state->state == PGParserKWSLComment || state->state == PGParserKWMLComment) ? PGKWComment : PGKWString;
+					current->type = (state->state == PGParserKWSLComment || state->state == PGParserKWMLComment) ? PGSyntaxComment : PGSyntaxString;
 					current->end = i + 1;
 					current->next = new PGSyntax();
 					prev = current;
@@ -135,7 +130,7 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 		}
 	}
 	if (state->state == PGParserKWSLComment || state->state == PGParserKWMLComment) {
-		current->type = PGKWComment;
+		current->type = PGSyntaxComment;
 		current->end = size;
 		current->next = new PGSyntax();
 		prev = current;
@@ -149,7 +144,7 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 			state->escape = '\0';
 		}
 	} else if (state->state == PGParserKWSLString || state->state == PGParserKWMLString) {
-		current->type = PGKWString;
+		current->type = PGSyntaxString;
 		current->end = size;
 		current->next = new PGSyntax();
 		prev = current;

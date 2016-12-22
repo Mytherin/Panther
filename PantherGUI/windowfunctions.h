@@ -96,6 +96,7 @@ struct PGColor {
 	byte b;
 	byte a;
 
+	PGColor() : r(0), g(0), b(0), a(255) { }
 	PGColor(byte r, byte g, byte b) : r(r), g(g), b(b), a(255) { }
 	PGColor(byte r, byte g, byte b, byte a) : r(r), g(g), b(b), a(a) { }
 };
@@ -207,9 +208,9 @@ typedef enum {
 } PGCursorType;
 
 typedef enum {
-	PGStyleFill,
-	PGStyleStroke
-} PGStyle;
+	PGDrawStyleFill,
+	PGDrawStyleStroke
+} PGDrawStyle;
 
 void SetCursor(PGWindowHandle window, PGCursorType type);
 
@@ -226,9 +227,9 @@ void DeleteTimer(PGTimerHandle);
 PGRendererHandle GetRendererHandle(PGWindowHandle window);
 lng GetPositionInLine(PGFontHandle font, PGScalar x, const char* text, size_t length);
 
-void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGStyle drawStyle);
-void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGStyle style);
-void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGStyle style);
+void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGDrawStyle drawStyle);
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle style);
+void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDrawStyle style);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width = 2);
 void RenderImage(PGRendererHandle window, void* image, int x, int y);
 // Render text at the specified location with the specified alignment, returns the width of the rendered text

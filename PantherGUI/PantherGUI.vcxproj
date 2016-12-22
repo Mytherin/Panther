@@ -148,6 +148,7 @@
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="statusbar.cpp" />
+    <ClCompile Include="style.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
     <ClCompile Include="container.cpp" />
     <ClCompile Include="tabcontrol.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="statusbar.h" />
+    <ClInclude Include="style.h" />
     <ClInclude Include="syntax.h" />
     <ClInclude Include="syntaxhighlighter.h" />
     <ClInclude Include="container.h" />

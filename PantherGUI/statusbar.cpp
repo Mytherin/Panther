@@ -1,11 +1,12 @@
 
 #include "statusbar.h"
 #include "encoding.h"
+#include "style.h"
 
 StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) : active_textfield(textfield), Control(window, false) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
-	SetTextColor(font, PGColor(255, 255, 255));
+	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 }
 
 void StatusBar::UpdateParentSize(PGSize old_size, PGSize new_size) {
@@ -20,10 +21,11 @@ void StatusBar::SelectionChanged() {
 
 void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	using namespace std;
-	RenderRectangle(renderer, PGRect(this->x - rect->x, this->y - rect->y, this->width, this->height), PGColor(0, 122, 204), PGStyleFill);
+	RenderRectangle(renderer, PGRect(this->x - rect->x, this->y - rect->y, this->width, this->height), PGStyleManager::GetColor(PGColorStatusBarBackground), PGDrawStyleFill);
 	if (active_textfield) {
 		TextFile& file = active_textfield->GetTextFile();
 		if (file.IsLoaded()) {
+			PGColor line_color = PGStyleManager::GetColor(PGColorStatusBarText);
 			auto cursors = file.GetCursors();
 			std::string str = "";
 			if (cursors.size() == 1) {
@@ -47,14 +49,14 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			str = PGEncodingToString(encoding);
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
 			right_position += padding;
-			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), PGColor(255, 255, 255));
+			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), line_color);
 			right_position += padding;
 
 			PGLanguage* language = file.GetLanguage();
 			str = language ? language->GetName() : "Plain Text";
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
 			right_position += padding;
-			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), PGColor(255, 255, 255));
+			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), line_color);
 			right_position += padding;
 
 			PGLineEnding ending = file.GetLineEnding();
@@ -73,7 +75,7 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			}
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
 			right_position += padding;
-			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), PGColor(255, 255, 255));
+			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), line_color);
 			right_position += padding;
 
 			PGLineIndentation indentation = file.GetLineIndentation();
@@ -90,7 +92,7 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			str += to_string(4);
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
 			right_position += padding;
-			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), PGColor(255, 255, 255));
+			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), line_color);
 			right_position += padding;
 		}
 	}
