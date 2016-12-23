@@ -1,4 +1,5 @@
 
+#include "control.h"
 #include "windowfunctions.h"
 
 PGTextAlign PGTextAlignBottom = 0x01;
@@ -102,4 +103,8 @@ std::string GetMouseButtonName(PGMouseButton modifier) {
 	else if (modifier == (PGLeftMouseButton | PGMiddleMouseButton)) return std::string("PGLeftMouseButton | PGMiddleMouseButton");
 	else if (modifier == (PGRightMouseButton | PGMiddleMouseButton)) return std::string("PGRightMouseButton | PGMiddleMouseButton");
 	return std::string("UnknownModifier");
+}
+
+PGPoint GetMousePosition(PGWindowHandle window, Control* c) {
+	return GetMousePosition(window) - c->Position();
 }

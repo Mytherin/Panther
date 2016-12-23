@@ -138,11 +138,8 @@ void RenderImage(PGRendererHandle renderer, void* image, int x, int y) {
 
 }
 
-void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y) {
-	/*if (len == 0) {
-		len = 1;
-		text = " ";
-	}*/
+void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGScalar max_position) {
+	PGScalar x_offset = 0;
 	size_t position = 0;
 	size_t i = 0;
 	for ( ; i < len; ) {
@@ -170,6 +167,9 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 					renderer->canvas->drawText("?", 1, x, y + font->text_offset, *font->textpaint);
 					x += font->character_width;
 				}
+				x_offset = 0;
+			} else {
+				x_offset += font->character_width;
 			}
 		} else {
 			if (text[i] == '\t') {
@@ -183,10 +183,15 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 				// PGScalar lineheight = GetTextHeight(font);
 				// RenderLine(renderer, PGLine(x + 1, y + lineheight / 2, x + offset - 1, y + lineheight / 2), PGColor(255, 255, 255, 100), 0.5f);
 				x += offset;
+				x_offset = 0;
+			} else {
+				x_offset += font->character_width;
 			}
 		}
 		assert(offset > 0); // invalid UTF8 
 		i += offset;
+		if (x + x_offset >= max_position)
+			break;
 	}
 	if (position < i) {
 		renderer->canvas->drawText(text + position, i - position, x, y + font->text_offset, *font->textpaint);
@@ -343,8 +348,9 @@ void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text,
 	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), color);
 }
 
-void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height) {
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height, PGScalar max_position) {
 	if (start == end) return;
+	max_position -= x;
 	PGScalar selection_start = MeasureTextWidth(font, text, start);
 	PGScalar selection_width = MeasureTextWidth(font, text, end > (lng) len ? len : end);
 	PGScalar lineheight = GetTextHeight(font);
@@ -352,6 +358,9 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 		assert(end == len + 1);
 		selection_width += font->character_width;
 	}
+	if (selection_start >= max_position) return;
+	selection_width = std::min(max_position, selection_width);
+
 	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, lineheight), selection_color, PGDrawStyleFill);
 	// if (!render_spaces_always)
 	PGScalar cumsiz = selection_start;

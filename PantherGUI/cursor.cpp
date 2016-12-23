@@ -421,7 +421,7 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 		if (cursor_max_character - cursor_min_character > max_textwidth) {
 			// cursors are too far apart to show everything
 			xoffset = cursor_min_character;
-		} else if (cursor_min_character < xoffset + 20) {
+		} else if (cursor_min_character < xoffset) {
 			xoffset = cursor_min_character;
 		} else if (cursor_max_character > xoffset + max_textwidth - 20) {
 			xoffset = cursor_max_character - max_textwidth + 20;

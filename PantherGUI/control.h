@@ -33,14 +33,14 @@ public:
 	virtual void Invalidate(PGIRect);
 	virtual void Invalidate(PGRect);
 
-	void SetSize(PGSize size) { this->width = size.width; this->height = size.height; }
+	void SetSize(PGSize size);
 	void SetPosition(PGPoint point) { this->x = point.x; this->y = point.y; }
 	void SetAnchor(PGAnchor anchor) { this->anchor = anchor; }
 	PGSize GetSize() { return PGSize(this->width, this->height); }
 	PGWindowHandle GetWindow() { return window; }
 
 	PGRect GetRectangle() { 
-		return PGRect(x, y, width, height); 
+		return PGRect(this->x, this->y, width, height); 
 	}
 
 	virtual void OnResize(PGSize old_size, PGSize new_size);
@@ -53,6 +53,10 @@ public:
 
 	bool visible;
 
+	PGScalar X();
+	PGScalar Y();
+	PGPoint Position();
+
 	Control* parent;
 
 	PGScalar x, y;
@@ -61,4 +65,5 @@ public:
 
 	PGWindowHandle window;
 	bool HasFocus();
+
 };

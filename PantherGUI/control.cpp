@@ -60,11 +60,11 @@ bool Control::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
 }
 
 void Control::Invalidate() {
-	RefreshWindow(this->window, PGIRect(this->x, this->y, this->width, this->height));
+	RefreshWindow(this->window, PGIRect(X(), Y(), this->width, this->height));
 }
 
 void Control::Invalidate(PGIRect rectangle) {
-	RefreshWindow(this->window, PGIRect(this->x, this->y, this->width, this->height));
+	this->Invalidate();
 }
 
 void Control::Invalidate(PGRect rectangle) {
@@ -106,7 +106,32 @@ void Control::UpdateParentSize(PGSize old_size, PGSize new_size) {
 	}
 }
 
+void Control::SetSize(PGSize size) {
+	PGSize oldsize(this->width, this->height);
+	this->width = size.width; 
+	this->height = size.height;
+	this->OnResize(oldsize, PGSize(this->width, this->height));
+}
+
 bool Control::IsDragging() {
 	return false;
 }
 
+PGScalar Control::X() {
+	return Position().x;
+}
+
+PGScalar Control::Y() {
+	return Position().y;
+}
+
+PGPoint Control::Position() {
+	PGPoint point = PGPoint(x, y);
+	Control* p = parent;
+	while (p) {
+		point.x += p->x;
+		point.y += p->y;
+		p = p->parent;
+	}
+	return point;
+}

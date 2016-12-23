@@ -160,8 +160,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	TextFile* textfile = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
 	TextFile* textfile2 = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
 	PGContainer* tabbed = new PGContainer(res, textfile);
-	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
-	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
+	//tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+	tabbed->SetPosition(PGPoint(50, 50));
+	tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
+	//tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize() - PGSize(100, 100));
 
 	// The parameters to ShowWindow explained:
 	// hWnd: the value returned from CreateWindow

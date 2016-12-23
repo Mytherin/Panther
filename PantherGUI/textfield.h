@@ -36,6 +36,7 @@ public:
 	void InvalidateAfterLine(lng line);
 	void InvalidateBetweenLines(lng start, lng end);
 	void InvalidateScrollbar();
+	void InvalidateHScrollbar();
 	void InvalidateMinimap();
 
 	void RefreshCursors();
@@ -51,6 +52,7 @@ public:
 
 	void MinimapMouseEvent(bool mouse_enter);
 	void ScrollbarMouseEvent(bool mouse_enter);
+	void HScrollbarMouseEvent(bool mouse_enter);
 
 	PGFontHandle GetTextfieldFont() { return textfield_font; }
 	PGScalar GetTextfieldWidth();
@@ -62,6 +64,7 @@ private:
 	PGIRect scrollbar_region;
 	PGIRect hscrollbar_region;
 	PGIRect minimap_region;
+	PGIRect arrow_regions[4];
 
 	PGScalar text_offset;
 	PGScalar line_height;

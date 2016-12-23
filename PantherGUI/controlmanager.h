@@ -3,8 +3,6 @@
 #include "control.h"
 #include "textfield.h"
 
-// FIXME: this class should manage all the controls, and handle keypresses/mouse clicks/drawings/etc
-
 typedef void(*PGMouseCallback)(Control* control, bool);
 
 struct PGMouseRegion {

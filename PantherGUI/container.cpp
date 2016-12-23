@@ -59,7 +59,7 @@ void PGContainer::PeriodicRender(void) {
 
 void PGContainer::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		if (rect && !PGIRectanglesOverlap(PGIRect((*it)->GetRectangle()), *rect)) {
+		if (rect && !PGIRectanglesOverlap(PGIRect((*it)->X(), (*it)->Y(), (*it)->width, (*it)->height), *rect)) {
 			continue;
 		}
 		(*it)->Draw(renderer, rect);
@@ -70,7 +70,7 @@ void PGContainer::MouseClick(int x, int y, PGMouseButton button, PGModifier modi
 	PGPoint mouse(x - this->x, y - this->y);
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if (PGRectangleContains((*it)->GetRectangle(), mouse)) {
-			(*it)->MouseClick(x, y, button, modifier);
+			(*it)->MouseClick(mouse.x, mouse.y, button, modifier);
 		}
 	}
 }
@@ -79,7 +79,7 @@ void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modif
 	PGPoint mouse(x - this->x, y - this->y);
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if (PGRectangleContains((*it)->GetRectangle(), mouse)) {
-			(*it)->MouseDown(x, y, button, modifier);
+			(*it)->MouseDown(mouse.x, mouse.y, button, modifier);
 		}
 	}
 }
@@ -88,7 +88,7 @@ void PGContainer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifie
 	PGPoint mouse(x - this->x, y - this->y);
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if (PGRectangleContains((*it)->GetRectangle(), mouse)) {
-			(*it)->MouseUp(x, y, button, modifier);
+			(*it)->MouseUp(mouse.x, mouse.y, button, modifier);
 		}
 	}
 }

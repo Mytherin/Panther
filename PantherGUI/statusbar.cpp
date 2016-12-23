@@ -21,7 +21,8 @@ void StatusBar::SelectionChanged() {
 
 void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	using namespace std;
-	RenderRectangle(renderer, PGRect(this->x - rect->x, this->y - rect->y, this->width, this->height), PGStyleManager::GetColor(PGColorStatusBarBackground), PGDrawStyleFill);
+	PGScalar x = X(), y = Y();
+	RenderRectangle(renderer, PGRect(x - rect->x, y - rect->y, this->width, this->height), PGStyleManager::GetColor(PGColorStatusBarBackground), PGDrawStyleFill);
 	if (active_textfield) {
 		TextFile& file = active_textfield->GetTextFile();
 		if (file.IsLoaded()) {
@@ -41,22 +42,22 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			} else {
 				str = to_string(cursors.size()) + string(" selected regions");
 			}
-			RenderText(renderer, font, str.c_str(), str.size(), this->x + 10, this->y - rect->y);
+			RenderText(renderer, font, str.c_str(), str.size(), x + 10, y - rect->y);
 			const int padding = 20;
 			int right_position = padding;
 
 			PGFileEncoding encoding = file.GetFileEncoding();
 			str = PGEncodingToString(encoding);
-			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
+			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 			right_position += padding;
-			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), line_color);
+			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
 			right_position += padding;
 
 			PGLanguage* language = file.GetLanguage();
 			str = language ? language->GetName() : "Plain Text";
-			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
+			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 			right_position += padding;
-			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), line_color);
+			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
 			right_position += padding;
 
 			PGLineEnding ending = file.GetLineEnding();
@@ -73,9 +74,9 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			default:
 				str = "Mixed";
 			}
-			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
+			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 			right_position += padding;
-			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), line_color);
+			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
 			right_position += padding;
 
 			PGLineIndentation indentation = file.GetLineIndentation();
@@ -90,9 +91,9 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 				str = "Mixed: ";
 			}
 			str += to_string(4);
-			right_position += RenderText(renderer, font, str.c_str(), str.size(), this->x + this->width - right_position, this->y - rect->y, PGTextAlignRight);
+			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 			right_position += padding;
-			RenderLine(renderer, PGLine(this->x + this->width - right_position, this->y - rect->y, this->x + this->width - right_position, this->y - rect->y + this->height), line_color);
+			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
 			right_position += padding;
 		}
 	}

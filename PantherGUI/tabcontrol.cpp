@@ -39,8 +39,9 @@ void TabControl::PeriodicRender() {
 }
 
 void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
-	PGScalar position_x = this->x - rectangle->x;
-	PGScalar position_y = this->y - rectangle->y;
+	PGScalar x = X() - rectangle->x;
+	PGScalar y = Y() - rectangle->y;
+	PGScalar position_x = 0;
 	PGScalar tab_padding = 5;
 	PGColor color = PGStyleManager::GetColor(PGColorTabControlBackground);
 	int index = 0;
@@ -49,16 +50,16 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		std::string filename = file->GetName();
 		(*it).target_x = position_x;
 		(*it).width = MeasureTextWidth(font, filename.c_str(), filename.size());
-		PGRect rect((*it).x, position_y, (*it).width + tab_padding * 2, this->height);
+		PGRect rect(x + (*it).x, y, (*it).width + tab_padding * 2, this->height);
 		RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTabControlBackground), PGDrawStyleFill);
 		if (index != active_tab) {
-			PGRect rect((*it).x, position_y, (*it).width + tab_padding * 2, this->height);
+			PGRect rect(x + (*it).x, y, (*it).width + tab_padding * 2, this->height);
 			if (file->HasUnsavedChanges()) {
 				SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlUnsavedText));
 			} else {
 				SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlText));
 			}
-			RenderText(renderer, font, filename.c_str(), filename.length(), (*it).x + tab_padding, position_y);
+			RenderText(renderer, font, filename.c_str(), filename.length(), x + (*it).x + tab_padding, y);
 		}
 		position_x += (*it).width + tab_padding * 2;
 		index++;
@@ -68,17 +69,17 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		// the active tab is rendered last so it appears on top of other tabs when being dragged
 		TextFile* file = tabs[active_tab].file;
 		std::string filename = file->GetName();
-		PGRect rect(tabs[active_tab].x, position_y, tabs[active_tab].width + tab_padding * 2, this->height);
+		PGRect rect(x + tabs[active_tab].x, y, tabs[active_tab].width + tab_padding * 2, this->height);
 		RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTabControlSelected), PGDrawStyleFill);
 		if (file->HasUnsavedChanges()) {
 			SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlUnsavedText));
 		} else {
 			SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlText));
 		}
-		RenderText(renderer, font, filename.c_str(), filename.length(), tabs[active_tab].x + tab_padding, position_y);
+		RenderText(renderer, font, filename.c_str(), filename.length(), x +tabs[active_tab].x + tab_padding, y);
 	}
 	// FIXME: color
-	RenderLine(renderer, PGLine(0, this->height - 1 - rectangle->y, this->width, this->height - 1 - rectangle->y), PGColor(80, 150, 200));
+	RenderLine(renderer, PGLine(x, y + this->height - 1, x + this->width, y + this->height - 1), PGColor(80, 150, 200));
 }
 
 bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -115,6 +116,7 @@ bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
 }
 
 void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
+	x -= this->x; y -= this->y;
 	if (buttons & PGLeftMouseButton) {
 		tabs[active_tab].x = x - drag_offset;
 		if (active_tab != 0) {
@@ -176,6 +178,7 @@ int TabControl::GetSelectedTab(int x) {
 }
 
 void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+	x -= this->x; y -= this->y;
 	if (button == PGLeftMouseButton) {
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
@@ -183,6 +186,7 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 			SwitchToFile(tabs[selected_tab].file);
 			drag_offset = x - tabs[selected_tab].x;
 			drag_tab = true;
+			this->Invalidate();
 			return;
 		}
 	} else if (button == PGMiddleMouseButton) {
@@ -195,6 +199,7 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 }
 
 void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+	x -= this->x; y -= this->y;
 	if (button == PGLeftMouseButton) {
 		drag_tab = false;
 		this->Invalidate();

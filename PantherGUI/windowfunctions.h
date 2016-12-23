@@ -27,6 +27,12 @@ struct PGPoint {
 	PGScalar x;
 	PGScalar y;
 
+	friend PGPoint operator+(PGPoint lhs, const PGPoint& rhs) {
+		return PGPoint(lhs.x + rhs.x, lhs.y + rhs.y);
+	}
+	friend PGPoint operator-(PGPoint lhs, const PGPoint& rhs) {
+		return PGPoint(lhs.x - rhs.x, lhs.y - rhs.y);
+	}
 	PGPoint(PGScalar x, PGScalar y) : x(x), y(y) { }
 };
 
@@ -34,6 +40,12 @@ struct PGSize {
 	PGScalar width;
 	PGScalar height;
 
+	friend PGSize operator+(PGSize lhs, const PGSize& rhs) {
+		return PGSize(lhs.width + rhs.width, lhs.height + rhs.height);
+	}
+	friend PGSize operator-(PGSize lhs, const PGSize& rhs) {
+		return PGSize(lhs.width - rhs.width, lhs.height - rhs.height);
+	}
 	PGSize(PGScalar width, PGScalar height) : width(width), height(height) { }
 };
 
@@ -235,13 +247,13 @@ void RenderImage(PGRendererHandle window, void* image, int x, int y);
 // Render text at the specified location with the specified alignment, returns the width of the rendered text
 PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGTextAlign);
 // Render text at the specified location
-void RenderText(PGRendererHandle renderer, PGFontHandle font, const char* text, size_t length, PGScalar x, PGScalar y);
+void RenderText(PGRendererHandle renderer, PGFontHandle font, const char* text, size_t length, PGScalar x, PGScalar y, PGScalar max_position = INT_MAX);
 // Render squiggles under text at the specified location
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color);
 PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length);
 PGScalar GetTextHeight(PGFontHandle font);
 void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color);
-void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height);
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height, PGScalar max_position = INT_MAX);
 
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold);
 PGFontHandle PGCreateFont(char* filename);
@@ -258,6 +270,7 @@ bool WindowHasFocus(PGWindowHandle window);
 
 PGMouseButton GetMouseState(PGWindowHandle window);
 PGPoint GetMousePosition(PGWindowHandle window);
+PGPoint GetMousePosition(PGWindowHandle window, Control* c);
 void SetWindowTitle(PGWindowHandle window, char* title);
 void RegisterControl(PGWindowHandle window, Control *control);
 

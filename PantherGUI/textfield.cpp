@@ -13,7 +13,11 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 }
 
 void TextField::ScrollbarMouseEvent(bool mouse_enter) {
-	this->Invalidate();
+	this->InvalidateScrollbar();
+}
+
+void TextField::HScrollbarMouseEvent(bool mouse_enter) {
+	this->InvalidateHScrollbar();
 }
 
 void MMMouseEvent(TextField* textfield, bool mouse_enter) {
@@ -21,6 +25,10 @@ void MMMouseEvent(TextField* textfield, bool mouse_enter) {
 }
 
 void SBMouseEvent(TextField* textfield, bool mouse_enter) {
+	return textfield->ScrollbarMouseEvent(mouse_enter);
+}
+
+void HSBMouseEvent(TextField* textfield, bool mouse_enter) {
 	return textfield->ScrollbarMouseEvent(mouse_enter);
 }
 
@@ -36,9 +44,33 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 	ControlManager* manager = (ControlManager*)GetControlManager(window);
 	manager->RegisterMouseRegion(&minimap_region, this, (PGMouseCallback)MMMouseEvent);
 	manager->RegisterMouseRegion(&scrollbar_region, this, (PGMouseCallback)SBMouseEvent);
+	manager->RegisterMouseRegion(&arrow_regions[0], this, (PGMouseCallback)SBMouseEvent);
+	manager->RegisterMouseRegion(&arrow_regions[1], this, (PGMouseCallback)SBMouseEvent);
+	manager->RegisterMouseRegion(&hscrollbar_region, this, (PGMouseCallback)HSBMouseEvent);
+	manager->RegisterMouseRegion(&arrow_regions[2], this, (PGMouseCallback)HSBMouseEvent);
+	manager->RegisterMouseRegion(&arrow_regions[3], this, (PGMouseCallback)HSBMouseEvent);
 	scrollbar_region.x = this->width - SCROLLBAR_WIDTH;
 	scrollbar_region.y = SCROLLBAR_BASE_OFFSET;
 	scrollbar_region.width = SCROLLBAR_WIDTH;
+	arrow_regions[0].x = this->width - SCROLLBAR_WIDTH;
+	arrow_regions[0].y = 0;
+	arrow_regions[0].width = SCROLLBAR_BASE_OFFSET;
+	arrow_regions[0].height = SCROLLBAR_BASE_OFFSET;
+	arrow_regions[1].x = this->width - SCROLLBAR_WIDTH;
+	arrow_regions[1].y = this->height - SCROLLBAR_WIDTH;
+	arrow_regions[1].width = SCROLLBAR_BASE_OFFSET;
+	arrow_regions[1].height = SCROLLBAR_BASE_OFFSET;
+	hscrollbar_region.x = 0;
+	hscrollbar_region.y = this->height - SCROLLBAR_WIDTH;
+	hscrollbar_region.height = SCROLLBAR_WIDTH;
+	arrow_regions[2].x = 0;
+	arrow_regions[2].y = this->height - SCROLLBAR_WIDTH;
+	arrow_regions[2].width = SCROLLBAR_BASE_OFFSET;
+	arrow_regions[2].height = SCROLLBAR_BASE_OFFSET;
+	arrow_regions[3].x = this->width - 2 * SCROLLBAR_BASE_OFFSET;
+	arrow_regions[3].y = this->height - SCROLLBAR_WIDTH;
+	arrow_regions[3].width = SCROLLBAR_BASE_OFFSET;
+	arrow_regions[3].height = SCROLLBAR_BASE_OFFSET;
 
 	textfield_font = PGCreateFont();
 	minimap_font = PGCreateFont();
@@ -99,8 +131,10 @@ void TextField::PeriodicRender(void) {
 void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
 	// FIXME: respect Width while rendering
 	PGScalar xoffset = 0;
+	PGScalar max_x = position_x_text + width;
 	if (!minimap)
 		xoffset = textfile->GetXOffset();
+	PGScalar y = Y();
 	lng start_line = textfile->GetLineOffset();
 	std::vector<Cursor*> cursors = textfile->GetCursors();
 	lng linenr = start_line;
@@ -126,13 +160,15 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			selected_word = (char*)calloc(1, word_end - word_start + 1);
 			memcpy(selected_word, textfile->GetLine(cursors[0]->BeginLine())->GetLine() + word_start, word_end - word_start);
 		}
+	} else {
+		int x = 5;
 	}
 	linenr = start_line + rectangle->height / line_height;
 	// render the selection and carets
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		lng startline = std::max((*it)->BeginLine(), start_line);
 		lng endline = std::min((*it)->EndLine(), linenr);
-		position_y = this->y + (startline - start_line) * line_height - rectangle->y;
+		position_y = y + (startline - start_line) * line_height - rectangle->y;
 		for (; startline <= endline; startline++) {
 			current_line = textfile->GetLine(startline);
 			assert(current_line);
@@ -157,7 +193,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			if (!minimap && startline == (*it)->SelectedLine()) {
 				if (display_carets) {
 					// render the caret on the selected line
-					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text - xoffset, position_y, (*it)->SelectedPosition(), line_height, PGColor(191, 191, 191));
+					RenderCaret(renderer, font, current_line->GetLine(), current_line->GetLength(), position_x_text - xoffset, position_y, (*it)->SelectedPosition(), line_height, PGStyleManager::GetColor(PGColorTextFieldCaret));
 				}
 			}
 			RenderSelection(renderer,
@@ -169,7 +205,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				start,
 				end,
 				selection_color,
-				line_height);
+				line_height,
+				max_x);
 			position_y += line_height;
 		}
 	}
@@ -177,6 +214,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	position_y = initial_position_y;
 	lng block = -1;
 	bool parsed = false;
+
 	textfile->Lock();
 	while ((current_line = textfile->GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
@@ -231,7 +269,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					} else if (syntax->type == PGSyntaxClass6) {
 						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
 					}
-					RenderText(renderer, font, line + position, syntax->end - position, xpos, position_y);
+					RenderText(renderer, font, line + position, syntax->end - position, xpos, position_y, max_x);
 					PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
 					if (!minimap) {
 						if (squiggles) {
@@ -244,7 +282,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				}
 			}
 			SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-			RenderText(renderer, font, line + position, length - position, xpos, position_y);
+			RenderText(renderer, font, line + position, length - position, xpos, position_y, max_x);
 			if (selected_word) {
 				for (lng i = 0; i <= length - (word_end - word_start); i++) {
 					if ((i == 0 || GetCharacterClass(line[i - 1]) != PGCharacterTypeText) &&
@@ -290,8 +328,10 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	if (selected_word) free(selected_word);
 }
 
-void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
+void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	bool window_has_focus = WindowHasFocus(window);
+	PGIRect rect = PGIRect(r->x, r->y, std::min(r->width, (int) (X() + this->width - r->x)), std::min(r->height, (int) (Y() + this->height - r->y)));
+	PGIRect* rectangle = &rect;
 
 	// determine the width of the line numbers
 	std::vector<Cursor*> cursors = textfile->GetCursors();
@@ -301,12 +341,12 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		auto line_number = std::to_string(std::max((lng)10, textfile->GetLineCount() + 1));
 		text_offset = 10 + MeasureTextWidth(textfield_font, line_number.c_str(), line_number.size());
 	}
+	PGPoint position = Position();
+	PGScalar x = position.x, y = position.y;
 	// get the mouse position (for rendering hovers)
-	PGPoint mouse = GetMousePosition(window);
-	mouse.x -= this->x;
-	mouse.y -= this->y;
-	PGScalar position_x = this->x - rectangle->x;
-	PGScalar position_y = this->y - rectangle->y;
+	PGPoint mouse = GetMousePosition(window, this);
+	PGScalar position_x = x - rectangle->x;
+	PGScalar position_y = y - rectangle->y;
 	// textfield/minimap dimensions
 	PGScalar minimap_width = this->display_minimap ? GetMinimapWidth() : 0;
 	PGScalar textfield_width = this->width - minimap_width;
@@ -321,7 +361,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	}
 	// render the actual text field
 	if (textfile->IsLoaded()) {
-		DrawTextField(renderer, textfield_font, rectangle, false, this->x + text_offset - rectangle->x, this->y - rectangle->y, textfield_width, false);
+		DrawTextField(renderer, textfield_font, rectangle, false, x + text_offset - rectangle->x, y - rectangle->y, textfield_width, false);
 	} else {
 		PGScalar offset = this->width / 10;
 		PGScalar width = this->width - offset * 2;
@@ -334,9 +374,9 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	// render the minimap
 	if (textfile->IsLoaded() && this->display_minimap) {
 		bool mouse_in_minimap = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH - minimap_width && mouse.x <= this->width - SCROLLBAR_WIDTH;
-		PGIRect minimap_rect = PGIRect(this->x + textfield_width, this->y, minimap_width, this->height);
+		PGIRect minimap_rect = PGIRect(x + textfield_width, y, minimap_width, this->height);
 
-		DrawTextField(renderer, minimap_font, &minimap_rect, true, this->x + textfield_width - rectangle->x, this->y - rectangle->y, minimap_width, mouse_in_minimap);
+		DrawTextField(renderer, minimap_font, &minimap_rect, true, x + textfield_width - rectangle->x, y - rectangle->y, minimap_width, mouse_in_minimap);
 	}
 
 	// render the line numbers
@@ -344,7 +384,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	line_height = GetTextHeight(textfield_font);
 	if (this->display_linenumbers) {
 		// fill in the background of the line numbers
-		position_y = this->y - rectangle->y;
+		position_y = y - rectangle->y;
 		RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
 		SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldLineNumber));
@@ -352,8 +392,8 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		TextLine *current_line;
 		while ((current_line = textfile->GetLine(linenr)) != nullptr) {
 			// only render lines that fall within the render rectangle
-			if (rectangle && position_y > rectangle->height) break;
-			if (!rectangle || position_y + line_height >= 0) {
+			if (position_y > rectangle->height) break;
+			if (position_y + line_height >= 0) {
 				// if the line is selected by a cursor, render an overlay
 				for (auto it = cursors.begin(); it != cursors.end(); it++) {
 					if (linenr == (*it)->SelectedLine()) {
@@ -373,10 +413,11 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	// render the scrollbar
 	if (this->display_scrollbar) {
 		bool mouse_in_scrollbar = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width;
-		int y = this->y - rectangle->y;
+		x = x - rectangle->x;
+		y = y - rectangle->y;
 
 		// the background of the scrollbar
-		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, y, SCROLLBAR_WIDTH, y + this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
+		RenderRectangle(renderer, PGRect(x + this->width - SCROLLBAR_WIDTH, y, SCROLLBAR_WIDTH, this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
 		// the arrows above/below the scrollbar
 		PGColor arrowColor = PGStyleManager::GetColor(PGColorScrollbarForeground);
 		if (mouse_in_scrollbar && mouse.y >= 0 && mouse.y <= 16)
@@ -390,7 +431,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		PGScalar scrollbar_height = GetScrollbarHeight();
 		PGScalar scrollbar_offset = GetScrollbarOffset();
 		scrollbar_region.height = scrollbar_height;
-		scrollbar_region.y = this->y + scrollbar_offset;
+		scrollbar_region.y = y + scrollbar_offset;
 		PGColor scrollbar_color = PGStyleManager::GetColor(PGColorScrollbarForeground);
 		if (this->drag_type == PGDragScrollbar)
 			scrollbar_color = PGStyleManager::GetColor(PGColorScrollbarDrag);
@@ -403,7 +444,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		if (display_horizontal_scrollbar) {
 			bool mouse_in_horizontal_scrollbar = window_has_focus && mouse.y >= this->height - SCROLLBAR_WIDTH && mouse.y <= this->height && mouse.x <= this->width - SCROLLBAR_WIDTH;
 			// background of the scrollbar
-			RenderRectangle(renderer, PGRect(x, y + this->height - SCROLLBAR_WIDTH, x + this->width - SCROLLBAR_WIDTH, y + this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
+			RenderRectangle(renderer, PGRect(x, y + this->height - SCROLLBAR_WIDTH, this->width - SCROLLBAR_WIDTH, SCROLLBAR_WIDTH), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
 			// the arrows
 			PGColor arrowColor = PGStyleManager::GetColor(PGColorScrollbarForeground);
 			if (mouse_in_horizontal_scrollbar && mouse.x >= 0 && mouse.x <= SCROLLBAR_BASE_OFFSET)
@@ -417,7 +458,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 			scrollbar_height = GetHScrollbarHeight();
 			scrollbar_offset = GetHScrollbarOffset();
 			hscrollbar_region.width = scrollbar_height;
-			hscrollbar_region.x = this->x + scrollbar_offset;
+			hscrollbar_region.x = x + scrollbar_offset;
 			scrollbar_color = PGStyleManager::GetColor(PGColorScrollbarForeground);
 			if (this->drag_type == PGDragHorizontalScrollbar)
 				scrollbar_color = PGStyleManager::GetColor(PGColorScrollbarDrag);
@@ -457,6 +498,7 @@ void TextField::SetHScrollbarOffset(PGScalar offset) {
 	PGScalar xoffset = ((offset - SCROLLBAR_BASE_OFFSET) / scrollbar_width) * max_xoffset;
 	xoffset = std::min(max_xoffset, std::max(0.0f, xoffset));
 	textfile->SetXOffset(xoffset);
+	hscrollbar_region.x = X() + GetHScrollbarOffset();
 }
 
 PGScalar TextField::GetTextfieldWidth() {
@@ -500,7 +542,7 @@ void TextField::SetScrollbarOffset(PGScalar offset) {
 	lng lineoffset_y = (lng)((std::max((lng)1, this->textfile->GetLineCount() - 1) * (offset - SCROLLBAR_BASE_OFFSET)) / (this->height - GetScrollbarHeight() - 2 * SCROLLBAR_BASE_OFFSET));
 	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile->GetLineCount() - 1));
 	textfile->SetLineOffset(lineoffset_y);
-	scrollbar_region.y = this->y + GetScrollbarOffset();
+	scrollbar_region.y = Y() + GetScrollbarOffset();
 }
 
 void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character) {
@@ -520,7 +562,7 @@ void TextField::GetCharacterFromPosition(PGScalar x, TextLine* line, lng& charac
 		character = 0;
 		return;
 	}
-	x -= text_offset - this->x - textfile->GetXOffset();
+	x -= text_offset - textfile->GetXOffset();
 	char* text = line->GetLine();
 	lng length = line->GetLength();
 	character = GetPositionInLine(textfield_font, x, text, length);
@@ -655,6 +697,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 }
 
 void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+	PGPoint mouse(x - this->x, y - this->y);
 	if (button & PGLeftMouseButton) {
 		if (drag_type != PGDragSelectionCursors) {
 			drag_type = PGDragNone;
@@ -730,6 +773,8 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			this->InvalidateScrollbar();
 		} else if (this->display_minimap && mouse.x >= this->width - SCROLLBAR_WIDTH - GetMinimapWidth() && mouse.x <= this->width - SCROLLBAR_WIDTH) {
 			this->InvalidateMinimap();
+		} else if (this->display_scrollbar && this->display_horizontal_scrollbar && mouse.y >= this->height - SCROLLBAR_WIDTH) {
+			this->InvalidateHScrollbar();
 		}
 	}
 }
@@ -981,12 +1026,16 @@ void TextField::InvalidateBetweenLines(lng start, lng end) {
 		return;
 	}
 	lng lineoffset_y = textfile->GetLineOffset();
-	this->Invalidate(PGRect(this->x, this->y + (start - lineoffset_y) * line_height, this->width,
+	this->Invalidate(PGRect(X(), Y() + (start - lineoffset_y) * line_height, this->width,
 		(end - lineoffset_y) * line_height - (start - lineoffset_y) * line_height + line_height));
 }
 
 void TextField::InvalidateScrollbar() {
 	this->Invalidate(PGRect(this->width - SCROLLBAR_WIDTH, 0, SCROLLBAR_WIDTH, this->height));
+}
+
+void TextField::InvalidateHScrollbar() {
+	this->Invalidate(PGRect(0, this->height - SCROLLBAR_WIDTH, this->width, SCROLLBAR_WIDTH));
 }
 
 void TextField::InvalidateMinimap() {
@@ -1012,15 +1061,30 @@ void TextField::OnResize(PGSize old_size, PGSize new_size) {
 	}
 	if (display_scrollbar) {
 		scrollbar_region.x = new_size.width - SCROLLBAR_WIDTH;
-		if (display_horizontal_scrollbar) {
+		hscrollbar_region.y = new_size.height - SCROLLBAR_WIDTH;
 
-		}
+		arrow_regions[0].x = this->width - SCROLLBAR_WIDTH;
+		arrow_regions[0].y = 0;
+		arrow_regions[0].width = SCROLLBAR_BASE_OFFSET;
+		arrow_regions[0].height = SCROLLBAR_BASE_OFFSET;
+		arrow_regions[1].x = this->width - SCROLLBAR_WIDTH;
+		arrow_regions[1].y = this->height - SCROLLBAR_WIDTH;
+		arrow_regions[1].width = SCROLLBAR_BASE_OFFSET;
+		arrow_regions[1].height = SCROLLBAR_BASE_OFFSET;
+		arrow_regions[2].x = 0;
+		arrow_regions[2].y = this->height - SCROLLBAR_WIDTH;
+		arrow_regions[2].width = SCROLLBAR_BASE_OFFSET;
+		arrow_regions[2].height = SCROLLBAR_BASE_OFFSET;
+		arrow_regions[3].x = this->width - 2 * SCROLLBAR_BASE_OFFSET;
+		arrow_regions[3].y = this->height - SCROLLBAR_WIDTH;
+		arrow_regions[3].width = SCROLLBAR_BASE_OFFSET;
+		arrow_regions[3].height = SCROLLBAR_BASE_OFFSET;
 	}
 }
 
 PGCursorType TextField::GetCursor(PGPoint mouse) {
-	mouse.x -= x;
-	mouse.y -= y;
+	mouse.x -= this->x;
+	mouse.y -= this->y;
 	if (!textfile->IsLoaded()) {
 		return PGCursorWait;
 	}
