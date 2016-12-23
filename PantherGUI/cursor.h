@@ -40,6 +40,7 @@ public:
 	lng BeginCharacter();
 	lng EndCharacter();
 	lng SelectedCharacter();
+	PGScalar SelectedXPosition();
 
 	std::string GetText();
 

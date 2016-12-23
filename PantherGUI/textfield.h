@@ -53,11 +53,14 @@ public:
 	void ScrollbarMouseEvent(bool mouse_enter);
 
 	PGFontHandle GetTextfieldFont() { return textfield_font; }
+	PGScalar GetTextfieldWidth();
+	PGScalar GetMaxXOffset() { return max_xoffset; }
 private:
 	PGFontHandle textfield_font;
 	PGFontHandle minimap_font;
 
 	PGIRect scrollbar_region;
+	PGIRect hscrollbar_region;
 	PGIRect minimap_region;
 
 	PGScalar text_offset;
@@ -70,6 +73,7 @@ private:
 		PGDragSelection,
 		PGDragSelectionCursors,
 		PGDragScrollbar,
+		PGDragHorizontalScrollbar,
 		PGDragMinimap
 	};
 	PGDragType drag_type;
@@ -81,9 +85,17 @@ private:
 	bool display_scrollbar;
 	PGScalar drag_offset;
 
+	bool display_horizontal_scrollbar = false;
+	PGScalar max_xoffset;
+	PGScalar max_textsize;
+
 	PGScalar GetScrollbarHeight();
 	PGScalar GetScrollbarOffset();
 	void SetScrollbarOffset(PGScalar offset);
+
+	PGScalar GetHScrollbarHeight();
+	PGScalar GetHScrollbarOffset();
+	void SetHScrollbarOffset(PGScalar offset);
 
 	bool display_minimap;
 	PGScalar GetMinimapWidth();

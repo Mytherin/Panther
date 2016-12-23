@@ -109,6 +109,10 @@ public:
 	void RefreshCursors();
 	int GetLineHeight();
 
+	lng GetMaxLineWidth() { return longest_line; }
+	void SetMaxLineWidth(lng new_width = -1);
+	PGScalar GetXOffset() { return xoffset; }
+	void SetXOffset(lng offset) { xoffset = offset; }
 	lng GetLineOffset() { return lineoffset_y; }
 	void SetLineOffset(lng offset) { lineoffset_y = offset; }
 	void OffsetLineOffset(lng offset);
@@ -127,10 +131,11 @@ private:
 	std::string path;
 	std::string name;
 	std::string ext;
-
+	
 	TextField* textfield;
 
-	int offset_x = 0;
+	lng longest_line = 0;
+	lng xoffset = 0;
 	lng lineoffset_y = 0;
 	std::vector<Cursor*> cursors;
 	Cursor* active_cursor;

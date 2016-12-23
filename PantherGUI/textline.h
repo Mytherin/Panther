@@ -13,17 +13,19 @@ struct TextLine {
 public:
 	lng GetLength(void);
 	char* GetLine(void);
-	void AddDelta(TextDelta* delta);
-	void RemoveDelta(TextDelta* delta);
-	TextDelta* PopDelta();
+	void AddDelta(TextFile* textfile, TextDelta* delta);
+	void RemoveDelta(TextFile* textfile, TextDelta* delta);
+	TextDelta* PopDelta(TextFile* textfile);
 	
-	TextLine(char* line, lng length) : line(line, length), syntax(), applied_deltas(nullptr) {}
+	TextLine(TextFile* textfile, char* line, lng length);
 	TextLine(const TextLine&);
 	~TextLine();
 
 	PGSyntax syntax;
 private:
-	void UndoDelta(TextDelta* delta);
+	void UpdateTextFile(TextFile* textfile, lng oldsize);
+
+	void UndoDelta(TextFile* textfile, TextDelta* delta);
 
 	std::string line;
 	TextDelta* applied_deltas;

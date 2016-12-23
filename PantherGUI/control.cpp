@@ -95,7 +95,8 @@ void Control::UpdateParentSize(PGSize old_size, PGSize new_size) {
 	if (anchor & PGAnchorBottom && anchor & PGAnchorTop) {
 		this->height = height;
 	} else if (anchor & PGAnchorBottom) {
-		this->height = height - this->y;
+		PGScalar diff = old_size.height - this->height;
+		this->height = height - diff;
 	} else if (anchor & PGAnchorTop) {
 		int old = old_size.width - (this->y + this->width);
 		this->height = (old - height) + this->y;

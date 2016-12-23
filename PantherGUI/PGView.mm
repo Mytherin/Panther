@@ -360,7 +360,7 @@ std::string GetClipboardText(PGWindowHandle window) {
 }
 
 PGLineEnding GetSystemLineEnding() {
-	return PGLineEndingMacOS;
+	return PGLineEndingUnix;
 }
 
 char GetSystemPathSeparator() {

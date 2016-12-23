@@ -9,7 +9,7 @@ PGContainer::PGContainer(PGWindowHandle window, TextFile* file) : Control(window
 	this->height = TEXT_TAB_HEIGHT;
 	textfield->SetAnchor(PGAnchorBottom | PGAnchorLeft | PGAnchorRight);
 	textfield->SetPosition(PGPoint(this->x, this->y + TEXT_TAB_HEIGHT));
-	textfield->SetSize(PGSize(this->width, this->height - TEXT_TAB_HEIGHT));
+	textfield->SetSize(PGSize(this->width, this->height - TEXT_TAB_HEIGHT - STATUSBAR_HEIGHT));
 	TabControl* tabs = new TabControl(window, textfield);
 	tabs->SetAnchor(PGAnchorLeft | PGAnchorRight);
 	tabs->SetPosition(PGPoint(this->x, this->y));

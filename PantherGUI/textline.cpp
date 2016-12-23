@@ -1,7 +1,16 @@
 
 #include "textdelta.h"
 #include "textfile.h"
+#include "unicode.h"
+
 #include <algorithm>
+
+TextLine::TextLine(TextFile* textfile, char* line, lng length) 
+	: line(line, length), syntax(), applied_deltas(nullptr) {
+	if (textfile->GetMaxLineWidth() < length) {
+		textfile->SetMaxLineWidth(length);
+	}
+}
 
 TextLine::TextLine(const TextLine& other) {
 	this->line = other.line;
@@ -28,9 +37,18 @@ char* TextLine::GetLine(void) {
 	return (char*)line.c_str();
 }
 
-void TextLine::AddDelta(TextDelta* delta) {
+void TextLine::UpdateTextFile(TextFile* textfile, lng oldsize) {
+	if (this->line.size() > textfile->GetMaxLineWidth()) {
+		textfile->SetMaxLineWidth(this->line.size());
+	} else if (oldsize == textfile->GetMaxLineWidth() && oldsize > this->line.size()) {
+		textfile->SetMaxLineWidth();
+	}
+}
+
+void TextLine::AddDelta(TextFile* textfile, TextDelta* delta) {
 	// check for invalid delta
 	assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
+	lng oldsize = this->line.size();
 	TextDelta* next;
 	while (delta) {
 		assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
@@ -50,15 +68,16 @@ void TextLine::AddDelta(TextDelta* delta) {
 		this->applied_deltas = delta;
 		delta = next;
 	}
+	UpdateTextFile(textfile, oldsize);
 }
 
-void TextLine::RemoveDelta(TextDelta* delta) {
+void TextLine::RemoveDelta(TextFile* textfile, TextDelta* delta) {
 	// we only support removing the most recently applied delta
 	assert(this->applied_deltas == delta);
 	TextDelta* current = this->applied_deltas;
 	this->applied_deltas = this->applied_deltas->next;
 	if (current) {
-		UndoDelta(current);
+		UndoDelta(textfile, current);
 		delete current;
 		return;
 	}
@@ -66,18 +85,19 @@ void TextLine::RemoveDelta(TextDelta* delta) {
 	assert(0);
 }
 
-TextDelta* TextLine::PopDelta() {
+TextDelta* TextLine::PopDelta(TextFile* textfile) {
 	// undo the last applied delta
 	TextDelta* delta = this->applied_deltas;
 
 	if (!delta) return nullptr;
 
 	this->applied_deltas = delta->next;
-	UndoDelta(delta);
+	UndoDelta(textfile, delta);
 	return delta;
 }
 
-void TextLine::UndoDelta(TextDelta* delta) {
+void TextLine::UndoDelta(TextFile* textfile, TextDelta* delta) {
+	lng oldsize = this->line.size();
 	delta->next = nullptr;
 	// this function should only be called with Add/Remove deltas
 	assert(delta->TextDeltaType() == PGDeltaRemoveText || delta->TextDeltaType() == PGDeltaAddText);
@@ -91,4 +111,5 @@ void TextLine::UndoDelta(TextDelta* delta) {
 		AddText* add = (AddText*) delta;
 		line.erase(add->characternr, add->text.size());
 	}
+	UpdateTextFile(textfile, oldsize);
 }

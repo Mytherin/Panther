@@ -20,7 +20,7 @@ struct PGUTF8Character {
 
 #define NEWLINE_CHARACTER "\r\n"
 
-#define DOUBLE_CLICK_TIME 200
+#define DOUBLE_CLICK_TIME 400
 
 namespace PG {
 	template<class T>

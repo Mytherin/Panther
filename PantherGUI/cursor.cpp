@@ -330,6 +330,12 @@ lng Cursor::SelectedCharacter() {
 	return utf8_character_number(file->GetLine(line)->GetLine(), position);
 }
 
+PGScalar Cursor::SelectedXPosition() {
+	lng position = start_character;
+	lng line = start_line;
+	return MeasureTextWidth(file->textfield->GetTextfieldFont(), file->GetLine(line)->GetLine(), position);
+}
+
 std::string Cursor::GetText() {
 	lng beginline = BeginLine();
 	lng endline = EndLine();
@@ -348,7 +354,6 @@ std::string Cursor::GetText() {
 }
 
 void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield) {
-	// FIXME
 	for (int i = 0; i < cursors.size(); i++) {
 		for (int j = i + 1; j < cursors.size(); j++) {
 			if (cursors[i]->OverlapsWith(*cursors[j])) {
@@ -391,10 +396,14 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 		lng line_start = line_offset;
 		lng line_end = line_start + line_height;
 		lng cursor_min = INT_MAX, cursor_max = 0;
+		PGScalar cursor_min_character = INT_MAX, cursor_max_character = 0;
 		for (int i = 0; i < cursors.size(); i++) {
 			lng cursor_line = cursors[i]->start_line;
+			PGScalar cursor_character = cursors[i]->SelectedXPosition();
 			cursor_min = std::min(cursor_min, cursor_line);
 			cursor_max = std::max(cursor_max, cursor_line);
+			cursor_min_character = std::min(cursor_min_character, cursor_character);
+			cursor_max_character = std::max(cursor_max_character, cursor_character);
 		}
 		if (cursor_max - cursor_min > textfile->GetLineHeight()) {
 			// cursors are too far apart to show everything, just show the first one
@@ -406,6 +415,18 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 			// cursor is located before the start of what is visible, offset the view
 			line_offset = cursor_min;
 		}
+
+		PGScalar xoffset = textfile->GetXOffset();
+		PGScalar max_textwidth = textfile->textfield->GetTextfieldWidth();
+		if (cursor_max_character - cursor_min_character > max_textwidth) {
+			// cursors are too far apart to show everything
+			xoffset = cursor_min_character;
+		} else if (cursor_min_character < xoffset + 20) {
+			xoffset = cursor_min_character;
+		} else if (cursor_max_character > xoffset + max_textwidth - 20) {
+			xoffset = cursor_max_character - max_textwidth + 20;
+		}
+		textfile->SetXOffset(std::max(0.0f, std::min(xoffset, textfile->textfield->GetMaxXOffset())));
 		textfile->SetLineOffset(line_offset);
 	}
 	VerifyCursors(cursors);
