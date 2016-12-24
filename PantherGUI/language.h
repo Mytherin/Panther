@@ -16,6 +16,7 @@ public:
 		return &langman;
 	}
 
+	static std::vector<PGLanguage*>& GetLanguages() { return PGLanguageManager::GetInstance()->_GetLanguages(); }
 	static void AddLanguage(PGLanguage* language) { PGLanguageManager::GetInstance()->_AddLanguage(language); }
 	static PGLanguage* GetLanguage(std::string extension) { return PGLanguageManager::GetInstance()->_GetLanguage(extension); }
 private:
@@ -24,6 +25,7 @@ private:
 
 	void _AddLanguage(PGLanguage* language);
 	PGLanguage* _GetLanguage(std::string extension);
+	std::vector<PGLanguage*>& _GetLanguages() { return languages; }
 
 	std::vector<PGLanguage*> languages;
 };

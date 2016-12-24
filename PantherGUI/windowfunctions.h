@@ -292,12 +292,16 @@ extern const PGPopupMenuFlags PGPopupMenuGrayed;
 typedef void(*PGPopupMenuCallback)(Control* control);
 
 PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control);
+void PGPopupMenuInsertSubmenu(PGPopupMenuHandle, PGPopupMenuHandle submenu, std::string submenu_name);
 void PGPopupMenuInsertEntry(PGPopupMenuHandle, std::string text, PGPopupMenuCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
 void PGPopupMenuInsertSeparator(PGPopupMenuHandle);
 // Displays the menu next to the mouse
-void PGDisplayPopupMenu(PGPopupMenuHandle);
+void PGDisplayPopupMenu(PGPopupMenuHandle, PGTextAlign align);
 // Displays the menu at the specified point
-void PGDisplayPopupMenu(PGPopupMenuHandle, PGPoint);
+void PGDisplayPopupMenu(PGPopupMenuHandle, PGPoint, PGTextAlign align);
 
 void OpenFolderInExplorer(std::string path);
 void OpenFolderInTerminal(std::string path);
+
+PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint);
+

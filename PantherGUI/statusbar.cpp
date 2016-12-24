@@ -51,6 +51,7 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 			right_position += padding;
 			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+			buttons[0] = PGIRect(this->width - right_position, 0, 2 * padding + MeasureTextWidth(font, str.c_str(), str.size()), this->height);
 			right_position += padding;
 
 			PGLanguage* language = file.GetLanguage();
@@ -58,6 +59,7 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 			right_position += padding;
 			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+			buttons[1] = PGIRect(this->width - right_position, 0, 2 * padding + MeasureTextWidth(font, str.c_str(), str.size()), this->height);
 			right_position += padding;
 
 			PGLineEnding ending = file.GetLineEnding();
@@ -77,6 +79,7 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 			right_position += padding;
 			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+			buttons[2] = PGIRect(this->width - right_position, 0, 2 * padding + MeasureTextWidth(font, str.c_str(), str.size()), this->height);
 			right_position += padding;
 
 			PGLineIndentation indentation = file.GetLineIndentation();
@@ -94,7 +97,85 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 			right_position += padding;
 			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+			buttons[3] = PGIRect(this->width - right_position, 0, 2 * padding + MeasureTextWidth(font, str.c_str(), str.size()), this->height);
 			right_position += padding;
 		}
 	}
 }
+
+void StatusBar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+
+}
+
+void StatusBar::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+	PGPoint mouse(x - this->x, y - this->y);
+	if (button & PGLeftMouseButton) {
+		TextFile& file = active_textfield->GetTextFile();
+		if (PGRectangleContains(buttons[0], mouse)) {
+
+			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
+			PGPopupMenuHandle reopen_menu = PGCreatePopupMenu(this->window, this);
+			PGPopupMenuHandle savewith_menu = PGCreatePopupMenu(this->window, this);
+			{
+				PGPopupMenuInsertEntry(reopen_menu, "UTF-8", [](Control* control) {
+					// FIXME: reopen with encoding
+				}, PGPopupMenuGrayed);
+				PGPopupMenuInsertEntry(savewith_menu, "UTF-8", [](Control* control) {
+					// FIXME: save with encoding and change active encoding
+				}, PGPopupMenuGrayed);
+			}
+			PGPopupMenuInsertSubmenu(menu, reopen_menu, "Reopen with Encoding...");
+			PGPopupMenuInsertSubmenu(menu, savewith_menu, "Save with Encoding...");
+
+			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[0].x + buttons[0].width, Y() + buttons[0].y)), PGTextAlignRight | PGTextAlignBottom);
+		} else if (PGRectangleContains(buttons[1], mouse)) {
+			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
+			auto languages = PGLanguageManager::GetLanguages();
+			auto active_language = file.GetLanguage();
+			for (auto it = languages.begin(); it != languages.end(); it++) {
+				PGPopupMenuInsertEntry(menu, (*it)->GetName().c_str(), [](Control* control) {
+					// FIXME: switch language
+				}, active_language == *it ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+			}
+			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[1].x + buttons[1].width, Y() + buttons[1].y)), PGTextAlignRight | PGTextAlignBottom);
+		} else if (PGRectangleContains(buttons[2], mouse)) {
+			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
+			PGPopupMenuInsertEntry(menu, "Windows (\\r\\n)", [](Control* control) {
+				TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+				file.ChangeLineEnding(PGLineEndingWindows);
+			}, file.GetLineEnding() == PGLineEndingWindows ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+			PGPopupMenuInsertEntry(menu, "Unix (\\n)", [](Control* control) {
+				TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+				file.ChangeLineEnding(PGLineEndingUnix);
+			}, file.GetLineEnding() == PGLineEndingUnix ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+			PGPopupMenuInsertEntry(menu, "Mac OS 9 (\\r)", [](Control* control) {
+				TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+				file.ChangeLineEnding(PGLineEndingMacOS);
+			}, file.GetLineEnding() == PGLineEndingMacOS ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+
+			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[2].x + buttons[2].width, Y() + buttons[2].y)), PGTextAlignRight | PGTextAlignBottom);
+		} else if (PGRectangleContains(buttons[3], mouse)) {
+			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
+
+			PGPopupMenuInsertEntry(menu, "Indent Using Spaces", [](Control* control) {
+				// FIXME: change indentation of file and convert
+			}, file.GetLineIndentation() == PGIndentionSpaces ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+			PGPopupMenuInsertSeparator(menu);
+			for (int i = 1; i <= 8; i++) {
+				std::string header = "Tab Width: " + std::to_string(i);
+				PGPopupMenuInsertEntry(menu, header, [](Control* control) {
+					// FIXME: change tab width
+				});
+			}
+			PGPopupMenuInsertSeparator(menu);
+			PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control) {
+				// FIXME: change indentation of file
+			});
+			PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control) {
+				// FIXME: change indentation of file
+			});
+			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[3].x + buttons[3].width, Y() + buttons[3].y)), PGTextAlignRight | PGTextAlignBottom);
+		} 
+	}
+}
+

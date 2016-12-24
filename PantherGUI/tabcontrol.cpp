@@ -229,7 +229,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 		});
 		PGPopupMenuInsertEntry(menu, "Open File",  [](Control* control) {
 		}, PGPopupMenuGrayed);
-		PGDisplayPopupMenu(menu);
+		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
 	}
 }
 

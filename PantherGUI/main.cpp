@@ -743,17 +743,36 @@ void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
 	AppendMenu(handle->menu, MF_SEPARATOR, 0, NULL);
 }
 
-void PGDisplayPopupMenu(PGPopupMenuHandle handle) {
+void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submenu, std::string name) {
+	AppendMenu(handle->menu, MF_POPUP, (UINT_PTR) submenu->menu, name.c_str());
+}
+
+void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGTextAlign align) {
 	POINT pt;
 	GetCursorPos(&pt);
-	PGDisplayPopupMenu(handle, PGPoint(pt.x, pt.y));
+	PGDisplayPopupMenu(handle, PGPoint(pt.x, pt.y), align);
 }
 
 
-void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGPoint point) {
+void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGPoint point, PGTextAlign align) {
+	UINT alignment = 0;
+	if (align & PGTextAlignLeft) {
+		alignment |= TPM_LEFTALIGN;
+	} else if (align & PGTextAlignHorizontalCenter) {
+		alignment |= TPM_CENTERALIGN;
+	} else {
+		alignment |= TPM_RIGHTALIGN;
+	}
+	if (align & PGTextAlignTop) {
+		alignment |= TPM_TOPALIGN;
+	} else if (align & PGTextAlignVerticalCenter) {
+		alignment |= TPM_VCENTERALIGN;
+	} else {
+		alignment |= TPM_BOTTOMALIGN;
+	}
 	SetCursor(cursor_standard);
 	handle->window->popup = handle;
-	TrackPopupMenu(handle->menu, TPM_TOPALIGN | TPM_LEFTALIGN, point.x, point.y, 0, handle->window->hwnd, NULL);
+	TrackPopupMenu(handle->menu, alignment, point.x, point.y, 0, handle->window->hwnd, NULL);
 	DestroyMenu(handle->menu);
 }
 
@@ -789,4 +808,11 @@ void OpenFolderInExplorer(std::string path) {
 }
 
 void OpenFolderInTerminal(std::string path) {
+}
+
+PGPoint ConvertWindowToScreen(PGWindowHandle window, PGPoint point) {
+	POINT p;
+	p.x = point.x; p.y = point.y;
+	ClientToScreen(window->hwnd, &p);
+	return PGPoint(p.x, p.y);
 }

@@ -11,10 +11,14 @@ public:
 
 	void UpdateParentSize(PGSize old_size, PGSize new_size);
 
+	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
+
 	void SelectionChanged();
 
 	void Draw(PGRendererHandle, PGIRect*);
 private:
+	PGIRect buttons[5];
 	PGFontHandle font;
 	TextField* active_textfield;
 
