@@ -1052,6 +1052,16 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				textfile->SaveChanges();
 				return true;
 			}
+			case '+': {
+				SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) + 1);
+				this->Invalidate();
+				return true;
+			}
+			case '-': {
+				SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) - 1);
+				this->Invalidate();
+				return true;
+			}
 			}
 		}
 	}

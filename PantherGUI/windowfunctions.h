@@ -267,6 +267,7 @@ void SetTextColor(PGFontHandle font, PGColor color);
 PGColor GetTextColor(PGFontHandle font);
 // Sets the font used by the RenderText method
 void SetTextFontSize(PGFontHandle font, PGScalar height);
+PGScalar GetTextFontSize(PGFontHandle font);
 
 Control* GetFocusedControl(PGWindowHandle window);
 bool WindowHasFocus(PGWindowHandle window);

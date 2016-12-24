@@ -320,16 +320,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case VK_NEXT:
 			button = PGButtonPageDown;
 			break;
+		case VK_OEM_PLUS:
+			character = '+';
+			break;
+		case VK_OEM_COMMA:
+			character = ',';
+			break;
+		case VK_OEM_MINUS:
+			character = '-';
+			break;
+		case VK_OEM_PERIOD:
+			character = '.';
+			break;
 		default:
 			break;
 		}
 		if (button != PGButtonNone) {
 			global_handle->manager->KeyboardButton(button, global_handle->modifier);
 			return 0;
-		} else if (wParam >= 0x41 && wParam <= 0x5A) {
-			character = (char)wParam;
+		} else if ((wParam >= 0x41 && wParam <= 0x5A) || character != '\0') {
+			if (character == '\0')
+				character = (char)wParam;
 			if (global_handle->modifier != PGModifierNone) {
-				global_handle->manager->KeyboardCharacter((char)wParam, global_handle->modifier);
+				global_handle->manager->KeyboardCharacter(character, global_handle->modifier);
 				return 0;
 			}
 		}

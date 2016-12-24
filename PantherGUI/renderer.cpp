@@ -409,3 +409,7 @@ void SetTextFontSize(PGFontHandle font, PGScalar height) {
 		(*it)->setTextSize(height);
 	}
 }
+
+PGScalar GetTextFontSize(PGFontHandle font) {
+	return font->textpaint->getTextSize();
+}
