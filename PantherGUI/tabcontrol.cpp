@@ -157,15 +157,19 @@ bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
 			this->Invalidate();
 			return true;
 		case 'N':
-			TextFile* file = FileManager::OpenFile();
-			tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
-			active_tab++;
-			SwitchToFile(tabs[active_tab].file);
+			NewTab();
 			this->Invalidate();
 			return true;
 		}
 	}
 	return false;
+}
+
+void TabControl::NewTab() {
+	TextFile* file = FileManager::OpenFile();
+	tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
+	active_tab++;
+	SwitchToFile(tabs[active_tab].file);
 }
 
 int TabControl::GetSelectedTab(int x) {
@@ -203,6 +207,29 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 	if (button == PGLeftMouseButton) {
 		drag_tab = false;
 		this->Invalidate();
+	} else if (button & PGRightMouseButton) {
+		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
+		int selected_tab = GetSelectedTab(x);
+		if (selected_tab >= 0) {
+			this->currently_selected_tab = selected_tab;
+			PGPopupMenuInsertEntry(menu, "Close",  [](Control* control) {
+				TabControl* tb = dynamic_cast<TabControl*>(control);
+				tb->CloseTab(tb->currently_selected_tab);
+				tb->Invalidate();
+			});
+			PGPopupMenuInsertEntry(menu, "Close Other Tabs",  [](Control* control) {
+			}, PGPopupMenuGrayed);
+			PGPopupMenuInsertEntry(menu, "Close Tabs to the Right",  [](Control* control) {
+			}, PGPopupMenuGrayed);
+			PGPopupMenuInsertSeparator(menu);
+		}
+		PGPopupMenuInsertEntry(menu, "New File",  [](Control* control) {
+			dynamic_cast<TabControl*>(control)->NewTab();
+			control->Invalidate();
+		});
+		PGPopupMenuInsertEntry(menu, "Open File",  [](Control* control) {
+		}, PGPopupMenuGrayed);
+		PGDisplayPopupMenu(menu);
 	}
 }
 

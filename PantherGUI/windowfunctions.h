@@ -19,6 +19,9 @@ typedef struct PGTimer* PGTimerHandle;
 struct PGFont;
 typedef struct PGFont* PGFontHandle;
 
+struct PGPopupMenu;
+typedef struct PGPopupMenu* PGPopupMenuHandle;
+
 typedef float PGScalar;
 
 class Control;
@@ -279,3 +282,21 @@ void* GetControlManager(PGWindowHandle window);
 void SetClipboardText(PGWindowHandle window, std::string);
 std::string GetClipboardText(PGWindowHandle window);
 
+typedef byte PGPopupMenuFlags;
+
+extern const PGPopupMenuFlags PGPopupMenuFlagsNone;
+extern const PGPopupMenuFlags PGPopupMenuChecked;
+extern const PGPopupMenuFlags PGPopupMenuGrayed;
+
+typedef void(*PGPopupMenuCallback)(Control* control);
+
+PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control);
+void PGPopupMenuInsertEntry(PGPopupMenuHandle, std::string text, PGPopupMenuCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
+void PGPopupMenuInsertSeparator(PGPopupMenuHandle);
+// Displays the menu next to the mouse
+void PGDisplayPopupMenu(PGPopupMenuHandle);
+// Displays the menu at the specified point
+void PGDisplayPopupMenu(PGPopupMenuHandle, PGPoint);
+
+void OpenFolderInExplorer(std::string path);
+void OpenFolderInTerminal(std::string path);

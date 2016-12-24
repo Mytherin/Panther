@@ -122,6 +122,7 @@ public:
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
 	bool HasUnsavedChanges() { return unsaved_changes; }
+	bool FileInMemory() { return path.size() == 0; }
 private:
 	void SetUnsavedChanges(bool changes);
 

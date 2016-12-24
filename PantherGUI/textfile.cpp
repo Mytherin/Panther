@@ -1297,7 +1297,7 @@ void TextFile::Redo(TextDelta* delta) {
 
 void TextFile::SaveChanges() {
 	if (!is_loaded) return;
-	if (this->path == "") return; // FIXME: in-memory file
+	if (this->path == "") return;
 	SetUnsavedChanges(false);
 	this->Lock();
 	PGLineEnding line_ending = lineending;

@@ -31,10 +31,12 @@ public:
 	void PrevTab();
 	void NextTab();
 	void CloseTab(int tab);
+	void NewTab();
 
 	bool IsDragging() {
 		return drag_tab;
 	}
+	int currently_selected_tab = 0;
 protected:
 	PGFontHandle font;
 

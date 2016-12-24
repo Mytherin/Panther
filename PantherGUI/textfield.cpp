@@ -530,6 +530,10 @@ PGScalar TextField::GetTextfieldWidth() {
 	return display_minimap ? this->width - SCROLLBAR_WIDTH - GetMinimapWidth() : this->width - SCROLLBAR_WIDTH;
 }
 
+PGScalar TextField::GetTextfieldHeight() {
+	return display_horizontal_scrollbar ? this->height - SCROLLBAR_WIDTH : this->height;
+}
+
 PGScalar TextField::GetMinimapWidth() {
 	return this->width / 7.0f;
 }
@@ -736,6 +740,13 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
 		textfile->SetCursorLocation(line, character);
 		this->Invalidate();
+	} else if (button == PGRightMouseButton) {
+		/*
+		if (drag_type != PGDragNone) return;
+		lng line, character;
+		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
+		textfile->ClearExtraCursors();
+		textfile->SetCursorLocation(line, character);*/
 	}
 }
 
@@ -750,6 +761,36 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		if (drag_type == PGDragSelectionCursors) {
 			drag_type = PGDragNone;
 		}
+	} else if (button & PGRightMouseButton) {
+		if (!(mouse.x <= GetTextfieldWidth() && mouse.y <= GetTextfieldHeight())) return;
+		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
+		PGPopupMenuInsertEntry(menu, "Show Unsaved Changes...", nullptr, PGPopupMenuGrayed);
+		PGPopupMenuInsertSeparator(menu);
+		PGPopupMenuInsertEntry(menu, "Copy",  [](Control* control) {
+			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->CopyText());
+		});
+		PGPopupMenuInsertEntry(menu, "Cut", nullptr, PGPopupMenuGrayed);
+		PGPopupMenuInsertEntry(menu, "Paste", [](Control* control) {
+			dynamic_cast<TextField*>(control)->textfile->PasteText(GetClipboardText(control->window));
+		});
+		PGPopupMenuInsertSeparator(menu);
+		PGPopupMenuInsertEntry(menu, "Select All", [](Control* control) {
+			dynamic_cast<TextField*>(control)->textfile->SelectEverything();
+			control->Invalidate();
+		});
+		PGPopupMenuInsertSeparator(menu);
+		PGPopupMenuFlags flags = this->textfile->FileInMemory() ? PGPopupMenuGrayed : PGPopupMenuFlagsNone;
+		PGPopupMenuInsertEntry(menu, "View File In Explorer", [](Control* control) {
+			OpenFolderInExplorer(dynamic_cast<TextField*>(control)->textfile->GetFullPath());
+		}, flags);
+		PGPopupMenuInsertEntry(menu, "Open Directory in Terminal", [](Control* control) {
+			OpenFolderInTerminal(dynamic_cast<TextField*>(control)->textfile->GetFullPath());
+		}, flags);
+		PGPopupMenuInsertEntry(menu, "Copy File Path", [](Control* control) {
+			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->GetFullPath());
+		}, flags);
+		PGPopupMenuInsertEntry(menu, "Reveal in Side Bar", nullptr, flags);
+		PGDisplayPopupMenu(menu);
 	}
 }
 

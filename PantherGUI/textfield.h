@@ -56,6 +56,7 @@ public:
 
 	PGFontHandle GetTextfieldFont() { return textfield_font; }
 	PGScalar GetTextfieldWidth();
+	PGScalar GetTextfieldHeight();
 	PGScalar GetMaxXOffset() { return max_xoffset; }
 private:
 	PGFontHandle textfield_font;
@@ -78,7 +79,8 @@ private:
 		PGDragScrollbar,
 		PGDragHorizontalScrollbar,
 		PGDragMinimap,
-		PGDragHoldScrollArrow
+		PGDragHoldScrollArrow,
+		PGDragPopupMenu
 	};
 	PGDragType drag_type;
 

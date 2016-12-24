@@ -26,13 +26,16 @@ const PGModifier PGModifierCmdShiftAlt = PGModifierCmd | PGModifierShift | PGMod
 const PGModifier PGModifierCmdCtrlAlt = PGModifierCmd | PGModifierCtrl | PGModifierAlt;
 const PGModifier PGModifierCmdCtrlShiftAlt = PGModifierCmd | PGModifierCtrl | PGModifierShift | PGModifierAlt;
 
-
 const PGMouseButton PGMouseButtonNone = 0x00;
 const PGMouseButton PGLeftMouseButton = 0x01;
 const PGMouseButton PGRightMouseButton = 0x02;
 const PGMouseButton PGMiddleMouseButton = 0x04;
 const PGMouseButton PGXButton1 = 0x08;
 const PGMouseButton PGXButton2 = 0x10;
+
+const PGPopupMenuFlags PGPopupMenuFlagsNone = 0x00;
+const PGPopupMenuFlags PGPopupMenuChecked = 0x01;
+const PGPopupMenuFlags PGPopupMenuGrayed = 0x02;
 
 std::string GetButtonName(PGButton button) {
 	switch (button) {

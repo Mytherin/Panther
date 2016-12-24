@@ -13,6 +13,7 @@
 #include "encoding.h"
 #include "unicode.h"
 #include "language.h"
+#include "logger.h"
 
 #include "c.h"
 #include "xml.h"
@@ -27,9 +28,10 @@
 struct PGWindow {
 public:
 	PGModifier modifier;
-	HWND hwnd;
-	ControlManager* manager;
-	PGRendererHandle renderer;
+	HWND hwnd = nullptr;
+	ControlManager* manager = nullptr;
+	PGRendererHandle renderer = nullptr;
+	PGPopupMenuHandle popup = nullptr;
 	HCURSOR cursor;
 
 	PGWindow() : modifier(PGModifierNone) {}
@@ -37,6 +39,14 @@ public:
 
 struct PGTimer {
 	HANDLE timer;
+};
+
+struct PGPopupMenu {
+	PGWindowHandle window;
+	HMENU menu;
+	int index = 1000;
+	std::map<int, PGPopupMenuCallback> callbacks;
+	Control* control;
 };
 
 PGWindowHandle global_handle;
@@ -402,7 +412,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_MBUTTONUP: {
-		// FIXME: control over which the mouse is
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);
 		PGModifier modifier = 0;
@@ -411,8 +420,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		global_handle->manager->MouseUp(x, y, PGMiddleMouseButton, modifier);
 		break;
 	}
+
+	case WM_RBUTTONDOWN: {
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+		PGModifier modifier = 0;
+		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+		global_handle->manager->MouseDown(x, y, PGRightMouseButton, modifier);
+		break;
+	}
+	case WM_RBUTTONUP: {
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+		PGModifier modifier = 0;
+		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+		global_handle->manager->MouseUp(x, y, PGRightMouseButton, modifier);
+		break;
+	}
 	case WM_SETCURSOR:
-		SetCursor(global_handle->cursor);
+		SetCursor(global_handle->popup ? cursor_standard : global_handle->cursor);
 		return true;
 	case WM_ERASEBKGND:
 		return 1;
@@ -426,6 +454,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			PGSize old_size = GetWindowSize(global_handle);
 			global_handle->manager->UpdateParentSize(old_size, PGSize(width, height));
 			RedrawWindow(global_handle);
+		}
+		break;
+	}
+	case WM_COMMAND: {
+		int index = LOWORD(wParam);
+		if (global_handle->popup) {
+			PGPopupMenuCallback callback = global_handle->popup->callbacks[index];
+			if (callback) {
+				callback(global_handle->popup->control);
+			}
+			global_handle->popup = nullptr;
 		}
 		break;
 	}
@@ -667,4 +706,74 @@ void* GetControlManager(PGWindowHandle window) {
 
 PGRendererHandle GetRendererHandle(PGWindowHandle window) {
 	return window->renderer;
+}
+
+PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
+	PGPopupMenuHandle handle = new PGPopupMenu();
+	handle->menu = CreatePopupMenu();
+	handle->window = window;
+	handle->control = control;
+	return handle;
+}
+
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupMenuCallback callback, PGPopupMenuFlags flags) {
+	int append_flags = MF_STRING;
+	if (flags & PGPopupMenuChecked) append_flags |= MF_CHECKED;
+	if (flags & PGPopupMenuGrayed) append_flags |= MF_GRAYED;
+	int index = handle->index;
+	AppendMenu(handle->menu, append_flags, index, text.c_str());
+	handle->callbacks[index] = callback;
+	handle->index++;
+}
+
+void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
+	AppendMenu(handle->menu, MF_SEPARATOR, 0, NULL);
+}
+
+void PGDisplayPopupMenu(PGPopupMenuHandle handle) {
+	POINT pt;
+	GetCursorPos(&pt);
+	PGDisplayPopupMenu(handle, PGPoint(pt.x, pt.y));
+}
+
+
+void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGPoint point) {
+	SetCursor(cursor_standard);
+	handle->window->popup = handle;
+	TrackPopupMenu(handle->menu, TPM_TOPALIGN | TPM_LEFTALIGN, point.x, point.y, 0, handle->window->hwnd, NULL);
+	DestroyMenu(handle->menu);
+}
+
+void OpenFolderInExplorer(std::string path) {
+	std::string parameter = "explorer.exe /select,\"" + path + "\"";
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+
+	if (CreateProcess(NULL, (LPSTR) parameter.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+		WaitForSingleObject(pi.hProcess, INFINITE);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+	} else {
+		DWORD dw = GetLastError();
+		LPVOID lpMsgBuf;
+
+		FormatMessage(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+			FORMAT_MESSAGE_FROM_SYSTEM |
+			FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			dw,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			(LPTSTR) &lpMsgBuf,
+			0, NULL );
+
+		Logger::WriteLogMessage(std::string((char*)lpMsgBuf));
+	}
+}
+
+void OpenFolderInTerminal(std::string path) {
 }
