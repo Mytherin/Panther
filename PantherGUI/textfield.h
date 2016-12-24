@@ -77,13 +77,25 @@ private:
 		PGDragSelectionCursors,
 		PGDragScrollbar,
 		PGDragHorizontalScrollbar,
-		PGDragMinimap
+		PGDragMinimap,
+		PGDragHoldScrollArrow
 	};
 	PGDragType drag_type;
 
 	bool current_focus;
 
 	bool display_linenumbers;
+
+	enum PGDragRegion {
+		PGDragRegionScrollbarArrowUp,
+		PGDragRegionScrollbarArrowDown,
+		PGDragRegionScrollbarArrowLeft,
+		PGDragRegionScrollbarArrowRight,
+		PGDragRegionAboveScrollbar,
+		PGDragRegionBelowScrollbar,
+	};
+	PGDragRegion drag_region;
+	time_t drag_start;
 
 	bool display_scrollbar;
 	PGScalar drag_offset;

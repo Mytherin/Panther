@@ -33,14 +33,12 @@ bool ControlManager::KeyboardUnicode(PGUTF8Character character, PGModifier modif
 	return focused_control->KeyboardUnicode(character, modifier);
 }
 
-#include "logger.h"
-
 void ControlManager::PeriodicRender(void) {
 	PGPoint mouse = GetMousePosition(window);
 	PGMouseButton buttons = GetMouseState(window);
 	// for any registered mouse regions, check if the mouse status has changed (mouse has entered or left the area)
 	for (auto it = regions.begin(); it != regions.end(); it++) {
-		bool contains = PGRectangleContains(*(*it).rect, mouse);
+		bool contains = PGRectangleContains(*(*it).rect, mouse - (*it).control->Position());
 		if (!(*it).mouse_inside && contains) {
 			// mouse enter
 			(*it).mouse_event((*it).control, true);
