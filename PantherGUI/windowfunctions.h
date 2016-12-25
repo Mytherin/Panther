@@ -256,7 +256,7 @@ void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGSc
 PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length);
 PGScalar GetTextHeight(PGFontHandle font);
 void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color);
-void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height, PGScalar max_position = INT_MAX);
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar max_position = INT_MAX);
 
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold);
 PGFontHandle PGCreateFont(char* filename);

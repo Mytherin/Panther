@@ -170,10 +170,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	TextFile* textfile = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
 	TextFile* textfile2 = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
 	PGContainer* tabbed = new PGContainer(res, textfile);
-	//tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
-	tabbed->SetPosition(PGPoint(50, 50));
-	tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
-	//tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize() - PGSize(100, 100));
+	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+	//tabbed->SetPosition(PGPoint(50, 50));
+	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
+	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
 
 	// The parameters to ShowWindow explained:
 	// hWnd: the value returned from CreateWindow
@@ -332,6 +332,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case VK_OEM_PERIOD:
 			character = '.';
 			break;
+		case VK_ESCAPE:
+			button = PGButtonEscape;
+			break;
 		default:
 			break;
 		}
@@ -477,6 +480,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			if (callback) {
 				callback(global_handle->popup->control);
 			}
+			delete global_handle->popup;
 			global_handle->popup = nullptr;
 		}
 		break;
@@ -582,7 +586,7 @@ PGSize GetWindowSize(PGWindowHandle window) {
 }
 
 Control* GetFocusedControl(PGWindowHandle window) {
-	return window->manager->GetFocusedControl();
+	return window->manager->GetActiveControl();
 }
 
 void RegisterControl(PGWindowHandle window, Control *control) {

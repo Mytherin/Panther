@@ -1,5 +1,6 @@
 #pragma once
 
+#include "basictextfield.h"
 #include "control.h"
 #include "cursor.h"
 #include "textfile.h"
@@ -12,10 +13,11 @@ struct TextSelection {
 	int character_end;
 };
 
+#define FLICKER_CARET_INTERVAL 15
 #define SCROLLBAR_BASE_OFFSET 16
 #define SCROLLBAR_WIDTH 16
 
-class TextField : public Control {
+class TextField : public BasicTextField {
 public:
 	TextField(PGWindowHandle, TextFile* file);
 	~TextField();
@@ -29,7 +31,6 @@ public:
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	bool KeyboardCharacter(char character, PGModifier modifier);
-	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 	
 	void InvalidateLine(lng line);
 	void InvalidateBeforeLine(lng line);
@@ -39,27 +40,20 @@ public:
 	void InvalidateHScrollbar();
 	void InvalidateMinimap();
 
-	void RefreshCursors();
-	int GetLineHeight();
-
 	void SetTextFile(TextFile* textfile);
-	TextFile& GetTextFile() { return *textfile; }
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
-	bool IsDragging() { return drag_type != PGDragNone; }
 	PGCursorType GetCursor(PGPoint mouse);
 
 	void MinimapMouseEvent(bool mouse_enter);
 	void ScrollbarMouseEvent(bool mouse_enter);
 	void HScrollbarMouseEvent(bool mouse_enter);
-
-	PGFontHandle GetTextfieldFont() { return textfield_font; }
+	
 	PGScalar GetTextfieldWidth();
 	PGScalar GetTextfieldHeight();
 	PGScalar GetMaxXOffset() { return max_xoffset; }
 private:
-	PGFontHandle textfield_font;
 	PGFontHandle minimap_font;
 
 	PGIRect scrollbar_region;
@@ -67,24 +61,8 @@ private:
 	PGIRect minimap_region;
 	PGIRect arrow_regions[4];
 
-	PGScalar text_offset;
 	PGScalar line_height;
 	PGScalar minimap_line_height;
-	int display_carets_count;
-	bool display_carets;
-	enum PGDragType {
-		PGDragNone,
-		PGDragSelection,
-		PGDragSelectionCursors,
-		PGDragScrollbar,
-		PGDragHorizontalScrollbar,
-		PGDragMinimap,
-		PGDragHoldScrollArrow,
-		PGDragPopupMenu
-	};
-	PGDragType drag_type;
-
-	bool current_focus;
 
 	bool display_linenumbers;
 
@@ -121,14 +99,7 @@ private:
 	lng GetMinimapStartLine();
 	void SetMinimapOffset(PGScalar offset);
 
-	TextFile* textfile;
-
-	MouseClickInstance last_click;
-
 	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
-	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
-	void GetLineFromPosition(PGScalar y, lng& line);
-	void GetCharacterFromPosition(PGScalar x, TextLine* line, lng& character);
 	bool SetScrollOffset(lng offset);
 };

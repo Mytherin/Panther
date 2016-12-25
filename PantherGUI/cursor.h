@@ -10,6 +10,7 @@ class TextFile;
 class TextField;
 
 class Cursor {
+	friend class SimpleTextField;
 	friend class TextFile;
 	friend class TextField;
 public:

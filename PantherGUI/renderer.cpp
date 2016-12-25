@@ -348,7 +348,7 @@ void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text,
 	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), color);
 }
 
-void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar line_height, PGScalar max_position) {
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar max_position) {
 	if (start == end) return;
 	max_position -= x;
 	PGScalar selection_start = MeasureTextWidth(font, text, start);

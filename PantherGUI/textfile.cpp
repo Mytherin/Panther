@@ -20,7 +20,7 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 	delete info;
 }
 
-TextFile::TextFile(TextField* textfield) : textfield(textfield), highlighter(nullptr) {
+TextFile::TextFile(BasicTextField* textfield) : textfield(textfield), highlighter(nullptr) {
 	cursors.push_back(new Cursor(this));
 	this->path = "";
 	this->name = std::string("untitled");
@@ -30,7 +30,7 @@ TextFile::TextFile(TextField* textfield) : textfield(textfield), highlighter(nul
 	unsaved_changes = true;
 }
 
-TextFile::TextFile(TextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr), path(path) {
+TextFile::TextFile(BasicTextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr), path(path) {
 	cursors.push_back(new Cursor(this));
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
@@ -211,7 +211,7 @@ void TextFile::OpenFile(std::string path) {
 
 			prev = ptr + 1;
 			offset = 0;
-			
+
 			if (pending_delete) {
 				PGmmap::DestroyFileContents(base);
 				UnlockMutex(text_lock);
@@ -283,7 +283,7 @@ void TextFile::SetMaxLineWidth(lng new_width) {
 	if (new_width < 0) {
 		lng max = 0;
 		for (auto it = lines.begin(); it != lines.end(); it++) {
-			max = std::max((lng) (*it)->line.size(), max);
+			max = std::max((lng)(*it)->line.size(), max);
 		}
 		longest_line = max;
 	} else {
@@ -308,7 +308,7 @@ void TextFile::InsertText(char character) {
 
 void TextFile::InsertText(PGUTF8Character u) {
 	if (!is_loaded) return;
-	InsertText(std::string((char*) u.character, u.length));
+	InsertText(std::string((char*)u.character, u.length));
 }
 
 void TextFile::InsertText(std::string text) {
@@ -653,11 +653,24 @@ void TextFile::AddEmptyLine(PGDirection direction) {
 std::string TextFile::CopyText() {
 	std::string text = "";
 	if (!is_loaded) return text;
-	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if (it != cursors.begin()) {
-			text += NEWLINE_CHARACTER;
+	if (CursorsContainSelection(cursors)) {
+		bool first_copy = true;
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			if (!(*it)->SelectionIsEmpty()) {
+				if (!first_copy) {
+					text += NEWLINE_CHARACTER;
+				}
+				text += (*it)->GetText();
+				first_copy = false;
+			}
 		}
-		text += (*it)->GetText();
+	} else {
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			if (it != cursors.begin()) {
+				text += NEWLINE_CHARACTER;
+			}
+			text += this->GetLine((*it)->SelectedLine())->GetLine();
+		}
 	}
 	return text;
 }

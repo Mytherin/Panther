@@ -132,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="basictextfield.cpp" />
     <ClCompile Include="c.cpp" />
     <ClCompile Include="control.cpp" />
     <ClCompile Include="controlmanager.cpp" />
@@ -147,6 +148,7 @@
     <ClCompile Include="mmap.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
+    <ClCompile Include="simpletextfield.cpp" />
     <ClCompile Include="statusbar.cpp" />
     <ClCompile Include="style.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
@@ -163,6 +165,7 @@
     <ClCompile Include="xml.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="basictextfield.h" />
     <ClInclude Include="blockingconcurrentqueue.h" />
     <ClInclude Include="c.h" />
     <ClInclude Include="concurrentqueue.h" />
@@ -179,6 +182,7 @@
     <ClInclude Include="mmap.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />
+    <ClInclude Include="simpletextfield.h" />
     <ClInclude Include="statusbar.h" />
     <ClInclude Include="style.h" />
     <ClInclude Include="syntax.h" />

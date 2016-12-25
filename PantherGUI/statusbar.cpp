@@ -134,7 +134,7 @@ void StatusBar::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 			auto active_language = file.GetLanguage();
 			for (auto it = languages.begin(); it != languages.end(); it++) {
 				PGPopupMenuInsertEntry(menu, (*it)->GetName().c_str(), [](Control* control) {
-					// FIXME: switch language
+					// FIXME: switch highlighter language
 				}, active_language == *it ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 			}
 			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[1].x + buttons[1].width, Y() + buttons[1].y)), PGTextAlignRight | PGTextAlignBottom);

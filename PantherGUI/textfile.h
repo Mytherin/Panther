@@ -31,16 +31,16 @@ typedef enum {
 	PGIndentionMixed
 } PGLineIndentation;
 
-class TextField;
+class BasicTextField;
 struct Interval;
 
 class TextFile {
 	friend class Cursor;
 public:
 	// create an in-memory textfile with currently unspecified path
-	TextFile(TextField* textfield);
+	TextFile(BasicTextField* textfield);
 	// load textfile from a file
-	TextFile(TextField* textfield, std::string filename, bool immediate_load = false);
+	TextFile(BasicTextField* textfield, std::string filename, bool immediate_load = false);
 	~TextFile();
 
 	TextLine* GetLine(lng linenumber);
@@ -118,7 +118,7 @@ public:
 	void OffsetLineOffset(lng offset);
 	Cursor*& GetActiveCursor();
 	std::vector<Cursor*>& GetCursors() { return cursors; }
-	void SetTextField(TextField* textfield) { this->textfield = textfield; }
+	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
 	bool HasUnsavedChanges() { return unsaved_changes; }
@@ -133,7 +133,7 @@ private:
 	std::string name;
 	std::string ext;
 	
-	TextField* textfield;
+	BasicTextField* textfield;
 
 	lng longest_line = 0;
 	lng xoffset = 0;

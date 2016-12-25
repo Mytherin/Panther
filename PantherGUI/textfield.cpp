@@ -8,6 +8,9 @@
 #include "style.h"
 #include "syntax.h"
 
+#include "container.h"
+#include "simpletextfield.h"
+
 void TextField::MinimapMouseEvent(bool mouse_enter) {
 	this->InvalidateMinimap();
 }
@@ -33,12 +36,9 @@ void HSBMouseEvent(TextField* textfield, bool mouse_enter) {
 }
 
 TextField::TextField(PGWindowHandle window, TextFile* file) :
-	Control(window, false), display_carets(true), display_carets_count(0), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
-	assert(file);
-	textfile = file;
+	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
 	textfile->SetTextField(this);
 
-	drag_type = PGDragNone;
 	line_height = 19;
 
 	ControlManager* manager = (ControlManager*)GetControlManager(window);
@@ -83,76 +83,36 @@ TextField::~TextField() {
 
 }
 
-#define FLICKER_CARET_INTERVAL 15
-
-void TextField::RefreshCursors() {
-	// FIXME: thread safety on setting display_carets_count?
-	display_carets_count = 0;
-	display_carets = true;
-}
-
 void TextField::PeriodicRender(void) {
 	// FIXME: thread safety on incrementing display_carets_count and cursors?
-	if (!WindowHasFocus(window)) {
-		display_carets = false;
-		display_carets_count = 0;
-		if (!current_focus) {
-			current_focus = true;
-			Invalidate();
-		}
-		return;
-	} else if (current_focus) {
-		if (current_focus) {
-			current_focus = false;
-			Invalidate();
-		}
-	}
-
 	if (drag_type == PGDragHoldScrollArrow) {
 		time_t time = GetTime();
 		if (time - drag_start >= DOUBLE_CLICK_TIME) {
 			switch (drag_region) {
-				case PGDragRegionScrollbarArrowUp:
-					textfile->OffsetLineOffset(-1);
-					break;
-				case PGDragRegionScrollbarArrowDown:
-					textfile->OffsetLineOffset(1);
-					break;
-				case PGDragRegionScrollbarArrowLeft:
-					textfile->SetXOffset(std::max((PGScalar) 0, textfile->GetXOffset() - 10));
-					break;
-				case PGDragRegionScrollbarArrowRight:
-					textfile->SetXOffset(std::min((PGScalar) max_xoffset, textfile->GetXOffset() + 10));
-					break;
-				case PGDragRegionAboveScrollbar:
-					textfile->OffsetLineOffset(-GetLineHeight());
-					break;
-				case PGDragRegionBelowScrollbar:
-					textfile->OffsetLineOffset(GetLineHeight());
-					break;
+			case PGDragRegionScrollbarArrowUp:
+				textfile->OffsetLineOffset(-1);
+				break;
+			case PGDragRegionScrollbarArrowDown:
+				textfile->OffsetLineOffset(1);
+				break;
+			case PGDragRegionScrollbarArrowLeft:
+				textfile->SetXOffset(std::max((PGScalar)0, textfile->GetXOffset() - 10));
+				break;
+			case PGDragRegionScrollbarArrowRight:
+				textfile->SetXOffset(std::min((PGScalar)max_xoffset, textfile->GetXOffset() + 10));
+				break;
+			case PGDragRegionAboveScrollbar:
+				textfile->OffsetLineOffset(-GetLineHeight());
+				break;
+			case PGDragRegionBelowScrollbar:
+				textfile->OffsetLineOffset(GetLineHeight());
+				break;
 			}
 			this->Invalidate();
 		}
 	}
 
-	display_carets_count++;
-	if (display_carets_count % FLICKER_CARET_INTERVAL == 0) {
-		display_carets_count = 0;
-		display_carets = !display_carets;
-		lng start_line = LLONG_MAX, end_line = -LLONG_MAX;
-		std::vector<Cursor*> cursors = textfile->GetCursors();
-		for (auto it = cursors.begin(); it != cursors.end(); it++) {
-			start_line = std::min((*it)->start_line, start_line);
-			end_line = std::max((*it)->start_line, end_line);
-		}
-		if (start_line <= end_line) {
-			this->InvalidateBetweenLines(start_line, end_line);
-		}
-	}
-
-	if (!textfile->IsLoaded()) {
-		Invalidate();
-	}
+	BasicTextField::PeriodicRender();
 }
 
 void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIRect* rectangle, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
@@ -223,7 +183,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				start,
 				end,
 				selection_color,
-				line_height,
 				max_x);
 
 			if (!minimap && startline == (*it)->SelectedLine()) {
@@ -343,10 +302,10 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		if (render_overlay) {
 			// render the overlay for the minimap
 			PGRect rect(position_x_text, start_position_y, this->width - position_x_text, line_height * GetLineHeight());
-			RenderRectangle(renderer, rect, 
-				this->drag_type == PGDragMinimap ? 
-					PGStyleManager::GetColor(PGColorMinimapDrag) : 
-					PGStyleManager::GetColor(PGColorMinimapHover)
+			RenderRectangle(renderer, rect,
+				this->drag_type == PGDragMinimap ?
+				PGStyleManager::GetColor(PGColorMinimapDrag) :
+				PGStyleManager::GetColor(PGColorMinimapHover)
 				, PGDrawStyleFill);
 		}
 	}
@@ -355,7 +314,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	bool window_has_focus = WindowHasFocus(window);
-	PGIRect rect = PGIRect(r->x, r->y, std::min(r->width, (int) (X() + this->width - r->x)), std::min(r->height, (int) (Y() + this->height - r->y)));
+	PGIRect rect = PGIRect(r->x, r->y, std::min(r->width, (int)(X() + this->width - r->x)), std::min(r->height, (int)(Y() + this->height - r->y)));
 	PGIRect* rectangle = &rect;
 
 	// determine the width of the line numbers
@@ -422,7 +381,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 				// if the line is selected by a cursor, render an overlay
 				for (auto it = cursors.begin(); it != cursors.end(); it++) {
 					if (linenr == (*it)->SelectedLine()) {
-						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height),  PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
+						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 						break;
 					}
 				}
@@ -574,30 +533,6 @@ void TextField::SetScrollbarOffset(PGScalar offset) {
 	scrollbar_region.y = Y() + GetScrollbarOffset();
 }
 
-void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character) {
-	GetLineFromPosition(y, line);
-	GetCharacterFromPosition(x, textfile->GetLine(line), character);
-}
-
-void TextField::GetLineFromPosition(PGScalar y, lng& line) {
-	// find the line position of the mouse
-	lng lineoffset_y = textfile->GetLineOffset();
-	lng line_offset = std::max(std::min((lng)(y / this->line_height), textfile->GetLineCount() - lineoffset_y - 1), (lng)0);
-	line = lineoffset_y + line_offset;
-}
-
-void TextField::GetCharacterFromPosition(PGScalar x, TextLine* line, lng& character) {
-	if (!line) {
-		character = 0;
-		return;
-	}
-	x -= text_offset - textfile->GetXOffset();
-	char* text = line->GetLine();
-	lng length = line->GetLength();
-	character = GetPositionInLine(textfield_font, x, text, length);
-}
-
-
 void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
 	if (!textfile->IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
@@ -647,13 +582,13 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				drag_start = GetTime();
 				drag_region = PGDragRegionScrollbarArrowLeft;
 				drag_type = PGDragHoldScrollArrow;
-				textfile->SetXOffset(std::max((PGScalar) 0, textfile->GetXOffset() - 10));
+				textfile->SetXOffset(std::max((PGScalar)0, textfile->GetXOffset() - 10));
 				this->Invalidate();
 			} else if (mouse.x >= this->width - SCROLLBAR_BASE_OFFSET - SCROLLBAR_WIDTH) {
 				drag_start = GetTime();
 				drag_region = PGDragRegionScrollbarArrowRight;
 				drag_type = PGDragHoldScrollArrow;
-				textfile->SetXOffset(std::min((PGScalar) max_xoffset, textfile->GetXOffset() + 10));
+				textfile->SetXOffset(std::min((PGScalar)max_xoffset, textfile->GetXOffset() + 10));
 				this->Invalidate();
 			} else {
 				PGScalar scrollbar_offset = GetHScrollbarOffset();
@@ -701,17 +636,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		lng line = 0, character = 0;
 		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
 
-		time_t time = GetTime();
-		if (time - last_click.time < DOUBLE_CLICK_TIME &&
-			PG::abs(mouse.x - last_click.x) < 2 &&
-			PG::abs(mouse.y - last_click.y) < 2) {
-			last_click.clicks = last_click.clicks == 2 ? 0 : last_click.clicks + 1;
-		} else {
-			last_click.clicks = 0;
-		}
-		last_click.time = time;
-		last_click.x = mouse.x;
-		last_click.y = mouse.y;
+		PerformMouseClick(mouse);
 
 		if (modifier == PGModifierNone && last_click.clicks == 0) {
 			textfile->SetCursorLocation(line, character);
@@ -766,7 +691,7 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
 		PGPopupMenuInsertEntry(menu, "Show Unsaved Changes...", nullptr, PGPopupMenuGrayed);
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, "Copy",  [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Copy", [](Control* control) {
 			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->CopyText());
 		});
 		PGPopupMenuInsertEntry(menu, "Cut", nullptr, PGPopupMenuGrayed);
@@ -844,7 +769,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				GetCharacterFromPosition(mouse.x, current_line, end_character);
 				if (start_character != end_character) {
 					Cursor* cursor = new Cursor(textfile, it, start_character);
-					cursor->end_character = end_character;
+					cursor->start_character = end_character;
 					cursors.push_back(cursor);
 				}
 				if (it == line) break;
@@ -863,12 +788,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
-int TextField::GetLineHeight() {
-	return (int)(this->height / line_height);
-}
-
 bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
-	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardButton(") + GetButtonName(button) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
 	switch (button) {
 	case PGButtonDown:
 		if (modifier == PGModifierCtrlShift) {
@@ -898,60 +818,6 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		}
 		Invalidate();
 		return true;
-	case PGButtonLeft:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetCharacter(PGDirectionLeft);
-		} else if (modifier == PGModifierShift) {
-			textfile->OffsetSelectionCharacter(PGDirectionLeft);
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetWord(PGDirectionLeft);
-		} else if (modifier == PGModifierCtrlShift) {
-			textfile->OffsetSelectionWord(PGDirectionLeft);
-		} else {
-			return false;
-		}
-		Invalidate();
-		return true;
-	case PGButtonRight:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetCharacter(PGDirectionRight);
-		} else if (modifier == PGModifierShift) {
-			textfile->OffsetSelectionCharacter(PGDirectionRight);
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetWord(PGDirectionRight);
-		} else if (modifier == PGModifierCtrlShift) {
-			textfile->OffsetSelectionWord(PGDirectionRight);
-		} else {
-			return false;
-		}
-		Invalidate();
-		return true;
-	case PGButtonEnd:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetEndOfLine();
-		} else if (modifier == PGModifierShift) {
-			textfile->SelectEndOfLine();
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetEndOfFile();
-		} else if (modifier == PGModifierCtrlShift) {
-			textfile->SelectEndOfFile();
-		} else {
-			return false;
-		}
-		Invalidate();
-		return true;
-	case PGButtonHome:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetStartOfLine();
-		} else if (modifier == PGModifierShift) {
-			textfile->SelectStartOfLine();
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetStartOfFile();
-		} else if (modifier == PGModifierCtrlShift) {
-			textfile->SelectStartOfFile();
-		}
-		Invalidate();
-		break;
 	case PGButtonPageUp:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetLine(-GetLineHeight());
@@ -966,32 +832,6 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			return true;
 		}
 		return false;
-	case PGButtonDelete:
-		if (modifier == PGModifierNone) {
-			this->textfile->DeleteCharacter(PGDirectionRight);
-		} else if (modifier == PGModifierCtrl) {
-			this->textfile->DeleteWord(PGDirectionRight);
-		} else if (modifier == PGModifierShift) {
-			textfile->DeleteLines();
-		} else if (modifier == PGModifierCtrlShift) {
-			this->textfile->DeleteLine(PGDirectionRight);
-		} else {
-			return false;
-		}
-		this->Invalidate();
-		return true;
-	case PGButtonBackspace:
-		if (modifier == PGModifierNone || modifier == PGModifierShift) {
-			this->textfile->DeleteCharacter(PGDirectionLeft);
-		} else if (modifier == PGModifierCtrl) {
-			this->textfile->DeleteWord(PGDirectionLeft);
-		} else if (modifier == PGModifierCtrlShift) {
-			this->textfile->DeleteLine(PGDirectionLeft);
-		}  else {
-			return false;
-		}
-		this->Invalidate();
-		return true;
 	case PGButtonEnter:
 		if (modifier == PGModifierNone) {
 			this->textfile->AddNewLine();
@@ -1004,79 +844,40 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		}
 		this->Invalidate();
 		return true;
-	default:
-		return false;
 	}
-	return false;
+	return BasicTextField::KeyboardButton(button, modifier);
 }
 
 bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 	if (!textfile->IsLoaded()) return false;
 
-	Logger::GetInstance()->WriteLogMessage(std::string("textField->KeyboardCharacter(") + std::to_string(character) + std::string(", ") + GetModifierName(modifier) + std::string(");"));
-
-	if (modifier == PGModifierNone) {
-		this->textfile->InsertText(character);
-		this->Invalidate();
-		return true;
-	} else {
-		if (modifier & PGModifierCtrl) {
-			switch (character) {
-			case 'Z':
-				this->textfile->Undo();
-				this->Invalidate();
-				return true;
-			case 'Y':
-				this->textfile->Redo();
-				this->Invalidate();
-				return true;
-			case 'A':
-				this->textfile->SelectEverything();
-				this->Invalidate();
-				return true;
-			case 'C': {
-				std::string text = textfile->CopyText();
-				SetClipboardText(window, text);
-				return true;
-			}
-			case 'V': {
-				if (modifier & PGModifierShift) {
-					// FIXME: cycle through previous copy-pastes
-				} else {
-					textfile->PasteText(GetClipboardText(window));
-				}
-				this->Invalidate();
-				return true;
-			}
-			case 'S': {
-				textfile->SaveChanges();
-				return true;
-			}
-			case '+': {
-				SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) + 1);
-				this->Invalidate();
-				return true;
-			}
-			case '-': {
-				SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) - 1);
-				this->Invalidate();
-				return true;
-			}
-			}
+	if (modifier & PGModifierCtrl) {
+		switch (character) {
+		case 'S': {
+			textfile->SaveChanges();
+			return true;
+		}
+		case '+': {
+			SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) + 1);
+			this->Invalidate();
+			return true;
+		}
+		case '-': {
+			SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) - 1);
+			this->Invalidate();
+			return true;
+		}
+		case 'G': {
+			// Go To Line
+			SimpleTextField* field = new SimpleTextField(this->window);
+			field->SetSize(PGSize(this->width * 0.5f, GetTextHeight(textfield_font) + 6));
+			field->SetPosition(PGPoint(this->x + this->width * 0.25f, this->y + 25));
+			dynamic_cast<PGContainer*>(this->parent)->AddControl(field);
+			return true;
+		}
 		}
 	}
-	return false;
-}
-
-bool TextField::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
-	if (!textfile->IsLoaded()) return false;
-
-	if (modifier == PGModifierNone) {
-		this->textfile->InsertText(character);
-		this->Invalidate();
-		return true;
-	}
-	return false;
+	return BasicTextField::KeyboardCharacter(character, modifier);
 }
 
 void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {
@@ -1182,7 +983,7 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 	if (!textfile->IsLoaded()) {
 		return PGCursorWait;
 	}
-	if (mouse.x <= this->width - minimap_region.width && 
+	if (mouse.x <= this->width - minimap_region.width &&
 		mouse.y <= this->height - SCROLLBAR_WIDTH) {
 		return PGCursorIBeam;
 	}

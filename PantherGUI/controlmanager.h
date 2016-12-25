@@ -40,7 +40,7 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
-	Control* GetFocusedControl() { return focused_control; }
+	Control* GetActiveControl() { return focused_control; }
 
 	PGCursorType GetCursor(PGPoint mouse);
 

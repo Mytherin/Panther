@@ -1,0 +1,244 @@
+
+#include "basictextfield.h"
+#include "style.h"
+
+#include "container.h"
+
+BasicTextField::BasicTextField(PGWindowHandle window, TextFile* textfile) :
+	Control(window, false), textfile(textfile) {
+	if (textfile)
+		textfile->SetTextField(this);
+
+	drag_type = PGDragNone;
+
+	textfield_font = PGCreateFont();
+	SetTextFontSize(textfield_font, 15);
+}
+
+BasicTextField::~BasicTextField() {
+	delete textfile;
+}
+
+void BasicTextField::PeriodicRender(void) {
+	if (!WindowHasFocus(window) || (this->parent && this->parent->GetActiveControl() != this)) {
+		display_carets = false;
+		display_carets_count = 0;
+		if (!current_focus) {
+			current_focus = true;
+			Invalidate();
+		}
+		return;
+	} else if (current_focus) {
+		if (current_focus) {
+			current_focus = false;
+			Invalidate();
+		}
+	}
+
+	display_carets_count++;
+	if (display_carets_count % FLICKER_CARET_INTERVAL == 0) {
+		display_carets_count = 0;
+		display_carets = !display_carets;
+		this->Invalidate();
+	}
+
+	if (!textfile->IsLoaded()) {
+		Invalidate();
+	}
+}
+
+bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
+	switch (button) {
+
+	case PGButtonLeft:
+		if (modifier == PGModifierNone) {
+			textfile->OffsetCharacter(PGDirectionLeft);
+		} else if (modifier == PGModifierShift) {
+			textfile->OffsetSelectionCharacter(PGDirectionLeft);
+		} else if (modifier == PGModifierCtrl) {
+			textfile->OffsetWord(PGDirectionLeft);
+		} else if (modifier == PGModifierCtrlShift) {
+			textfile->OffsetSelectionWord(PGDirectionLeft);
+		} else {
+			return false;
+		}
+		Invalidate();
+		return true;
+	case PGButtonRight:
+		if (modifier == PGModifierNone) {
+			textfile->OffsetCharacter(PGDirectionRight);
+		} else if (modifier == PGModifierShift) {
+			textfile->OffsetSelectionCharacter(PGDirectionRight);
+		} else if (modifier == PGModifierCtrl) {
+			textfile->OffsetWord(PGDirectionRight);
+		} else if (modifier == PGModifierCtrlShift) {
+			textfile->OffsetSelectionWord(PGDirectionRight);
+		} else {
+			return false;
+		}
+		Invalidate();
+		return true;
+	case PGButtonEnd:
+		if (modifier == PGModifierNone) {
+			textfile->OffsetEndOfLine();
+		} else if (modifier == PGModifierShift) {
+			textfile->SelectEndOfLine();
+		} else if (modifier == PGModifierCtrl) {
+			textfile->OffsetEndOfFile();
+		} else if (modifier == PGModifierCtrlShift) {
+			textfile->SelectEndOfFile();
+		} else {
+			return false;
+		}
+		Invalidate();
+		return true;
+	case PGButtonHome:
+		if (modifier == PGModifierNone) {
+			textfile->OffsetStartOfLine();
+		} else if (modifier == PGModifierShift) {
+			textfile->SelectStartOfLine();
+		} else if (modifier == PGModifierCtrl) {
+			textfile->OffsetStartOfFile();
+		} else if (modifier == PGModifierCtrlShift) {
+			textfile->SelectStartOfFile();
+		} else {
+			return false;
+		}
+		Invalidate();
+		return true;
+	case PGButtonDelete:
+		if (modifier == PGModifierNone) {
+			this->textfile->DeleteCharacter(PGDirectionRight);
+		} else if (modifier == PGModifierCtrl) {
+			this->textfile->DeleteWord(PGDirectionRight);
+		} else if (modifier == PGModifierShift) {
+			textfile->DeleteLines();
+		} else if (modifier == PGModifierCtrlShift) {
+			this->textfile->DeleteLine(PGDirectionRight);
+		} else {
+			return false;
+		}
+		this->Invalidate();
+		return true;
+	case PGButtonBackspace:
+		if (modifier == PGModifierNone || modifier == PGModifierShift) {
+			this->textfile->DeleteCharacter(PGDirectionLeft);
+		} else if (modifier == PGModifierCtrl) {
+			this->textfile->DeleteWord(PGDirectionLeft);
+		} else if (modifier == PGModifierCtrlShift) {
+			this->textfile->DeleteLine(PGDirectionLeft);
+		} else {
+			return false;
+		}
+		this->Invalidate();
+		return true;
+	}
+}
+
+bool BasicTextField::KeyboardCharacter(char character, PGModifier modifier) {
+	if (!textfile->IsLoaded()) return false;
+
+	if (modifier == PGModifierNone) {
+		this->textfile->InsertText(character);
+		this->Invalidate();
+		return true;
+	} else if (modifier & PGModifierCtrl) {
+		switch (character) {
+		case 'Z':
+			this->textfile->Undo();
+			this->Invalidate();
+			return true;
+		case 'Y':
+			this->textfile->Redo();
+			this->Invalidate();
+			return true;
+		case 'A':
+			this->textfile->SelectEverything();
+			this->Invalidate();
+			return true;
+		case 'C': {
+			std::string text = textfile->CopyText();
+			SetClipboardText(window, text);
+			return true;
+		}
+		case 'V': {
+			if (modifier & PGModifierShift) {
+				// FIXME: cycle through previous copy-pastes
+			} else {
+				textfile->PasteText(GetClipboardText(window));
+			}
+			this->Invalidate();
+			return true;
+		}
+		}
+	}
+	return false;
+}
+
+bool BasicTextField::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
+	if (!textfile->IsLoaded()) return false;
+
+	if (modifier == PGModifierNone) {
+		this->textfile->InsertText(character);
+		this->Invalidate();
+		return true;
+	}
+	return false;
+}
+
+PGCursorType BasicTextField::GetCursor(PGPoint mouse) {
+	return PGCursorIBeam;
+}
+
+void BasicTextField::GetCharacterFromPosition(PGScalar x, TextLine* line, lng& character) {
+	if (!line) {
+		character = 0;
+		return;
+	}
+	x -= text_offset + textfile->GetXOffset();
+	char* text = line->GetLine();
+	lng length = line->GetLength();
+	character = GetPositionInLine(textfield_font, x, text, length);
+}
+
+void BasicTextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character) {
+	GetLineFromPosition(y, line);
+	GetCharacterFromPosition(x, textfile->GetLine(line), character);
+}
+
+void BasicTextField::GetLineFromPosition(PGScalar y, lng& line) {
+	// find the line position of the mouse
+	lng lineoffset_y = textfile->GetLineOffset();
+	lng line_offset = std::max(std::min((lng)(y / GetTextHeight(textfield_font)), textfile->GetLineCount() - lineoffset_y - 1), (lng)0);
+	line = lineoffset_y + line_offset;
+}
+
+void BasicTextField::RefreshCursors() {
+	// FIXME: thread safety on setting display_carets_count?
+	display_carets_count = 0;
+	display_carets = true;
+}
+
+int BasicTextField::GetLineHeight() {
+	return (int)(this->height / GetTextHeight(textfield_font));
+}
+
+void BasicTextField::PerformMouseClick(PGPoint mouse) {
+	time_t time = GetTime();
+	if (time - last_click.time < DOUBLE_CLICK_TIME &&
+		PG::abs(mouse.x - last_click.x) < 2 &&
+		PG::abs(mouse.y - last_click.y) < 2) {
+		last_click.clicks = last_click.clicks == 2 ? 0 : last_click.clicks + 1;
+	} else {
+		last_click.clicks = 0;
+	}
+	last_click.time = time;
+	last_click.x = mouse.x;
+	last_click.y = mouse.y;
+}
+
+PGScalar BasicTextField::GetMaxXOffset() {
+	PGScalar max_character_width = MeasureTextWidth(textfield_font, "W", 1);
+	PGScalar max_textsize = textfile->GetMaxLineWidth() * max_character_width;
+	return std::max(max_textsize - GetTextfieldWidth() + text_offset, 0.0f);
+}

@@ -30,10 +30,15 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
+	Control* GetActiveControl() { return focused_control; }
+
 	PGCursorType GetCursor(PGPoint mouse);
 	bool IsDragging();
 
 	void AddControl(Control* control);
+	void RemoveControl(Control* control);
 private:
+	Control* focused_control = nullptr;
+
 	std::vector<Control*> controls;
 };
