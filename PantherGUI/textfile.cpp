@@ -909,7 +909,11 @@ void TextFile::Undo() {
 	Unlock();
 	InvalidateParsing(invalidated_lines);
 	if (this->textfield) {
-		this->textfield->TextChanged(invalidated_lines);
+		std::vector<TextLine*> invalidated_textlines;
+		for (auto it = invalidated_lines.begin(); it != invalidated_lines.end(); it++) {
+			invalidated_textlines.push_back(lines[*it]);
+		}
+		this->textfield->TextChanged(invalidated_textlines);
 	}
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	this->deltas.pop_back();
@@ -1023,7 +1027,11 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 	// release the locks again
 	Unlock();
 	if (this->textfield) {
-		this->textfield->TextChanged(invalidated_lines);
+		std::vector<TextLine*> invalidated_textlines;
+		for (auto it = invalidated_lines.begin(); it != invalidated_lines.end(); it++) {
+			invalidated_textlines.push_back(lines[*it]);
+		}
+		this->textfield->TextChanged(invalidated_textlines);
 	}
 	// invalidate any lines for parsing
 	InvalidateParsing(invalidated_lines);

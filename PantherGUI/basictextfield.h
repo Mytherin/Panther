@@ -53,7 +53,7 @@ public:
 
 	virtual void SelectionChanged();
 	virtual void TextChanged();
-	virtual void TextChanged(std::vector<lng> lines);
+	virtual void TextChanged(std::vector<TextLine*> lines);
 protected:
 	TextFile* textfile = nullptr;
 	PGFontHandle textfield_font = nullptr;

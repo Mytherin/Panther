@@ -22,6 +22,9 @@ typedef struct PGFont* PGFontHandle;
 struct PGPopupMenu;
 typedef struct PGPopupMenu* PGPopupMenuHandle;
 
+struct PGBitmap;
+typedef struct PGBitmap* PGBitmapHandle;
+
 typedef float PGScalar;
 
 class Control;
@@ -246,17 +249,25 @@ void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PG
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle style);
 void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDrawStyle style);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width = 2);
-void RenderImage(PGRendererHandle window, void* image, int x, int y);
+void RenderImage(PGRendererHandle window, PGBitmapHandle image, int x, int y, PGScalar max_position = INT_MAX);
 // Render text at the specified location with the specified alignment, returns the width of the rendered text
 PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGTextAlign);
 // Render text at the specified location
 void RenderText(PGRendererHandle renderer, PGFontHandle font, const char* text, size_t length, PGScalar x, PGScalar y, PGScalar max_position = INT_MAX);
 // Render squiggles under text at the specified location
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color);
+
+PGBitmapHandle CreateBitmapForText(PGFontHandle font, const char* text, size_t length);
+PGRendererHandle CreateRendererForBitmap(PGBitmapHandle handle);
+void DeleteRenderer(PGRendererHandle renderer);
+void DeleteImage(PGBitmapHandle handle);
+
 PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length);
 PGScalar GetTextHeight(PGFontHandle font);
 void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color);
 void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar max_position = INT_MAX);
+
+void DeleteImage(PGBitmapHandle bitmap);
 
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold);
 PGFontHandle PGCreateFont(char* filename);
@@ -303,5 +314,5 @@ void PGDisplayPopupMenu(PGPopupMenuHandle, PGPoint, PGTextAlign align);
 void OpenFolderInExplorer(std::string path);
 void OpenFolderInTerminal(std::string path);
 
-PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint);
+PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint); 
 

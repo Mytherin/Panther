@@ -6,6 +6,8 @@
 #include "textfile.h"
 #include "time.h"
 
+#include <map>
+
 struct TextSelection {
 	int line_start;
 	int character_start;
@@ -16,6 +18,7 @@ struct TextSelection {
 #define FLICKER_CARET_INTERVAL 15
 #define SCROLLBAR_BASE_OFFSET 16
 #define SCROLLBAR_WIDTH 16
+#define MAX_MINIMAP_LINE_CACHE 10000
 
 class StatusBar;
 
@@ -57,6 +60,8 @@ public:
 	PGScalar GetMaxXOffset() { return max_xoffset; }
 
 	void SelectionChanged();
+	void TextChanged();
+	void TextChanged(std::vector<TextLine*> lines);
 
 	void SetStatusBar(StatusBar* bar) { statusbar = bar; }
 
@@ -111,4 +116,6 @@ private:
 	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
 	bool SetScrollOffset(lng offset);
+
+	std::map<TextLine*, PGBitmapHandle> minimap_line_cache;
 };

@@ -127,7 +127,6 @@ void ControlManager::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	}
 }
 
-
 void ControlManager::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
 	Control* c = GetMouseOverControl(x, y);
 	if (c) c->MouseClick(x, y, button, modifier);

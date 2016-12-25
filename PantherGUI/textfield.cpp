@@ -214,60 +214,90 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			char* line = current_line->GetLine();
 			lng length = current_line->GetLength();
 			lng position = 0;
-			PGScalar xpos = position_x_text - xoffset;
-			if (parsed) {
-				PGSyntax* syntax = &current_line->syntax;
-				while (syntax && syntax->end > 0) {
-					bool squiggles = false;
-					//assert(syntax->end > position);
-					if (syntax->end <= position) {
-						syntax = syntax->next;
-						continue;
-					}
-					// FIXME
-					if (syntax->type == PGSyntaxError) {
-						squiggles = true;
-					} else if (syntax->type == PGSyntaxNone) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-					} else if (syntax->type == PGSyntaxString) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
-					} else if (syntax->type == PGSyntaxConstant) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
-					} else if (syntax->type == PGSyntaxComment) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
-					} else if (syntax->type == PGSyntaxOperator) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
-					} else if (syntax->type == PGSyntaxFunction) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
-					} else if (syntax->type == PGSyntaxKeyword) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
-					} else if (syntax->type == PGSyntaxClass1) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
-					} else if (syntax->type == PGSyntaxClass2) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
-					} else if (syntax->type == PGSyntaxClass3) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
-					} else if (syntax->type == PGSyntaxClass4) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
-					} else if (syntax->type == PGSyntaxClass5) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
-					} else if (syntax->type == PGSyntaxClass6) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
-					}
-					RenderText(renderer, font, line + position, syntax->end - position, xpos, position_y, max_x);
-					PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
-					if (!minimap) {
-						if (squiggles) {
-							RenderSquiggles(renderer, text_width, xpos, position_y + line_height * 1.2f, PGColor(255, 0, 0));
-						}
-					}
-					xpos += text_width;
-					position = syntax->end;
-					syntax = syntax->next;
+
+			// because RenderText is expensive, we cache rendered text lines for the minimap
+			// this is because the minimap renders far more lines than the textfield (generally 10x more)
+			// we cache by simply rendering the textline to a bitmap, and then rendering the bitmap
+			// to the screen
+			PGBitmapHandle line_bitmap = nullptr;
+			PGRendererHandle line_renderer = renderer;
+			bool render_text = true;
+			if (minimap) {
+				// first check if the line is found in the cache, if it is not, we rerender
+				render_text = !minimap_line_cache.count(current_line);
+				if (render_text) {
+					// we have to render, create the bitmap and a renderer for the bitmap
+					line_bitmap = CreateBitmapForText(font, line, length);
+					line_renderer = CreateRendererForBitmap(line_bitmap);
 				}
 			}
-			SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-			RenderText(renderer, font, line + position, length - position, xpos, position_y, max_x);
+
+			PGScalar xpos = position_x_text - xoffset;
+			if (render_text) {
+				// if we are rendering the line into a bitmap, it starts at (0,0)
+				// otherwise we render onto the screen normally
+				PGScalar bitmap_x = minimap ? 0 : xpos;
+				PGScalar bitmap_y = minimap ? 0 : position_y;
+				if (parsed) {
+					PGSyntax* syntax = &current_line->syntax;
+					while (syntax && syntax->end > 0) {
+						bool squiggles = false;
+						//assert(syntax->end > position);
+						if (syntax->end <= position) {
+							syntax = syntax->next;
+							continue;
+						}
+						if (syntax->type == PGSyntaxError) {
+							squiggles = true;
+						} else if (syntax->type == PGSyntaxNone) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+						} else if (syntax->type == PGSyntaxString) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
+						} else if (syntax->type == PGSyntaxConstant) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
+						} else if (syntax->type == PGSyntaxComment) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
+						} else if (syntax->type == PGSyntaxOperator) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
+						} else if (syntax->type == PGSyntaxFunction) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
+						} else if (syntax->type == PGSyntaxKeyword) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
+						} else if (syntax->type == PGSyntaxClass1) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
+						} else if (syntax->type == PGSyntaxClass2) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
+						} else if (syntax->type == PGSyntaxClass3) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
+						} else if (syntax->type == PGSyntaxClass4) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
+						} else if (syntax->type == PGSyntaxClass5) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
+						} else if (syntax->type == PGSyntaxClass6) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
+						}
+						RenderText(line_renderer, font, line + position, syntax->end - position, bitmap_x, bitmap_y);
+						PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
+						bitmap_x += text_width;
+						position = syntax->end;
+						syntax = syntax->next;
+					}
+				}
+				SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+				RenderText(line_renderer, font, line + position, length - position, bitmap_x, bitmap_y);
+				if (minimap) {
+					// we rendered into a bitmap: delete the renderer and store the line
+					DeleteRenderer(line_renderer);
+					minimap_line_cache[current_line] = line_bitmap;
+				}
+			} else {
+				// if the line is already cached, simply retrieve the bitmap
+				line_bitmap = minimap_line_cache[current_line];
+			}
+			if (minimap) {
+				// render the cached bitmap to the screen
+				RenderImage(renderer, line_bitmap, xpos, position_y);
+			}
 			if (selected_word) {
 				for (lng i = 0; i <= length - (word_end - word_start); i++) {
 					if ((i == 0 || GetCharacterClass(line[i - 1]) != PGCharacterTypeText) &&
@@ -299,6 +329,19 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	if (!minimap) {
 		this->line_height = line_height;
 	} else {
+		// to prevent potential memory explosion we limit the size of the minimap line cache
+		if (minimap_line_cache.size() > MAX_MINIMAP_LINE_CACHE) {
+			lng i = 0;
+			// we just randomly delete 10% of the line cache when the line cache is full
+			// there is probably a better way of doing this
+			for (auto it = minimap_line_cache.begin(); it != minimap_line_cache.end(); it++) {
+				DeleteImage(it->second);
+				minimap_line_cache.erase(it++);
+				i++;
+				if (i > MAX_MINIMAP_LINE_CACHE / 10) break;
+			}
+		}
+
 		this->minimap_line_height = line_height;
 		if (render_overlay) {
 			// render the overlay for the minimap
@@ -933,7 +976,8 @@ void TextField::InvalidateMinimap() {
 void TextField::SetTextFile(TextFile* textfile) {
 	this->textfile = textfile;
 	textfile->SetTextField(this);
-	this->Invalidate();
+	this->SelectionChanged();
+	this->TextChanged();
 }
 
 void TextField::OnResize(PGSize old_size, PGSize new_size) {
@@ -984,7 +1028,31 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 
 void TextField::SelectionChanged() {
 	if (statusbar) {
+		// when the selection changes we invalidate the status bar
+		// because it displays the current selection (e.g. Line 3, Column 5)
 		statusbar->Invalidate();
 	}
 	BasicTextField::SelectionChanged();
+}
+
+void TextField::TextChanged() {
+	// all text has changed (this typically happens when e.g. switching files)
+	// clear the line cache entirely
+	for (auto it = minimap_line_cache.begin(); it != minimap_line_cache.end(); it++) {
+		DeleteImage(it->second);
+	}
+	minimap_line_cache.clear();
+	this->Invalidate();
+}
+
+void TextField::TextChanged(std::vector<TextLine*> lines) {
+	// a number of specific lines has changed, delete those lines from the cache
+	for (auto it = lines.begin(); it != lines.end(); it++) {
+		auto res = minimap_line_cache.find(*it);
+		if (res != minimap_line_cache.end()) {
+			DeleteImage(res->second);
+			minimap_line_cache.erase(res);
+		}
+	}
+	this->Invalidate();
 }

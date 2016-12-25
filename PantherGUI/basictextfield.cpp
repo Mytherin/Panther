@@ -239,6 +239,6 @@ void BasicTextField::TextChanged() {
 	this->Invalidate();
 }
 
-void BasicTextField::TextChanged(std::vector<lng> lines) {
+void BasicTextField::TextChanged(std::vector<TextLine*> lines) {
 	this->TextChanged();
 }

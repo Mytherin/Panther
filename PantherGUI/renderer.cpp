@@ -19,6 +19,10 @@ struct PGFont {
 	std::vector<SkPaint*> fallback_paints;
 };
 
+struct PGBitmap {
+	SkBitmap* bitmap;
+};
+
 static SkPaint::Style PGDrawStyleConvert(PGDrawStyle style) {
 	if (style == PGDrawStyleStroke) {
 		return SkPaint::kStroke_Style;
@@ -134,10 +138,6 @@ void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width) 
 	handle->canvas->drawLine(line.start.x, line.start.y, line.end.x, line.end.y, *handle->paint);
 }
 
-void RenderImage(PGRendererHandle renderer, void* image, int x, int y) {
-
-}
-
 void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGScalar max_position) {
 	PGScalar x_offset = 0;
 	size_t position = 0;
@@ -207,6 +207,38 @@ PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *te
 	}
 	RenderText(renderer, font, text, len, x, y);
 	return width;
+}
+
+void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y, PGScalar max_position) {
+	renderer->canvas->drawBitmap(*image->bitmap, x, y);
+}
+
+PGBitmapHandle CreateBitmapForText(PGFontHandle font, const char* text, size_t length) {
+	PGBitmapHandle handle = new PGBitmap();
+	PGScalar width = MeasureTextWidth(font, text, length);
+	PGScalar height = GetTextHeight(font);
+	handle->bitmap = new SkBitmap();
+	handle->bitmap->allocN32Pixels((int) width, (int) height);
+	handle->bitmap->allocPixels();
+	return handle;
+}
+
+PGRendererHandle CreateRendererForBitmap(PGBitmapHandle handle) {
+	PGRendererHandle rend = new PGRenderer();
+	rend->canvas = new SkCanvas(*handle->bitmap);
+	rend->canvas->clear(SkColorSetARGB(0, 0, 0, 0));
+	rend->paint = nullptr;
+	return rend;
+}
+
+void DeleteImage(PGBitmapHandle handle) {
+	delete handle->bitmap;
+	delete handle;
+}
+
+void DeleteRenderer(PGRendererHandle renderer) {
+	delete renderer->canvas;
+	delete renderer;
 }
 
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color) {
