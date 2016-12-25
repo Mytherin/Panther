@@ -390,6 +390,9 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 	assert(cursors.size() > 0);
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	textfile->RefreshCursors();
+	if (textfile->textfield) {
+		textfile->textfield->SelectionChanged();
+	}
 	if (textfile->textfield && scroll_textfield) {
 		lng line_offset = textfile->GetLineOffset();
 		lng line_height = textfile->GetLineHeight();

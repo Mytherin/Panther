@@ -25,13 +25,13 @@ void BasicTextField::PeriodicRender(void) {
 		display_carets_count = 0;
 		if (!current_focus) {
 			current_focus = true;
-			Invalidate();
+			this->Invalidate();
 		}
 		return;
 	} else if (current_focus) {
 		if (current_focus) {
 			current_focus = false;
-			Invalidate();
+			this->Invalidate();
 		}
 	}
 
@@ -43,7 +43,7 @@ void BasicTextField::PeriodicRender(void) {
 	}
 
 	if (!textfile->IsLoaded()) {
-		Invalidate();
+		this->Invalidate();
 	}
 }
 
@@ -62,7 +62,6 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		Invalidate();
 		return true;
 	case PGButtonRight:
 		if (modifier == PGModifierNone) {
@@ -76,7 +75,6 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		Invalidate();
 		return true;
 	case PGButtonEnd:
 		if (modifier == PGModifierNone) {
@@ -90,7 +88,6 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		Invalidate();
 		return true;
 	case PGButtonHome:
 		if (modifier == PGModifierNone) {
@@ -104,7 +101,6 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		Invalidate();
 		return true;
 	case PGButtonDelete:
 		if (modifier == PGModifierNone) {
@@ -118,7 +114,6 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		this->Invalidate();
 		return true;
 	case PGButtonBackspace:
 		if (modifier == PGModifierNone || modifier == PGModifierShift) {
@@ -130,7 +125,6 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		this->Invalidate();
 		return true;
 	}
 }
@@ -140,21 +134,17 @@ bool BasicTextField::KeyboardCharacter(char character, PGModifier modifier) {
 
 	if (modifier == PGModifierNone) {
 		this->textfile->InsertText(character);
-		this->Invalidate();
 		return true;
 	} else if (modifier & PGModifierCtrl) {
 		switch (character) {
 		case 'Z':
 			this->textfile->Undo();
-			this->Invalidate();
 			return true;
 		case 'Y':
 			this->textfile->Redo();
-			this->Invalidate();
 			return true;
 		case 'A':
 			this->textfile->SelectEverything();
-			this->Invalidate();
 			return true;
 		case 'C': {
 			std::string text = textfile->CopyText();
@@ -167,7 +157,6 @@ bool BasicTextField::KeyboardCharacter(char character, PGModifier modifier) {
 			} else {
 				textfile->PasteText(GetClipboardText(window));
 			}
-			this->Invalidate();
 			return true;
 		}
 		}
@@ -180,7 +169,6 @@ bool BasicTextField::KeyboardUnicode(PGUTF8Character character, PGModifier modif
 
 	if (modifier == PGModifierNone) {
 		this->textfile->InsertText(character);
-		this->Invalidate();
 		return true;
 	}
 	return false;
@@ -241,4 +229,16 @@ PGScalar BasicTextField::GetMaxXOffset() {
 	PGScalar max_character_width = MeasureTextWidth(textfield_font, "W", 1);
 	PGScalar max_textsize = textfile->GetMaxLineWidth() * max_character_width;
 	return std::max(max_textsize - GetTextfieldWidth() + text_offset, 0.0f);
+}
+
+void BasicTextField::SelectionChanged() {
+	this->Invalidate();
+}
+
+void BasicTextField::TextChanged() {
+	this->Invalidate();
+}
+
+void BasicTextField::TextChanged(std::vector<lng> lines) {
+	this->TextChanged();
 }

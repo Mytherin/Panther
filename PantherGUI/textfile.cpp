@@ -339,6 +339,7 @@ void TextFile::OffsetLineOffset(lng offset) {
 void TextFile::SetCursorLocation(lng line, lng character) {
 	ClearExtraCursors();
 	cursors[0]->SetCursorLocation(line, character);
+	if (textfield) textfield->SelectionChanged();
 }
 
 void TextFile::AddNewCursor(lng line, lng character) {
@@ -482,6 +483,7 @@ void TextFile::SelectEverything() {
 	this->cursors.push_back(new Cursor(this, lines.size() - 1, lines.back()->GetLength()));
 	this->cursors.back()->end_character = 0;
 	this->cursors.back()->end_line = 0;
+	if (this->textfield) textfield->SelectionChanged();
 }
 
 struct Interval {
@@ -906,6 +908,9 @@ void TextFile::Undo() {
 	this->Undo(delta, invalidated_lines);
 	Unlock();
 	InvalidateParsing(invalidated_lines);
+	if (this->textfield) {
+		this->textfield->TextChanged(invalidated_lines);
+	}
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	this->deltas.pop_back();
 	this->redos.push_back(delta);
@@ -1017,6 +1022,9 @@ void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 	PerformOperation(delta, invalidated_lines, adjust_delta);
 	// release the locks again
 	Unlock();
+	if (this->textfield) {
+		this->textfield->TextChanged(invalidated_lines);
+	}
 	// invalidate any lines for parsing
 	InvalidateParsing(invalidated_lines);
 }

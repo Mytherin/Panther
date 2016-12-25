@@ -97,11 +97,14 @@ void ControlManager::RefreshWindow(PGIRect rectangle) {
 		// the invalidated rectangle is simply the supplied rectangle
 		this->invalidated_area = rectangle;
 	} else {
+		int maxx = this->invalidated_area.x + this->invalidated_area.width;
+		int maxy = this->invalidated_area.y + this->invalidated_area.height;
+
 		// otherwise we merge the two rectangles into one big one
 		this->invalidated_area.x = std::min(this->invalidated_area.x, rectangle.x);
 		this->invalidated_area.y = std::min(this->invalidated_area.y, rectangle.y);
-		this->invalidated_area.width = std::max(this->invalidated_area.x + this->invalidated_area.width, rectangle.x + rectangle.width) - this->invalidated_area.x;
-		this->invalidated_area.height = std::max(this->invalidated_area.y + this->invalidated_area.height, rectangle.y + rectangle.height) - this->invalidated_area.y;
+		this->invalidated_area.width = std::max(maxx, rectangle.x + rectangle.width) - this->invalidated_area.x;
+		this->invalidated_area.height = std::max(maxy, rectangle.y + rectangle.height) - this->invalidated_area.y;
 		assert(this->invalidated_area.x <= rectangle.x &&
 			this->invalidated_area.y <= rectangle.y &&
 			this->invalidated_area.x + this->invalidated_area.width >= rectangle.x + rectangle.width &&

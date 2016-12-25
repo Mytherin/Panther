@@ -10,6 +10,7 @@
 
 #include "container.h"
 #include "simpletextfield.h"
+#include "statusbar.h"
 
 void TextField::MinimapMouseEvent(bool mouse_enter) {
 	this->InvalidateMinimap();
@@ -656,7 +657,6 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			textfile->GetActiveCursor()->SelectLine();
 			Logger::GetInstance()->WriteLogMessage(std::string("if (cursors.size() > 1) {\n\tcursors.erase(cursors.begin() + 1, cursors.end());\n}\ncursors[0]->SelectLine();"));
 		}
-		this->Invalidate();
 	} else if (button == PGMiddleMouseButton) {
 		if (drag_type == PGDragSelection) return;
 		drag_type = PGDragSelectionCursors;
@@ -664,7 +664,6 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		lng line, character;
 		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
 		textfile->SetCursorLocation(line, character);
-		this->Invalidate();
 	} else if (button == PGRightMouseButton) {
 		/*
 		if (drag_type != PGDragNone) return;
@@ -701,7 +700,6 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuInsertEntry(menu, "Select All", [](Control* control) {
 			dynamic_cast<TextField*>(control)->textfile->SelectEverything();
-			control->Invalidate();
 		});
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuFlags flags = this->textfile->FileInMemory() ? PGPopupMenuGrayed : PGPopupMenuFlagsNone;
@@ -734,7 +732,6 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				active_cursor->SetCursorStartLocation(line, character);
 				Logger::GetInstance()->WriteLogMessage(std::string("if (!active_cursor) active_cursor = cursors.front();\nactive_cursor->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\nCursor::NormalizeCursors(textfield, cursors, false);"));
 				Cursor::NormalizeCursors(textfile, textfile->GetCursors());
-				this->InvalidateBetweenLines(old_line, line);
 			}
 		} else if (drag_type == PGDragScrollbar) {
 			lng current_offset = textfile->GetLineOffset();
@@ -802,7 +799,6 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		Invalidate();
 		return true;
 	case PGButtonUp:
 		if (modifier == PGModifierCtrlShift) {
@@ -816,19 +812,16 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		Invalidate();
 		return true;
 	case PGButtonPageUp:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetLine(-GetLineHeight());
-			Invalidate();
 			return true;
 		}
 		return false;
 	case PGButtonPageDown:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetLine(GetLineHeight());
-			Invalidate();
 			return true;
 		}
 		return false;
@@ -842,7 +835,6 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		} else {
 			return false;
 		}
-		this->Invalidate();
 		return true;
 	}
 	return BasicTextField::KeyboardButton(button, modifier);
@@ -988,4 +980,11 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 		return PGCursorIBeam;
 	}
 	return PGCursorStandard;
+}
+
+void TextField::SelectionChanged() {
+	if (statusbar) {
+		statusbar->Invalidate();
+	}
+	BasicTextField::SelectionChanged();
 }

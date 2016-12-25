@@ -60,7 +60,7 @@ bool Control::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
 }
 
 void Control::Invalidate() {
-	RefreshWindow(this->window, PGIRect(X(), Y(), this->width, this->height));
+	RefreshWindow(this->window, PGIRect((int)X(), (int)Y(), (int)this->width, (int)this->height));
 }
 
 void Control::Invalidate(PGIRect rectangle) {

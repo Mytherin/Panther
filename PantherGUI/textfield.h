@@ -17,6 +17,8 @@ struct TextSelection {
 #define SCROLLBAR_BASE_OFFSET 16
 #define SCROLLBAR_WIDTH 16
 
+class StatusBar;
+
 class TextField : public BasicTextField {
 public:
 	TextField(PGWindowHandle, TextFile* file);
@@ -53,7 +55,14 @@ public:
 	PGScalar GetTextfieldWidth();
 	PGScalar GetTextfieldHeight();
 	PGScalar GetMaxXOffset() { return max_xoffset; }
+
+	void SelectionChanged();
+
+	void SetStatusBar(StatusBar* bar) { statusbar = bar; }
+
 private:
+	StatusBar* statusbar = nullptr;
+
 	PGFontHandle minimap_font;
 
 	PGIRect scrollbar_region;

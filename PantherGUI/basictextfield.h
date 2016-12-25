@@ -50,6 +50,10 @@ public:
 	virtual PGScalar GetTextfieldWidth() { return this->width; }
 	virtual PGScalar GetTextfieldHeight() { return this->height; }
 	virtual PGScalar GetMaxXOffset();
+
+	virtual void SelectionChanged();
+	virtual void TextChanged();
+	virtual void TextChanged(std::vector<lng> lines);
 protected:
 	TextFile* textfile = nullptr;
 	PGFontHandle textfield_font = nullptr;

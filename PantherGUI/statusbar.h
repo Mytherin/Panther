@@ -17,6 +17,11 @@ public:
 	void SelectionChanged();
 
 	void Draw(PGRendererHandle, PGIRect*);
+
+	void Invalidate() {
+		PGIRect rect = PGIRect((int)X(), (int)Y(), (int)this->width, (int)this->height);
+		RefreshWindow(this->window, rect);
+	}
 private:
 	PGIRect buttons[5];
 	PGFontHandle font;
