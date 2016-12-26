@@ -966,6 +966,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			dynamic_cast<PGContainer*>(this->parent)->AddControl(field);
 			return true;
 		}
+				  /*
 		case 'F': {
 			// Find text
 			FindView* view = new FindView(this->window);
@@ -974,7 +975,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			view->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorBottom);
 
 			dynamic_cast<PGContainer*>(this->parent)->AddControl(view);
-		}
+		}*/
 		}
 	}
 	return BasicTextField::KeyboardCharacter(character, modifier);

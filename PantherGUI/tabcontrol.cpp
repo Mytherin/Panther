@@ -4,7 +4,8 @@
 #include "style.h"
 
 
-TabControl::TabControl(PGWindowHandle window, TextField* textfield) : Control(window, false), active_tab(0), textfield(textfield) {
+TabControl::TabControl(PGWindowHandle window, TextField* textfield) : 
+	Control(window), active_tab(0), textfield(textfield) {
 	std::vector<TextFile*>& files = FileManager::GetFiles();
 	for (auto it = files.begin(); it != files.end(); it++) {
 		this->tabs.push_back(Tab(*it));

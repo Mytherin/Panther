@@ -26,6 +26,8 @@ public:
 	void RefreshWindow(PGIRect rectangle);
 
 	Control* GetActiveControl() { return focused_control; }
+	void RegisterControlForMouseEvents(Control* control);
+	void UnregisterControlForMouseEvents(Control* control);
 
 	void RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr);
 	void UnregisterMouseRegion(PGIRect* rect);

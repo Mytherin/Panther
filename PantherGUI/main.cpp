@@ -189,13 +189,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	bar->SetAnchor(PGAnchorLeft | PGAnchorRight);
 	bar->SetPosition(PGPoint(manager->x, manager->y + manager->height - STATUSBAR_HEIGHT));
 	bar->SetSize(PGSize(manager->width, STATUSBAR_HEIGHT));
-	manager->AddControl(bar);
 
 	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	//tabbed->SetPosition(PGPoint(50, 50));
 	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
 	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
 
+	manager->AddControl(tabbed);
+	manager->AddControl(bar);
 	// The parameters to ShowWindow explained:
 	// hWnd: the value returned from CreateWindow
 	// nCmdShow: the fourth parameter from WinMain

@@ -5,7 +5,7 @@
 #include "container.h"
 
 BasicTextField::BasicTextField(PGWindowHandle window, TextFile* textfile) :
-	Control(window, false), textfile(textfile) {
+	Control(window), textfile(textfile) {
 	if (textfile)
 		textfile->SetTextField(this);
 

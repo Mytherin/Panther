@@ -4,8 +4,7 @@
 #include "style.h"
 
 StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
-	active_textfield(textfield), Control(window, false),
-	buttons{ Button(this), Button(this), Button(this), Button(this) } {
+	active_textfield(textfield), PGContainer(window) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -13,11 +12,27 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		((StatusBar*)(data))->SelectionChanged();
 	}, (void*) this);
 
-	buttons[0].OnPressed([](Button* b) {
-		Control* c = b->parent;
-		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
-		PGPopupMenuHandle reopen_menu = PGCreatePopupMenu(c->window, c);
-		PGPopupMenuHandle savewith_menu = PGCreatePopupMenu(c->window, c);
+	unicode_button = new Button(window, this);
+	language_button = new Button(window, this);
+	lineending_button = new Button(window, this);
+	tabwidth_button = new Button(window, this);
+
+	this->AddControl(unicode_button);
+	this->AddControl(language_button);
+	this->AddControl(lineending_button);
+	this->AddControl(tabwidth_button);
+
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		(*it)->SetPosition(PGPoint(0, 0));
+		(*it)->SetSize(PGSize(this->width, this->height));
+		(*it)->SetAnchor(PGAnchorTop | PGAnchorBottom);
+	}
+
+	unicode_button->OnPressed([](Button* button) {
+		Control* c = button->parent;
+		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
+		PGPopupMenuHandle reopen_menu = PGCreatePopupMenu(button->window, c);
+		PGPopupMenuHandle savewith_menu = PGCreatePopupMenu(button->window, c);
 		{
 			PGPopupMenuInsertEntry(reopen_menu, "UTF-8", [](Control* control) {
 				// FIXME: reopen with encoding
@@ -29,13 +44,13 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		PGPopupMenuInsertSubmenu(menu, reopen_menu, "Reopen with Encoding...");
 		PGPopupMenuInsertSubmenu(menu, savewith_menu, "Save with Encoding...");
 
-		PGDisplayPopupMenu(menu, ConvertWindowToScreen(c->window,
-			PGPoint(c->X() + b->region.x + b->region.width - 1,
-				c->Y() + b->region.y)), PGTextAlignRight | PGTextAlignBottom);
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
+			PGPoint(button->X() + button->width - 1, button->Y())),
+			PGTextAlignRight | PGTextAlignBottom);
 	});
 
-	buttons[1].OnPressed([](Button* b) {
-		Control* c = b->parent;
+	language_button->OnPressed([](Button* button) {
+		Control* c = button->parent;
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
 		auto languages = PGLanguageManager::GetLanguages();
@@ -45,15 +60,15 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 				// FIXME: switch highlighter language
 			}, active_language == *it ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		}
-		PGDisplayPopupMenu(menu, ConvertWindowToScreen(c->window,
-			PGPoint(c->X() + b->region.x + b->region.width - 1,
-				c->Y() + b->region.y)), PGTextAlignRight | PGTextAlignBottom);
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
+			PGPoint(button->X() + button->width - 1, button->Y())),
+			PGTextAlignRight | PGTextAlignBottom);
 	});
 
-	buttons[2].OnPressed([](Button* b) {
-		Control* c = b->parent;
+	lineending_button->OnPressed([](Button* button) {
+		Control* c = button->parent;
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
-		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
+		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
 		PGPopupMenuInsertEntry(menu, "Windows (\\r\\n)", [](Control* control) {
 			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
 			file.ChangeLineEnding(PGLineEndingWindows);
@@ -67,12 +82,12 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 			file.ChangeLineEnding(PGLineEndingMacOS);
 		}, file.GetLineEnding() == PGLineEndingMacOS ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 
-		PGDisplayPopupMenu(menu, ConvertWindowToScreen(c->window,
-			PGPoint(c->X() + b->region.x + b->region.width - 1,
-				c->Y() + b->region.y)), PGTextAlignRight | PGTextAlignBottom);
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
+			PGPoint(button->X() + button->width - 1, button->Y())),
+			PGTextAlignRight | PGTextAlignBottom);
 	});
-	buttons[3].OnPressed([](Button* b) {
-		Control* c = b->parent;
+	tabwidth_button->OnPressed([](Button* button) {
+		Control* c = button->parent;
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
 
@@ -93,9 +108,9 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control) {
 			// FIXME: change indentation of file
 		});
-		PGDisplayPopupMenu(menu, ConvertWindowToScreen(c->window,
-			PGPoint(c->X() + b->region.x + b->region.width - 1,
-				c->Y() + b->region.y)), PGTextAlignRight | PGTextAlignBottom);
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
+			PGPoint(button->X() + button->width - 1, button->Y())),
+			PGTextAlignRight | PGTextAlignBottom);
 	});
 }
 
@@ -144,8 +159,9 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			str = PGEncodingToString(encoding);
 			{
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
-				buttons[0].region = PGIRect(this->width - 2 * padding - text_width - right_position, 0, 2 * padding + text_width, this->height);
-				buttons[0].DrawBackground(renderer, rect);
+				unicode_button->x = this->width - 2 * padding - text_width - right_position;
+				unicode_button->width = 2 * padding + text_width;
+				unicode_button->Draw(renderer, rect);
 				right_position += padding;
 				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 				right_position += padding;
@@ -156,8 +172,9 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			str = language ? language->GetName() : "Plain Text";
 			{
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
-				buttons[1].region = PGIRect(this->width - 2 * padding - text_width - right_position, 0, 2 * padding + text_width, this->height);
-				buttons[1].DrawBackground(renderer, rect);
+				language_button->x = this->width - 2 * padding - text_width - right_position;
+				language_button->width = 2 * padding + text_width;
+				language_button->Draw(renderer, rect);
 				right_position += padding;
 				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 				right_position += padding;
@@ -180,8 +197,9 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			}
 			{
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
-				buttons[2].region = PGIRect(this->width - 2 * padding - text_width - right_position, 0, 2 * padding + text_width, this->height);
-				buttons[2].DrawBackground(renderer, rect);
+				lineending_button->x = this->width - 2 * padding - text_width - right_position;
+				lineending_button->width = 2 * padding + text_width;
+				lineending_button->Draw(renderer, rect);
 				right_position += padding;
 				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 				right_position += padding;
@@ -202,8 +220,9 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			str += to_string(4);
 			{
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
-				buttons[3].region = PGIRect(this->width - 2 * padding - text_width - right_position, 0, 2 * padding + text_width, this->height);
-				buttons[3].DrawBackground(renderer, rect);
+				tabwidth_button->x = this->width - 2 * padding - text_width - right_position;
+				tabwidth_button->width = 2 * padding + text_width;
+				tabwidth_button->Draw(renderer, rect);
 				right_position += padding;
 				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
 				right_position += padding;
@@ -212,34 +231,3 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		}
 	}
 }
-
-void StatusBar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
-	PGPoint mouse(x - this->x, y - this->y);
-	for (int i = 0; i < 4; i++) {
-		this->buttons[i].MouseDown(mouse.x, mouse.y, button, modifier);
-	}
-}
-
-void StatusBar::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
-	PGPoint mouse(x - this->x, y - this->y);
-	for (int i = 0; i < 4; i++) {
-		this->buttons[i].MouseUp(mouse.x, mouse.y, button, modifier);
-	}
-}
-
-void StatusBar::MouseMove(int x, int y, PGMouseButton b) {
-	if (!(b & PGLeftMouseButton)) {
-		for (int i = 0; i < 4; i++) {
-			buttons[i].clicking = false;
-		}
-		this->Invalidate();
-	}
-}
-
-bool StatusBar::IsDragging() {
-	for (int i = 0; i < 4; i++) {
-		if (buttons[i].clicking) return true;
-	}
-	return false;
-}
-

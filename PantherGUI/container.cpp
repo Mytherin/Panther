@@ -4,7 +4,14 @@
 #include "simpletextfield.h"
 
 
-PGContainer::PGContainer(PGWindowHandle window) : Control(window, true) {
+PGContainer::PGContainer(PGWindowHandle window) : 
+	Control(window) {
+}
+
+PGContainer::~PGContainer() {
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		delete *it;
+	}
 }
 
 bool PGContainer::KeyboardButton(PGButton button, PGModifier modifier) {

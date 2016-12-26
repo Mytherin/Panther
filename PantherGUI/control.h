@@ -13,7 +13,7 @@ extern const PGAnchor PGAnchorBottom;
 
 class Control {
 public:
-	Control(PGWindowHandle window, bool reg);
+	Control(PGWindowHandle window);
 	virtual ~Control() { }
 
 	virtual void MouseWheel(int x, int y, int distance, PGModifier modifier);
@@ -29,6 +29,10 @@ public:
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
+	// In order for a control to get MouseEnter() and MouseLeave() events
+	// it must register with the ControlManager
+	virtual void MouseEnter();
+	virtual void MouseLeave();
 
 	virtual void Invalidate();
 	virtual void Invalidate(PGIRect);

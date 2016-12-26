@@ -20,15 +20,27 @@ void ControlManager::PeriodicRender(void) {
 	// for any registered mouse regions, check if the mouse status has changed (mouse has entered or left the area)
 	if (!is_dragging) {
 		for (auto it = regions.begin(); it != regions.end(); it++) {
-			bool contains = PGRectangleContains(*(*it).rect, mouse - (*it).control->Position());
-			if (!(*it).mouse_inside && contains) {
-				// mouse enter
-				(*it).mouse_event((*it).control, true, (*it).data);
-			} else if ((*it).mouse_inside && !contains) {
-				// mouse leave
-				(*it).mouse_event((*it).control, false, (*it).data);
+			Control* c = (*it).control;
+			if ((*it).rect == nullptr) {
+				PGIRect rectangle = PGIRect(c->X(), c->Y(), c->width, c->height);
+				bool contains = PGRectangleContains(rectangle, mouse);
+				if (!(*it).mouse_inside && contains) {
+					c->MouseEnter();
+				} else if ((*it).mouse_inside && !contains) {
+					c->MouseLeave();
+				}
+				(*it).mouse_inside = contains;
+			} else {
+				bool contains = PGRectangleContains(*(*it).rect, mouse - (*it).control->Position());
+				if (!(*it).mouse_inside && contains) {
+					// mouse enter
+					(*it).mouse_event((*it).control, true, (*it).data);
+				} else if ((*it).mouse_inside && !contains) {
+					// mouse leave
+					(*it).mouse_event((*it).control, false, (*it).data);
+				}
+				(*it).mouse_inside = contains;
 			}
-			(*it).mouse_inside = contains;
 		}
 	}
 	for (auto it = controls.begin(); it != controls.end(); it++) {
@@ -84,6 +96,20 @@ void ControlManager::RegisterMouseRegion(PGIRect* rect, Control* control, PGMous
 void ControlManager::UnregisterMouseRegion(PGIRect* rect) {
 	for (auto it = regions.begin(); it != regions.end(); it++) {
 		if ((*it).rect == rect) {
+			regions.erase(it);
+			return;
+		}
+	}
+	assert(0);
+}
+
+void ControlManager::RegisterControlForMouseEvents(Control* control) {
+	regions.push_back(PGMouseRegion(nullptr, control, nullptr, nullptr));
+}
+
+void ControlManager::UnregisterControlForMouseEvents(Control* control) {
+	for (auto it = regions.begin(); it != regions.end(); it++) {
+		if ((*it).control == control) {
 			regions.erase(it);
 			return;
 		}

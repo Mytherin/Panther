@@ -14,6 +14,7 @@
 class PGContainer : public Control {
 public:
 	PGContainer(PGWindowHandle window);
+	virtual ~PGContainer();
 
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
