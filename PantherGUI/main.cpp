@@ -182,14 +182,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	tabs->SetAnchor(PGAnchorLeft | PGAnchorRight);
 	tabs->SetPosition(PGPoint(tabbed->x, tabbed->y));
 	tabs->SetSize(PGSize(tabbed->width, TEXT_TAB_HEIGHT));
-	StatusBar* bar = new StatusBar(res, textfield);
-	bar->SetAnchor(PGAnchorLeft | PGAnchorRight);
-	bar->SetPosition(PGPoint(tabbed->x, tabbed->y + tabbed->height - STATUSBAR_HEIGHT));
-	bar->SetSize(PGSize(tabbed->width, STATUSBAR_HEIGHT));
-
 	tabbed->AddControl(tabs);
 	tabbed->AddControl(textfield);
-	tabbed->AddControl(bar);
+
+	StatusBar* bar = new StatusBar(res, textfield);
+	bar->SetAnchor(PGAnchorLeft | PGAnchorRight);
+	bar->SetPosition(PGPoint(manager->x, manager->y + manager->height - STATUSBAR_HEIGHT));
+	bar->SetSize(PGSize(manager->width, STATUSBAR_HEIGHT));
+	manager->AddControl(bar);
+
 	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	//tabbed->SetPosition(PGPoint(50, 50));
 	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
