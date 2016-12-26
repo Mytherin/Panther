@@ -24,6 +24,15 @@ public:
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 
 	void SetValidInput(bool valid) { valid_input = valid; }
+
+	void OnUserCancel(PGControlDataCallback callback, void* data) { on_user_cancel = callback; on_user_cancel_data = data; }
+	void OnSuccessfulExit(PGControlDataCallback callback, void* data) { on_successful_exit = callback; on_successful_exit_data = data; }
+
 private:
 	bool valid_input = true;
+
+	PGControlDataCallback on_user_cancel = nullptr;
+	void* on_user_cancel_data = nullptr;
+	PGControlDataCallback on_successful_exit = nullptr;
+	void* on_successful_exit_data = nullptr;
 };

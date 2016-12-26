@@ -130,8 +130,14 @@ void SimpleTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 
 bool SimpleTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	switch (button) {
-	case PGButtonEnter:
 	case PGButtonEscape:
+		if (on_user_cancel)
+			on_user_cancel(this, on_user_cancel_data);
+		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
+		return true;
+	case PGButtonEnter:
+		if (on_successful_exit)
+			on_successful_exit(this, on_successful_exit_data);
 		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
 		return true;
 	}

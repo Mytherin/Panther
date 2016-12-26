@@ -906,6 +906,16 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			SimpleTextField* field = new SimpleTextField(this->window);
 			field->SetSize(PGSize(this->width * 0.5f, GetTextHeight(textfield_font) + 6));
 			field->SetPosition(PGPoint(this->x + this->width * 0.25f, this->y + 25));
+			struct ScrollData {
+				lng offset;
+				TextField* tf;
+				std::vector<Cursor> backup_cursors;
+			};
+			ScrollData* data = new ScrollData();
+			data->offset = textfile->GetLineOffset();
+			data->tf = this;
+			data->backup_cursors = textfile->BackupCursors();
+
 			field->OnTextChanged([](Control* c, void* data) {
 				SimpleTextField* input = (SimpleTextField*)c;
 				TextField* tf = (TextField*)data;
@@ -928,7 +938,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 						}
 						converted--;
 						// move the cursor and offset of the currently active file
-						tf->GetTextFile().SetLineOffset(converted);
+						tf->GetTextFile().SetLineOffset(std::max(converted - tf->GetLineHeight() / 2, (long) 0));
 						tf->GetTextFile().SetCursorLocation(converted, 0);
 						tf->Invalidate();
 						input->SetValidInput(valid);
@@ -940,6 +950,18 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 					}
 				}
 			}, (void*) this);
+			field->OnUserCancel([](Control* c, void* data) {
+				// user pressed escape, cancelling the line
+				// restore cursors and position
+				ScrollData* d = (ScrollData*)data;
+				d->tf->GetTextFile().RestoreCursors(d->backup_cursors);
+				d->tf->GetTextFile().SetLineOffset(d->offset);
+				delete d;
+			}, (void*) data);
+			field->OnSuccessfulExit([](Control* c, void* data) {
+				ScrollData* d = (ScrollData*)data;
+				delete d;
+			}, (void*) data);
 			dynamic_cast<PGContainer*>(this->parent)->AddControl(field);
 			return true;
 		}

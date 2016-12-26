@@ -109,6 +109,9 @@ public:
 	void RefreshCursors();
 	int GetLineHeight();
 
+	std::vector<Cursor> BackupCursors();
+	void RestoreCursors(std::vector<Cursor>& cursors);
+
 	lng GetMaxLineWidth() { return longest_line; }
 	void SetMaxLineWidth(lng new_width = -1);
 	PGScalar GetXOffset() { return xoffset; }

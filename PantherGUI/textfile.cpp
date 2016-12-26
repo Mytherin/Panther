@@ -1381,3 +1381,19 @@ void TextFile::RemoveTrailingWhitespace() {
 	if (!is_loaded) return;
 
 }
+
+std::vector<Cursor> TextFile::BackupCursors() {
+	std::vector<Cursor> backup;
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		backup.push_back(Cursor(**it));
+	}
+	return backup;
+}
+
+void TextFile::RestoreCursors(std::vector<Cursor>& backup) {
+	ClearCursors();
+	for (auto it = backup.begin(); it != backup.end(); it++) {
+		cursors.push_back(new Cursor(*it));
+	}
+	Cursor::NormalizeCursors(this, cursors, false);
+}
