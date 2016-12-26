@@ -127,6 +127,7 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		}
 		return true;
 	}
+	return false;
 }
 
 bool BasicTextField::KeyboardCharacter(char character, PGModifier modifier) {
@@ -232,13 +233,30 @@ PGScalar BasicTextField::GetMaxXOffset() {
 }
 
 void BasicTextField::SelectionChanged() {
+	for (auto it = selection_changed_callbacks.begin(); it != selection_changed_callbacks.end(); it++) {
+		(it->first)(this, it->second);
+	}
 	this->Invalidate();
 }
 
 void BasicTextField::TextChanged() {
+	for (auto it = text_changed_callbacks.begin(); it != text_changed_callbacks.end(); it++) {
+		(it->first)(this, it->second);
+	}
 	this->Invalidate();
 }
 
 void BasicTextField::TextChanged(std::vector<TextLine*> lines) {
 	this->TextChanged();
 }
+
+
+void BasicTextField::OnSelectionChanged(PGControlDataCallback callback, void* data) {
+	this->selection_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
+}
+
+void BasicTextField::OnTextChanged(PGControlDataCallback callback, void* data) {
+	this->text_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
+}
+
+

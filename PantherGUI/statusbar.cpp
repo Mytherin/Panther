@@ -7,6 +7,13 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) : active_textf
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
+	textfield->OnSelectionChanged([](Control* c, void* data) {
+		((StatusBar*)(data))->SelectionChanged();
+	}, (void*) this);
+}
+
+StatusBar::~StatusBar() {
+	// FIXME: unregister textfield function
 }
 
 void StatusBar::UpdateParentSize(PGSize old_size, PGSize new_size) {
@@ -16,7 +23,7 @@ void StatusBar::UpdateParentSize(PGSize old_size, PGSize new_size) {
 }
 
 void StatusBar::SelectionChanged() {
-
+	this->Invalidate();
 }
 
 void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {

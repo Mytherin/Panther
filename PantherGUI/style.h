@@ -10,6 +10,7 @@ enum PGColorType {
 	PGColorTextFieldSelection,
 	PGColorTextFieldCaret,
 	PGColorTextFieldLineNumber,
+	PGColorTextFieldError,
 	PGColorScrollbarBackground,
 	PGColorScrollbarForeground,
 	PGColorScrollbarHover,

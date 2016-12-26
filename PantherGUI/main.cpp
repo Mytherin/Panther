@@ -45,7 +45,7 @@ struct PGPopupMenu {
 	PGWindowHandle window;
 	HMENU menu;
 	int index = 1000;
-	std::map<int, PGPopupMenuCallback> callbacks;
+	std::map<int, PGControlCallback> callbacks;
 	Control* control;
 };
 
@@ -476,7 +476,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_COMMAND: {
 		int index = LOWORD(wParam);
 		if (global_handle->popup) {
-			PGPopupMenuCallback callback = global_handle->popup->callbacks[index];
+			PGControlCallback callback = global_handle->popup->callbacks[index];
 			if (callback) {
 				callback(global_handle->popup->control);
 			}
@@ -733,7 +733,7 @@ PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
 	return handle;
 }
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupMenuCallback callback, PGPopupMenuFlags flags) {
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags) {
 	int append_flags = MF_STRING;
 	if (flags & PGPopupMenuChecked) append_flags |= MF_CHECKED;
 	if (flags & PGPopupMenuGrayed) append_flags |= MF_GRAYED;

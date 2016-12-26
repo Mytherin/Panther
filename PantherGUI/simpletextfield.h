@@ -22,4 +22,8 @@ public:
 	void MouseMove(int x, int y, PGMouseButton buttons);
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
+
+	void SetValidInput(bool valid) { valid_input = valid; }
+private:
+	bool valid_input = true;
 };

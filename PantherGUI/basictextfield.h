@@ -23,6 +23,10 @@ enum PGDragType {
 	PGDragPopupMenu
 };
 
+class BasicTextField;
+
+typedef void(*PGTextFieldCallback)(BasicTextField* textfield);
+
 class BasicTextField : public Control {
 public:
 	BasicTextField(PGWindowHandle, TextFile* textfile);
@@ -54,6 +58,9 @@ public:
 	virtual void SelectionChanged();
 	virtual void TextChanged();
 	virtual void TextChanged(std::vector<TextLine*> lines);
+
+	void OnSelectionChanged(PGControlDataCallback callback, void* data);
+	void OnTextChanged(PGControlDataCallback callback, void* data);
 protected:
 	TextFile* textfile = nullptr;
 	PGFontHandle textfield_font = nullptr;
@@ -73,4 +80,7 @@ protected:
 	void GetCharacterFromPosition(PGScalar x, TextLine* line, lng& character);
 
 	void PerformMouseClick(PGPoint mouse);
+
+	std::vector<std::pair<PGControlDataCallback, void*>> selection_changed_callbacks;
+	std::vector<std::pair<PGControlDataCallback, void*>> text_changed_callbacks;
 };

@@ -907,6 +907,39 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			SimpleTextField* field = new SimpleTextField(this->window);
 			field->SetSize(PGSize(this->width * 0.5f, GetTextHeight(textfield_font) + 6));
 			field->SetPosition(PGPoint(this->x + this->width * 0.25f, this->y + 25));
+			field->OnTextChanged([](Control* c, void* data) {
+				SimpleTextField* input = (SimpleTextField*)c;
+				TextField* tf = (TextField*)data;
+				char* line = input->GetTextFile().GetLine(0)->GetLine();
+				char* p = nullptr;
+				// attempt to convert the text to a number
+				long converted = strtol(line, &p, 10);
+				errno = 0;
+				if (p != line) { // if p == line, then line is empty so we do nothing
+					if (*p == '\0') { // if *p == '\0' the entire string was converted
+						bool valid = true;
+						// bounds checking
+						if (converted <= 0) {
+							converted = 1;
+							valid = false;
+						} else if (converted > tf->GetTextFile().GetLineCount()) {
+							converted = tf->GetTextFile().GetLineCount();
+							valid = false;
+						}
+						converted--;
+						// move the cursor and offset of the currently active file
+						tf->GetTextFile().SetLineOffset(converted);
+						tf->GetTextFile().SetCursorLocation(converted, 0);
+						tf->Invalidate();
+						input->SetValidInput(valid);
+						input->Invalidate();
+					} else {
+						// invalid input, notify the user
+						input->SetValidInput(false);
+						input->Invalidate();
+					}
+				}
+			}, (void*) this);
 			dynamic_cast<PGContainer*>(this->parent)->AddControl(field);
 			return true;
 		}
@@ -1026,15 +1059,6 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 	return PGCursorStandard;
 }
 
-void TextField::SelectionChanged() {
-	if (statusbar) {
-		// when the selection changes we invalidate the status bar
-		// because it displays the current selection (e.g. Line 3, Column 5)
-		statusbar->Invalidate();
-	}
-	BasicTextField::SelectionChanged();
-}
-
 void TextField::TextChanged() {
 	// all text has changed (this typically happens when e.g. switching files)
 	// clear the line cache entirely
@@ -1042,7 +1066,7 @@ void TextField::TextChanged() {
 		DeleteImage(it->second);
 	}
 	minimap_line_cache.clear();
-	this->Invalidate();
+	BasicTextField::TextChanged();
 }
 
 void TextField::TextChanged(std::vector<TextLine*> lines) {
@@ -1054,5 +1078,5 @@ void TextField::TextChanged(std::vector<TextLine*> lines) {
 			minimap_line_cache.erase(res);
 		}
 	}
-	this->Invalidate();
+	BasicTextField::TextChanged(lines);
 }

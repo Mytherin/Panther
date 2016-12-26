@@ -5,7 +5,7 @@
 #include "container.h"
 
 SimpleTextField::SimpleTextField(PGWindowHandle window) :
-	BasicTextField(window, new TextFile(nullptr)) {
+	BasicTextField(window, new TextFile(nullptr)), valid_input(true) {
 }
 
 SimpleTextField::~SimpleTextField() {
@@ -18,7 +18,9 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar xoffset = textfile->GetXOffset();
 
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
-	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldCaret), PGDrawStyleStroke);
+	RenderRectangle(renderer, PGRect(x, y, this->width, this->height),
+		valid_input ? PGStyleManager::GetColor(PGColorTextFieldCaret) : PGStyleManager::GetColor(PGColorTextFieldError),
+		PGDrawStyleStroke);
 
 	x += 4;
 	y += 2;

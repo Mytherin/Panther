@@ -20,8 +20,6 @@ struct TextSelection {
 #define SCROLLBAR_WIDTH 16
 #define MAX_MINIMAP_LINE_CACHE 10000
 
-class StatusBar;
-
 class TextField : public BasicTextField {
 public:
 	TextField(PGWindowHandle, TextFile* file);
@@ -59,15 +57,9 @@ public:
 	PGScalar GetTextfieldHeight();
 	PGScalar GetMaxXOffset() { return max_xoffset; }
 
-	void SelectionChanged();
 	void TextChanged();
 	void TextChanged(std::vector<TextLine*> lines);
-
-	void SetStatusBar(StatusBar* bar) { statusbar = bar; }
-
 private:
-	StatusBar* statusbar = nullptr;
-
 	PGFontHandle minimap_font;
 
 	PGIRect scrollbar_region;

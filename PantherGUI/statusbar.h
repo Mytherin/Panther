@@ -8,6 +8,7 @@
 class StatusBar : public Control {
 public:
 	StatusBar(PGWindowHandle window, TextField* textfield);
+	~StatusBar();
 
 	void UpdateParentSize(PGSize old_size, PGSize new_size);
 

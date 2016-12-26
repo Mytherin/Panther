@@ -300,11 +300,12 @@ extern const PGPopupMenuFlags PGPopupMenuFlagsNone;
 extern const PGPopupMenuFlags PGPopupMenuChecked;
 extern const PGPopupMenuFlags PGPopupMenuGrayed;
 
-typedef void(*PGPopupMenuCallback)(Control* control);
+typedef void(*PGControlCallback)(Control* control);
+typedef void(*PGControlDataCallback)(Control* control, void* data);
 
 PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control);
 void PGPopupMenuInsertSubmenu(PGPopupMenuHandle, PGPopupMenuHandle submenu, std::string submenu_name);
-void PGPopupMenuInsertEntry(PGPopupMenuHandle, std::string text, PGPopupMenuCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
+void PGPopupMenuInsertEntry(PGPopupMenuHandle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
 void PGPopupMenuInsertSeparator(PGPopupMenuHandle);
 // Displays the menu next to the mouse
 void PGDisplayPopupMenu(PGPopupMenuHandle, PGTextAlign align);

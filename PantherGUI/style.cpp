@@ -23,6 +23,7 @@ PGStyleManager::PGStyleManager() {
 	vs.SetColor(PGColorTextFieldSelection, PGColor(38, 79, 120));
 	vs.SetColor(PGColorTextFieldCaret, PGColor(191, 191, 191));
 	vs.SetColor(PGColorTextFieldLineNumber, PGColor(43, 145, 175));
+	vs.SetColor(PGColorTextFieldError, PGColor(252, 64, 54));
 	vs.SetColor(PGColorScrollbarBackground, PGColor(62, 62, 66));
 	vs.SetColor(PGColorScrollbarForeground, PGColor(104, 104, 104));
 	vs.SetColor(PGColorScrollbarHover, PGColor(158, 158, 158));

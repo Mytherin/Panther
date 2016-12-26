@@ -19,7 +19,6 @@ PGContainer::PGContainer(PGWindowHandle window, TextFile* file) : Control(window
 	bar->SetAnchor(PGAnchorLeft | PGAnchorRight);
 	bar->SetPosition(PGPoint(this->x, this->y + this->height - STATUSBAR_HEIGHT));
 	bar->SetSize(PGSize(this->width, STATUSBAR_HEIGHT));
-	textfield->SetStatusBar(bar);
 
 	AddControl(tabs);
 	AddControl(textfield);
