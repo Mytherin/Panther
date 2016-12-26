@@ -28,7 +28,7 @@ public:
 	void OnUserCancel(PGControlDataCallback callback, void* data) { on_user_cancel = callback; on_user_cancel_data = data; }
 	void OnSuccessfulExit(PGControlDataCallback callback, void* data) { on_successful_exit = callback; on_successful_exit_data = data; }
 
-private:
+protected:
 	bool valid_input = true;
 
 	PGControlDataCallback on_user_cancel = nullptr;

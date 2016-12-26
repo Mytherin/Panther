@@ -3,10 +3,8 @@
 #include "main.h"
 #include "windowfunctions.h"
 #include "control.h"
-#include "textfield.h"
 #include "scheduler.h"
 #include "filemanager.h"
-#include "tabcontrol.h"
 #include "controlmanager.h"
 #include "container.h"
 #include "droptarget.h"
@@ -14,6 +12,10 @@
 #include "unicode.h"
 #include "language.h"
 #include "logger.h"
+
+#include "statusbar.h"
+#include "textfield.h"
+#include "tabcontrol.h"
 
 #include "c.h"
 #include "xml.h"
@@ -169,7 +171,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
 	TextFile* textfile = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
 	TextFile* textfile2 = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_small.xml");
-	PGContainer* tabbed = new PGContainer(res, textfile);
+	PGContainer* tabbed = new PGContainer(res);
+	tabbed->width = 0;
+	tabbed->height = TEXT_TAB_HEIGHT;
+	TextField* textfield = new TextField(res, textfile);
+	textfield->SetAnchor(PGAnchorBottom | PGAnchorLeft | PGAnchorRight);
+	textfield->SetPosition(PGPoint(tabbed->x, tabbed->y + TEXT_TAB_HEIGHT));
+	textfield->SetSize(PGSize(tabbed->width, tabbed->height - TEXT_TAB_HEIGHT - STATUSBAR_HEIGHT));
+	TabControl* tabs = new TabControl(res, textfield);
+	tabs->SetAnchor(PGAnchorLeft | PGAnchorRight);
+	tabs->SetPosition(PGPoint(tabbed->x, tabbed->y));
+	tabs->SetSize(PGSize(tabbed->width, TEXT_TAB_HEIGHT));
+	StatusBar* bar = new StatusBar(res, textfield);
+	bar->SetAnchor(PGAnchorLeft | PGAnchorRight);
+	bar->SetPosition(PGPoint(tabbed->x, tabbed->y + tabbed->height - STATUSBAR_HEIGHT));
+	bar->SetSize(PGSize(tabbed->width, STATUSBAR_HEIGHT));
+
+	tabbed->AddControl(tabs);
+	tabbed->AddControl(textfield);
+	tabbed->AddControl(bar);
 	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	//tabbed->SetPosition(PGPoint(50, 50));
 	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));

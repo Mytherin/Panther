@@ -6,6 +6,7 @@
 
 SimpleTextField::SimpleTextField(PGWindowHandle window) :
 	BasicTextField(window, new TextFile(nullptr)), valid_input(true) {
+	this->height = GetTextHeight(textfield_font) + 6;
 }
 
 SimpleTextField::~SimpleTextField() {

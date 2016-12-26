@@ -13,7 +13,7 @@
 
 class PGContainer : public Control {
 public:
-	PGContainer(PGWindowHandle window, TextFile* file);
+	PGContainer(PGWindowHandle window);
 
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
@@ -30,6 +30,7 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
+	Control* GetMouseOverControl(int x, int y);
 	Control* GetActiveControl() { return focused_control; }
 
 	PGCursorType GetCursor(PGPoint mouse);
@@ -37,7 +38,7 @@ public:
 
 	void AddControl(Control* control);
 	void RemoveControl(Control* control);
-private:
+protected:
 	Control* focused_control = nullptr;
 
 	std::vector<Control*> controls;

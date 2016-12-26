@@ -142,6 +142,7 @@
     <ClCompile Include="encoding.cpp" />
     <ClCompile Include="file.cpp" />
     <ClCompile Include="filemanager.cpp" />
+    <ClCompile Include="findview.cpp" />
     <ClCompile Include="keywords.cpp" />
     <ClCompile Include="language.cpp" />
     <ClCompile Include="logger.cpp" />
@@ -177,6 +178,7 @@
     <ClInclude Include="droptarget.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
+    <ClInclude Include="findview.h" />
     <ClInclude Include="keywords.h" />
     <ClInclude Include="language.h" />
     <ClInclude Include="logger.h" />

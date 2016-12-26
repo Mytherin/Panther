@@ -14,6 +14,7 @@ extern const PGAnchor PGAnchorBottom;
 class Control {
 public:
 	Control(PGWindowHandle window, bool reg);
+	virtual ~Control() { }
 
 	virtual void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	// Returns true if the button has been consumed by the control, false if it has been ignored

@@ -11,6 +11,7 @@
 #include "container.h"
 #include "simpletextfield.h"
 #include "statusbar.h"
+#include "findview.h"
 
 void TextField::MinimapMouseEvent(bool mouse_enter) {
 	this->mouse_in_minimap = mouse_enter;
@@ -964,6 +965,15 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			}, (void*) data);
 			dynamic_cast<PGContainer*>(this->parent)->AddControl(field);
 			return true;
+		}
+		case 'F': {
+			// Find text
+			FindView* view = new FindView(this->window);
+			view->SetSize(PGSize(this->width, 100));
+			view->SetPosition(PGPoint(0, this->height - 100));
+			view->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorBottom);
+
+			dynamic_cast<PGContainer*>(this->parent)->AddControl(view);
 		}
 		}
 	}

@@ -4,25 +4,7 @@
 #include "simpletextfield.h"
 
 
-PGContainer::PGContainer(PGWindowHandle window, TextFile* file) : Control(window, true) {
-	TextField* textfield = new TextField(window, file);
-	this->width = 0;
-	this->height = TEXT_TAB_HEIGHT;
-	textfield->SetAnchor(PGAnchorBottom | PGAnchorLeft | PGAnchorRight);
-	textfield->SetPosition(PGPoint(this->x, this->y + TEXT_TAB_HEIGHT));
-	textfield->SetSize(PGSize(this->width, this->height - TEXT_TAB_HEIGHT - STATUSBAR_HEIGHT));
-	TabControl* tabs = new TabControl(window, textfield);
-	tabs->SetAnchor(PGAnchorLeft | PGAnchorRight);
-	tabs->SetPosition(PGPoint(this->x, this->y));
-	tabs->SetSize(PGSize(this->width, TEXT_TAB_HEIGHT));
-	StatusBar* bar = new StatusBar(window, textfield);
-	bar->SetAnchor(PGAnchorLeft | PGAnchorRight);
-	bar->SetPosition(PGPoint(this->x, this->y + this->height - STATUSBAR_HEIGHT));
-	bar->SetSize(PGSize(this->width, STATUSBAR_HEIGHT));
-
-	AddControl(tabs);
-	AddControl(textfield);
-	AddControl(bar);
+PGContainer::PGContainer(PGWindowHandle window) : Control(window, true) {
 }
 
 bool PGContainer::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -86,13 +68,7 @@ void PGContainer::Draw(PGRendererHandle renderer, PGIRect* rect) {
 }
 
 void PGContainer::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
-	PGPoint mouse(x - this->x, y - this->y);
-	for(lng i = controls.size() - 1; i >= 0; i--) {
-		Control* c = controls[i];
-		if (PGRectangleContains(c->GetRectangle(), mouse)) {
-			c->MouseClick(mouse.x, mouse.y, button, modifier);
-		}
-	}
+	assert(0);
 }
 
 void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
@@ -199,4 +175,13 @@ void PGContainer::RemoveControl(Control* control) {
 		}
 	}
 	delete control;
+}
+
+Control* PGContainer::GetMouseOverControl(int x, int y) {
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if (PGRectangleContains((*it)->GetRectangle(), PGPoint(x, y))) {
+			return *it;
+		}
+	}
+	return nullptr;
 }
