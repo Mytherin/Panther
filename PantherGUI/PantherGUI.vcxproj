@@ -133,6 +133,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="basictextfield.cpp" />
+    <ClCompile Include="button.cpp" />
     <ClCompile Include="c.cpp" />
     <ClCompile Include="control.cpp" />
     <ClCompile Include="controlmanager.cpp" />
@@ -167,6 +168,7 @@
   <ItemGroup>
     <ClInclude Include="basictextfield.h" />
     <ClInclude Include="blockingconcurrentqueue.h" />
+    <ClInclude Include="button.h" />
     <ClInclude Include="c.h" />
     <ClInclude Include="concurrentqueue.h" />
     <ClInclude Include="control.h" />

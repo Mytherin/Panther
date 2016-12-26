@@ -60,7 +60,7 @@ public:
 	PGScalar Y();
 	PGPoint Position();
 
-	Control* parent;
+	Control* parent = nullptr;
 
 	PGScalar x, y;
 	PGScalar width, height;

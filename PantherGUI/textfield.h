@@ -90,14 +90,17 @@ private:
 	PGScalar max_xoffset;
 	PGScalar max_textsize;
 
+	bool mouse_in_scrollbar = false;
 	PGScalar GetScrollbarHeight();
 	PGScalar GetScrollbarOffset();
 	void SetScrollbarOffset(PGScalar offset);
 
+	bool mouse_in_hscrollbar = false;
 	PGScalar GetHScrollbarHeight();
 	PGScalar GetHScrollbarOffset();
 	void SetHScrollbarOffset(PGScalar offset);
 
+	bool mouse_in_minimap = false;
 	bool display_minimap;
 	PGScalar GetMinimapWidth();
 	PGScalar GetMinimapHeight();

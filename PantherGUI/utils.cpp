@@ -19,3 +19,6 @@ bool PGRectangleContains(PGIRect rect, PGPoint point) {
 bool PGIRectanglesOverlap(PGIRect a, PGIRect b) {
 	return (a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y);
 }
+
+PGRect::PGRect(PGIRect rect) : x(rect.x), y(rect.y), width(rect.width), height(rect.height) {
+}

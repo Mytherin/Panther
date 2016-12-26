@@ -13,27 +13,18 @@
 #include "statusbar.h"
 
 void TextField::MinimapMouseEvent(bool mouse_enter) {
+	this->mouse_in_minimap = mouse_enter;
 	this->InvalidateMinimap();
 }
 
 void TextField::ScrollbarMouseEvent(bool mouse_enter) {
+	this->mouse_in_scrollbar = mouse_enter;
 	this->InvalidateScrollbar();
 }
 
 void TextField::HScrollbarMouseEvent(bool mouse_enter) {
+	this->mouse_in_hscrollbar = mouse_enter;
 	this->InvalidateHScrollbar();
-}
-
-void MMMouseEvent(TextField* textfield, bool mouse_enter) {
-	return textfield->MinimapMouseEvent(mouse_enter);
-}
-
-void SBMouseEvent(TextField* textfield, bool mouse_enter) {
-	return textfield->ScrollbarMouseEvent(mouse_enter);
-}
-
-void HSBMouseEvent(TextField* textfield, bool mouse_enter) {
-	return textfield->ScrollbarMouseEvent(mouse_enter);
 }
 
 TextField::TextField(PGWindowHandle window, TextFile* file) :
@@ -43,13 +34,21 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 	line_height = 19;
 
 	ControlManager* manager = (ControlManager*)GetControlManager(window);
-	manager->RegisterMouseRegion(&minimap_region, this, (PGMouseCallback)MMMouseEvent);
-	manager->RegisterMouseRegion(&scrollbar_region, this, (PGMouseCallback)SBMouseEvent);
-	manager->RegisterMouseRegion(&arrow_regions[0], this, (PGMouseCallback)SBMouseEvent);
-	manager->RegisterMouseRegion(&arrow_regions[1], this, (PGMouseCallback)SBMouseEvent);
-	manager->RegisterMouseRegion(&hscrollbar_region, this, (PGMouseCallback)HSBMouseEvent);
-	manager->RegisterMouseRegion(&arrow_regions[2], this, (PGMouseCallback)HSBMouseEvent);
-	manager->RegisterMouseRegion(&arrow_regions[3], this, (PGMouseCallback)HSBMouseEvent);
+	manager->RegisterMouseRegion(&minimap_region, this, [](Control* tf, bool mouse_enter, void* data) {
+		return ((TextField*)tf)->MinimapMouseEvent(mouse_enter);
+	});
+	PGMouseCallback scrollbar_mouse_event = [](Control* tf, bool mouse_enter, void* data) {
+		return ((TextField*)tf)->ScrollbarMouseEvent(mouse_enter);
+	};
+	manager->RegisterMouseRegion(&scrollbar_region, this, scrollbar_mouse_event);
+	manager->RegisterMouseRegion(&arrow_regions[0], this, scrollbar_mouse_event);
+	manager->RegisterMouseRegion(&arrow_regions[1], this, scrollbar_mouse_event);
+	PGMouseCallback hscrollbar_mouse_event = [](Control* tf, bool mouse_enter, void* data) {
+		return ((TextField*)tf)->HScrollbarMouseEvent(mouse_enter);
+	};
+	manager->RegisterMouseRegion(&hscrollbar_region, this, hscrollbar_mouse_event);
+	manager->RegisterMouseRegion(&arrow_regions[2], this, hscrollbar_mouse_event);
+	manager->RegisterMouseRegion(&arrow_regions[3], this, hscrollbar_mouse_event);
 	scrollbar_region.x = this->width - SCROLLBAR_WIDTH;
 	scrollbar_region.y = SCROLLBAR_BASE_OFFSET;
 	scrollbar_region.width = SCROLLBAR_WIDTH;
@@ -401,7 +400,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	}
 	// render the minimap
 	if (textfile->IsLoaded() && this->display_minimap) {
-		bool mouse_in_minimap = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH - minimap_width && mouse.x <= this->width - SCROLLBAR_WIDTH;
+		bool mouse_in_minimap = window_has_focus && this->mouse_in_minimap;
 		PGIRect minimap_rect = PGIRect(x + textfield_width, y, minimap_width, this->height);
 
 		DrawTextField(renderer, minimap_font, &minimap_rect, true, x + textfield_width - rectangle->x, y - rectangle->y, minimap_width, mouse_in_minimap);
@@ -440,7 +439,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	}
 	// render the scrollbar
 	if (this->display_scrollbar) {
-		bool mouse_in_scrollbar = window_has_focus && mouse.x >= this->width - SCROLLBAR_WIDTH && mouse.x <= this->width;
+		bool mouse_in_scrollbar = window_has_focus && this->mouse_in_scrollbar;
 		x = x - rectangle->x;
 		y = y - rectangle->y;
 
@@ -470,7 +469,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 		// horizontal scrollbar
 		display_horizontal_scrollbar = max_xoffset > 0;
 		if (display_horizontal_scrollbar) {
-			bool mouse_in_horizontal_scrollbar = window_has_focus && mouse.y >= this->height - SCROLLBAR_WIDTH && mouse.y <= this->height && mouse.x <= this->width - SCROLLBAR_WIDTH;
+			bool mouse_in_horizontal_scrollbar = window_has_focus && this->mouse_in_hscrollbar;
 			// background of the scrollbar
 			RenderRectangle(renderer, PGRect(x, y + this->height - SCROLLBAR_WIDTH, this->width - SCROLLBAR_WIDTH, SCROLLBAR_WIDTH), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
 			// the arrows
@@ -913,6 +912,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				char* line = input->GetTextFile().GetLine(0)->GetLine();
 				char* p = nullptr;
 				// attempt to convert the text to a number
+				// FIXME: strtoll (long = 32-bit on windows)
 				long converted = strtol(line, &p, 10);
 				errno = 0;
 				if (p != line) { // if p == line, then line is empty so we do nothing
@@ -1016,7 +1016,7 @@ void TextField::SetTextFile(TextFile* textfile) {
 void TextField::OnResize(PGSize old_size, PGSize new_size) {
 	if (display_minimap) {
 		minimap_region.width = GetMinimapWidth();
-		minimap_region.height = new_size.height;
+		minimap_region.height = new_size.height - SCROLLBAR_WIDTH;
 		minimap_region.x = new_size.width - minimap_region.width - SCROLLBAR_WIDTH;
 		minimap_region.y = 0;
 	} else {

@@ -36,27 +36,31 @@ bool ControlManager::KeyboardUnicode(PGUTF8Character character, PGModifier modif
 void ControlManager::PeriodicRender(void) {
 	PGPoint mouse = GetMousePosition(window);
 	PGMouseButton buttons = GetMouseState(window);
-	// for any registered mouse regions, check if the mouse status has changed (mouse has entered or left the area)
-	for (auto it = regions.begin(); it != regions.end(); it++) {
-		bool contains = PGRectangleContains(*(*it).rect, mouse - (*it).control->Position());
-		if (!(*it).mouse_inside && contains) {
-			// mouse enter
-			(*it).mouse_event((*it).control, true);
-		} else if ((*it).mouse_inside && !contains) {
-			// mouse leave
-			(*it).mouse_event((*it).control, false);
-		}
-		(*it).mouse_inside = contains;
-	}
+
 	bool is_dragging = false;
-	// for any controls, trigger the periodic render
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)->IsDragging()) {
 			is_dragging = true;
 			// if child the control is listening to MouseMove events, send a MouseMove message 
 			(*it)->MouseMove(mouse.x, mouse.y, buttons);
 		}
-		// trigger the periodic render of the child control
+	}
+	// for any registered mouse regions, check if the mouse status has changed (mouse has entered or left the area)
+	if (!is_dragging) {
+		for (auto it = regions.begin(); it != regions.end(); it++) {
+			bool contains = PGRectangleContains(*(*it).rect, mouse - (*it).control->Position());
+			if (!(*it).mouse_inside && contains) {
+				// mouse enter
+				(*it).mouse_event((*it).control, true, (*it).data);
+			} else if ((*it).mouse_inside && !contains) {
+				// mouse leave
+				(*it).mouse_event((*it).control, false, (*it).data);
+			}
+			(*it).mouse_inside = contains;
+		}
+	}
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		// trigger the periodic render of the child controls
 		// this is mostly used for animations
 		(*it)->PeriodicRender();
 	}
@@ -157,8 +161,8 @@ void ControlManager::MouseWheel(int x, int y, int distance, PGModifier modifier)
 	if (c) c->MouseWheel(x, y, distance, modifier);
 }
 
-void ControlManager::RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event) {
-	regions.push_back(PGMouseRegion(rect, control, mouse_event));
+void ControlManager::RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data) {
+	regions.push_back(PGMouseRegion(rect, control, mouse_event, data));
 }
 
 void ControlManager::UnregisterMouseRegion(PGIRect* rect) {

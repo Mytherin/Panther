@@ -55,6 +55,8 @@ struct PGSize {
 	PGSize(PGScalar width, PGScalar height) : width(width), height(height) { }
 };
 
+struct PGIRect;
+
 struct PGRect {
 	PGScalar x;
 	PGScalar y;
@@ -63,6 +65,7 @@ struct PGRect {
 
 	PGRect() : x(0), y(0), width(0), height(0) { }
 	PGRect(PGScalar x, PGScalar y, PGScalar width, PGScalar height) : x(x), y(y), width(width), height(height) { }
+	PGRect(PGIRect rect);
 };
 
 struct PGCircle {

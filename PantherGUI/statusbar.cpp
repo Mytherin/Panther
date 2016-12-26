@@ -3,13 +3,100 @@
 #include "encoding.h"
 #include "style.h"
 
-StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) : active_textfield(textfield), Control(window, false) {
+StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
+	active_textfield(textfield), Control(window, false),
+	buttons{ Button(this), Button(this), Button(this), Button(this) } {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 	textfield->OnSelectionChanged([](Control* c, void* data) {
 		((StatusBar*)(data))->SelectionChanged();
 	}, (void*) this);
+
+	buttons[0].OnPressed([](Button* b) {
+		Control* c = b->parent;
+		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
+		PGPopupMenuHandle reopen_menu = PGCreatePopupMenu(c->window, c);
+		PGPopupMenuHandle savewith_menu = PGCreatePopupMenu(c->window, c);
+		{
+			PGPopupMenuInsertEntry(reopen_menu, "UTF-8", [](Control* control) {
+				// FIXME: reopen with encoding
+			}, PGPopupMenuGrayed);
+			PGPopupMenuInsertEntry(savewith_menu, "UTF-8", [](Control* control) {
+				// FIXME: save with encoding and change active encoding
+			}, PGPopupMenuGrayed);
+		}
+		PGPopupMenuInsertSubmenu(menu, reopen_menu, "Reopen with Encoding...");
+		PGPopupMenuInsertSubmenu(menu, savewith_menu, "Save with Encoding...");
+
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(c->window,
+			PGPoint(c->X() + b->region.x + b->region.width - 1,
+				c->Y() + b->region.y)), PGTextAlignRight | PGTextAlignBottom);
+	});
+
+	buttons[1].OnPressed([](Button* b) {
+		Control* c = b->parent;
+		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
+		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
+		auto languages = PGLanguageManager::GetLanguages();
+		auto active_language = file.GetLanguage();
+		for (auto it = languages.begin(); it != languages.end(); it++) {
+			PGPopupMenuInsertEntry(menu, (*it)->GetName().c_str(), [](Control* control) {
+				// FIXME: switch highlighter language
+			}, active_language == *it ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+		}
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(c->window,
+			PGPoint(c->X() + b->region.x + b->region.width - 1,
+				c->Y() + b->region.y)), PGTextAlignRight | PGTextAlignBottom);
+	});
+
+	buttons[2].OnPressed([](Button* b) {
+		Control* c = b->parent;
+		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
+		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
+		PGPopupMenuInsertEntry(menu, "Windows (\\r\\n)", [](Control* control) {
+			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			file.ChangeLineEnding(PGLineEndingWindows);
+		}, file.GetLineEnding() == PGLineEndingWindows ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+		PGPopupMenuInsertEntry(menu, "Unix (\\n)", [](Control* control) {
+			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			file.ChangeLineEnding(PGLineEndingUnix);
+		}, file.GetLineEnding() == PGLineEndingUnix ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+		PGPopupMenuInsertEntry(menu, "Mac OS 9 (\\r)", [](Control* control) {
+			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			file.ChangeLineEnding(PGLineEndingMacOS);
+		}, file.GetLineEnding() == PGLineEndingMacOS ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(c->window,
+			PGPoint(c->X() + b->region.x + b->region.width - 1,
+				c->Y() + b->region.y)), PGTextAlignRight | PGTextAlignBottom);
+	});
+	buttons[3].OnPressed([](Button* b) {
+		Control* c = b->parent;
+		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
+		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
+
+		PGPopupMenuInsertEntry(menu, "Indent Using Spaces", [](Control* control) {
+			// FIXME: change indentation of file and convert
+		}, file.GetLineIndentation() == PGIndentionSpaces ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
+		PGPopupMenuInsertSeparator(menu);
+		for (int i = 1; i <= 8; i++) {
+			std::string header = "Tab Width: " + std::to_string(i);
+			PGPopupMenuInsertEntry(menu, header, [](Control* control) {
+				// FIXME: change tab width
+			});
+		}
+		PGPopupMenuInsertSeparator(menu);
+		PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control) {
+			// FIXME: change indentation of file
+		});
+		PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control) {
+			// FIXME: change indentation of file
+		});
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(c->window,
+			PGPoint(c->X() + b->region.x + b->region.width - 1,
+				c->Y() + b->region.y)), PGTextAlignRight | PGTextAlignBottom);
+	});
 }
 
 StatusBar::~StatusBar() {
@@ -51,23 +138,31 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			}
 			RenderText(renderer, font, str.c_str(), str.size(), x + 10, y - rect->y);
 			const int padding = 20;
-			int right_position = padding;
+			int right_position = 0;
 
 			PGFileEncoding encoding = file.GetFileEncoding();
 			str = PGEncodingToString(encoding);
-			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
-			right_position += padding;
-			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
-			buttons[0] = PGIRect(this->width - right_position, 0, 2 * padding + MeasureTextWidth(font, str.c_str(), str.size()), this->height);
-			right_position += padding;
+			{
+				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
+				buttons[0].region = PGIRect(this->width - 2 * padding - text_width - right_position, 0, 2 * padding + text_width, this->height);
+				buttons[0].DrawBackground(renderer, rect);
+				right_position += padding;
+				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
+				right_position += padding;
+				RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+			}
 
 			PGLanguage* language = file.GetLanguage();
 			str = language ? language->GetName() : "Plain Text";
-			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
-			right_position += padding;
-			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
-			buttons[1] = PGIRect(this->width - right_position, 0, 2 * padding + MeasureTextWidth(font, str.c_str(), str.size()), this->height);
-			right_position += padding;
+			{
+				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
+				buttons[1].region = PGIRect(this->width - 2 * padding - text_width - right_position, 0, 2 * padding + text_width, this->height);
+				buttons[1].DrawBackground(renderer, rect);
+				right_position += padding;
+				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
+				right_position += padding;
+				RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+			}
 
 			PGLineEnding ending = file.GetLineEnding();
 			switch (ending) {
@@ -83,11 +178,15 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			default:
 				str = "Mixed";
 			}
-			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
-			right_position += padding;
-			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
-			buttons[2] = PGIRect(this->width - right_position, 0, 2 * padding + MeasureTextWidth(font, str.c_str(), str.size()), this->height);
-			right_position += padding;
+			{
+				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
+				buttons[2].region = PGIRect(this->width - 2 * padding - text_width - right_position, 0, 2 * padding + text_width, this->height);
+				buttons[2].DrawBackground(renderer, rect);
+				right_position += padding;
+				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
+				right_position += padding;
+				RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+			}
 
 			PGLineIndentation indentation = file.GetLineIndentation();
 			switch (indentation) {
@@ -101,88 +200,46 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 				str = "Mixed: ";
 			}
 			str += to_string(4);
-			right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
-			right_position += padding;
-			RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
-			buttons[3] = PGIRect(this->width - right_position, 0, 2 * padding + MeasureTextWidth(font, str.c_str(), str.size()), this->height);
-			right_position += padding;
+			{
+				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
+				buttons[3].region = PGIRect(this->width - 2 * padding - text_width - right_position, 0, 2 * padding + text_width, this->height);
+				buttons[3].DrawBackground(renderer, rect);
+				right_position += padding;
+				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
+				right_position += padding;
+				RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+			}
 		}
 	}
 }
 
 void StatusBar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
-
+	PGPoint mouse(x - this->x, y - this->y);
+	for (int i = 0; i < 4; i++) {
+		this->buttons[i].MouseDown(mouse.x, mouse.y, button, modifier);
+	}
 }
 
 void StatusBar::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 	PGPoint mouse(x - this->x, y - this->y);
-	if (button & PGLeftMouseButton) {
-		TextFile& file = active_textfield->GetTextFile();
-		if (PGRectangleContains(buttons[0], mouse)) {
-
-			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
-			PGPopupMenuHandle reopen_menu = PGCreatePopupMenu(this->window, this);
-			PGPopupMenuHandle savewith_menu = PGCreatePopupMenu(this->window, this);
-			{
-				PGPopupMenuInsertEntry(reopen_menu, "UTF-8", [](Control* control) {
-					// FIXME: reopen with encoding
-				}, PGPopupMenuGrayed);
-				PGPopupMenuInsertEntry(savewith_menu, "UTF-8", [](Control* control) {
-					// FIXME: save with encoding and change active encoding
-				}, PGPopupMenuGrayed);
-			}
-			PGPopupMenuInsertSubmenu(menu, reopen_menu, "Reopen with Encoding...");
-			PGPopupMenuInsertSubmenu(menu, savewith_menu, "Save with Encoding...");
-
-			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[0].x + buttons[0].width, Y() + buttons[0].y)), PGTextAlignRight | PGTextAlignBottom);
-		} else if (PGRectangleContains(buttons[1], mouse)) {
-			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
-			auto languages = PGLanguageManager::GetLanguages();
-			auto active_language = file.GetLanguage();
-			for (auto it = languages.begin(); it != languages.end(); it++) {
-				PGPopupMenuInsertEntry(menu, (*it)->GetName().c_str(), [](Control* control) {
-					// FIXME: switch highlighter language
-				}, active_language == *it ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
-			}
-			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[1].x + buttons[1].width, Y() + buttons[1].y)), PGTextAlignRight | PGTextAlignBottom);
-		} else if (PGRectangleContains(buttons[2], mouse)) {
-			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
-			PGPopupMenuInsertEntry(menu, "Windows (\\r\\n)", [](Control* control) {
-				TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
-				file.ChangeLineEnding(PGLineEndingWindows);
-			}, file.GetLineEnding() == PGLineEndingWindows ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
-			PGPopupMenuInsertEntry(menu, "Unix (\\n)", [](Control* control) {
-				TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
-				file.ChangeLineEnding(PGLineEndingUnix);
-			}, file.GetLineEnding() == PGLineEndingUnix ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
-			PGPopupMenuInsertEntry(menu, "Mac OS 9 (\\r)", [](Control* control) {
-				TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
-				file.ChangeLineEnding(PGLineEndingMacOS);
-			}, file.GetLineEnding() == PGLineEndingMacOS ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
-
-			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[2].x + buttons[2].width, Y() + buttons[2].y)), PGTextAlignRight | PGTextAlignBottom);
-		} else if (PGRectangleContains(buttons[3], mouse)) {
-			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
-
-			PGPopupMenuInsertEntry(menu, "Indent Using Spaces", [](Control* control) {
-				// FIXME: change indentation of file and convert
-			}, file.GetLineIndentation() == PGIndentionSpaces ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
-			PGPopupMenuInsertSeparator(menu);
-			for (int i = 1; i <= 8; i++) {
-				std::string header = "Tab Width: " + std::to_string(i);
-				PGPopupMenuInsertEntry(menu, header, [](Control* control) {
-					// FIXME: change tab width
-				});
-			}
-			PGPopupMenuInsertSeparator(menu);
-			PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control) {
-				// FIXME: change indentation of file
-			});
-			PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control) {
-				// FIXME: change indentation of file
-			});
-			PGDisplayPopupMenu(menu, ConvertWindowToScreen(this->window, PGPoint(X() + buttons[3].x + buttons[3].width, Y() + buttons[3].y)), PGTextAlignRight | PGTextAlignBottom);
-		} 
+	for (int i = 0; i < 4; i++) {
+		this->buttons[i].MouseUp(mouse.x, mouse.y, button, modifier);
 	}
+}
+
+void StatusBar::MouseMove(int x, int y, PGMouseButton b) {
+	if (!(b & PGLeftMouseButton)) {
+		for (int i = 0; i < 4; i++) {
+			buttons[i].clicking = false;
+		}
+		this->Invalidate();
+	}
+}
+
+bool StatusBar::IsDragging() {
+	for (int i = 0; i < 4; i++) {
+		if (buttons[i].clicking) return true;
+	}
+	return false;
 }
 

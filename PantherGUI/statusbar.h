@@ -1,5 +1,6 @@
 #pragma once
 
+#include "button.h"
 #include "control.h"
 #include "textfield.h"
 
@@ -12,9 +13,11 @@ public:
 
 	void UpdateParentSize(PGSize old_size, PGSize new_size);
 
+	void MouseMove(int x, int y, PGMouseButton buttons);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 
+	bool IsDragging();
 	void SelectionChanged();
 
 	void Draw(PGRendererHandle, PGIRect*);
@@ -23,12 +26,8 @@ public:
 		PGIRect rect = PGIRect((int)X(), (int)Y(), (int)this->width, (int)this->height);
 		RefreshWindow(this->window, rect);
 	}
-private:
-	PGIRect buttons[5];
-	PGFontHandle font;
 	TextField* active_textfield;
-
-
-
-
+private:
+	Button buttons[4];
+	PGFontHandle font;
 };

@@ -3,15 +3,16 @@
 #include "control.h"
 #include "textfield.h"
 
-typedef void(*PGMouseCallback)(Control* control, bool);
+typedef void(*PGMouseCallback)(Control* control, bool, void*);
 
 struct PGMouseRegion {
 	bool mouse_inside = false;
 	PGIRect* rect = nullptr;
+	void* data = nullptr;
 	Control* control;
 	PGMouseCallback mouse_event;
 
-	PGMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event) : rect(rect), control(control), mouse_event(mouse_event) { }
+	PGMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr) : rect(rect), control(control), mouse_event(mouse_event), data(data) { }
 };
 
 class ControlManager : public Control {
@@ -44,7 +45,7 @@ public:
 
 	PGCursorType GetCursor(PGPoint mouse);
 
-	void RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event);
+	void RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr);
 	void UnregisterMouseRegion(PGIRect* rect);
 private:
 	PGIRect invalidated_area;
