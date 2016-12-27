@@ -117,8 +117,8 @@ public:
 	void OffsetEndOfFile();
 	void SelectEndOfFile();
 
-	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character);
-	std::vector<PGFindMatch> FindAllMatches(std::string text);
+	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
+	std::vector<PGFindMatch> FindAllMatches(std::string& text);
 
 	void RefreshCursors();
 	int GetLineHeight();

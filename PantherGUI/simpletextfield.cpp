@@ -133,11 +133,18 @@ bool SimpleTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	switch (button) {
 	case PGButtonEscape:
 		if (on_user_cancel)
-			on_user_cancel(this, on_user_cancel_data);
+			on_user_cancel(this, on_user_cancel_data, modifier);
 		return true;
 	case PGButtonEnter:
 		if (on_successful_exit)
-			on_successful_exit(this, on_successful_exit_data);
+			on_successful_exit(this, on_successful_exit_data, modifier);
+		return true;
+	case PGButtonUp:
+	case PGButtonDown:
+	case PGButtonPageUp:
+	case PGButtonPageDown:
+		// we don't use these currently
+		// but we override them so they don't get passed to other controls
 		return true;
 	}
 	return BasicTextField::KeyboardButton(button, modifier);
@@ -145,4 +152,8 @@ bool SimpleTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 
 std::string SimpleTextField::GetText() {
 	return textfile->GetLine(0)->GetString();
+}
+
+void SimpleTextField::SetValidInput(bool valid) {
+	valid_input = valid;
 }

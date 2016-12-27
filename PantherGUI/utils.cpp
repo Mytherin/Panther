@@ -22,3 +22,18 @@ bool PGIRectanglesOverlap(PGIRect a, PGIRect b) {
 
 PGRect::PGRect(PGIRect rect) : x(rect.x), y(rect.y), width(rect.width), height(rect.height) {
 }
+
+namespace panther {
+	void strcpy(char* destination, char* source) {
+		while (*source) {
+			*destination = *source;
+			source++;
+		}
+	}
+
+	char* strdup(char* source) {
+		char* result = (char*) malloc(strlen(source));
+		strcpy(result, source);
+		return result;
+	}
+}

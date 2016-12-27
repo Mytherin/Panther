@@ -22,3 +22,6 @@ lng utf8_prev_character(char* text, lng current_character);
 //! Returns the character number from a position in a string
 lng utf8_character_number(char* text, lng position);
 
+//! Converts a UTF8 string to a lowercase UTF8 string
+std::string utf8_tolower(std::string);
+

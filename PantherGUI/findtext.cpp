@@ -21,14 +21,14 @@ FindText::FindText(PGWindowHandle window) :
 		// text changed, if highlight matches is on we immediately execute the find operation
 		// FIXME:
 	}, (void*) this);
-	field->OnUserCancel([](Control* c, void* data) {
+	field->OnUserCancel([](Control* c, void* data, PGModifier modifier) {
 		// user pressed escape, cancelling the find operation
 		Control* control = (Control*)data;
 		dynamic_cast<PGContainer*>(control->parent)->RemoveControl(control);
 	}, (void*) this);
-	field->OnSuccessfulExit([](Control* c, void* data) {
+	field->OnSuccessfulExit([](Control* c, void* data, PGModifier modifier) {
 		// execute find
-		((FindText*)data)->Find();
+		((FindText*)data)->Find(modifier & PGModifierShift ? PGDirectionLeft : PGDirectionRight);
 	}, (void*) this);
 	this->AddControl(field);
 	this->height = field->height + VPADDING * 2;
@@ -63,6 +63,9 @@ FindText::FindText(PGWindowHandle window) :
 	toggle_wrap = toggles[3];
 	toggle_highlight = toggles[4];
 
+	toggle_wrap->Toggle();
+	toggle_highlight->Toggle();
+
 	find_button->SetText(std::string("Find"), font);
 	find_prev->SetText(std::string("Find Prev"), font);
 	find_all->SetText(std::string("Find All"), font);
@@ -73,9 +76,15 @@ FindText::FindText(PGWindowHandle window) :
 	toggle_wrap->SetText(std::string("W"), font);
 	toggle_highlight->SetText(std::string("H"), font);
 
-	find_button->OnPressed([](Button* b) {
-		dynamic_cast<FindText*>(b->parent)->Find();
+	find_prev->OnPressed([](Button* b) {
+		dynamic_cast<FindText*>(b->parent)->Find(PGDirectionLeft);
 	});
+	find_button->OnPressed([](Button* b) {
+		dynamic_cast<FindText*>(b->parent)->Find(PGDirectionRight);
+	});/*
+	field->OnTextChanged([]() {
+
+	}, this);*/
 }
 
 FindText::~FindText() {
@@ -106,11 +115,23 @@ void FindText::OnResize(PGSize old_size, PGSize new_size) {
 	find_expand->SetPosition(PGPoint(find_all->x + find_all->width + HPADDING, find_expand->y));
 }
 
-void FindText::Find() {
+void FindText::Find(PGDirection direction) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
-	PGFindMatch match = tf.FindMatch(field->GetText(), PGDirectionRight, tf.GetActiveCursor()->EndLine(), tf.GetActiveCursor()->EndCharacter());
-	if (match.start_character >= 0) {
-		tf.SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
+	char* error_message = nullptr;
+	PGFindMatch match = tf.FindMatch(field->GetText(), direction, 
+		tf.GetActiveCursor()->BeginLine(), tf.GetActiveCursor()->BeginPosition(), 
+		tf.GetActiveCursor()->EndLine(), tf.GetActiveCursor()->EndPosition(),
+		&error_message,
+		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled());
+	if (!error_message) {
+		if (match.start_character >= 0) {
+			tf.SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
+		}
+		this->field->SetValidInput(true);
+		this->Invalidate();
+	} else {
+		this->field->SetValidInput(false);
+		this->Invalidate();
 	}
 }

@@ -27,6 +27,8 @@ namespace panther {
 	T abs(T t1) {
 		return t1 < 0 ? t1 * -1 : t1;
 	}
+
+	char* strdup(char* source);
 }
 
 template< typename... Args >

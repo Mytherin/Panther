@@ -5,6 +5,7 @@
 
 #include <malloc.h>
 
+#include "unicode.h"
 #include <unicode/ucnv.h>
 
 struct PGEncoder {
@@ -107,7 +108,7 @@ PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding t
 		return nullptr;
 	}
 	handle->target = ucnv_open(GetEncodingName(target_encoding), &error);
-	if (U_FAILURE(error)) { 
+	if (U_FAILURE(error)) {
 		// failed to create a converter
 		ucnv_close(handle->source);
 		delete handle;
@@ -132,7 +133,7 @@ lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng
 		if (buffer)
 			free(buffer);
 		buffer = (UChar*)malloc(targetsize * sizeof(UChar));
-		*intermediate_buffer = (char*) buffer;
+		*intermediate_buffer = (char*)buffer;
 		*intermediate_size = targetsize;
 		targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input.c_str(), input.size(), &error);
 	}
@@ -186,4 +187,17 @@ lng PGConvertText(std::string input, char** output, PGFileEncoding source_encodi
 	lng return_size = PGConvertText(encoder, input, output);
 	PGDestroyEncoder(encoder);
 	return return_size;
+}
+
+std::string utf8_tolower(std::string str) {
+	UErrorCode status = U_ZERO_ERROR;
+	UCaseMap* casemap = ucasemap_open(nullptr, 0, &status);
+
+	size_t destsize = str.size() * sizeof(char) + 1;
+	char* dest = (char*)malloc(destsize);
+	size_t result_size = ucasemap_utf8ToLower(casemap, dest, destsize, str.c_str(), str.size(), &status);
+	assert(result_size <= destsize);
+	std::string result = std::string(dest, result_size);
+	free(dest);
+	return result;
 }

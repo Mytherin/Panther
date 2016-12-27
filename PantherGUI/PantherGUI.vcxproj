@@ -148,6 +148,7 @@
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
+    <ClCompile Include="regex.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="scrollbar.cpp" />
@@ -186,6 +187,7 @@
     <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
+    <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="scrollbar.h" />

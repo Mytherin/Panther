@@ -13,7 +13,7 @@ struct TextLine {
 public:
 	lng GetLength(void);
 	char* GetLine(void);
-	std::string GetString(void) { return line; }
+	std::string& GetString(void) { return line; }
 	void AddDelta(TextFile* textfile, TextDelta* delta);
 	void RemoveDelta(TextFile* textfile, TextDelta* delta);
 	TextDelta* PopDelta(TextFile* textfile);

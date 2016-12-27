@@ -14,7 +14,7 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
-	void Find();
+	void Find(PGDirection direction);
 private:
 	PGScalar hoffset = 0;
 
