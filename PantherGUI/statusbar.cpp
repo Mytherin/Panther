@@ -12,15 +12,18 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		((StatusBar*)(data))->SelectionChanged();
 	}, (void*) this);
 
-	unicode_button = new Button(window, this);
-	language_button = new Button(window, this);
-	lineending_button = new Button(window, this);
-	tabwidth_button = new Button(window, this);
+	Button* buttons[4];
+	for (int i = 0; i < 4; i++) {
+		buttons[i] = new Button(window, this);
+		buttons[i]->background_color = PGColor(0, 0, 0, 0);
+		buttons[i]->background_stroke_color = PGColor(0, 0, 0, 0);
+		this->AddControl(buttons[i]);
+	}
 
-	this->AddControl(unicode_button);
-	this->AddControl(language_button);
-	this->AddControl(lineending_button);
-	this->AddControl(tabwidth_button);
+	unicode_button = buttons[0];
+	language_button = buttons[1];
+	lineending_button = buttons[2];
+	tabwidth_button = buttons[3];
 
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		(*it)->SetPosition(PGPoint(0, 0));

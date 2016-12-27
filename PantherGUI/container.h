@@ -16,20 +16,22 @@ public:
 	PGContainer(PGWindowHandle window);
 	virtual ~PGContainer();
 
-	void MouseWheel(int x, int y, int distance, PGModifier modifier);
-	bool KeyboardButton(PGButton button, PGModifier modifier);
-	bool KeyboardCharacter(char character, PGModifier modifier);
-	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
-	void PeriodicRender(void);
-	void Draw(PGRendererHandle, PGIRect*);
+	virtual void MouseWheel(int x, int y, int distance, PGModifier modifier);
+	virtual bool KeyboardButton(PGButton button, PGModifier modifier);
+	virtual bool KeyboardCharacter(char character, PGModifier modifier);
+	virtual bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
+	virtual void PeriodicRender(void);
+	virtual void Draw(PGRendererHandle, PGIRect*);
 
-	void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
-	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
-	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
-	void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
-	void MouseMove(int x, int y, PGMouseButton buttons);
+	virtual void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
+	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
+	virtual void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
+	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 
-	void OnResize(PGSize old_size, PGSize new_size);
+	virtual void OnResize(PGSize old_size, PGSize new_size);
+
+	virtual bool ControlTakesFocus() { return true; }
 
 	Control* GetMouseOverControl(int x, int y);
 	Control* GetActiveControl() { return focused_control; }

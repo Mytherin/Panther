@@ -40,6 +40,7 @@ public:
 
 	virtual Control* GetActiveControl() { return nullptr; }
 	virtual bool ControlTakesFocus() { return false; }
+	virtual bool ControlHasFocus() { return !parent ? true : (parent->ControlHasFocus() && parent->GetActiveControl() == this); }
 
 	void SetSize(PGSize size);
 	void SetPosition(PGPoint point) { this->x = point.x; this->y = point.y; }

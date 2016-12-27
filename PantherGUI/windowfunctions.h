@@ -118,7 +118,7 @@ struct PGColor {
 	byte b;
 	byte a;
 
-	PGColor() : r(0), g(0), b(0), a(255) { }
+	PGColor() : r(0), g(0), b(0), a(0) { }
 	PGColor(byte r, byte g, byte b) : r(r), g(g), b(b), a(255) { }
 	PGColor(byte r, byte g, byte b, byte a) : r(r), g(g), b(b), a(a) { }
 };
@@ -266,6 +266,8 @@ PGRendererHandle CreateRendererForBitmap(PGBitmapHandle handle);
 void DeleteRenderer(PGRendererHandle renderer);
 void DeleteImage(PGBitmapHandle handle);
 
+PGScalar MeasureTextWidth(PGFontHandle font, std::string& text);
+PGScalar MeasureTextWidth(PGFontHandle font, const char* text);
 PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length);
 PGScalar GetTextHeight(PGFontHandle font);
 void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color);
@@ -293,7 +295,7 @@ PGPoint GetMousePosition(PGWindowHandle window, Control* c);
 void SetWindowTitle(PGWindowHandle window, char* title);
 void RegisterControl(PGWindowHandle window, Control *control);
 
-void* GetControlManager(PGWindowHandle window);
+void* GetWindowManager(PGWindowHandle window);
 
 void SetClipboardText(PGWindowHandle window, std::string);
 std::string GetClipboardText(PGWindowHandle window);

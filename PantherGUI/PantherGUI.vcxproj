@@ -142,7 +142,7 @@
     <ClCompile Include="encoding.cpp" />
     <ClCompile Include="file.cpp" />
     <ClCompile Include="filemanager.cpp" />
-    <ClCompile Include="findview.cpp" />
+    <ClCompile Include="findtext.cpp" />
     <ClCompile Include="keywords.cpp" />
     <ClCompile Include="language.cpp" />
     <ClCompile Include="logger.cpp" />
@@ -162,6 +162,7 @@
     <ClCompile Include="textfile.cpp" />
     <ClCompile Include="textline.cpp" />
     <ClCompile Include="thread.cpp" />
+    <ClCompile Include="togglebutton.cpp" />
     <ClCompile Include="unicode.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="windowfunctions.cpp" />
@@ -179,7 +180,7 @@
     <ClInclude Include="droptarget.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
-    <ClInclude Include="findview.h" />
+    <ClInclude Include="findtext.h" />
     <ClInclude Include="keywords.h" />
     <ClInclude Include="language.h" />
     <ClInclude Include="logger.h" />
@@ -202,6 +203,7 @@
     <ClInclude Include="textdelta.h" />
     <ClInclude Include="textline.h" />
     <ClInclude Include="thread.h" />
+    <ClInclude Include="togglebutton.h" />
     <ClInclude Include="unicode.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />

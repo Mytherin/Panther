@@ -11,7 +11,6 @@
 #include "container.h"
 #include "simpletextfield.h"
 #include "statusbar.h"
-#include "findview.h"
 
 #define SCROLLBAR_PADDING 4
 
@@ -26,7 +25,7 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 
 	line_height = 19;
 
-	ControlManager* manager = (ControlManager*)GetControlManager(window);
+	ControlManager* manager = GetControlManager(this);
 	manager->RegisterMouseRegion(&minimap_region, this, [](Control* tf, bool mouse_enter, void* data) {
 		return ((TextField*)tf)->MinimapMouseEvent(mouse_enter);
 	});
@@ -735,7 +734,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 						}
 						converted--;
 						// move the cursor and offset of the currently active file
-						tf->GetTextFile().SetLineOffset(std::max(converted - tf->GetLineHeight() / 2, (long) 0));
+						tf->GetTextFile().SetLineOffset(std::max(converted - tf->GetLineHeight() / 2, (long)0));
 						tf->GetTextFile().SetCursorLocation(converted, 0);
 						tf->Invalidate();
 						input->SetValidInput(valid);
@@ -754,24 +753,16 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				d->tf->GetTextFile().RestoreCursors(d->backup_cursors);
 				d->tf->GetTextFile().SetLineOffset(d->offset);
 				delete d;
-			}, (void*) data);
+				dynamic_cast<PGContainer*>(c->parent)->RemoveControl(c);
+			}, (void*)data);
 			field->OnSuccessfulExit([](Control* c, void* data) {
 				ScrollData* d = (ScrollData*)data;
 				delete d;
-			}, (void*) data);
+				dynamic_cast<PGContainer*>(c->parent)->RemoveControl(c);
+			}, (void*)data);
 			dynamic_cast<PGContainer*>(this->parent)->AddControl(field);
 			return true;
 		}
-				  /*
-		case 'F': {
-			// Find text
-			FindView* view = new FindView(this->window);
-			view->SetSize(PGSize(this->width, 100));
-			view->SetPosition(PGPoint(0, this->height - 100));
-			view->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorBottom);
-
-			dynamic_cast<PGContainer*>(this->parent)->AddControl(view);
-		}*/
 		}
 	}
 	return BasicTextField::KeyboardCharacter(character, modifier);

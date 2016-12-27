@@ -17,23 +17,23 @@ Scrollbar::Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bo
 	if (arrows) {
 		arrow_regions[0] = PGIRect(0, 0, SCROLLBAR_ARROW_SIZE, SCROLLBAR_ARROW_SIZE);
 		arrow_regions[1] = PGIRect(horizontal ? this->width - SCROLLBAR_ARROW_SIZE : 0, horizontal ? 0 : this->height - SCROLLBAR_ARROW_SIZE, SCROLLBAR_ARROW_SIZE, SCROLLBAR_ARROW_SIZE);
-		((ControlManager*)GetControlManager(window))->RegisterMouseRegion(&arrow_regions[0], this, [](Control* c, bool enter, void* data) {
+		GetControlManager(this)->RegisterMouseRegion(&arrow_regions[0], this, [](Control* c, bool enter, void* data) {
 			((Scrollbar*)c)->mouse_on_arrow[0] = enter;
 			c->Invalidate();
 		});
-		((ControlManager*)GetControlManager(window))->RegisterMouseRegion(&arrow_regions[1], this, [](Control* c, bool enter, void* data) {
+		GetControlManager(this)->RegisterMouseRegion(&arrow_regions[1], this, [](Control* c, bool enter, void* data) {
 			((Scrollbar*)c)->mouse_on_arrow[1] = enter;
 			c->Invalidate();
 		});
 	}
-	((ControlManager*)GetControlManager(window))->RegisterMouseRegion(&scrollbar_area, this, [](Control* c, bool enter, void* data) {
+	GetControlManager(this)->RegisterMouseRegion(&scrollbar_area, this, [](Control* c, bool enter, void* data) {
 		((Scrollbar*)c)->mouse_on_scrollbar = enter;
 		c->Invalidate();
 	});
 }
 
 Scrollbar::~Scrollbar() {
-	ControlManager* cm = ((ControlManager*)GetControlManager(window));
+	ControlManager* cm = GetControlManager(this);
 	if (arrows) {
 		cm->UnregisterMouseRegion(&arrow_regions[0]);
 		cm->UnregisterMouseRegion(&arrow_regions[1]);

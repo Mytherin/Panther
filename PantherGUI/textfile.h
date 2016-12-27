@@ -34,6 +34,16 @@ typedef enum {
 class BasicTextField;
 struct Interval;
 
+struct PGFindMatch {
+	lng start_character;
+	lng start_line;
+	lng end_character;
+	lng end_line;
+
+	PGFindMatch(lng start_character, lng start_line, lng end_character, lng end_line) : 
+		start_character(start_character), start_line(start_line), end_character(end_character), end_line(end_line) { }
+};
+
 class TextFile {
 	friend class Cursor;
 public:
@@ -89,6 +99,7 @@ public:
 	void ClearExtraCursors();
 	void ClearCursors();
 	void SetCursorLocation(lng line, lng character);
+	void SetCursorLocation(lng start_line, lng start_character, lng end_line, lng end_character);
 	void AddNewCursor(lng line, lng character);
 	void SelectEverything();
 	void OffsetLine(lng offset);
@@ -105,6 +116,9 @@ public:
 	void SelectEndOfLine();
 	void OffsetEndOfFile();
 	void SelectEndOfFile();
+
+	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character);
+	std::vector<PGFindMatch> FindAllMatches(std::string text);
 
 	void RefreshCursors();
 	int GetLineHeight();

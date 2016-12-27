@@ -1,5 +1,8 @@
 
 #include "controlmanager.h"
+#include "findtext.h"
+#include "statusbar.h"
+#include "textfield.h"
 
 ControlManager::ControlManager(PGWindowHandle window) : PGContainer(window) {
 
@@ -63,6 +66,24 @@ void ControlManager::PeriodicRender(void) {
 	this->invalidated_area.width = 0;
 }
 
+bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
+	if (modifier == PGModifierCtrl) {
+		switch (character) {
+		case 'F':
+			// Find text
+			FindText* view = new FindText(this->window);
+			view->SetSize(PGSize(this->width, view->height));
+			view->SetPosition(PGPoint(0, this->height - view->height - statusbar->height));
+			view->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorBottom);
+			this->AddControl(view);
+			this->Invalidate();
+			return true;
+			break;
+		}
+	}
+	return PGContainer::KeyboardCharacter(character, modifier);
+}
+
 void ControlManager::RefreshWindow() {
 	this->invalidated = true;
 }
@@ -115,4 +136,8 @@ void ControlManager::UnregisterControlForMouseEvents(Control* control) {
 		}
 	}
 	assert(0);
+}
+
+ControlManager* GetControlManager(Control* c) {
+	return (ControlManager*)GetWindowManager(c->window);
 }

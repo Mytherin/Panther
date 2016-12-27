@@ -257,6 +257,14 @@ void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGSc
 	renderer->canvas->drawPath(path, *renderer->paint);
 }
 
+PGScalar MeasureTextWidth(PGFontHandle font, std::string& text) {
+	return MeasureTextWidth(font, text.c_str(), text.size());
+}
+
+PGScalar MeasureTextWidth(PGFontHandle font, const char* text) {
+	return MeasureTextWidth(font, text, strlen(text));
+}
+
 PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 	PGScalar text_size = 0;
 	if (font->character_width > 0) {

@@ -120,10 +120,13 @@
     <ClCompile Include="button.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="findview.cpp">
+    <ClCompile Include="scrollbar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="scrollbar.cpp">
+    <ClCompile Include="findtext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="togglebutton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -236,10 +239,13 @@
     <ClInclude Include="button.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="findview.h">
+    <ClInclude Include="scrollbar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="scrollbar.h">
+    <ClInclude Include="findtext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="togglebutton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

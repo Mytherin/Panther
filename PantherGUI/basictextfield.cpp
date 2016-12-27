@@ -20,7 +20,7 @@ BasicTextField::~BasicTextField() {
 }
 
 void BasicTextField::PeriodicRender(void) {
-	if (!WindowHasFocus(window) || (this->parent && this->parent->GetActiveControl() != this)) {
+	if (!WindowHasFocus(window) || !ControlHasFocus()) {
 		display_carets = false;
 		display_carets_count = 0;
 		if (!current_focus) {

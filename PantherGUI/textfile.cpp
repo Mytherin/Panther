@@ -342,6 +342,14 @@ void TextFile::SetCursorLocation(lng line, lng character) {
 	if (textfield) textfield->SelectionChanged();
 }
 
+void TextFile::SetCursorLocation(lng start_line, lng start_character, lng end_line, lng end_character) {
+	ClearExtraCursors();
+	cursors[0]->SetCursorStartLocation(end_line, end_character);
+	cursors[0]->SetCursorEndLocation(start_line, start_character);
+	Cursor::NormalizeCursors(this, cursors, true);
+	if (textfield) textfield->SelectionChanged();
+}
+
 void TextFile::AddNewCursor(lng line, lng character) {
 	cursors.push_back(new Cursor(this, line, character));
 	active_cursor = cursors.back();
@@ -1396,4 +1404,23 @@ void TextFile::RestoreCursors(std::vector<Cursor>& backup) {
 		cursors.push_back(new Cursor(*it));
 	}
 	Cursor::NormalizeCursors(this, cursors, false);
+}
+
+PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character) {
+	// FIXME: split text on newline
+	// FIXME: respect MatchCase
+	// FIXME: direction = left
+	for (lng i = start_line; i < lines.size(); i++) {
+		char* line = lines[i]->GetLine();
+		char* res = i == start_line ? strstr(line + start_character, text.c_str()) : strstr(line, text.c_str());
+		if (res) {
+			lng start_character = res - line;
+			return PGFindMatch(start_character, i, start_character + text.size(), i);
+		}
+	}
+	return PGFindMatch(-1, -1, -1, -1);
+}
+
+std::vector<PGFindMatch> TextFile::FindAllMatches(std::string text) {
+	return std::vector<PGFindMatch>();
 }

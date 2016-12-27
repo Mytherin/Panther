@@ -197,6 +197,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	manager->AddControl(tabbed);
 	manager->AddControl(bar);
+
+	manager->statusbar = bar;
+	manager->active_textfield = textfield;
 	// The parameters to ShowWindow explained:
 	// hWnd: the value returned from CreateWindow
 	// nCmdShow: the fourth parameter from WinMain
@@ -739,7 +742,7 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 	window->cursor = cursor;
 }
 
-void* GetControlManager(PGWindowHandle window) {
+void* GetWindowManager(PGWindowHandle window) {
 	return window->manager;
 }
 
