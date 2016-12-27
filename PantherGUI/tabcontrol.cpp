@@ -25,12 +25,12 @@ void TabControl::PeriodicRender() {
 		PGScalar current_x = (*it).x;
 		PGScalar offset = ((*it).target_x - (*it).x) / 3;
 		if (((*it).x < (*it).target_x && (*it).x + offset > (*it).target_x) || 
-			(PG::abs((*it).x + offset - (*it).target_x) < 1)) {
+			(panther::abs((*it).x + offset - (*it).target_x) < 1)) {
 			(*it).x = (*it).target_x;
 		} else {
 			(*it).x = (*it).x < 0 ? (*it).target_x : (*it).x + offset;
 		}
-		if (PG::abs(current_x - (*it).x) > 0.1)
+		if (panther::abs(current_x - (*it).x) > 0.1)
 			invalidate = true;
 		index++;
 	}

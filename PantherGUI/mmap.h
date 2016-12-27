@@ -14,7 +14,7 @@ typedef enum {
 	PGFileReadWrite
 } PGFileAccess;
 
-namespace PGmmap {
+namespace panther {
 	PGMemoryMappedFileHandle MemoryMapFile(std::string filename);
 	void* OpenMemoryMappedFile(PGMemoryMappedFileHandle);
 	void CloseMemoryMappedFile(void* address);

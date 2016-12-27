@@ -6,6 +6,8 @@
 #include "textfile.h"
 #include "time.h"
 
+#include "scrollbar.h"
+
 #include <map>
 
 struct TextSelection {
@@ -16,8 +18,6 @@ struct TextSelection {
 };
 
 #define FLICKER_CARET_INTERVAL 15
-#define SCROLLBAR_BASE_OFFSET 16
-#define SCROLLBAR_WIDTH 16
 #define MAX_MINIMAP_LINE_CACHE 10000
 
 class TextField : public BasicTextField {
@@ -25,7 +25,6 @@ public:
 	TextField(PGWindowHandle, TextFile* file);
 	~TextField();
 
-	void PeriodicRender(void);
 	void Draw(PGRendererHandle, PGIRect*);
 	void MouseWheel(int x, int y, int distance, PGModifier modifier);
 	void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
@@ -43,6 +42,8 @@ public:
 	void InvalidateHScrollbar();
 	void InvalidateMinimap();
 
+	bool IsDragging();
+
 	void SetTextFile(TextFile* textfile);
 
 	void OnResize(PGSize old_size, PGSize new_size);
@@ -50,8 +51,6 @@ public:
 	PGCursorType GetCursor(PGPoint mouse);
 
 	void MinimapMouseEvent(bool mouse_enter);
-	void ScrollbarMouseEvent(bool mouse_enter);
-	void HScrollbarMouseEvent(bool mouse_enter);
 	
 	PGScalar GetTextfieldWidth();
 	PGScalar GetTextfieldHeight();
@@ -60,45 +59,23 @@ public:
 	void TextChanged();
 	void TextChanged(std::vector<TextLine*> lines);
 private:
+	Scrollbar* scrollbar;
+	Scrollbar* horizontal_scrollbar;
+
 	PGFontHandle minimap_font;
 
-	PGIRect scrollbar_region;
-	PGIRect hscrollbar_region;
 	PGIRect minimap_region;
-	PGIRect arrow_regions[4];
 
 	PGScalar line_height;
 	PGScalar minimap_line_height;
 
 	bool display_linenumbers;
 
-	enum PGDragRegion {
-		PGDragRegionScrollbarArrowUp,
-		PGDragRegionScrollbarArrowDown,
-		PGDragRegionScrollbarArrowLeft,
-		PGDragRegionScrollbarArrowRight,
-		PGDragRegionAboveScrollbar,
-		PGDragRegionBelowScrollbar,
-	};
-	PGDragRegion drag_region;
-	time_t drag_start;
-
 	bool display_scrollbar;
+	bool display_horizontal_scrollbar = false;
 	PGScalar drag_offset;
 
-	bool display_horizontal_scrollbar = false;
 	PGScalar max_xoffset;
-	PGScalar max_textsize;
-
-	bool mouse_in_scrollbar = false;
-	PGScalar GetScrollbarHeight();
-	PGScalar GetScrollbarOffset();
-	void SetScrollbarOffset(PGScalar offset);
-
-	bool mouse_in_hscrollbar = false;
-	PGScalar GetHScrollbarHeight();
-	PGScalar GetHScrollbarOffset();
-	void SetHScrollbarOffset(PGScalar offset);
 
 	bool mouse_in_minimap = false;
 	bool display_minimap;

@@ -432,7 +432,7 @@ void SetTextFontSize(PGFontHandle font, PGScalar height) {
 	font->textpaint->setTextSize(height);
 	font->character_width = font->textpaint->measureText("i", 1);
 	PGScalar max_width = font->textpaint->measureText("W", 1);
-	if (PG::abs(font->character_width - max_width) > 0.1f) {
+	if (panther::abs(font->character_width - max_width) > 0.1f) {
 		// Set renderer->character_width to -1 for non-monospace fonts
 		font->character_width = -1;
 	}

@@ -43,7 +43,7 @@ public:
 
 	TextFile& GetTextFile() { return *textfile; }
 
-	bool IsDragging() { return drag_type != PGDragNone; }
+	virtual bool IsDragging() { return drag_type != PGDragNone; }
 
 	int GetLineHeight();
 

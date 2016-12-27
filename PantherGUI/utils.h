@@ -22,7 +22,7 @@ struct PGUTF8Character {
 
 #define DOUBLE_CLICK_TIME 400
 
-namespace PG {
+namespace panther {
 	template<class T>
 	T abs(T t1) {
 		return t1 < 0 ? t1 * -1 : t1;

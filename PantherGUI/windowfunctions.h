@@ -39,6 +39,7 @@ struct PGPoint {
 	friend PGPoint operator-(PGPoint lhs, const PGPoint& rhs) {
 		return PGPoint(lhs.x - rhs.x, lhs.y - rhs.y);
 	}
+	PGPoint() : x(0), y(0) { }
 	PGPoint(PGScalar x, PGScalar y) : x(x), y(y) { }
 };
 

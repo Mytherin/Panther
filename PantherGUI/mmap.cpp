@@ -12,7 +12,7 @@ struct PGMemoryMappedFile {
 	PGMemoryMappedFile(HANDLE file, HANDLE mmap) : file(file), mmap(mmap) {}
 };
 
-namespace PGmmap {
+namespace panther {
 	PGMemoryMappedFileHandle MemoryMapFile(std::string filename) {
 		HANDLE file = CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		if (!file) {

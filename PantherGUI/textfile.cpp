@@ -162,7 +162,7 @@ void TextFile::Unlock() {
 
 void TextFile::OpenFile(std::string path) {
 	lng size = 0;
-	char* base = (char*)PGmmap::ReadFile(path, size);
+	char* base = (char*)panther::ReadFile(path, size);
 	if (!base || size < 0) {
 		// FIXME: proper error message
 		return;
@@ -213,7 +213,7 @@ void TextFile::OpenFile(std::string path) {
 			offset = 0;
 
 			if (pending_delete) {
-				PGmmap::DestroyFileContents(base);
+				panther::DestroyFileContents(base);
 				UnlockMutex(text_lock);
 				return;
 			}
@@ -224,7 +224,7 @@ void TextFile::OpenFile(std::string path) {
 		lineending = GetSystemLineEnding();
 	}
 
-	PGmmap::DestroyFileContents(base);
+	panther::DestroyFileContents(base);
 	loaded = 1;
 
 	if (highlighter) {
@@ -1334,23 +1334,23 @@ void TextFile::SaveChanges() {
 		line_ending = GetSystemLineEnding();
 	}
 	// FIXME: respect file encoding
-	PGFileHandle handle = PGmmap::OpenFile(this->path, PGFileReadWrite);
+	PGFileHandle handle = panther::OpenFile(this->path, PGFileReadWrite);
 	lng position = 0;
 	for (auto it = lines.begin(); it != lines.end(); it++) {
 		lng length = (*it)->GetLength();
 		char* line = (*it)->GetLine();
-		PGmmap::WriteToFile(handle, line, length);
+		panther::WriteToFile(handle, line, length);
 
 		if (it + 1 != lines.end()) {
 			switch (line_ending) {
 			case PGLineEndingWindows:
-				PGmmap::WriteToFile(handle, "\r\n", 2);
+				panther::WriteToFile(handle, "\r\n", 2);
 				break;
 			case PGLineEndingMacOS:
-				PGmmap::WriteToFile(handle, "\r", 1);
+				panther::WriteToFile(handle, "\r", 1);
 				break;
 			case PGLineEndingUnix:
-				PGmmap::WriteToFile(handle, "\n", 1);
+				panther::WriteToFile(handle, "\n", 1);
 				break;
 			default:
 				assert(0);
@@ -1359,7 +1359,7 @@ void TextFile::SaveChanges() {
 		}
 	}
 	this->Unlock();
-	PGmmap::CloseFile(handle);
+	panther::CloseFile(handle);
 }
 
 void TextFile::ChangeLineEnding(PGLineEnding lineending) {

@@ -184,7 +184,8 @@ void BasicTextField::GetCharacterFromPosition(PGScalar x, TextLine* line, lng& c
 		character = 0;
 		return;
 	}
-	x -= text_offset + textfile->GetXOffset();
+	x -= text_offset;
+	x += textfile->GetXOffset();
 	char* text = line->GetLine();
 	lng length = line->GetLength();
 	character = GetPositionInLine(textfield_font, x, text, length);
@@ -215,8 +216,8 @@ int BasicTextField::GetLineHeight() {
 void BasicTextField::PerformMouseClick(PGPoint mouse) {
 	time_t time = GetTime();
 	if (time - last_click.time < DOUBLE_CLICK_TIME &&
-		PG::abs(mouse.x - last_click.x) < 2 &&
-		PG::abs(mouse.y - last_click.y) < 2) {
+		panther::abs(mouse.x - last_click.x) < 2 &&
+		panther::abs(mouse.y - last_click.y) < 2) {
 		last_click.clicks = last_click.clicks == 2 ? 0 : last_click.clicks + 1;
 	} else {
 		last_click.clicks = 0;

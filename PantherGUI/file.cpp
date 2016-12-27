@@ -9,7 +9,7 @@ struct PGFile {
 	FILE *f;
 };
 
-namespace PGmmap {
+namespace panther {
 	PGFileHandle OpenFile(std::string filename, PGFileAccess access) {
 		PGFileHandle handle = new PGFile();
 #ifdef WIN32
