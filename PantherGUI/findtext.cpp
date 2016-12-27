@@ -25,6 +25,9 @@ FindText::FindText(PGWindowHandle window) :
 		// user pressed escape, cancelling the find operation
 		Control* control = (Control*)data;
 		dynamic_cast<PGContainer*>(control->parent)->RemoveControl(control);
+		ControlManager* manager = GetControlManager(control);
+		TextFile& tf = manager->active_textfield->GetTextFile();
+		tf.matches.clear();
 	}, (void*) this);
 	field->OnSuccessfulExit([](Control* c, void* data, PGModifier modifier) {
 		// execute find
@@ -76,15 +79,31 @@ FindText::FindText(PGWindowHandle window) :
 	toggle_wrap->SetText(std::string("W"), font);
 	toggle_highlight->SetText(std::string("H"), font);
 
+	toggle_highlight->OnToggle([](Button* b, bool toggled) {
+		FindText* f = dynamic_cast<FindText*>(b->parent);
+		if (toggled) {
+			f->FindAll(PGDirectionRight);
+		} else {
+			ControlManager* manager = GetControlManager(f);
+			TextFile& tf = manager->active_textfield->GetTextFile();
+			tf.matches.clear();
+			f->selected_match = -1;
+		}
+	});
+
 	find_prev->OnPressed([](Button* b) {
 		dynamic_cast<FindText*>(b->parent)->Find(PGDirectionLeft);
 	});
 	find_button->OnPressed([](Button* b) {
 		dynamic_cast<FindText*>(b->parent)->Find(PGDirectionRight);
-	});/*
-	field->OnTextChanged([]() {
-
-	}, this);*/
+	});
+	field->OnTextChanged([](Control* c, void* data) {
+		// if HighlightMatches is turned on, we search as soon as text is entered
+		FindText* f = (FindText*)data;
+		if (f->HighlightMatches()) {
+			f->FindAll(PGDirectionRight);
+		}
+	}, (void*) this);
 }
 
 FindText::~FindText() {
@@ -116,10 +135,28 @@ void FindText::OnResize(PGSize old_size, PGSize new_size) {
 }
 
 void FindText::Find(PGDirection direction) {
+	PGFindMatch match;
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
+	if (selected_match >= 0) {
+		// if FindAll has been performed, we already have all the matches
+		// simply select the next match, rather than searching again
+		if (direction == PGDirectionLeft) {
+			selected_match = selected_match == 0 ? tf.matches.size() - 1 : selected_match - 1;
+		} else {
+			selected_match = selected_match == tf.matches.size() - 1 ? 0 : selected_match + 1;
+		}
+
+		match = tf.matches[selected_match];
+		if (match.start_character >= 0) {
+			tf.SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
+		}
+		this->Invalidate();
+		return;
+	}
+	// otherwise, search only for the next match in either direction
 	char* error_message = nullptr;
-	PGFindMatch match = tf.FindMatch(field->GetText(), direction, 
+	match = tf.FindMatch(field->GetText(), direction, 
 		tf.GetActiveCursor()->BeginLine(), tf.GetActiveCursor()->BeginPosition(), 
 		tf.GetActiveCursor()->EndLine(), tf.GetActiveCursor()->EndPosition(),
 		&error_message,
@@ -128,9 +165,37 @@ void FindText::Find(PGDirection direction) {
 		if (match.start_character >= 0) {
 			tf.SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
 		}
+		tf.matches.clear();
+		tf.matches.push_back(match);
 		this->field->SetValidInput(true);
 		this->Invalidate();
 	} else {
+		// error compiling regex
+		this->field->SetValidInput(false);
+		this->Invalidate();
+	}
+}
+
+void FindText::FindAll(PGDirection direction) {
+	ControlManager* manager = GetControlManager(this);
+	TextFile& tf = manager->active_textfield->GetTextFile();
+	char* error_message = nullptr;
+	auto matches = tf.FindAllMatches(field->GetText(), direction, 
+		tf.GetActiveCursor()->BeginLine(), tf.GetActiveCursor()->BeginPosition(), 
+		tf.GetActiveCursor()->EndLine(), tf.GetActiveCursor()->EndPosition(),
+		&error_message,
+		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled());
+	selected_match = 0;
+	if (!error_message) {
+		if (matches.size() > 0) {
+			PGFindMatch match = matches[0];
+			tf.SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
+			tf.matches = matches;
+		}
+		this->field->SetValidInput(true);
+		this->Invalidate();
+	} else {
+		tf.matches.clear();
 		this->field->SetValidInput(false);
 		this->Invalidate();
 	}

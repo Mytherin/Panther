@@ -1437,7 +1437,7 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 					} else {
 						// if we search right, we search STARTING FROM the begin character
 						l = line.substr(begin_character);
-						pos = l.rfind(text);
+						pos = l.find(text);
 						if (pos != std::string::npos) {
 							// correct "pos" to account for the substr we did
 							pos += begin_character;
@@ -1517,6 +1517,20 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 	}
 }
 
-std::vector<PGFindMatch> TextFile::FindAllMatches(std::string& text) {
-	return std::vector<PGFindMatch>();
+std::vector<PGFindMatch> TextFile::FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex) {
+	std::vector<PGFindMatch> results;
+	PGFindMatch first_match = FindMatch(text, direction, start_line, start_character, end_line, end_character, error_message, match_case, wrap, regex);
+	if (first_match.start_line < 0) return results;
+	results.push_back(first_match);
+	PGFindMatch match = first_match;
+	while (true) {
+		match = FindMatch(text, direction, match.start_line, match.start_character, match.end_line, match.end_character, error_message, match_case, wrap, regex);
+		if (match.start_line == first_match.start_line &&
+			match.start_character == first_match.start_character &&
+			match.end_line == first_match.end_line &&
+			match.end_character == first_match.end_character)
+			break;
+		results.push_back(match);
+	}
+	return results;
 }

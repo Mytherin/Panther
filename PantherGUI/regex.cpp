@@ -1,7 +1,7 @@
 
 #include "regex.h"
 #include <unicode/regex.h>
-#include <unicode/utf8.h>
+//#include <unicode/utf8.h>
 #include "unicode.h"
 
 struct PGRegex {

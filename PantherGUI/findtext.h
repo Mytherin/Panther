@@ -14,7 +14,12 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
+	bool HighlightMatches() { return toggle_highlight->IsToggled(); }
+
 	void Find(PGDirection direction);
+	void FindAll(PGDirection direction);
+
+	lng selected_match = -1;
 private:
 	PGScalar hoffset = 0;
 

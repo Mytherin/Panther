@@ -134,6 +134,43 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			position_y += line_height;
 		}
 	}
+
+	// render search matches
+	position_y = initial_position_y;
+	for (auto it = textfile->matches.begin(); it != textfile->matches.end(); it++) {
+		if (it->start_line > linenr || it->end_line < start_line) continue;
+		lng startline = std::max(it->start_line, start_line);
+		lng endline = std::min(it->end_line, linenr);
+		position_y = y + (startline - start_line) * line_height - rectangle->y;
+		for (; startline <= endline; startline++) {
+			current_line = textfile->GetLine(startline);
+			char* line = current_line->GetLine();
+			lng length = current_line->GetLength();
+			lng start, end;
+			if (startline == it->start_line) {
+				if (startline == it->end_line) {
+					// start and end are on the same line
+					start = it->start_character;
+					end = it->end_character;
+				} else {
+					start = it->start_character;
+					end = length;
+				}
+			} else if (startline == it->end_line) {
+				start = 0;
+				end = it->end_character;
+			} else {
+				start = 0;
+				end = length;
+			}
+
+			PGScalar x_offset = MeasureTextWidth(font, line, start);
+			PGScalar width = MeasureTextWidth(font, line + start, end - start);
+			PGRect rect(position_x_text + x_offset - xoffset, position_y, width, line_height);
+			RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
+		}
+	}
+
 	linenr = start_line;
 	position_y = initial_position_y;
 	lng block = -1;

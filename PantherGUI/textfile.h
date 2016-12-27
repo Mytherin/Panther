@@ -40,6 +40,7 @@ struct PGFindMatch {
 	lng end_character;
 	lng end_line;
 
+	PGFindMatch() : start_character(-1), start_line(-1), end_character(-1), end_line(-1) { }
 	PGFindMatch(lng start_character, lng start_line, lng end_character, lng end_line) : 
 		start_character(start_character), start_line(start_line), end_character(end_character), end_line(end_line) { }
 };
@@ -117,8 +118,10 @@ public:
 	void OffsetEndOfFile();
 	void SelectEndOfFile();
 
+	std::vector<PGFindMatch> matches;
+
 	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
-	std::vector<PGFindMatch> FindAllMatches(std::string& text);
+	std::vector<PGFindMatch> FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
 
 	void RefreshCursors();
 	int GetLineHeight();

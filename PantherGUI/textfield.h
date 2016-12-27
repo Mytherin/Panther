@@ -38,8 +38,6 @@ public:
 	void InvalidateBeforeLine(lng line);
 	void InvalidateAfterLine(lng line);
 	void InvalidateBetweenLines(lng start, lng end);
-	void InvalidateScrollbar();
-	void InvalidateHScrollbar();
 	void InvalidateMinimap();
 
 	bool IsDragging();
