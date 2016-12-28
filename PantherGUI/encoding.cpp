@@ -199,5 +199,6 @@ std::string utf8_tolower(std::string str) {
 	assert(result_size <= destsize);
 	std::string result = std::string(dest, result_size);
 	free(dest);
+	ucasemap_close(casemap);
 	return result;
 }
