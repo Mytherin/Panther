@@ -4,7 +4,7 @@
 #include "simpletextfield.h"
 
 
-PGContainer::PGContainer(PGWindowHandle window) : 
+PGContainer::PGContainer(PGWindowHandle window) :
 	Control(window) {
 }
 
@@ -80,7 +80,7 @@ void PGContainer::MouseClick(int x, int y, PGMouseButton button, PGModifier modi
 
 void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
 	PGPoint mouse(x - this->x, y - this->y);
-	for(lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			c->MouseDown(mouse.x, mouse.y, button, modifier);
@@ -94,7 +94,7 @@ void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modif
 
 void PGContainer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 	PGPoint mouse(x - this->x, y - this->y);
-	for(lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			c->MouseUp(mouse.x, mouse.y, button, modifier);
@@ -112,7 +112,7 @@ void PGContainer::MouseDoubleClick(int x, int y, PGMouseButton button, PGModifie
 
 void PGContainer::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 	PGPoint mouse(x - this->x, y - this->y);
-	for(lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			c->MouseWheel(x, y, distance, modifier);
@@ -123,7 +123,7 @@ void PGContainer::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 
 void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 	PGPoint mouse(x - this->x, y - this->y);
-	for(lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
 		if (c->IsDragging()) {
 			c->MouseMove(mouse.x, mouse.y, buttons);
@@ -144,7 +144,7 @@ void PGContainer::OnResize(PGSize old_size, PGSize new_size) {
 PGCursorType PGContainer::GetCursor(PGPoint mouse) {
 	mouse.x -= this->x;
 	mouse.y -= this->y;
-	for(lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			return c->GetCursor(mouse);
@@ -185,15 +185,19 @@ void PGContainer::RemoveControl(Control* control) {
 			}
 		}
 	}
+	bool trigger_resize = false;
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)->horizontal_anchor == control) {
+			trigger_resize = true;
 			(*it)->horizontal_anchor = control->horizontal_anchor;
 		}
 		if ((*it)->vertical_anchor == control) {
+			trigger_resize = true;
 			(*it)->vertical_anchor = control->vertical_anchor;
 		}
 	}
-	this->TriggerResize();
+	if (trigger_resize)
+		this->TriggerResize();
 	delete control;
 }
 

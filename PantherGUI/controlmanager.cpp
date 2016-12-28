@@ -68,10 +68,13 @@ void ControlManager::PeriodicRender(void) {
 
 bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 	if (modifier == PGModifierCtrl) {
+		bool replace = false;
 		switch (character) {
-		case 'F':
+		case 'H':
+			replace = true;
+		case 'F': {
 			// Find text
-			FindText* view = new FindText(this->window);
+			FindText* view = new FindText(this->window, replace);
 			view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 			view->vertical_anchor = statusbar;
 			for (auto it = controls.begin(); it != controls.end(); it++) {
@@ -83,7 +86,7 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 			this->AddControl(view);
 			this->Invalidate();
 			return true;
-			break;
+		}
 		}
 	}
 	return PGContainer::KeyboardCharacter(character, modifier);

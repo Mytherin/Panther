@@ -1532,6 +1532,7 @@ struct FindInformation {
 
 void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool match_case, bool wrap, bool regex) {
 	textfile->Lock(PGWriteLock);
+	textfile->finished_search = false;
 	textfile->matches.clear();
 	textfile->Unlock(PGWriteLock);
 
@@ -1566,11 +1567,11 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 			match.end_line == first_match.end_line &&
 			match.end_character == first_match.end_character) {
 			// the current match equals the first match, we are done looking
+			textfile->finished_search = true;
 			return;
 		}
 		textfile->Lock(PGWriteLock);
 		textfile->matches.push_back(match);
-		textfile->textfield->Invalidate();
 		textfile->Unlock(PGWriteLock);
 	}
 }
@@ -1617,17 +1618,20 @@ void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng star
 	Scheduler::RegisterTask(this->find_task, PGTaskUrgent);
 }
 
-void TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, lng& selected_match) {
-	if (!is_loaded) return;
+bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, lng& selected_match, bool include_selection) {
+	if (!is_loaded) return false;
 	PGFindMatch match;
 	if (selected_match >= 0) {
 		// if FindAll has been performed, we already have all the matches
 		// simply select the next match, rather than searching again
 		Lock(PGWriteLock);
-		if (direction == PGDirectionLeft) {
-			selected_match = selected_match == 0 ? matches.size() - 1 : selected_match - 1;
-		} else {
-			selected_match = selected_match == matches.size() - 1 ? 0 : selected_match + 1;
+		if (matches.size() == 0) return false;
+		if (!include_selection) {
+			if (direction == PGDirectionLeft) {
+				selected_match = selected_match == 0 ? matches.size() - 1 : selected_match - 1;
+			} else {
+				selected_match = selected_match == matches.size() - 1 ? 0 : selected_match + 1;
+			}
 		}
 
 		match = matches[selected_match];
@@ -1635,14 +1639,16 @@ void TextFile::FindMatch(std::string text, PGDirection direction, lng start_line
 			this->SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
 		}
 		Unlock(PGWriteLock);
-		return;
+		return true;
 	}
 	// otherwise, search only for the next match in either direction
 	*error_message = nullptr;
 	Lock(PGReadLock);
 	match = this->FindMatch(text, direction, 
-		GetActiveCursor()->BeginLine(), GetActiveCursor()->BeginPosition(), 
-		GetActiveCursor()->EndLine(), GetActiveCursor()->EndPosition(),
+		include_selection ? GetActiveCursor()->EndLine() : GetActiveCursor()->BeginLine(),
+		include_selection ? GetActiveCursor()->EndPosition() : GetActiveCursor()->BeginPosition(),
+		include_selection ? GetActiveCursor()->BeginLine() : GetActiveCursor()->EndLine(),
+		include_selection ? GetActiveCursor()->BeginPosition() : GetActiveCursor()->EndPosition(),
 		error_message, match_case, wrap, regex, nullptr);
 	Unlock(PGReadLock);
 	if (!(*error_message)) {
@@ -1651,7 +1657,20 @@ void TextFile::FindMatch(std::string text, PGDirection direction, lng start_line
 			SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
 		}
 		matches.clear();
-		matches.push_back(match);
+		if (match.start_character >= 0) {
+			matches.push_back(match);
+		}
 		Unlock(PGWriteLock);
+		return match.start_character >= 0;
+	}
+	return false;
+}
+
+void TextFile::SelectMatches() {
+	cursors.clear();
+	for (auto it = matches.begin(); it != matches.end(); it++) {
+		Cursor* c = new Cursor(this, (*it).start_line, (*it).start_character);
+		cursors.push_back(c);
+		c->SetCursorStartLocation((*it).end_line, (*it).end_character);
 	}
 }
