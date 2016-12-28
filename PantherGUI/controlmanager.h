@@ -47,4 +47,3 @@ private:
 };
 
 ControlManager* GetControlManager(Control* c);
-

@@ -78,33 +78,6 @@ void Control::OnResize(PGSize old_size, PGSize new_size) {
 
 }
 
-void Control::UpdateParentSize(PGSize old_size, PGSize new_size) {
-	PGSize current_size = PGSize(this->width, this->height);
-	int width = new_size.width;
-	int height = new_size.height;
-	if (anchor & PGAnchorLeft && anchor & PGAnchorRight) {
-		this->width = width;
-	} else if (anchor & PGAnchorRight) {
-		this->width = width - this->x;
-	} else if (anchor & PGAnchorLeft) {
-		int old = old_size.width - (this->x + this->width);
-		this->width = (old - width) + this->x;
-	}
-
-	if (anchor & PGAnchorBottom && anchor & PGAnchorTop) {
-		this->height = height;
-	} else if (anchor & PGAnchorBottom) {
-		PGScalar diff = old_size.height - this->height;
-		this->height = height - diff;
-	} else if (anchor & PGAnchorTop) {
-		int old = old_size.width - (this->y + this->width);
-		this->height = (old - height) + this->y;
-	}
-	if (this->width != current_size.width || this->height != current_size.height) {
-		this->OnResize(current_size, PGSize(this->width, this->height));
-	}
-}
-
 void Control::SetSize(PGSize size) {
 	PGSize oldsize(this->width, this->height);
 	this->width = size.width; 
@@ -141,4 +114,85 @@ void Control::MouseEnter() {
 
 void Control::MouseLeave() {
 
+}
+
+void Control::ResolveSize(PGSize new_size) {
+	if (size_resolved) return;
+	PGSize current_size = PGSize(this->width, this->height);
+	if (fixed_height >= 0 || percentage_height >= 0) {
+		if (vertical_anchor == nullptr) {
+			if (fixed_height > 0) {
+				this->height = fixed_height;
+			} else {
+				this->height = percentage_height * new_size.height;
+			}
+			if (this->anchor & PGAnchorTop) {
+				this->y = 0;
+			}
+			if (this->anchor & PGAnchorBottom) {
+				// bottom anchor only makes sense with a fixed height
+				this->y = new_size.height - this->height;
+			}
+		} else {
+			vertical_anchor->ResolveSize(new_size);
+			PGScalar remaining_height = 0;
+			if (fixed_height > 0) {
+				this->height = fixed_height;
+			}
+			if (this->anchor & PGAnchorTop) {
+				this->y = vertical_anchor->y + vertical_anchor->height;
+				remaining_height = new_size.height - this->y;
+			}
+			if (this->anchor & PGAnchorBottom) {
+				remaining_height = vertical_anchor->y;
+			}
+			if (percentage_height > 0) {
+				this->height = percentage_height * remaining_height;
+			}
+			if (this->anchor & PGAnchorBottom) {
+				this->y = vertical_anchor->y - this->height;
+			}
+		}
+	}
+	if (fixed_width >= 0 || percentage_width >= 0) {
+		if (horizontal_anchor == nullptr) {
+			if (fixed_width > 0) {
+				this->width = fixed_width;
+			} else {
+				assert(percentage_width > 0);
+				this->width = percentage_width * new_size.width;
+			}
+			if (this->anchor & PGAnchorLeft) {
+				this->x = 0;
+			}
+			if (this->anchor & PGAnchorRight) {
+				// right anchor only makes sense with a fixed width
+				assert(this->fixed_width > 0);
+				this->x = new_size.width - this->width;
+			}
+		} else {
+			horizontal_anchor->ResolveSize(new_size);
+			PGScalar remaining_width = 0;
+			if (fixed_width > 0) {
+				this->width = fixed_width;
+				assert(percentage_width < 0);
+			}
+			if (this->anchor & PGAnchorLeft) {
+				this->x = horizontal_anchor->x + horizontal_anchor->width;
+				remaining_width = new_size.width - this->x;
+			}
+			if (this->anchor & PGAnchorRight) {
+				remaining_width = horizontal_anchor->x;
+			}
+			if (percentage_width > 0) {
+				this->width = percentage_width * remaining_width;
+			}
+			if (this->anchor & PGAnchorRight) {
+				this->x = horizontal_anchor->x - this->width;
+			}
+			this->size_resolved = true;
+		}
+	}
+	this->size_resolved = true;
+	this->OnResize(current_size, PGSize(this->width, this->height));
 }

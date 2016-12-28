@@ -1419,6 +1419,7 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 				if (current_task != nullptr && find_task != current_task) {
 					return PGFindMatch(-1, -1, -1, -1);
 				}
+				// FIXME: don't use utf8_tolower, it has slow performance
 				std::string line = match_case ? lines[i]->GetString() : utf8_tolower(lines[i]->GetString());
 				size_t pos = std::string::npos;
 				if (i == begin_line) {
@@ -1543,7 +1544,7 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 	if (first_match.start_line < 0) {
 		return; // no matches found
 	}
-
+	
 	textfile->Lock(PGWriteLock);
 	textfile->SetCursorLocation(first_match.start_line, first_match.start_character, first_match.end_line, first_match.end_character);
 	textfile->matches.push_back(first_match);

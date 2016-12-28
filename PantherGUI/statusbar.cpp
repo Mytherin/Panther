@@ -17,6 +17,8 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		buttons[i] = new Button(window, this);
 		buttons[i]->background_color = PGColor(0, 0, 0, 0);
 		buttons[i]->background_stroke_color = PGColor(0, 0, 0, 0);
+		buttons[i]->SetAnchor(PGAnchorTop);
+		buttons[i]->percentage_height = 1;
 		this->AddControl(buttons[i]);
 	}
 
@@ -119,12 +121,6 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 
 StatusBar::~StatusBar() {
 	// FIXME: unregister textfield function
-}
-
-void StatusBar::UpdateParentSize(PGSize old_size, PGSize new_size) {
-	Control::UpdateParentSize(old_size, new_size);
-	this->height = STATUSBAR_HEIGHT;
-	this->y = parent->height - this->height;
 }
 
 void StatusBar::SelectionChanged() {

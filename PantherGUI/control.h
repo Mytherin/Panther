@@ -53,8 +53,10 @@ public:
 	}
 
 	virtual void OnResize(PGSize old_size, PGSize new_size);
+	void TriggerResize() { this->OnResize(PGSize(this->width, this->height), PGSize(this->width, this->height)); }
 
-	virtual void UpdateParentSize(PGSize old_size, PGSize new_size);
+	virtual void ResolveSize(PGSize new_size);
+
 
 	virtual bool IsDragging();
 
@@ -68,9 +70,14 @@ public:
 
 	Control* parent = nullptr;
 
-	PGScalar x, y;
+	bool size_resolved = false;
+	PGScalar x = 0, y = 0;
 	PGScalar width, height;
+	PGScalar fixed_width = -1, fixed_height = -1;
+	PGScalar percentage_width = -1, percentage_height = -1;
 	PGAnchor anchor;
+	Control* vertical_anchor = nullptr;
+	Control* horizontal_anchor = nullptr;
 
 	PGWindowHandle window;
 	bool HasFocus();

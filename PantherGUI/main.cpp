@@ -173,25 +173,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	tabbed->width = 0;
 	tabbed->height = TEXT_TAB_HEIGHT;
 	TextField* textfield = new TextField(res, textfile);
-	textfield->SetAnchor(PGAnchorBottom | PGAnchorLeft | PGAnchorRight);
-	textfield->SetPosition(PGPoint(tabbed->x, tabbed->y + TEXT_TAB_HEIGHT));
-	textfield->SetSize(PGSize(tabbed->width, tabbed->height - TEXT_TAB_HEIGHT - STATUSBAR_HEIGHT));
+	textfield->SetAnchor(PGAnchorTop);
+	textfield->percentage_height = 1;
+	textfield->percentage_width = 1;
 	TabControl* tabs = new TabControl(res, textfield);
-	tabs->SetAnchor(PGAnchorLeft | PGAnchorRight);
-	tabs->SetPosition(PGPoint(tabbed->x, tabbed->y));
-	tabs->SetSize(PGSize(tabbed->width, TEXT_TAB_HEIGHT));
+	tabs->SetAnchor(PGAnchorTop | PGAnchorLeft);
+	tabs->fixed_height = TEXT_TAB_HEIGHT;
+	tabs->percentage_width = 1;
 	tabbed->AddControl(tabs);
 	tabbed->AddControl(textfield);
+	textfield->vertical_anchor = tabs;
 
 	StatusBar* bar = new StatusBar(res, textfield);
-	bar->SetAnchor(PGAnchorLeft | PGAnchorRight);
-	bar->SetPosition(PGPoint(manager->x, manager->y + manager->height - STATUSBAR_HEIGHT));
-	bar->SetSize(PGSize(manager->width, STATUSBAR_HEIGHT));
+	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
+	bar->percentage_width = 1;
+	bar->fixed_height = STATUSBAR_HEIGHT;
 
-	tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+	tabbed->SetAnchor(PGAnchorBottom);
+	tabbed->percentage_height = 1;
+	tabbed->percentage_width = 1;
+	tabbed->vertical_anchor = bar;
 	//tabbed->SetPosition(PGPoint(50, 50));
 	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
-	tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
 
 	manager->AddControl(tabbed);
 	manager->AddControl(bar);
@@ -491,7 +494,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			int width = LOWORD(lParam);
 			int height = HIWORD(lParam);
 			PGSize old_size = GetWindowSize(global_handle);
-			global_handle->manager->UpdateParentSize(old_size, PGSize(width, height));
+			global_handle->manager->SetSize(PGSize(width, height));
 			RedrawWindow(global_handle);
 		}
 		break;

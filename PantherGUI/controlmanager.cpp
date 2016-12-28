@@ -72,9 +72,14 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 		case 'F':
 			// Find text
 			FindText* view = new FindText(this->window);
-			view->SetSize(PGSize(this->width, view->height));
-			view->SetPosition(PGPoint(0, this->height - view->height - statusbar->height));
-			view->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorBottom);
+			view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
+			view->vertical_anchor = statusbar;
+			for (auto it = controls.begin(); it != controls.end(); it++) {
+				if ((*it)->vertical_anchor == statusbar) {
+					(*it)->vertical_anchor = view;
+				}
+			}
+			this->TriggerResize();
 			this->AddControl(view);
 			this->Invalidate();
 			return true;

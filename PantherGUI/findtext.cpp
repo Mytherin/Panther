@@ -30,7 +30,10 @@ FindText::FindText(PGWindowHandle window) :
 		((FindText*)data)->Find(modifier & PGModifierShift ? PGDirectionLeft : PGDirectionRight);
 	}, (void*) this);
 	this->AddControl(field);
-	this->height = field->height + VPADDING * 2;
+
+	this->percentage_width = 1;
+	this->fixed_height = field->height + VPADDING * 2;
+	this->height = fixed_height;
 
 	PGScalar button_width = MeasureTextWidth(font, "Find Prev") + 2 * HPADDING;
 	PGScalar button_height = field->height;

@@ -133,7 +133,11 @@ void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 
 void PGContainer::OnResize(PGSize old_size, PGSize new_size) {
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		(*it)->UpdateParentSize(old_size, new_size);
+		(*it)->size_resolved = false;
+	}
+
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		(*it)->ResolveSize(new_size);
 	}
 }
 
@@ -181,6 +185,15 @@ void PGContainer::RemoveControl(Control* control) {
 			}
 		}
 	}
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if ((*it)->horizontal_anchor == control) {
+			(*it)->horizontal_anchor = control->horizontal_anchor;
+		}
+		if ((*it)->vertical_anchor == control) {
+			(*it)->vertical_anchor = control->vertical_anchor;
+		}
+	}
+	this->TriggerResize();
 	delete control;
 }
 
