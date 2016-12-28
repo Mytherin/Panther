@@ -61,10 +61,6 @@ HCURSOR cursor_wait = nullptr;
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
-void PeriodicWindowRedraw(void) {
-	global_handle->manager->PeriodicRender();
-}
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	static TCHAR szWindowClass[] = _T("Panther");
 	static TCHAR szTitle[] = _T("Panther");
@@ -157,13 +153,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	res->manager = manager;
 	
-	CreateTimer(res, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
+	CreateTimer(res, MAX_REFRESH_FREQUENCY, []() {
+		SendMessage(global_handle->hwnd, WM_COMMAND, 0, 0);
+	}, PGTimerFlagsNone);
 
 	PGLanguageManager::AddLanguage(new CLanguage());
 	PGLanguageManager::AddLanguage(new XMLLanguage());
 
 	Scheduler::Initialize();
-	Scheduler::SetThreadCount(8);
+	Scheduler::SetThreadCount(2);
 
 	// "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml"
 	// "E:\\killinginthenameof.xml"
@@ -499,6 +497,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_COMMAND: {
+		if (wParam == 0 && lParam == 0) {
+			global_handle->manager->PeriodicRender();
+			break;
+		}
 		int index = LOWORD(wParam);
 		if (global_handle->popup) {
 			PGControlCallback callback = global_handle->popup->callbacks[index];

@@ -17,17 +17,13 @@ FindText::FindText(PGWindowHandle window) :
 	field->width = this->width - 400;
 	field->x = 150;
 	field->y = VPADDING;
-	field->OnTextChanged([](Control* c, void* data) {
-		// text changed, if highlight matches is on we immediately execute the find operation
-		// FIXME:
-	}, (void*) this);
 	field->OnUserCancel([](Control* c, void* data, PGModifier modifier) {
 		// user pressed escape, cancelling the find operation
 		Control* control = (Control*)data;
 		dynamic_cast<PGContainer*>(control->parent)->RemoveControl(control);
 		ControlManager* manager = GetControlManager(control);
 		TextFile& tf = manager->active_textfield->GetTextFile();
-		tf.matches.clear();
+		tf.ClearMatches();
 	}, (void*) this);
 	field->OnSuccessfulExit([](Control* c, void* data, PGModifier modifier) {
 		// execute find
@@ -86,7 +82,7 @@ FindText::FindText(PGWindowHandle window) :
 		} else {
 			ControlManager* manager = GetControlManager(f);
 			TextFile& tf = manager->active_textfield->GetTextFile();
-			tf.matches.clear();
+			tf.ClearMatches();
 			f->selected_match = -1;
 		}
 	});
@@ -135,38 +131,17 @@ void FindText::OnResize(PGSize old_size, PGSize new_size) {
 }
 
 void FindText::Find(PGDirection direction) {
-	PGFindMatch match;
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
-	if (selected_match >= 0) {
-		// if FindAll has been performed, we already have all the matches
-		// simply select the next match, rather than searching again
-		if (direction == PGDirectionLeft) {
-			selected_match = selected_match == 0 ? tf.matches.size() - 1 : selected_match - 1;
-		} else {
-			selected_match = selected_match == tf.matches.size() - 1 ? 0 : selected_match + 1;
-		}
-
-		match = tf.matches[selected_match];
-		if (match.start_character >= 0) {
-			tf.SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
-		}
-		this->Invalidate();
-		return;
-	}
-	// otherwise, search only for the next match in either direction
 	char* error_message = nullptr;
-	match = tf.FindMatch(field->GetText(), direction, 
+	tf.FindMatch(field->GetText(), direction, 
 		tf.GetActiveCursor()->BeginLine(), tf.GetActiveCursor()->BeginPosition(), 
 		tf.GetActiveCursor()->EndLine(), tf.GetActiveCursor()->EndPosition(),
 		&error_message,
-		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled());
+		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled(), 
+		selected_match);
 	if (!error_message) {
-		if (match.start_character >= 0) {
-			tf.SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
-		}
-		tf.matches.clear();
-		tf.matches.push_back(match);
+		// successful search
 		this->field->SetValidInput(true);
 		this->Invalidate();
 	} else {
@@ -180,22 +155,16 @@ void FindText::FindAll(PGDirection direction) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
-	auto matches = tf.FindAllMatches(field->GetText(), direction, 
+	tf.FindAllMatches(field->GetText(), direction, 
 		tf.GetActiveCursor()->BeginLine(), tf.GetActiveCursor()->BeginPosition(), 
 		tf.GetActiveCursor()->EndLine(), tf.GetActiveCursor()->EndPosition(),
 		&error_message,
 		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled());
 	selected_match = 0;
 	if (!error_message) {
-		if (matches.size() > 0) {
-			PGFindMatch match = matches[0];
-			tf.SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
-			tf.matches = matches;
-		}
 		this->field->SetValidInput(true);
 		this->Invalidate();
 	} else {
-		tf.matches.clear();
 		this->field->SetValidInput(false);
 		this->Invalidate();
 	}

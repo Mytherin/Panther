@@ -45,6 +45,11 @@ struct PGFindMatch {
 		start_character(start_character), start_line(start_line), end_character(end_character), end_line(end_line) { }
 };
 
+enum PGLockType {
+	PGReadLock,
+	PGWriteLock
+};
+
 class TextFile {
 	friend class Cursor;
 public:
@@ -88,8 +93,9 @@ public:
 
 	lng GetLineCount();
 
-	void Lock();
-	void Unlock();
+	void Lock(PGLockType type);
+	void Unlock(PGLockType type);
+
 	lng GetBlock(lng linenr) { return linenr / TEXTBLOCK_SIZE; }
 	lng GetMaximumBlocks() { return lines.size() % TEXTBLOCK_SIZE == 0 ? GetBlock(lines.size()) : GetBlock(lines.size()) + 1; }
 	bool BlockIsParsed(lng block) { return highlighter && parsed_blocks[block].parsed; }
@@ -118,10 +124,8 @@ public:
 	void OffsetEndOfFile();
 	void SelectEndOfFile();
 
-	std::vector<PGFindMatch> matches;
-
-	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
-	std::vector<PGFindMatch> FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
+	void FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, lng& selected_match);
+	void FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
 
 	void RefreshCursors();
 	int GetLineHeight();
@@ -143,7 +147,13 @@ public:
 	std::string GetName() { return name; }
 	bool HasUnsavedChanges() { return unsaved_changes; }
 	bool FileInMemory() { return path.size() == 0; }
+
+	void ClearMatches();
+	const std::vector<PGFindMatch>& GetFindMatches() { return matches; }
 private:
+	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
+	std::vector<PGFindMatch> matches;
+
 	void SetUnsavedChanges(bool changes);
 
 	bool unsaved_changes = false;
@@ -174,9 +184,13 @@ private:
 	void Redo(TextDelta* delta);
 	std::vector<Interval> GetCursorIntervals();
 
-	Task* current_task;
+	Task* current_task = nullptr;
 	static void RunHighlighter(Task* task, TextFile* textfile);
 	static void OpenFileAsync(Task* task, void* info);
+
+	Task* find_task = nullptr;
+	static void RunTextFinder(Task* task, TextFile* textfile, std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool match_case, bool wrap, bool regex);
+
 
 	void InvalidateParsing(lng line);
 	void InvalidateParsing(std::vector<lng>& lines);
@@ -188,11 +202,13 @@ private:
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
 	std::vector<TextBlock> parsed_blocks;
-	PGMutexHandle text_lock;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
 	PGFileEncoding encoding;
 
 	PGLanguage* language = nullptr;
 	SyntaxHighlighter* highlighter = nullptr;
+
+	PGMutexHandle text_lock;
+	int shared_counter = 0;
 };

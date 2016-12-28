@@ -136,38 +136,42 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	}
 
 	// render search matches
-	position_y = initial_position_y;
-	for (auto it = textfile->matches.begin(); it != textfile->matches.end(); it++) {
-		if (it->start_line > linenr || it->end_line < start_line) continue;
-		lng startline = std::max(it->start_line, start_line);
-		lng endline = std::min(it->end_line, linenr);
-		position_y = y + (startline - start_line) * line_height - rectangle->y;
-		for (; startline <= endline; startline++) {
-			current_line = textfile->GetLine(startline);
-			char* line = current_line->GetLine();
-			lng length = current_line->GetLength();
-			lng start, end;
-			if (startline == it->start_line) {
-				if (startline == it->end_line) {
-					// start and end are on the same line
-					start = it->start_character;
+	textfile->Lock(PGReadLock);
+	if (!minimap) {
+		auto matches = textfile->GetFindMatches();
+		position_y = initial_position_y;
+		for (auto it = matches.begin(); it != matches.end(); it++) {
+			if (it->start_line > linenr || it->end_line < start_line) continue;
+			lng startline = std::max(it->start_line, start_line);
+			lng endline = std::min(it->end_line, linenr);
+			position_y = y + (startline - start_line) * line_height - rectangle->y;
+			for (; startline <= endline; startline++) {
+				current_line = textfile->GetLine(startline);
+				char* line = current_line->GetLine();
+				lng length = current_line->GetLength();
+				lng start, end;
+				if (startline == it->start_line) {
+					if (startline == it->end_line) {
+						// start and end are on the same line
+						start = it->start_character;
+						end = it->end_character;
+					} else {
+						start = it->start_character;
+						end = length;
+					}
+				} else if (startline == it->end_line) {
+					start = 0;
 					end = it->end_character;
 				} else {
-					start = it->start_character;
+					start = 0;
 					end = length;
 				}
-			} else if (startline == it->end_line) {
-				start = 0;
-				end = it->end_character;
-			} else {
-				start = 0;
-				end = length;
-			}
 
-			PGScalar x_offset = MeasureTextWidth(font, line, start);
-			PGScalar width = MeasureTextWidth(font, line + start, end - start);
-			PGRect rect(position_x_text + x_offset - xoffset, position_y, width, line_height);
-			RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
+				PGScalar x_offset = MeasureTextWidth(font, line, start);
+				PGScalar width = MeasureTextWidth(font, line + start, end - start);
+				PGRect rect(position_x_text + x_offset - xoffset, position_y, width, line_height);
+				RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
+			}
 		}
 	}
 
@@ -176,7 +180,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	lng block = -1;
 	bool parsed = false;
 
-	textfile->Lock();
 	while ((current_line = textfile->GetLine(linenr)) != nullptr) {
 		// only render lines that fall within the render rectangle
 		if (position_y > rectangle->height) break;
@@ -301,7 +304,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		linenr++;
 		position_y += line_height;
 	}
-	textfile->Unlock();
+	textfile->Unlock(PGReadLock);
 	if (!minimap) {
 		this->line_height = line_height;
 	} else {

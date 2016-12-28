@@ -91,7 +91,7 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 					parsed_blocks[current_block].parsed = false;
 					return;
 				}
-				textfile->Lock();
+				textfile->Lock(PGWriteLock);
 				PGParseErrors errors;
 				PGParserState oldstate = parsed_blocks[current_block].state;
 				PGParserState state = current_block == 0 ? textfile->highlighter->GetDefaultState() : parsed_blocks[current_block - 1].state;
@@ -106,7 +106,7 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 				if (oldstate) {
 					textfile->highlighter->DeleteParserState(oldstate);
 				}
-				textfile->Unlock();
+				textfile->Unlock(PGWriteLock);
 				if (equivalent) {
 					break;
 				}
@@ -151,14 +151,38 @@ void TextFile::InvalidateParsing(std::vector<lng>& invalidated_lines) {
 	Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 }
 
-void TextFile::Lock() {
+void TextFile::Lock(PGLockType type) {
 	assert(is_loaded);
-	LockMutex(text_lock);
+	if (type == PGWriteLock) {
+		while (true) {
+			if (shared_counter == 0) {
+				LockMutex(text_lock);
+				if (shared_counter != 0) {
+					UnlockMutex(text_lock);
+				} else {
+					break;
+				}
+			}
+		}
+	} else if (type == PGReadLock) {
+		// ensure there are no write operations by locking the TextLock
+		LockMutex(text_lock); 
+		// notify threads we are only reading by incrementing the shared counter
+		shared_counter++;
+		UnlockMutex(text_lock);
+	}
 }
 
-void TextFile::Unlock() {
+void TextFile::Unlock(PGLockType type) {
 	assert(is_loaded);
-	UnlockMutex(text_lock);
+	if (type == PGWriteLock) {
+		UnlockMutex(text_lock);
+	} else if (type == PGReadLock) {
+		LockMutex(text_lock); 
+		// decrement the shared counter
+		shared_counter--;
+		UnlockMutex(text_lock);
+	}
 }
 
 void TextFile::OpenFile(std::string path) {
@@ -913,9 +937,9 @@ void TextFile::Undo() {
 	TextDelta* delta = this->deltas.back();
 	this->ClearCursors();
 	std::vector<lng> invalidated_lines;
-	Lock();
+	Lock(PGWriteLock);
 	this->Undo(delta, invalidated_lines);
-	Unlock();
+	Unlock(PGWriteLock);
 	InvalidateParsing(invalidated_lines);
 	if (this->textfield) {
 		std::vector<TextLine*> invalidated_textlines;
@@ -977,64 +1001,19 @@ static void ShiftDelta(lng& linenr, lng& characternr, lng shift_lines, lng shift
 	}
 }
 
-// Determine need to be locked to perform a specific operation
-// Returns true if all blocks need to be locked (because of 
-static bool LockOperation(TextDelta* delta, std::vector<lng> blocks) {
-	assert(delta);
-	switch (delta->TextDeltaType()) {
-	case PGDeltaAddText: {
-		AddText* add = (AddText*)delta;
-		lng block = add->linenr / TEXTBLOCK_SIZE;
-		if (std::find(blocks.begin(), blocks.end(), block) != blocks.end()) {
-			blocks.push_back(block);
-		}
-		return false;
-	}
-	case PGDeltaRemoveText: {
-		RemoveText* remove = (RemoveText*)delta;
-		lng block = remove->linenr / TEXTBLOCK_SIZE;
-		if (std::find(blocks.begin(), blocks.end(), block) != blocks.end()) {
-			blocks.push_back(block);
-		}
-		return false;
-	}
-	case PGDeltaAddLine:
-	case PGDeltaAddManyLines:
-	case PGDeltaRemoveLine:
-	case PGDeltaRemoveManyLines:
-	case PGDeltaSwapLines:
-		return true;
-	case PGDeltaCursorMovement:
-		return false;
-	case PGDeltaMultiple: {
-		MultipleDelta* multi = (MultipleDelta*)delta;
-		assert(multi->deltas.size() > 0);
-		for (auto it = multi->deltas.begin(); it != multi->deltas.end(); it++) {
-			assert((*it)->TextDeltaType() != PGDeltaMultiple); // nested multiple deltas not supported
-			if (LockOperation(delta, blocks)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	default:
-		return false;
-	}
-}
-
 void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
 	// set the current_task to the nullptr, this will cause any active syntax highlighting to end
 	// this prevents long syntax highlighting tasks (e.g. highlighting a long document) from 
-	// locking us out of editing
+	// locking us out of editing until they're finished
 	SetUnsavedChanges(true);
 	current_task = nullptr;
 	std::vector<lng> invalidated_lines;
 	// lock the blocks
-	Lock();
+	Lock(PGWriteLock);
 	// perform the operation
 	PerformOperation(delta, invalidated_lines, adjust_delta);
 	// release the locks again
-	Unlock();
+	Unlock(PGWriteLock);
 	if (this->textfield) {
 		std::vector<TextLine*> invalidated_textlines;
 		for (auto it = invalidated_lines.begin(); it != invalidated_lines.end(); it++) {
@@ -1337,12 +1316,13 @@ void TextFile::SaveChanges() {
 	if (!is_loaded) return;
 	if (this->path == "") return;
 	SetUnsavedChanges(false);
-	this->Lock();
+	this->Lock(PGReadLock);
 	PGLineEnding line_ending = lineending;
 	if (line_ending != PGLineEndingWindows && line_ending != PGLineEndingMacOS && line_ending != PGLineEndingUnix) {
 		line_ending = GetSystemLineEnding();
 	}
 	// FIXME: respect file encoding
+	// FIXME: handle errors properly
 	PGFileHandle handle = panther::OpenFile(this->path, PGFileReadWrite);
 	lng position = 0;
 	for (auto it = lines.begin(); it != lines.end(); it++) {
@@ -1367,7 +1347,7 @@ void TextFile::SaveChanges() {
 			}
 		}
 	}
-	this->Unlock();
+	this->Unlock(PGReadLock);
 	panther::CloseFile(handle);
 }
 
@@ -1517,20 +1497,136 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 	}
 }
 
-std::vector<PGFindMatch> TextFile::FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex) {
-	std::vector<PGFindMatch> results;
-	PGFindMatch first_match = FindMatch(text, direction, start_line, start_character, end_line, end_character, error_message, match_case, wrap, regex);
-	if (first_match.start_line < 0) return results;
-	results.push_back(first_match);
+struct FindInformation {
+	TextFile* textfile;
+	std::string pattern;
+	PGDirection direction;
+	lng start_line;
+	lng start_character;
+	lng end_line;
+	lng end_character;
+	bool match_case;
+	bool wrap;
+	bool regex;
+};
+
+void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool match_case, bool wrap, bool regex) {
+	char* error_message = nullptr;
+	textfile->Lock(PGReadLock);
+	PGFindMatch first_match = textfile->FindMatch(text, direction, start_line, start_character, end_line, end_character, &error_message, match_case, wrap, regex);
+	textfile->Unlock(PGReadLock);
+	// we should never fail here, because we already have compiled the regex
+	assert(error_message == nullptr);
+	textfile->Lock(PGWriteLock);
+	if (first_match.start_line < 0) {
+		return; // no matches found
+	} else {
+		textfile->SetCursorLocation(first_match.start_line, first_match.start_character, first_match.end_line, first_match.end_character);
+	}
+	textfile->matches.push_back(first_match);
+	textfile->Unlock(PGWriteLock);
+
 	PGFindMatch match = first_match;
 	while (true) {
-		match = FindMatch(text, direction, match.start_line, match.start_character, match.end_line, match.end_character, error_message, match_case, wrap, regex);
+		if (textfile->find_task != task) {
+			// a new find task has been activated
+			// stop searching for an outdated find query
+			return;
+		}
+		textfile->Lock(PGReadLock);
+		match = textfile->FindMatch(text, direction, match.start_line, match.start_character, match.end_line, match.end_character, &error_message, match_case, wrap, regex);
+		textfile->Unlock(PGReadLock);
+		assert(error_message == nullptr);
 		if (match.start_line == first_match.start_line &&
 			match.start_character == first_match.start_character &&
 			match.end_line == first_match.end_line &&
-			match.end_character == first_match.end_character)
-			break;
-		results.push_back(match);
+			match.end_character == first_match.end_character) {
+			// the current match equals the first match, we are done looking
+			return;
+		}
+		textfile->Lock(PGWriteLock);
+		textfile->matches.push_back(match);
+		textfile->Unlock(PGWriteLock);
+		textfile->textfield->Invalidate();
 	}
-	return results;
+}
+
+void TextFile::ClearMatches() {
+	find_task = nullptr;
+	this->Lock(PGWriteLock);
+	matches.clear();
+	this->Unlock(PGWriteLock);
+	textfield->Invalidate();
+}
+
+void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex) {
+	if (regex) {
+		PGRegexHandle handle = PGCompileRegex(text, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+		if (!handle) {
+			*error_message = "Error";
+			return;
+		}
+		PGDeleteRegex(handle);
+	}
+
+	FindInformation* info = new FindInformation();
+	info->textfile = this;
+	info->pattern = text;
+	info->direction = direction;
+	info->start_line = start_line;
+	info->start_character = start_character;
+	info->end_line = end_line;
+	info->end_character = end_character;
+	info->match_case = match_case;
+	info->wrap = wrap;
+	info->regex = regex;
+
+	this->ClearMatches();
+
+	this->find_task = new Task([](Task* t, void* in) {
+		FindInformation* info = (FindInformation*)in;
+		RunTextFinder(t, info->textfile, info->pattern, info->direction, info->start_line,
+			info->start_character, info->end_line, info->end_character, info->match_case,
+			info->wrap, info->regex);
+		delete info;
+	}, (void*)info);
+	Scheduler::RegisterTask(this->find_task, PGTaskUrgent);
+}
+
+void TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, lng& selected_match) {
+	PGFindMatch match;
+	if (selected_match >= 0) {
+		// if FindAll has been performed, we already have all the matches
+		// simply select the next match, rather than searching again
+		Lock(PGWriteLock);
+		if (direction == PGDirectionLeft) {
+			selected_match = selected_match == 0 ? matches.size() - 1 : selected_match - 1;
+		} else {
+			selected_match = selected_match == matches.size() - 1 ? 0 : selected_match + 1;
+		}
+
+		match = matches[selected_match];
+		if (match.start_character >= 0) {
+			this->SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
+		}
+		Unlock(PGWriteLock);
+		return;
+	}
+	// otherwise, search only for the next match in either direction
+	*error_message = nullptr;
+	Lock(PGReadLock);
+	match = this->FindMatch(text, direction, 
+		GetActiveCursor()->BeginLine(), GetActiveCursor()->BeginPosition(), 
+		GetActiveCursor()->EndLine(), GetActiveCursor()->EndPosition(),
+		error_message, match_case, wrap, regex);
+	Unlock(PGReadLock);
+	if (!(*error_message)) {
+		Lock(PGWriteLock);
+		if (match.start_character >= 0) {
+			SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
+		}
+		matches.clear();
+		matches.push_back(match);
+		Unlock(PGWriteLock);
+	}
 }
