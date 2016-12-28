@@ -61,8 +61,20 @@ TextFile::~TextFile() {
 	pending_delete = true;
 	if (current_task) {
 		current_task->active = false;
+		current_task = nullptr;
 	}
-	LockMutex(text_lock);
+	if (find_task) {
+		find_task->active = false;
+		find_task = nullptr;
+	}
+	// we only proceed with deleting after we have obtained a lock on everything
+	if (is_loaded) {
+		// if loaded we make sure there are no read locks and no write locks
+		Lock(PGWriteLock);
+	} else {
+		// otherwise we only need the text_lock, which is used by the loading code
+		LockMutex(text_lock);
+	}
 	DestroyMutex(text_lock);
 	for (auto it = lines.begin(); it != lines.end(); it++) {
 		delete *it;
@@ -1546,12 +1558,13 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 		}
 		textfile->Lock(PGWriteLock);
 		textfile->matches.push_back(match);
-		textfile->Unlock(PGWriteLock);
 		textfile->textfield->Invalidate();
+		textfile->Unlock(PGWriteLock);
 	}
 }
 
 void TextFile::ClearMatches() {
+	if (!is_loaded) return;
 	find_task = nullptr;
 	this->Lock(PGWriteLock);
 	matches.clear();
@@ -1568,6 +1581,7 @@ void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng star
 		}
 		PGDeleteRegex(handle);
 	}
+	if (!is_loaded) return;
 
 	FindInformation* info = new FindInformation();
 	info->textfile = this;
@@ -1594,6 +1608,7 @@ void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng star
 }
 
 void TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, lng& selected_match) {
+	if (!is_loaded) return;
 	PGFindMatch match;
 	if (selected_match >= 0) {
 		// if FindAll has been performed, we already have all the matches

@@ -18,7 +18,10 @@ TextFile* FileManager::_OpenFile(std::string path) {
 
 void FileManager::_CloseFile(TextFile* textfile) {
 	open_files.erase(std::find(open_files.begin(), open_files.end(), textfile));
-	delete textfile;
+	Scheduler::RegisterTask(new Task([](Task* task, void* textfile) {
+		TextFile* tf = (TextFile*)textfile;
+		delete tf;
+	}, textfile), PGTaskNotUrgent);
 }
 
 
