@@ -323,3 +323,4 @@ void OpenFolderInTerminal(std::string path);
 
 PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint); 
 
+std::string OpenFileMenu();

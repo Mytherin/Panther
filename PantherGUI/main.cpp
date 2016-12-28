@@ -152,7 +152,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	manager->SetSize(PGSize(1000, 700));
 	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	res->manager = manager;
-	
+
 	CreateTimer(res, MAX_REFRESH_FREQUENCY, []() {
 		SendMessage(global_handle->hwnd, WM_COMMAND, 0, 0);
 	}, PGTimerFlagsNone);
@@ -393,7 +393,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_CHAR: {
 		// FIXME: more efficient UTF16 -> UTF8 conversion
 		wchar_t w = (wchar_t)wParam;
-		std::string str = std::string((char*) &w, 2);
+		std::string str = std::string((char*)&w, 2);
 		char* output;
 		lng size = PGConvertText(str, &output, PGEncodingUTF16Platform, PGEncodingUTF8);
 
@@ -669,7 +669,7 @@ std::string GetClipboardText(PGWindowHandle window) {
 		// get the text from the clipboard
 		HANDLE data = GetClipboardData(CF_UNICODETEXT);
 		std::string text = std::string(((char*)data), ucs2length((char*)data));
-		
+
 		CloseClipboard();
 		// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
 		size_t length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
@@ -778,7 +778,7 @@ void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
 }
 
 void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submenu, std::string name) {
-	AppendMenu(handle->menu, MF_POPUP, (UINT_PTR) submenu->menu, name.c_str());
+	AppendMenu(handle->menu, MF_POPUP, (UINT_PTR)submenu->menu, name.c_str());
 }
 
 void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGTextAlign align) {
@@ -819,7 +819,7 @@ void OpenFolderInExplorer(std::string path) {
 	si.cb = sizeof(si);
 	ZeroMemory(&pi, sizeof(pi));
 
-	if (CreateProcess(NULL, (LPSTR) parameter.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+	if (CreateProcess(NULL, (LPSTR)parameter.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
 		WaitForSingleObject(pi.hProcess, INFINITE);
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
@@ -828,14 +828,14 @@ void OpenFolderInExplorer(std::string path) {
 		LPVOID lpMsgBuf;
 
 		FormatMessage(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
 			FORMAT_MESSAGE_FROM_SYSTEM |
 			FORMAT_MESSAGE_IGNORE_INSERTS,
 			NULL,
 			dw,
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPTSTR) &lpMsgBuf,
-			0, NULL );
+			(LPTSTR)&lpMsgBuf,
+			0, NULL);
 
 		Logger::WriteLogMessage(std::string((char*)lpMsgBuf));
 	}
@@ -849,4 +849,8 @@ PGPoint ConvertWindowToScreen(PGWindowHandle window, PGPoint point) {
 	p.x = point.x; p.y = point.y;
 	ClientToScreen(window->hwnd, &p);
 	return PGPoint(p.x, p.y);
+}
+
+std::string OpenFileMenu() {
+	return "";
 }
