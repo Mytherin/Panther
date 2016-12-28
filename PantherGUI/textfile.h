@@ -151,7 +151,7 @@ public:
 	void ClearMatches();
 	const std::vector<PGFindMatch>& GetFindMatches() { return matches; }
 private:
-	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
+	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
 	std::vector<PGFindMatch> matches;
 
 	void SetUnsavedChanges(bool changes);

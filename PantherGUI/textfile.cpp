@@ -1399,7 +1399,7 @@ void TextFile::RestoreCursors(std::vector<Cursor>& backup) {
 	Cursor::NormalizeCursors(this, cursors, false);
 }
 
-PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex) {
+PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
 	if (!match_case) {
 		text = utf8_tolower(text);
 	}
@@ -1416,6 +1416,9 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 		bool wrapped_search = false;
 		while(true) {
 			for (; i != end; i += offset) {
+				if (current_task != nullptr && find_task != current_task) {
+					return PGFindMatch(-1, -1, -1, -1);
+				}
 				std::string line = match_case ? lines[i]->GetString() : utf8_tolower(lines[i]->GetString());
 				size_t pos = std::string::npos;
 				if (i == begin_line) {
@@ -1469,6 +1472,10 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 		bool wrapped_search = false;
 		while(true) {
 			for (; i != end; i += offset) {
+				if (current_task != nullptr && find_task != current_task) {
+					PGDeleteRegex(regex);
+					return PGFindMatch(-1, -1, -1, -1);
+				}
 				std::string& line = lines[i]->GetString();
 				PGRegexMatch match;
 
@@ -1523,18 +1530,22 @@ struct FindInformation {
 };
 
 void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool match_case, bool wrap, bool regex) {
+	textfile->Lock(PGWriteLock);
+	textfile->matches.clear();
+	textfile->Unlock(PGWriteLock);
+
 	char* error_message = nullptr;
 	textfile->Lock(PGReadLock);
-	PGFindMatch first_match = textfile->FindMatch(text, direction, start_line, start_character, end_line, end_character, &error_message, match_case, wrap, regex);
+	PGFindMatch first_match = textfile->FindMatch(text, direction, start_line, start_character, end_line, end_character, &error_message, match_case, wrap, regex, task);
 	textfile->Unlock(PGReadLock);
 	// we should never fail here, because we already have compiled the regex
 	assert(error_message == nullptr);
-	textfile->Lock(PGWriteLock);
 	if (first_match.start_line < 0) {
 		return; // no matches found
-	} else {
-		textfile->SetCursorLocation(first_match.start_line, first_match.start_character, first_match.end_line, first_match.end_character);
 	}
+
+	textfile->Lock(PGWriteLock);
+	textfile->SetCursorLocation(first_match.start_line, first_match.start_character, first_match.end_line, first_match.end_character);
 	textfile->matches.push_back(first_match);
 	textfile->Unlock(PGWriteLock);
 
@@ -1546,7 +1557,7 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 			return;
 		}
 		textfile->Lock(PGReadLock);
-		match = textfile->FindMatch(text, direction, match.start_line, match.start_character, match.end_line, match.end_character, &error_message, match_case, wrap, regex);
+		match = textfile->FindMatch(text, direction, match.start_line, match.start_character, match.end_line, match.end_character, &error_message, match_case, wrap, regex, task);
 		textfile->Unlock(PGReadLock);
 		assert(error_message == nullptr);
 		if (match.start_line == first_match.start_line &&
@@ -1595,8 +1606,6 @@ void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng star
 	info->wrap = wrap;
 	info->regex = regex;
 
-	this->ClearMatches();
-
 	this->find_task = new Task([](Task* t, void* in) {
 		FindInformation* info = (FindInformation*)in;
 		RunTextFinder(t, info->textfile, info->pattern, info->direction, info->start_line,
@@ -1633,7 +1642,7 @@ void TextFile::FindMatch(std::string text, PGDirection direction, lng start_line
 	match = this->FindMatch(text, direction, 
 		GetActiveCursor()->BeginLine(), GetActiveCursor()->BeginPosition(), 
 		GetActiveCursor()->EndLine(), GetActiveCursor()->EndPosition(),
-		error_message, match_case, wrap, regex);
+		error_message, match_case, wrap, regex, nullptr);
 	Unlock(PGReadLock);
 	if (!(*error_message)) {
 		Lock(PGWriteLock);
