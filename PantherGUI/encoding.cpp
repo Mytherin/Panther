@@ -43,11 +43,13 @@ std::string PGEncodingToString(PGFileEncoding encoding) {
 		return "UTF-32 LE";
 	case PGEncodingUTF32LEBOM:
 		return "UTF-32 LE with BOM";
+	default:
+		assert(0);
 	}
 	return "";
 }
 
-static char* GetEncodingName(PGFileEncoding encoding) {
+static const char* GetEncodingName(PGFileEncoding encoding) {
 	switch (encoding) {
 	case PGEncodingUTF8:
 	case PGEncodingUTF8BOM:
@@ -76,6 +78,8 @@ static char* GetEncodingName(PGFileEncoding encoding) {
 		return "iso-8859_10-1998";
 	case PGEncodingCelticISO8859_14:
 		return "iso-8859_14-1998";
+	default:
+		assert(0);
 	}
 	return nullptr;
 }

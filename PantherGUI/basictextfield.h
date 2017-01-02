@@ -57,7 +57,7 @@ public:
 
 	virtual void SelectionChanged();
 	virtual void TextChanged();
-	virtual void TextChanged(std::vector<TextLine*> lines);
+	virtual void TextChanged(std::vector<lng> lines);
 
 	void OnSelectionChanged(PGControlDataCallback callback, void* data);
 	void OnTextChanged(PGControlDataCallback callback, void* data);
@@ -77,7 +77,7 @@ protected:
 
 	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
 	void GetLineFromPosition(PGScalar y, lng& line);
-	void GetCharacterFromPosition(PGScalar x, TextLine* line, lng& character);
+	void GetCharacterFromPosition(PGScalar x, TextLine line, lng& character);
 
 	void PerformMouseClick(PGPoint mouse);
 

@@ -163,7 +163,7 @@
     <ClCompile Include="text.cpp" />
     <ClCompile Include="textfield.cpp" />
     <ClCompile Include="textfile.cpp" />
-    <ClCompile Include="textline.cpp" />
+    <ClCompile Include="textbuffer.cpp" />
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="togglebutton.cpp" />
     <ClCompile Include="unicode.cpp" />
@@ -189,6 +189,7 @@
     <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
+    <ClInclude Include="passert.h" />
     <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />
@@ -201,11 +202,10 @@
     <ClInclude Include="container.h" />
     <ClInclude Include="tabcontrol.h" />
     <ClInclude Include="text.h" />
-    <ClInclude Include="textblock.h" />
     <ClInclude Include="textfield.h" />
     <ClInclude Include="textfile.h" />
     <ClInclude Include="textdelta.h" />
-    <ClInclude Include="textline.h" />
+    <ClInclude Include="textbuffer.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="togglebutton.h" />
     <ClInclude Include="unicode.h" />

@@ -2,6 +2,7 @@
 
 #include <string>
 #include "utils.h"
+#include "textbuffer.h"
 
 #include <vector>
 #include "windowfunctions.h"
@@ -9,11 +10,20 @@
 class TextFile;
 class TextField;
 
+struct CursorPosition {
+	PGTextBuffer* buffer;
+	lng position;
+
+	CursorPosition(PGTextBuffer* buffer, lng position) : buffer(buffer), position(position) { }
+};
+
 class Cursor {
-	friend class SimpleTextField;
 	friend class TextFile;
-	friend class TextField;
 public:
+	Cursor(TextFile* file);
+	Cursor(TextFile* file, lng start_line, lng start_character);
+	Cursor(TextFile* file, lng start_line, lng start_character, lng end_line, lng end_character);
+
 	void OffsetLine(lng offset);
 	void OffsetCharacter(PGDirection direction);
 	void OffsetSelectionLine(lng offset);
@@ -30,50 +40,43 @@ public:
 	void OffsetSelectionWord(PGDirection direction);
 	void SelectWord();
 	void SelectLine();
-	int GetSelectedWord(lng& word_start, lng& word_end);
+	std::string GetSelectedWord();
 
-	lng SelectedPosition() { return start_character; }
-	lng SelectedLine() { return start_line; }
-	lng BeginPosition();
-	lng BeginLine();
-	lng EndPosition();
-	lng EndLine();
-	lng BeginCharacter();
-	lng EndCharacter();
-	lng SelectedCharacter();
+	PGCursorPosition UnselectedPosition();
+	PGCursorPosition SelectedPosition();
+	PGCursorPosition BeginPosition();
+	PGCursorPosition EndPosition();
+
 	PGScalar SelectedXPosition();
 
+	std::string GetLine();
 	std::string GetText();
 
 	bool SelectionIsEmpty();
 
-	void RestoreCursor(Cursor cursor);
-	bool Contains(lng linenr, lng characternr);
+	/*bool Contains(lng linenr, lng characternr);
 	bool OverlapsWith(Cursor& cursor);
-	void Merge(Cursor& cursor);
+	void Merge(Cursor& cursor);*/
 
 	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield = true);
-	static bool CursorOccursFirst (Cursor* a, Cursor* b) { return (a->BeginLine() < b->BeginLine() || (a->BeginLine() == b->BeginLine() && a->BeginPosition() < b->BeginPosition())); }
-	static void VerifyCursors(std::vector<Cursor*>& cursors);
+	static bool CursorOccursFirst(Cursor* a, Cursor* b);
 
 	void SetCursorStartLocation(lng linenr, lng characternr);
-	void SetCursorEndLocation(lng linenr, lng characternr);
 	void SetCursorLocation(lng linenr, lng characternr);
-	void SetCursorLine(lng linenr);
-	void SetCursorCharacter(lng characternr);
-
-	Cursor(TextFile* file);
-	Cursor(TextFile* file, lng line, lng character);
 private:
+	static bool CursorPositionOccursFirst(PGTextBuffer* a, lng a_pos, PGTextBuffer* b, lng b_pos);
+	CursorPosition BeginCursorPosition();
+	CursorPosition EndCursorPosition();
+
 	TextFile* file;
-	lng start_line;
-	lng start_character;
-	lng end_line;
-	lng end_character;
-	lng min_character;
-	lng min_line;
-	lng max_character;
-	lng max_line;
+	PGTextBuffer* start_buffer;
+	lng start_buffer_position;
+	PGTextBuffer* end_buffer;
+	lng end_buffer_position;
+
+	// helper functions so you can loop over both the start_buffer and end_buffer
+	PGTextBuffer*& BUF(int i) { assert(i == 0 || i == 1); return i == 0 ? start_buffer : end_buffer; }
+	lng& BUFPOS(int i) { assert(i == 0 || i == 1); return i == 0 ? start_buffer_position : end_buffer_position; }
 
 	PGScalar x_position;
 };

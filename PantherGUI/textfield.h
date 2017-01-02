@@ -55,7 +55,7 @@ public:
 	PGScalar GetMaxXOffset() { return max_xoffset; }
 
 	void TextChanged();
-	void TextChanged(std::vector<TextLine*> lines);
+	void TextChanged(std::vector<lng> lines);
 private:
 	Scrollbar* scrollbar;
 	Scrollbar* horizontal_scrollbar;
@@ -87,5 +87,5 @@ private:
 
 	bool SetScrollOffset(lng offset);
 
-	std::map<TextLine*, PGBitmapHandle> minimap_line_cache;
+	std::map<lng, PGBitmapHandle> minimap_line_cache;
 };

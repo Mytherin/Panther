@@ -8,6 +8,8 @@
 #include "controlmanager.h"
 #include "filemanager.h"
 #include "container.h"
+#include "statusbar.h"
+
 
 #include <sys/time.h>
 #include <cctype>
@@ -19,6 +21,12 @@
 #import "PGDrawBitmap.h"
 
 // clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm c.cpp control.cpp cursor.cpp keywords.cpp logger.cpp scheduler.cpp text.cpp syntaxhighlighter.cpp textfield.cpp textfile.cpp textline.cpp thread.cpp windowfunctions.cpp xml.cpp file.cpp tabcontrol.cpp tabbedtextfield.cpp renderer.cpp filemanager.cpp controlmanager.cpp utils.cpp  -o main
+
+struct PGPopupMenu {
+	PGWindowHandle window;
+	std::map<int, PGControlCallback> callbacks;
+	Control* control;
+};
 
 struct PGWindow {
     NSWindow *window;
@@ -66,15 +74,13 @@ void PeriodicWindowRedraw(void) {
 
 - (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window
 {
+	NSLog(@"hello");
     if(self = [super initWithFrame:frameRect]) {
 		NSRect rect = [self getBounds];
     	PGWindowHandle res = new PGWindow();
     	res->window = window;
 		res->view = self;
 		ControlManager* manager = new ControlManager(res);
-		manager->SetPosition(PGPoint(0, 0));
-		manager->SetSize(PGSize(rect.size.width, rect.size.height));
-		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 		res->manager = manager;
 		res->renderer = InitializeRenderer();
 		
@@ -85,9 +91,42 @@ void PeriodicWindowRedraw(void) {
 	
 		TextFile* textfile = FileManager::OpenFile("/Users/myth/Data/tibiawiki_pages_current.xml");
 		TextFile* textfile2 = FileManager::OpenFile("/Users/myth/pyconversion.c");
-		PGContainer* tabbed = new PGContainer(res, textfile);
-		tabbed->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
-		tabbed->UpdateParentSize(PGSize(0, 0), manager->GetSize());
+		PGContainer* tabbed = new PGContainer(res);
+		tabbed->width = 0;
+		tabbed->height = TEXT_TAB_HEIGHT;
+		TextField* textfield = new TextField(res, textfile);
+		textfield->SetAnchor(PGAnchorTop);
+		textfield->percentage_height = 1;
+		textfield->percentage_width = 1;
+		TabControl* tabs = new TabControl(res, textfield);
+		tabs->SetAnchor(PGAnchorTop | PGAnchorLeft);
+		tabs->fixed_height = TEXT_TAB_HEIGHT;
+		tabs->percentage_width = 1;
+		tabbed->AddControl(tabs);
+		tabbed->AddControl(textfield);
+		textfield->vertical_anchor = tabs;
+
+		StatusBar* bar = new StatusBar(res, textfield);
+		bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
+		bar->percentage_width = 1;
+		bar->fixed_height = STATUSBAR_HEIGHT;
+
+		tabbed->SetAnchor(PGAnchorBottom);
+		tabbed->percentage_height = 1;
+		tabbed->percentage_width = 1;
+		tabbed->vertical_anchor = bar;
+		//tabbed->SetPosition(PGPoint(50, 50));
+		//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
+
+		manager->AddControl(tabbed);
+		manager->AddControl(bar);
+
+		manager->statusbar = bar;
+		manager->active_textfield = textfield;
+		
+		manager->SetPosition(PGPoint(0, 0));
+		manager->SetSize(PGSize(rect.size.width, rect.size.height));
+		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 
 		global_handle = res;
     }
@@ -329,7 +368,7 @@ void RedrawWindow(PGWindowHandle window, PGIRect rectangle) {
 }
 
 Control* GetFocusedControl(PGWindowHandle window) {
-	return window->manager->GetFocusedControl();
+	return window->manager->GetActiveControl();
 }
 
 void RegisterControl(PGWindowHandle window, Control *control) {
@@ -395,7 +434,46 @@ void DeleteTimer(PGTimerHandle handle) {
 
 }
 
-void* GetControlManager(PGWindowHandle window) {
+void* GetWindowManager(PGWindowHandle window) {
 	return window->manager;
+}
+
+
+PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
+	assert(0);
+	return nullptr;
+}
+
+void PGPopupMenuInsertSubmenu(PGPopupMenuHandle, PGPopupMenuHandle submenu, std::string submenu_name) {
+	assert(0);
+}
+
+void PGPopupMenuInsertEntry(PGPopupMenuHandle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags) {
+	assert(0);
+}
+
+void PGPopupMenuInsertSeparator(PGPopupMenuHandle) {
+	assert(0);
+}
+
+void PGDisplayPopupMenu(PGPopupMenuHandle, PGTextAlign align) {
+	assert(0);
+}
+
+void PGDisplayPopupMenu(PGPopupMenuHandle, PGPoint, PGTextAlign align) {
+	assert(0);
+}
+
+void OpenFolderInExplorer(std::string path) {
+	assert(0);
+}
+
+void OpenFolderInTerminal(std::string path) {
+	assert(0);
+}
+
+PGPoint ConvertWindowToScreen(PGWindowHandle window, PGPoint point) {
+	assert(0);
+	return PGPoint(0, 0);
 }
 

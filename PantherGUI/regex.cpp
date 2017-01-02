@@ -94,7 +94,7 @@ char* PGGetRegexGroup(PGRegexHandle handle, int groupnr) {
 	}
 	std::string result;
 	text.toUTF8String(result);
-	return _strdup(result.c_str());
+	return panther::strdup(result.c_str());
 }
 
 void PGDeleteRegex(PGRegexHandle handle) {

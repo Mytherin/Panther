@@ -5,8 +5,6 @@
 #include "textdelta.h"
 #include "mmap.h"
 #include "utils.h"
-#include "textfile.h"
-#include "textblock.h"
 #include "scheduler.h"
 #include "syntaxhighlighter.h"
 #include "language.h"
@@ -52,6 +50,7 @@ enum PGLockType {
 
 class TextFile {
 	friend class Cursor;
+	friend class TextLineIterator;
 public:
 	// create an in-memory textfile with currently unspecified path
 	TextFile(BasicTextField* textfield);
@@ -59,10 +58,13 @@ public:
 	TextFile(BasicTextField* textfield, std::string filename, bool immediate_load = false);
 	~TextFile();
 
-	TextLine* GetLine(lng linenumber);
+	TextLineIterator GetIterator(lng linenumber);
+	TextLine GetLine(lng linenumber);
 	void InsertText(char character);
 	void InsertText(PGUTF8Character character);
 	void InsertText(std::string text);
+	void InsertLines(std::vector<std::string>& lines);
+	void InsertLines(std::vector<std::string>& lines, size_t cursor);
 	void DeleteCharacter(PGDirection direction);
 	void DeleteWord(PGDirection direction);
 	void AddNewLine();
@@ -74,7 +76,7 @@ public:
 	void MoveLines(int offset);
 
 	std::string CopyText();
-	void PasteText(std::string text);
+	void PasteText(std::string& text);
 
 	void ChangeLineEnding(PGLineEnding lineending);
 	void ChangeFileEncoding(PGFileEncoding encoding);
@@ -95,10 +97,6 @@ public:
 
 	void Lock(PGLockType type);
 	void Unlock(PGLockType type);
-
-	lng GetBlock(lng linenr) { return linenr / TEXTBLOCK_SIZE; }
-	lng GetMaximumBlocks() { return lines.size() % TEXTBLOCK_SIZE == 0 ? GetBlock(lines.size()) : GetBlock(lines.size()) + 1; }
-	bool BlockIsParsed(lng block) { return highlighter && parsed_blocks[block].parsed; }
 
 	bool IsLoaded() { return is_loaded; }
 	double LoadPercentage() { return loaded; }
@@ -132,12 +130,14 @@ public:
 	void RefreshCursors();
 	int GetLineHeight();
 
+	void VerifyTextfile();
+
 	std::vector<Cursor> BackupCursors();
 	void RestoreCursors(std::vector<Cursor>& cursors);
 
 	lng GetMaxLineWidth() { return longest_line; }
 	void SetMaxLineWidth(lng new_width = -1);
-	PGScalar GetXOffset() { return xoffset; }
+	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
 	lng GetLineOffset() { return lineoffset_y; }
 	void SetLineOffset(lng offset) { lineoffset_y = offset; }
@@ -153,6 +153,12 @@ public:
 	void ClearMatches();
 	const std::vector<PGFindMatch>& GetFindMatches() { return matches; }
 private:
+	// insert text at the specified cursor number, text must not include newlines
+	void InsertText(std::string text, size_t cursornr);
+	void DeleteCharacter(PGDirection direction, size_t i);
+
+	void DeleteSelection(int cursornr);
+
 	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
 
 	bool finished_search = false;
@@ -175,17 +181,12 @@ private:
 	std::vector<Cursor*> cursors;
 	Cursor* active_cursor;
 
-	void DeleteCharacter(MultipleDelta* delta, PGDirection direction);
-	void DeleteCharacter(MultipleDelta* delta, Cursor* cursor, PGDirection direction, bool delete_selection, bool include_cursor = true);
-
 	void OpenFile(std::string filename);
 
 	void AddDelta(TextDelta* delta);
 
 	void PerformOperation(TextDelta* delta, bool adjust_delta = true);
 	void PerformOperation(TextDelta* delta, std::vector<lng>& invalidated_lines, bool adjust_delta = true);
-	void Undo(TextDelta* delta, std::vector<lng>& invalidated_lines);
-	void Redo(TextDelta* delta);
 	std::vector<Interval> GetCursorIntervals();
 
 	Task* current_task = nullptr;
@@ -202,10 +203,12 @@ private:
 	bool is_loaded;
 	double loaded;
 
-	std::vector<TextLine*> lines;
+	PGTextBuffer* GetBuffer(lng line);
+
+	lng linecount = 0;
+	std::vector<PGTextBuffer*> buffers;
 	std::vector<TextDelta*> deltas;
 	std::vector<TextDelta*> redos;
-	std::vector<TextBlock> parsed_blocks;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
 	PGFileEncoding encoding;

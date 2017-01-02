@@ -236,9 +236,12 @@ void FindText::FindAll(PGDirection direction) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
-	tf.FindAllMatches(field->GetText(), direction, 
-		tf.GetActiveCursor()->BeginLine(), tf.GetActiveCursor()->BeginPosition(), 
-		tf.GetActiveCursor()->EndLine(), tf.GetActiveCursor()->EndPosition(),
+	auto begin_pos = tf.GetActiveCursor()->BeginPosition();
+	auto end_pos = tf.GetActiveCursor()->EndPosition();
+	std::string text = field->GetText();
+	tf.FindAllMatches(text, direction, 
+		begin_pos.line, begin_pos.position, 
+		end_pos.line, end_pos.position,
 		&error_message,
 		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled());
 	selected_match = 0;

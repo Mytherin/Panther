@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cursor.h"
-#include "textline.h"
+#include "textbuffer.h"
 #include "utils.h"
 
 #include <string>

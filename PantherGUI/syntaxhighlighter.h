@@ -1,7 +1,7 @@
 #pragma once
 
 #include "syntax.h"
-#include "textline.h"
+#include "textbuffer.h"
 #include <vector>
 
 enum SyntaxHighlighterType {

@@ -39,9 +39,6 @@
     <ClCompile Include="mmap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="textline.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cursor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -132,6 +129,9 @@
     <ClCompile Include="regex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="textbuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -158,9 +158,6 @@
     <ClInclude Include="textdelta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="textline.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="encoding.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -180,9 +177,6 @@
       <Filter>Header Files\parsers</Filter>
     </ClInclude>
     <ClInclude Include="syntax.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="textblock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="thread.h">
@@ -252,6 +246,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="regex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textbuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="passert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

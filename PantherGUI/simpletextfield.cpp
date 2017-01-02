@@ -29,29 +29,29 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	Cursor* cursor = textfile->GetCursors()[0];
 	SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldText));
 	PGScalar line_height = GetTextHeight(textfield_font);
-	TextLine* line = textfile->GetLine(0);
+	TextLine line = textfile->GetLine(0);
 	RenderSelection(renderer, 
 		textfield_font, 
-		line->GetLine(), 
-		line->GetLength(), 
+		line.GetLine(), 
+		line.GetLength(), 
 		x - xoffset, 
-		y, cursor->BeginPosition(), 
-		cursor->EndPosition(), 
+		y, cursor->BeginPosition().position,
+		cursor->EndPosition().position,
 		PGStyleManager::GetColor(PGColorTextFieldSelection), 
 		max_x);
 	if (display_carets) {
 		RenderCaret(renderer, 
 			textfield_font, 
-			line->GetLine(),
-			line->GetLength(),
+			line.GetLine(),
+			line.GetLength(),
 			x - xoffset,
 			y,
-			cursor->SelectedPosition(),
+			cursor->SelectedPosition().position,
 			line_height,
 			PGStyleManager::GetColor(PGColorTextFieldCaret));
 	}
 
-	RenderText(renderer, textfield_font, line->GetLine(), line->GetLength(), x - xoffset, y, max_x);
+	RenderText(renderer, textfield_font, line.GetLine(), line.GetLength(), x - xoffset, y, max_x);
 }
 
 void SimpleTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
@@ -98,7 +98,8 @@ void SimpleTextField::MouseUp(int x, int y, PGMouseButton button, PGModifier mod
 		});
 		PGPopupMenuInsertEntry(menu, "Cut", nullptr, PGPopupMenuGrayed);
 		PGPopupMenuInsertEntry(menu, "Paste", [](Control* control) {
-			dynamic_cast<SimpleTextField*>(control)->textfile->PasteText(GetClipboardText(control->window));
+			std::string clipboard_text = GetClipboardText(control->window);
+			dynamic_cast<SimpleTextField*>(control)->textfile->PasteText(clipboard_text);
 		});
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuInsertEntry(menu, "Select All", [](Control* control) {
@@ -118,7 +119,7 @@ void SimpleTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			lng character;
 			GetCharacterFromPosition(mouse.x, textfile->GetLine(0), character);
 			Cursor* active_cursor = textfile->GetActiveCursor();
-			if (active_cursor->start_character != character) {
+			if (active_cursor->SelectedPosition().character != character) {
 				active_cursor->SetCursorStartLocation(0, character);
 				Cursor::NormalizeCursors(textfile, textfile->GetCursors());
 				this->Invalidate();
@@ -146,12 +147,15 @@ bool SimpleTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 		// we don't use these currently
 		// but we override them so they don't get passed to other controls
 		return true;
+	default:
+		break;
 	}
 	return BasicTextField::KeyboardButton(button, modifier);
 }
 
 std::string SimpleTextField::GetText() {
-	return textfile->GetLine(0)->GetString();
+	TextLine line = textfile->GetLine(0);
+	return std::string(line.GetLine(), line.GetLength());
 }
 
 void SimpleTextField::SetValidInput(bool valid) {

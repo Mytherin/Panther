@@ -48,7 +48,11 @@ static void CreateFallbackFonts(PGFontHandle font) {
 }
 
 PGFontHandle PGCreateFont() {
+#ifdef WIN32
 	char* default_font = "Consolas";
+#else
+	char* default_font = "menlo";
+#endif
 	return PGCreateFont(default_font, false, false);
 }
 
@@ -412,7 +416,10 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 				PGScalar lineheight = GetTextHeight(font);
 				RenderLine(renderer, PGLine(x + cumsiz + 1, y + lineheight / 2, x + cumsiz + text_size - 1, y + lineheight / 2), PGColor(255, 255, 255, 64), 1);
 			} else if (text[i] == ' ') {
-				char bullet_point[3] = { 0xE2, 0x88, 0x99 };
+				char bullet_point[3] = { 0, 0, 0 };
+				bullet_point[0] |= 0xE2;
+				bullet_point[1] |= 0x88;
+				bullet_point[2] |= 0x99;
 				PGColor color = GetTextColor(font);
 				SetTextColor(font, PGColor(255, 255, 255, 64));
 				RenderText(renderer, font, bullet_point, 3, x + cumsiz, y);

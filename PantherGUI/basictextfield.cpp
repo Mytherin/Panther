@@ -126,6 +126,8 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			return false;
 		}
 		return true;
+	default:
+		return false;
 	}
 	return false;
 }
@@ -156,7 +158,8 @@ bool BasicTextField::KeyboardCharacter(char character, PGModifier modifier) {
 			if (modifier & PGModifierShift) {
 				// FIXME: cycle through previous copy-pastes
 			} else {
-				textfile->PasteText(GetClipboardText(window));
+				std::string text = GetClipboardText(window);
+				textfile->PasteText(text);
 			}
 			return true;
 		}
@@ -179,15 +182,15 @@ PGCursorType BasicTextField::GetCursor(PGPoint mouse) {
 	return PGCursorIBeam;
 }
 
-void BasicTextField::GetCharacterFromPosition(PGScalar x, TextLine* line, lng& character) {
-	if (!line) {
+void BasicTextField::GetCharacterFromPosition(PGScalar x, TextLine line, lng& character) {
+	if (!line.IsValid()) {
 		character = 0;
 		return;
 	}
 	x -= text_offset;
 	x += textfile->GetXOffset();
-	char* text = line->GetLine();
-	lng length = line->GetLength();
+	char* text = line.GetLine();
+	lng length = line.GetLength();
 	character = GetPositionInLine(textfield_font, x, text, length);
 }
 
@@ -247,7 +250,7 @@ void BasicTextField::TextChanged() {
 	this->Invalidate();
 }
 
-void BasicTextField::TextChanged(std::vector<TextLine*> lines) {
+void BasicTextField::TextChanged(std::vector<lng> lines) {
 	this->TextChanged();
 }
 
