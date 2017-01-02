@@ -251,9 +251,6 @@
     <ClInclude Include="textbuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="passert.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="logo.ico">

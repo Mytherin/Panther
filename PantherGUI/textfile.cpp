@@ -25,7 +25,7 @@ TextFile::TextFile(BasicTextField* textfield) : textfield(textfield), highlighte
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = CreateMutex();
-	this->buffers.push_back(new PGTextBuffer(nullptr, 0, 0));
+	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
 	cursors.push_back(new Cursor(this));
 	this->linecount = 1;
 	is_loaded = true;
@@ -286,7 +286,8 @@ void TextFile::OpenFile(std::string path) {
 		}
 		ptr += character_offset;
 	}
-	if (prev < ptr) {
+	if (true) {
+		// add the final line
 		char* line_start = prev;
 		lng line_size = (lng)(ptr - prev);
 		if (current_buffer == nullptr ||

@@ -189,7 +189,6 @@
     <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
-    <ClInclude Include="passert.h" />
     <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />

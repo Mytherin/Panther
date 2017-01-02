@@ -766,7 +766,9 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			field->OnTextChanged([](Control* c, void* data) {
 				SimpleTextField* input = (SimpleTextField*)c;
 				TextField* tf = (TextField*)data;
-				char* line = input->GetTextFile().GetLine(0).GetLine();
+				TextLine textline = input->GetTextFile().GetLine(0);
+				std::string str = std::string(textline.GetLine(), textline.GetLength());
+				const char* line = str.c_str();
 				char* p = nullptr;
 				// attempt to convert the text to a number
 				// FIXME: strtoll (long = 32-bit on windows)
