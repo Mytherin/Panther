@@ -127,7 +127,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				max_x);
 
 			if (!minimap && startline == selected_pos.line) {
-				display_carets = true;
 				if (display_carets) {
 					// render the caret on the selected line
 					RenderCaret(renderer, font, current_line.GetLine(), current_line.GetLength(), position_x_text - xoffset, position_y, selected_pos.position, line_height, PGStyleManager::GetColor(PGColorTextFieldCaret));

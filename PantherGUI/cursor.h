@@ -9,10 +9,24 @@
 
 class TextFile;
 class TextField;
+struct CursorPosition;
 
 struct CursorPosition {
 	PGTextBuffer* buffer;
 	lng position;
+
+	friend bool operator< (const CursorPosition& lhs, const CursorPosition& rhs) {
+		return (lhs.buffer->start_line < rhs.buffer->start_line ||
+			lhs.buffer->start_line == rhs.buffer->start_line && lhs.position < rhs.position);
+	}
+	friend bool operator> (const CursorPosition& lhs, const CursorPosition& rhs){ return rhs < lhs; }
+	friend bool operator<=(const CursorPosition& lhs, const CursorPosition& rhs){ return !(lhs > rhs); }
+	friend bool operator>=(const CursorPosition& lhs, const CursorPosition& rhs){ return !(lhs < rhs); }
+
+	friend bool operator==(const CursorPosition& lhs, const CursorPosition& rhs) {
+		return (lhs.buffer->start_line == rhs.buffer->start_line && lhs.position == rhs.position);
+	}
+	friend bool operator!=(const CursorPosition& lhs, const CursorPosition& rhs){ return !(lhs == rhs); }
 
 	CursorPosition(PGTextBuffer* buffer, lng position) : buffer(buffer), position(position) { }
 };
@@ -53,6 +67,9 @@ public:
 	std::string GetText();
 
 	bool SelectionIsEmpty();
+
+	bool OverlapsWith(Cursor* cursor);
+	void Merge(Cursor* cursor);
 
 	/*bool Contains(lng linenr, lng characternr);
 	bool OverlapsWith(Cursor& cursor);

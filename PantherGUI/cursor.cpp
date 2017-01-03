@@ -122,7 +122,7 @@ void Cursor::OffsetSelectionWord(PGDirection direction) {
 				break;
 			}
 		}
-		start_buffer_position = std::min((lng) start_buffer->current_size - 1, std::max((lng) 0, (lng)(text - start_buffer->buffer)));
+		start_buffer_position = std::min((lng)start_buffer->current_size - 1, std::max((lng)0, (lng)(text - start_buffer->buffer)));
 		assert(start_buffer_position >= 0);
 	}
 }
@@ -358,7 +358,64 @@ CursorPosition Cursor::EndCursorPosition() {
 	}
 }
 
+
+bool Cursor::OverlapsWith(Cursor* cursor) {
+	CursorPosition begin_position = BeginCursorPosition();
+	CursorPosition cursor_begin_position = cursor->BeginCursorPosition();
+	CursorPosition end_position = EndCursorPosition();
+	CursorPosition cursor_end_position = cursor->EndCursorPosition();
+
+	if (begin_position <= cursor_end_position && end_position >= cursor_begin_position) {
+		return true;
+	}
+	if (cursor_begin_position <= end_position && cursor_end_position >= begin_position) {
+		return true;
+	}
+	return false;
+}
+
+void Cursor::Merge(Cursor* cursor) {
+	CursorPosition begin_position = BeginCursorPosition();
+	CursorPosition cursor_begin_position = cursor->BeginCursorPosition();
+	if (begin_position.buffer == cursor_begin_position.buffer) {
+		begin_position.position = std::min(begin_position.position, cursor_begin_position.position);
+	} else if (begin_position.buffer->start_line > cursor_begin_position.buffer->start_line) {
+		begin_position.buffer = cursor_begin_position.buffer;
+		begin_position.position = cursor_begin_position.position;
+	}
+
+	CursorPosition end_position = EndCursorPosition();
+	CursorPosition cursor_end_position = cursor->EndCursorPosition();
+	if (end_position.buffer == cursor_end_position.buffer) {
+		end_position.position = std::max(end_position.position, cursor_end_position.position);
+	} else if (end_position.buffer->start_line < cursor_end_position.buffer->start_line) {
+		end_position.buffer = cursor_end_position.buffer;
+		end_position.position = cursor_end_position.position;
+	}
+
+	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
+		start_buffer = begin_position.buffer;
+		start_buffer_position = begin_position.position;
+		end_buffer = end_position.buffer;
+		end_buffer_position = end_position.position;
+	} else {
+		start_buffer = end_position.buffer;
+		start_buffer_position = end_position.position;
+		end_buffer = begin_position.buffer;
+		end_buffer_position = begin_position.position;
+	}
+}
+
 void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield) {
+	for (size_t i = 0; i < cursors.size() - 1; i++) {
+		int j = i + 1;
+		if (cursors[i]->OverlapsWith(cursors[j])) {
+			cursors[i]->Merge(cursors[j]);
+			delete cursors[j];
+			cursors.erase(cursors.begin() + j);
+			i -= 2;
+		}
+	}
 	if (textfile->textfield) {
 		textfile->textfield->SelectionChanged();
 	}	/*
@@ -492,3 +549,4 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 //		}
 //	}
 //}
+

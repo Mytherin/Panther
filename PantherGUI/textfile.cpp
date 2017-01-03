@@ -143,11 +143,6 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 	textfile->current_task = nullptr;
 }
 
-void TextFile::RefreshCursors() {
-	if (!textfield) return;
-	textfield->RefreshCursors();
-}
-
 int TextFile::GetLineHeight() {
 	if (!textfield) return -1;
 	return textfield->GetLineHeight();
@@ -599,7 +594,7 @@ void TextFile::InsertLines(std::vector<std::string>& lines, size_t i) {
 	if (lines[0].size() > 0) {
 		InsertText(lines[0], i);
 	}
-	
+
 	lng start_position = cursor->start_buffer_position;
 	PGTextBuffer* start_buffer = cursor->start_buffer;
 
@@ -942,7 +937,28 @@ void TextFile::DeleteLines() {
 
 void TextFile::DeleteLine(PGDirection direction) {
 	if (!is_loaded) return;
-	assert(0);
+
+	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
+	this->Lock(PGWriteLock);
+	VerifyTextfile();
+	for (int i = 0; i < cursors.size(); i++) {
+		if (direction == PGDirectionLeft) {
+			cursors[i]->SelectStartOfLine();
+		} else {
+			cursors[i]->SelectEndOfLine();
+		}
+	}
+	for (int i = 0; i < cursors.size(); i++) {
+		if (cursors[i]->SelectionIsEmpty()) {
+			DeleteCharacter(direction, i);
+		} else {
+			DeleteSelection(i);
+		}
+	}
+	Cursor::NormalizeCursors(this, cursors, true);
+	VerifyTextfile();
+	this->Unlock(PGWriteLock);
+	textfield->TextChanged();
 }
 
 void TextFile::AddEmptyLine(PGDirection direction) {
@@ -1080,7 +1096,6 @@ void TextFile::DeleteCharacter(PGDirection direction, size_t i) {
 			assert(c2->end_buffer_position < c2->end_buffer->current_size);
 		}
 	}
-	VerifyTextfile();
 }
 
 void TextFile::DeleteCharacter(PGDirection direction) {
@@ -1099,6 +1114,7 @@ void TextFile::DeleteCharacter(PGDirection direction) {
 			DeleteCharacter(direction, i);
 		}
 	}
+	Cursor::NormalizeCursors(this, cursors, true);
 	VerifyTextfile();
 	this->Unlock(PGWriteLock);
 	textfield->TextChanged();

@@ -240,6 +240,7 @@ void BasicTextField::SelectionChanged() {
 	for (auto it = selection_changed_callbacks.begin(); it != selection_changed_callbacks.end(); it++) {
 		(it->first)(this, it->second);
 	}
+	this->RefreshCursors();
 	this->Invalidate();
 }
 

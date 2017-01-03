@@ -129,7 +129,6 @@ public:
 	bool FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, lng& selected_match, bool include_selection);
 	void FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
 
-	void RefreshCursors();
 	int GetLineHeight();
 
 	void VerifyTextfile();
