@@ -941,6 +941,8 @@ void TextFile::DeleteLine(PGDirection direction) {
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	this->Lock(PGWriteLock);
 	VerifyTextfile();
+	// FIXME: this should not be able to reduce the size of
+	// the selection
 	for (int i = 0; i < cursors.size(); i++) {
 		if (direction == PGDirectionLeft) {
 			cursors[i]->SelectStartOfLine();
@@ -948,6 +950,7 @@ void TextFile::DeleteLine(PGDirection direction) {
 			cursors[i]->SelectEndOfLine();
 		}
 	}
+	Cursor::NormalizeCursors(this, cursors);
 	for (int i = 0; i < cursors.size(); i++) {
 		if (cursors[i]->SelectionIsEmpty()) {
 			DeleteCharacter(direction, i);
@@ -1143,49 +1146,9 @@ void TextFile::AddNewLine() {
 void TextFile::AddNewLine(std::string text) {
 	if (!is_loaded) return;
 	std::vector<std::string> lines;
+	lines.push_back("");
 	lines.push_back(text);
-	AddNewLines(lines, true);
-}
-
-void TextFile::AddNewLines(std::vector<std::string>& added_text, bool first_is_newline) {
-	if (!is_loaded) return;
-	//MultipleDelta* delta = new MultipleDelta();
-	//if (CursorsContainSelection(cursors)) {
-	//	// if any of the cursors select text, we delete that text before inserting the characters
-	//	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-	//		if (!(*it)->SelectionIsEmpty()) {
-	//			DeleteCharacter(delta, *it, PGDirectionLeft, true, false);
-	//		}
-	//	}
-	//	// FIXME: I don't know if this is necessary
-	//	/*for (int i = 0; i < delta->deltas.size(); i++) {
-	//		if (delta->deltas[i]->TextDeltaType() == PGDeltaAddText) {
-	//			delta->deltas.erase(delta->deltas.begin() + i);
-	//			i--;
-	//		}
-	//	}*/
-	//}
-	//for (auto it = cursors.begin(); it != cursors.end(); it++) {
-	//	lng characternumber = (*it)->EndPosition();
-	//	lng linenumber = (*it)->EndLine();
-	//	lng length = lines[linenumber]->GetLength();
-	//	lng current_line = (*it)->BeginLine();
-
-	//	if (added_text.size() == 1) {
-	//		delta->AddDelta(new AddLine(*it, current_line, (*it)->BeginPosition(), added_text.front()));
-	//		continue;
-	//	}
-	//	std::vector<std::string> text = added_text;
-	//	if (!first_is_newline) {
-	//		assert(added_text.size() > 1); // if added_text == 1 and first_is_newline is false, use InsertText
-	//		delta->AddDelta(new AddText(nullptr, (*it)->BeginLine(), (*it)->BeginPosition(), added_text.front()));
-	//		text.erase(text.begin());
-	//	}
-	//	delta->AddDelta(new AddLines(*it, (*it)->BeginLine(), (*it)->BeginPosition(), text));
-	//}
-	//this->AddDelta(delta);
-	//PerformOperation(delta);
-	//Cursor::NormalizeCursors(this, cursors);
+	InsertLines(lines);
 }
 
 void TextFile::SetUnsavedChanges(bool changes) {
@@ -1232,32 +1195,6 @@ void TextFile::AddDelta(TextDelta* delta) {
 	}
 	redos.clear();
 	this->deltas.push_back(delta);
-}
-
-static void ShiftDelta(lng& linenr, lng& characternr, lng shift_lines, lng shift_lines_line, lng shift_lines_character, lng shift_characters, lng shift_characters_line, lng shift_characters_character, lng last_line_offset) {
-	if (linenr == shift_characters_line &&
-		characternr >= shift_characters_character) {
-		characternr += shift_characters;
-	} else if (linenr == shift_characters_line &&
-		characternr < 0) {
-		// special case: see below explanation
-		characternr = shift_characters_character + std::abs(characternr + 1);
-	}
-	if (shift_lines != 0) {
-		if (linenr == (shift_lines_line + std::abs(shift_lines) - 1) && shift_lines < 0) {
-			// special case: multi-line deletion that ends with deleting part of a line
-			// this is done by removing the entire last line and then adding part of the line back
-			// removing and readding text messes with cursors on that line,
-			// to make the cursor go back to the proper position, 
-			// we store the position of this delta on the original line as a negative number when removing it
-			// when performing the AddText we do a special case for negative numbers
-			// to shift the cursor position to its original position in the text again
-			characternr = -(characternr - last_line_offset) - 1;
-			linenr = shift_lines_line - 1;
-		} else if (linenr >= shift_lines_line) {
-			linenr += shift_lines;
-		}
-	}
 }
 
 void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {

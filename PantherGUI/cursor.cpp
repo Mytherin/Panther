@@ -416,9 +416,12 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 			i -= 2;
 		}
 	}
-	if (textfile->textfield) {
-		textfile->textfield->SelectionChanged();
-	}	/*
+	if (scroll_textfield) {
+		if (textfile->textfield) {
+			textfile->textfield->SelectionChanged();
+		}
+	}
+	/*
 	for (int i = 0; i < cursors.size(); i++) {
 		for (int j = i + 1; j < cursors.size(); j++) {
 			if (cursors[i]->OverlapsWith(*cursors[j])) {
