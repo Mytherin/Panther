@@ -53,6 +53,7 @@ enum PGLockType {
 class TextFile {
 	friend class Cursor;
 	friend class TextLineIterator;
+	friend class TextField;
 public:
 	// create an in-memory textfile with currently unspecified path
 	TextFile(BasicTextField* textfield);
