@@ -10,6 +10,8 @@
 #include "container.h"
 #include "statusbar.h"
 
+#include "xml.h"
+#include "c.h"
 
 #include <sys/time.h>
 #include <cctype>
@@ -74,7 +76,6 @@ void PeriodicWindowRedraw(void) {
 
 - (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window
 {
-	NSLog(@"hello");
     if(self = [super initWithFrame:frameRect]) {
 		NSRect rect = [self getBounds];
     	PGWindowHandle res = new PGWindow();
@@ -83,7 +84,10 @@ void PeriodicWindowRedraw(void) {
 		ControlManager* manager = new ControlManager(res);
 		res->manager = manager;
 		res->renderer = InitializeRenderer();
-		
+			
+		PGLanguageManager::AddLanguage(new CLanguage());
+		PGLanguageManager::AddLanguage(new XMLLanguage());
+
 		Scheduler::Initialize();
 		Scheduler::SetThreadCount(8);
 

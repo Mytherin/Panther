@@ -281,7 +281,7 @@ void TextFile::OpenFile(std::string path) {
 		}
 		ptr += character_offset;
 	}
-	if (true) {
+	{
 		// add the final line
 		char* line_start = prev;
 		lng line_size = (lng)(ptr - prev);

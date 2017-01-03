@@ -17,7 +17,7 @@ struct CursorPosition {
 
 	friend bool operator< (const CursorPosition& lhs, const CursorPosition& rhs) {
 		return (lhs.buffer->start_line < rhs.buffer->start_line ||
-			lhs.buffer->start_line == rhs.buffer->start_line && lhs.position < rhs.position);
+			(lhs.buffer->start_line == rhs.buffer->start_line && lhs.position < rhs.position));
 	}
 	friend bool operator> (const CursorPosition& lhs, const CursorPosition& rhs){ return rhs < lhs; }
 	friend bool operator<=(const CursorPosition& lhs, const CursorPosition& rhs){ return !(lhs > rhs); }

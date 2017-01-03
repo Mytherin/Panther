@@ -44,7 +44,7 @@ std::string PGEncodingToString(PGFileEncoding encoding) {
 	case PGEncodingUTF32LEBOM:
 		return "UTF-32 LE with BOM";
 	default:
-		assert(0);
+		return "Unknown";
 	}
 	return "";
 }
