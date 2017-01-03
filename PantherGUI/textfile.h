@@ -72,7 +72,6 @@ public:
 	void DeleteWord(PGDirection direction);
 	void AddNewLine();
 	void AddNewLine(std::string text);
-	void AddNewLines(std::vector<std::string>& lines, bool first_is_newline);
 	void DeleteLines();
 	void DeleteLine(PGDirection direction);
 	void AddEmptyLine(PGDirection direction);
@@ -134,8 +133,8 @@ public:
 
 	void VerifyTextfile();
 
-	std::vector<Cursor> BackupCursors();
-	void RestoreCursors(std::vector<Cursor>& cursors);
+	std::vector<CursorData> BackupCursors();
+	void RestoreCursors(std::vector<CursorData>& cursors);
 
 	lng GetMaxLineWidth() { return longest_line; }
 	void SetMaxLineWidth(lng new_width = -1);
@@ -186,9 +185,10 @@ private:
 	void OpenFile(std::string filename);
 
 	void AddDelta(TextDelta* delta);
+	void Undo(TextDelta* delta);
 
-	void PerformOperation(TextDelta* delta, bool adjust_delta = true);
-	void PerformOperation(TextDelta* delta, std::vector<lng>& invalidated_lines, bool adjust_delta = true);
+	void PerformOperation(TextDelta* delta);
+	void PerformOperation(TextDelta* delta, bool redo);
 	std::vector<Interval> GetCursorIntervals();
 
 	Task* current_task = nullptr;
@@ -199,8 +199,7 @@ private:
 	static void RunTextFinder(Task* task, TextFile* textfile, std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool match_case, bool wrap, bool regex);
 
 
-	void InvalidateParsing(lng line);
-	void InvalidateParsing(std::vector<lng>& lines);
+	void InvalidateParsing();
 
 	bool is_loaded;
 	double loaded;

@@ -148,20 +148,10 @@ int TextFile::GetLineHeight() {
 	return textfield->GetLineHeight();
 }
 
-void TextFile::InvalidateParsing(lng line) {
-	assert(is_loaded);
-	std::vector<lng> lines(1);
-	lines.push_back(line);
-	InvalidateParsing(lines);
-}
-
-void TextFile::InvalidateParsing(std::vector<lng>& invalidated_lines) {
+void TextFile::InvalidateParsing() {
 	assert(is_loaded);
 	if (!highlighter) return;
-	// now set all of the invalidated blocks to unparsed
-	for (size_t i = 0; i < invalidated_lines.size(); i++) {
-		GetBuffer(invalidated_lines[i])->parsed = false;
-	}
+
 	this->current_task = new Task((PGThreadFunctionParams)RunHighlighter, (void*) this);
 	Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 }
@@ -569,19 +559,8 @@ void TextFile::DeleteSelection(int i) {
 void TextFile::InsertText(std::string text) {
 	if (!is_loaded) return;
 
-	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
-	this->Lock(PGWriteLock);
-	VerifyTextfile();
-	for (size_t i = 0; i < cursors.size(); i++) {
-		if (!cursors[i]->SelectionIsEmpty()) {
-			// first delete the selection, if any
-			DeleteSelection(i);
-		}
-		InsertText(text, i);
-	}
-	VerifyTextfile();
-	this->Unlock(PGWriteLock);
-	textfield->TextChanged();
+	TextDelta* delta = new AddText(BackupCursors(), text);
+	PerformOperation(delta);
 }
 
 void TextFile::InsertLines(std::vector<std::string>& lines, size_t i) {
@@ -715,21 +694,8 @@ void TextFile::InsertLines(std::vector<std::string>& lines, size_t i) {
 void TextFile::InsertLines(std::vector<std::string>& lines) {
 	if (!is_loaded) return;
 
-	// FIXME: this should be an assertion
-	// all cursor operations should keep cursors sorted
-	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
-	this->Lock(PGWriteLock);
-	VerifyTextfile();
-	for (size_t i = 0; i < cursors.size(); i++) {
-		if (!cursors[i]->SelectionIsEmpty()) {
-			// first delete the selection, if any
-			DeleteSelection(i);
-		}
-		InsertLines(lines, i);
-	}
-	VerifyTextfile();
-	this->Unlock(PGWriteLock);
-	textfield->TextChanged();
+	TextDelta* delta = new AddLines(BackupCursors(), lines);
+	PerformOperation(delta);
 }
 
 void TextFile::OffsetLineOffset(lng offset) {
@@ -938,30 +904,8 @@ void TextFile::DeleteLines() {
 void TextFile::DeleteLine(PGDirection direction) {
 	if (!is_loaded) return;
 
-	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
-	this->Lock(PGWriteLock);
-	VerifyTextfile();
-	// FIXME: this should not be able to reduce the size of
-	// the selection
-	for (int i = 0; i < cursors.size(); i++) {
-		if (direction == PGDirectionLeft) {
-			cursors[i]->SelectStartOfLine();
-		} else {
-			cursors[i]->SelectEndOfLine();
-		}
-	}
-	Cursor::NormalizeCursors(this, cursors);
-	for (int i = 0; i < cursors.size(); i++) {
-		if (cursors[i]->SelectionIsEmpty()) {
-			DeleteCharacter(direction, i);
-		} else {
-			DeleteSelection(i);
-		}
-	}
-	Cursor::NormalizeCursors(this, cursors, true);
-	VerifyTextfile();
-	this->Unlock(PGWriteLock);
-	textfield->TextChanged();
+	TextDelta* delta = new RemoveText(direction, BackupCursors(), PGDeltaRemoveLine);
+	PerformOperation(delta);
 }
 
 void TextFile::AddEmptyLine(PGDirection direction) {
@@ -1104,38 +1048,15 @@ void TextFile::DeleteCharacter(PGDirection direction, size_t i) {
 void TextFile::DeleteCharacter(PGDirection direction) {
 	if (!is_loaded) return;
 
-	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
-	this->Lock(PGWriteLock);
-	VerifyTextfile();
-	bool delete_selection = CursorsContainSelection(cursors);
-	for (size_t i = 0; i < cursors.size(); i++) {
-		if (delete_selection) {
-			if (!cursors[i]->SelectionIsEmpty()) {
-				DeleteSelection(i);
-			}
-		} else {
-			DeleteCharacter(direction, i);
-		}
-	}
-	Cursor::NormalizeCursors(this, cursors, true);
-	VerifyTextfile();
-	this->Unlock(PGWriteLock);
-	textfield->TextChanged();
+	TextDelta* delta = new RemoveText(direction, BackupCursors(), PGDeltaRemoveText);
+	PerformOperation(delta);
 }
 
 void TextFile::DeleteWord(PGDirection direction) {
 	if (!is_loaded) return;
 
-	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
-	this->Lock(PGWriteLock);
-	VerifyTextfile();
-	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if ((*it)->SelectionIsEmpty()) {
-			(*it)->OffsetSelectionWord(direction);
-		}
-	}
-	this->Unlock(PGWriteLock);
-	DeleteCharacter(direction);
+	TextDelta* delta = new RemoveText(direction, BackupCursors(), PGDeltaRemoveWord);
+	PerformOperation(delta);
 }
 
 void TextFile::AddNewLine() {
@@ -1164,17 +1085,15 @@ void TextFile::Undo() {
 	if (this->deltas.size() == 0) return;
 	TextDelta* delta = this->deltas.back();
 	this->ClearCursors();
-	std::vector<lng> invalidated_lines;
 	Lock(PGWriteLock);
-	//this->Undo(delta, invalidated_lines);
+	this->Undo(delta);
 	Unlock(PGWriteLock);
-	InvalidateParsing(invalidated_lines);
-	if (this->textfield) {
-		this->textfield->TextChanged(invalidated_lines);
-	}
-	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	this->deltas.pop_back();
 	this->redos.push_back(delta);
+	if (this->textfield) {
+		this->textfield->TextChanged();
+	}
+	InvalidateParsing();
 }
 
 void TextFile::Redo() {
@@ -1183,7 +1102,7 @@ void TextFile::Redo() {
 	TextDelta* delta = this->redos.back();
 	this->ClearCursors();
 	//this->Redo(delta);
-	this->PerformOperation(delta, false);
+	this->PerformOperation(delta, true);
 	this->redos.pop_back();
 	this->deltas.push_back(delta);
 }
@@ -1197,28 +1116,119 @@ void TextFile::AddDelta(TextDelta* delta) {
 	this->deltas.push_back(delta);
 }
 
-void TextFile::PerformOperation(TextDelta* delta, bool adjust_delta) {
+void TextFile::PerformOperation(TextDelta* delta) {
 	// set the current_task to the nullptr, this will cause any active syntax highlighting to end
 	// this prevents long syntax highlighting tasks (e.g. highlighting a long document) from 
 	// locking us out of editing until they're finished
 	SetUnsavedChanges(true);
 	current_task = nullptr;
-	std::vector<lng> invalidated_lines;
+	// this should be an assertion
+	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	// lock the blocks
 	Lock(PGWriteLock);
+	VerifyTextfile();
 	// perform the operation
-	PerformOperation(delta, invalidated_lines, adjust_delta);
+	PerformOperation(delta, false);
 	// release the locks again
+	VerifyTextfile();
 	Unlock(PGWriteLock);
+	AddDelta(delta);
 	if (this->textfield) {
-		this->textfield->TextChanged(invalidated_lines);
+		this->textfield->TextChanged();
 	}
 	// invalidate any lines for parsing
-	InvalidateParsing(invalidated_lines);
+	InvalidateParsing();
 }
 
-void TextFile::PerformOperation(TextDelta* delta, std::vector<lng>& invalidated_lines, bool adjust_delta) {
-	assert(0);
+void TextFile::PerformOperation(TextDelta* delta, bool redo) {
+	switch (delta->type) {
+	case PGDeltaAddText: {
+		AddText* add = (AddText*)delta;
+		for (size_t i = 0; i < cursors.size(); i++) {
+			if (!cursors[i]->SelectionIsEmpty()) {
+				// first delete the selection, if any
+				// FIXME: add deleted text to undo if redo == false
+				DeleteSelection(i);
+			}
+			InsertText(add->text, i);
+		}
+		break;
+	}
+	case PGDeltaAddLines: {
+		AddLines* add = (AddLines*)delta;
+		for (size_t i = 0; i < cursors.size(); i++) {
+			if (!cursors[i]->SelectionIsEmpty()) {
+				// first delete the selection, if any
+				// FIXME: add deleted text to undo if redo == false
+				DeleteSelection(i);
+			}
+			InsertLines(add->lines, i);
+		}
+		break;
+	}
+	case PGDeltaRemoveText: {
+		RemoveText* remove = (RemoveText*)delta;
+		bool delete_selection = CursorsContainSelection(cursors);
+		for (size_t i = 0; i < cursors.size(); i++) {
+			if (delete_selection) {
+				if (!cursors[i]->SelectionIsEmpty()) {
+					if (!redo) {
+						remove->removed_text.push_back("");
+					}
+					DeleteSelection(i);
+				} else if (!redo) {
+					remove->removed_text.push_back("");
+				}
+			} else {
+				if (!redo) {
+					remove->removed_text.push_back("");
+				}
+				DeleteCharacter(remove->direction, i);
+			}
+		}
+		Cursor::NormalizeCursors(this, cursors, true);
+		break;
+	}
+	case PGDeltaRemoveLine: {
+		RemoveText* remove = (RemoveText*)delta;
+		RemoveText remove_text = RemoveText(remove->direction, std::vector<CursorData>(), PGDeltaRemoveText);
+
+		for (int i = 0; i < cursors.size(); i++) {
+			if (remove->direction == PGDirectionLeft) {
+				cursors[i]->SelectStartOfLine();
+			} else {
+				cursors[i]->SelectEndOfLine();
+			}
+		}
+		Cursor::NormalizeCursors(this, cursors, false);
+		PerformOperation(&remove_text, redo);
+		break;
+	}
+	case PGDeltaRemoveWord: {
+		RemoveText* remove = (RemoveText*)delta;
+		RemoveText remove_text = RemoveText(remove->direction, std::vector<CursorData>(), PGDeltaRemoveText);
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			if ((*it)->SelectionIsEmpty()) {
+				(*it)->OffsetSelectionWord(remove->direction);
+			}
+		}
+		PerformOperation(&remove_text, redo);
+		break;
+	}
+	default:
+		assert(0);
+		break;
+	}
+}
+
+
+void TextFile::Undo(TextDelta* delta) {
+	this->RestoreCursors(delta->stored_cursors);
+	switch (delta->type) {
+	case PGDeltaAddText: {
+		break;
+	}
+	}
 }
 
 void TextFile::SaveChanges() {
@@ -1288,18 +1298,18 @@ void TextFile::RemoveTrailingWhitespace() {
 
 }
 
-std::vector<Cursor> TextFile::BackupCursors() {
-	std::vector<Cursor> backup;
+std::vector<CursorData> TextFile::BackupCursors() {
+	std::vector<CursorData> backup;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		backup.push_back(Cursor(**it));
+		backup.push_back((*it)->GetCursorData());
 	}
 	return backup;
 }
 
-void TextFile::RestoreCursors(std::vector<Cursor>& backup) {
+void TextFile::RestoreCursors(std::vector<CursorData>& backup) {
 	ClearCursors();
 	for (auto it = backup.begin(); it != backup.end(); it++) {
-		cursors.push_back(new Cursor(*it));
+		cursors.push_back(new Cursor(this, *it));
 	}
 	Cursor::NormalizeCursors(this, cursors, false);
 }

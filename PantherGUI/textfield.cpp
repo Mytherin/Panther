@@ -756,7 +756,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			struct ScrollData {
 				lng offset;
 				TextField* tf;
-				std::vector<Cursor> backup_cursors;
+				std::vector<CursorData> backup_cursors;
 			};
 			ScrollData* data = new ScrollData();
 			data->offset = textfile->GetLineOffset();

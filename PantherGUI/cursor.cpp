@@ -34,11 +34,22 @@ Cursor::Cursor(TextFile* file, lng start_line, lng start_character, lng end_line
 	assert(end_buffer_position >= 0);
 }
 
+Cursor::Cursor(TextFile* file, CursorData data) : 
+   Cursor(file, data.start_line, data.start_position, data.end_line, data.end_position) {
+}
+
+CursorData Cursor::GetCursorData() {
+	PGCursorPosition start = this->SelectedPosition();
+	PGCursorPosition end = this->UnselectedPosition();
+	return CursorData(start.line, start.position, end.line, end.position);
+}
+
 void Cursor::OffsetLine(lng offset) {
 	OffsetSelectionLine(offset);
 	end_buffer = start_buffer;
 	end_buffer_position = start_buffer_position;
 }
+
 
 void Cursor::OffsetSelectionLine(lng offset) {
 	PGFontHandle textfield_font = file->textfield->GetTextfieldFont();
@@ -501,55 +512,3 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 		textfile->SetLineOffset(line_offset);
 	}*/
 }
-//
-//bool Cursor::Contains(lng linenr, lng characternr) {
-//	if (this->BeginLine() == this->EndLine() &&
-//		this->BeginLine() == linenr) {
-//		return characternr >= this->BeginPosition() && characternr <= this->EndPosition();
-//	} else if (this->BeginLine() == linenr) {
-//		return characternr >= this->BeginPosition();
-//	} else if (this->EndLine() == linenr) {
-//		return characternr <= this->EndPosition();
-//	} else if (linenr > this->BeginLine() && linenr < this->EndLine()) {
-//		return true;
-//	}
-//	return false;
-//}
-//
-//bool Cursor::OverlapsWith(Cursor& cursor) {
-//	/*
-//	return
-//		this->Contains(cursor.BeginLine(), cursor.BeginPosition()) ||
-//		this->Contains(cursor.EndLine(), cursor.EndPosition()) ||
-//		cursor.Contains(BeginLine(), BeginPosition()) ||
-//		cursor.Contains(EndLine(), EndPosition());*/
-//}
-//
-//void Cursor::Merge(Cursor& cursor) {
-//	bool beginIsStart = BeginLine() == start_line && BeginPosition() == start_character ? true : false;
-//	lng beginline = BeginLine();
-//	lng endline = EndLine();
-//	lng begincharacter = BeginPosition();
-//	lng endcharacter = EndPosition();
-//	if (beginline > cursor.BeginLine() ||
-//		(beginline == cursor.BeginLine() && begincharacter > cursor.BeginPosition())) {
-//		if (beginIsStart) {
-//			start_line = cursor.BeginLine();
-//			start_character = cursor.BeginPosition();
-//		} else {
-//			end_line = cursor.BeginLine();
-//			end_character = cursor.BeginPosition();
-//		}
-//	}
-//	if (endline < cursor.EndLine() ||
-//		(endline == cursor.EndLine() && endcharacter < cursor.EndPosition())) {
-//		if (!beginIsStart) {
-//			start_line = cursor.EndLine();
-//			start_character = cursor.EndPosition();
-//		} else {
-//			end_line = cursor.EndLine();
-//			end_character = cursor.EndPosition();
-//		}
-//	}
-//}
-

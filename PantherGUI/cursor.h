@@ -31,12 +31,26 @@ struct CursorPosition {
 	CursorPosition(PGTextBuffer* buffer, lng position) : buffer(buffer), position(position) { }
 };
 
+struct CursorData {
+	lng start_line;
+	lng start_position;
+	lng end_line;
+	lng end_position;
+
+	CursorData(lng start_line, lng start_position, lng end_line, lng end_position) :
+		start_line(start_line), start_position(start_position), end_line(end_line), end_position(end_position) {
+	}
+};
+
 class Cursor {
 	friend class TextFile;
 public:
 	Cursor(TextFile* file);
 	Cursor(TextFile* file, lng start_line, lng start_character);
 	Cursor(TextFile* file, lng start_line, lng start_character, lng end_line, lng end_character);
+	Cursor(TextFile* file, CursorData data);
+
+	CursorData GetCursorData();
 
 	void OffsetLine(lng offset);
 	void OffsetCharacter(PGDirection direction);
