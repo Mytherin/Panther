@@ -172,6 +172,7 @@
     <ClCompile Include="xml.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="assert.h" />
     <ClInclude Include="basictextfield.h" />
     <ClInclude Include="blockingconcurrentqueue.h" />
     <ClInclude Include="button.h" />

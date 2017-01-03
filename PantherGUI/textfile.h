@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include "assert.h"
+
 typedef enum {
 	PGLineEndingWindows,
 	PGLineEndingMacOS,

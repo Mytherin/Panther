@@ -508,7 +508,7 @@ void TextFile::DeleteSelection(int i) {
 							// the cursor occurs on the text we moved to the begin line
 							// this means we have to move the cursor the begin buffer
 							cursors[j]->BUF(bufpos) = begin.buffer;
-							cursors[j]->BUFPOS(bufpos) += begin.position;
+							cursors[j]->BUFPOS(bufpos) = cursors[j]->BUFPOS(bufpos) + begin.position - end.position;
 						} else {
 							// otherwise, we offset the cursor by the deleted amount
 							cursors[j]->BUFPOS(bufpos) -= end.position;
