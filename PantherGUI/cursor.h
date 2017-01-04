@@ -54,8 +54,10 @@ public:
 
 	void OffsetLine(lng offset);
 	void OffsetCharacter(PGDirection direction);
+	void OffsetPosition(lng offset);
 	void OffsetSelectionLine(lng offset);
 	void OffsetSelectionCharacter(PGDirection direction);
+	void OffsetSelectionPosition(lng offset);
 	void OffsetStartOfLine();
 	void OffsetEndOfLine();
 	void SelectStartOfLine();

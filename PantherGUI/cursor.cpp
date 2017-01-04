@@ -100,6 +100,34 @@ void Cursor::OffsetSelectionCharacter(PGDirection direction) {
 	}
 }
 
+
+void Cursor::OffsetPosition(lng offset) {
+	OffsetSelectionPosition(offset);
+	end_buffer = start_buffer;
+	end_buffer_position = start_buffer_position;
+	x_position = -1;
+}
+
+void Cursor::OffsetSelectionPosition(lng offset) {
+	start_buffer_position += offset;
+	while (start_buffer_position < 0) {
+		if (start_buffer->prev) {
+			start_buffer = start_buffer->prev;
+			start_buffer_position += start_buffer->current_size - 1;
+		} else {
+			start_buffer_position = 0;
+		}
+	}
+	while (start_buffer_position >= start_buffer->current_size) {
+		if (start_buffer->next) {
+			start_buffer_position -= start_buffer->current_size - 1;
+			start_buffer = start_buffer->next;
+		} else {
+			start_buffer_position = start_buffer->current_size - 1;
+		}
+	}
+}
+
 void Cursor::OffsetStartOfLine() {
 	SelectStartOfLine();
 	end_buffer = start_buffer;

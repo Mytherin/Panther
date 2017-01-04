@@ -68,6 +68,7 @@ public:
 	void InsertText(std::string text);
 	void InsertLines(std::vector<std::string>& lines);
 	void InsertLines(std::vector<std::string>& lines, size_t cursor);
+	std::vector<std::string> SplitLines(std::string text);
 	void DeleteCharacter(PGDirection direction);
 	void DeleteWord(PGDirection direction);
 	void AddNewLine();
@@ -134,7 +135,12 @@ public:
 	void VerifyTextfile();
 
 	std::vector<CursorData> BackupCursors();
-	void RestoreCursors(std::vector<CursorData>& cursors);
+	CursorData BackupCursor(int i);
+
+	void RestoreCursors(std::vector<CursorData>& data);
+	Cursor* RestoreCursor(CursorData data);
+	// same as RestoreCursor, but selections are replaced by the LOWEST value
+	Cursor* RestoreCursorPartial(CursorData data);
 
 	lng GetMaxLineWidth() { return longest_line; }
 	void SetMaxLineWidth(lng new_width = -1);
@@ -186,6 +192,9 @@ private:
 
 	void AddDelta(TextDelta* delta);
 	void Undo(TextDelta* delta);
+
+	void Undo(AddText& delta, int i);
+	void Undo(RemoveText& delta, std::string& text, int i);
 
 	void PerformOperation(TextDelta* delta);
 	void PerformOperation(TextDelta* delta, bool redo);
