@@ -304,7 +304,8 @@ void TextFile::OpenFile(std::string path) {
 
 	panther::DestroyFileContents(base);
 	loaded = 1;
-
+	is_loaded = true;
+	
 	if (highlighter) {
 		// we parse the first 10 blocks before opening the textfield for viewing
 		// (heuristic: probably should be dependent on highlight speed/amount of text/etc)
@@ -331,7 +332,6 @@ void TextFile::OpenFile(std::string path) {
 			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 		}
 	}
-	is_loaded = true;
 	UnlockMutex(text_lock);
 }
 

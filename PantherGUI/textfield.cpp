@@ -468,7 +468,7 @@ lng TextField::GetMinimapStartLine() {
 	lng lines_rendered = this->height / (minimap_line_height == 0 ? 1 : minimap_line_height);
 	// percentage of text
 	double percentage = (double)textfile->GetLineOffset() / textfile->GetLineCount();
-	return std::max((lng)(textfile->GetLineOffset() - (lines_rendered * percentage)), (lng)0);
+	return std::min(std::max((lng)(textfile->GetLineOffset() - (lines_rendered * percentage)), (lng)0), this->textfile->GetLineCount() - 1);
 }
 
 void TextField::SetMinimapOffset(PGScalar offset) {
