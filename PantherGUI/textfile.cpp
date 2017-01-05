@@ -83,7 +83,7 @@ TextFile::~TextFile() {
 		delete *it;
 	}
 	for (auto it = redos.begin(); it != redos.end(); it++) {
-		delete *it;
+		delete (it)->delta;
 	}
 	if (highlighter) {
 		delete highlighter;
@@ -1108,7 +1108,7 @@ void TextFile::Undo() {
 	VerifyTextfile();
 	Unlock(PGWriteLock);
 	this->deltas.pop_back();
-	this->redos.push_back(delta);
+	this->redos.push_back(RedoStruct(delta, BackupCursors()));
 	if (this->textfield) {
 		this->textfield->TextChanged();
 	}
@@ -1118,11 +1118,13 @@ void TextFile::Undo() {
 void TextFile::Redo() {
 	if (!is_loaded) return;
 	if (this->redos.size() == 0) return;
-	TextDelta* delta = this->redos.back();
+	RedoStruct redo = this->redos.back();
+	TextDelta* delta = redo.delta;
 	SetUnsavedChanges(true);
 	current_task = nullptr;
 	// lock the blocks
 	Lock(PGWriteLock);
+	RestoreCursors(redo.cursors);
 	VerifyTextfile();
 	// perform the operation
 	PerformOperation(delta, true);
@@ -1141,7 +1143,7 @@ void TextFile::Redo() {
 void TextFile::AddDelta(TextDelta* delta) {
 	if (!is_loaded) return;
 	for (auto it = redos.begin(); it != redos.end(); it++) {
-		delete *it;
+		delete (it)->delta;
 	}
 	redos.clear();
 	this->deltas.push_back(delta);
@@ -1151,7 +1153,6 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	// set the current_task to the nullptr, this will cause any active syntax highlighting to end
 	// this prevents long syntax highlighting tasks (e.g. highlighting a long document) from 
 	// locking us out of editing until they're finished
-	SetUnsavedChanges(true);
 	current_task = nullptr;
 	// this should be an assertion
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
@@ -1164,6 +1165,7 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	VerifyTextfile();
 	Unlock(PGWriteLock);
 	if (!success) return;
+	SetUnsavedChanges(true);
 	AddDelta(delta);
 	if (this->textfield) {
 		this->textfield->TextChanged();

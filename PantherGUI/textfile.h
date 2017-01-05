@@ -22,6 +22,14 @@ typedef enum {
 	PGLineEndingUnknown
 } PGLineEnding;
 
+struct RedoStruct {
+	std::vector<CursorData> cursors;
+	TextDelta* delta;
+
+	RedoStruct(TextDelta* delta, std::vector<CursorData> cursors) : 
+		delta(delta), cursors(cursors) { }
+};
+
 PGLineEnding GetSystemLineEnding();
 char GetSystemPathSeparator();
 
@@ -218,7 +226,7 @@ private:
 	lng linecount = 0;
 	std::vector<PGTextBuffer*> buffers;
 	std::vector<TextDelta*> deltas;
-	std::vector<TextDelta*> redos;
+	std::vector<RedoStruct> redos;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
 	PGFileEncoding encoding;
