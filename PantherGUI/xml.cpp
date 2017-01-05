@@ -38,13 +38,6 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 	PGSyntax* prev = nullptr;
 	PGSyntax* next = current->next;
 	current->next = nullptr;
-	while (next) {
-		assert(next->next != next);
-		PGSyntax* tmp = next->next;
-		delete next;
-		next = tmp;
-	}
-	current = &line.syntax;
 	current->end = -1;
 	for (lng i = 0; i < size; i++) {
 		int utf8_length = utf8_character_length(text[i]);

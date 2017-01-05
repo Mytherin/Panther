@@ -5,7 +5,7 @@
 #include "unicode.h"
 
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
-	current_size(size), start_line(start_line), state(nullptr) {
+	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {
 		buffer_size = TEXT_BUFFER_SIZE;
 	} else {

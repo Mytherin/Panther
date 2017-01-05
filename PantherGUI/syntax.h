@@ -24,8 +24,8 @@ extern const PGSyntaxType PGSyntaxClass6;
 
 struct PGSyntax {
 	PGSyntaxType type;
-	lng end;
-	PGSyntax* next;
+	lng end = -1;
+	PGSyntax* next = nullptr;
 
 	PGSyntax() : type(0), end(-1), next(nullptr) { }
 	~PGSyntax() { }

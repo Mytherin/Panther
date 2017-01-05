@@ -66,9 +66,9 @@ public:
 	void InsertText(char character);
 	void InsertText(PGUTF8Character character);
 	void InsertText(std::string text);
-	void InsertLines(std::vector<std::string>& lines);
-	void InsertLines(std::vector<std::string>& lines, size_t cursor);
-	std::vector<std::string> SplitLines(std::string text);
+	void InsertLines(const std::vector<std::string>& lines);
+	void InsertLines(std::vector<std::string> lines, size_t cursor);
+	std::vector<std::string> SplitLines(const std::string& text);
 	void DeleteCharacter(PGDirection direction);
 	void DeleteWord(PGDirection direction);
 	void AddNewLine();

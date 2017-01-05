@@ -92,9 +92,9 @@ void PeriodicWindowRedraw(void) {
 		Scheduler::SetThreadCount(8);
 
 		CreateTimer(res, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
-	
-		TextFile* textfile = FileManager::OpenFile("/Users/myth/Data/tibiawiki_pages_current.xml");
-		TextFile* textfile2 = FileManager::OpenFile("/Users/myth/pyconversion.c");
+		
+		TextFile* textfile = FileManager::OpenFile("/Users/myth/pyconversion.c");
+		TextFile* textfile2 = FileManager::OpenFile("/Users/myth/Data/tibiawiki_pages_current.xml");
 		PGContainer* tabbed = new PGContainer(res);
 		tabbed->width = 0;
 		tabbed->height = TEXT_TAB_HEIGHT;

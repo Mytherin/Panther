@@ -22,13 +22,6 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 	PGSyntax* prev = nullptr;
 	PGSyntax* next = current->next;
 	current->next = nullptr;
-	while (next) {
-		assert(next->next != next);
-		PGSyntax* tmp = next->next;
-		delete next;
-		next = tmp;
-	}
-	current = &line.syntax;
 	current->end = -1;
 	bool escaped = false;
 	// parse the actual keywords

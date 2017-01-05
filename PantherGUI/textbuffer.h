@@ -34,6 +34,7 @@ public:
 	ulng current_size = 0;
 	ulng start_line = 0;
 
+	ulng syntax_count = 0;
 	PGSyntax* syntax = nullptr;
 	PGParserState state = nullptr;
 	bool parsed = false;

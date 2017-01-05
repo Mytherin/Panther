@@ -12,7 +12,6 @@ class TextFile;
 
 typedef enum {
 	PGDeltaAddText,
-	PGDeltaAddLines,
 	PGDeltaRemoveText,
 	PGDeltaRemoveLine,
 	PGDeltaRemoveWord,
@@ -33,18 +32,14 @@ public:
 
 class AddText : public TextDelta {
 public:
-	std::string text;
-
-	AddText(std::string text) : 
-		TextDelta(PGDeltaAddText), text(text) { }
-};
-
-class AddLines : public TextDelta {
-public:
 	std::vector<std::string> lines;
 
-	AddLines(std::vector<std::string> lines) : 
-		TextDelta(PGDeltaAddLines), lines(lines) { }
+	AddText(std::string line) : 
+		TextDelta(PGDeltaAddText) {
+			lines.push_back(line);
+		}
+	AddText(std::vector<std::string> lines) : 
+		TextDelta(PGDeltaAddText), lines(lines) { }
 };
 
 class RemoveText : public TextDelta {

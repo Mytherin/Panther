@@ -115,9 +115,20 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 				lng linecount = buffer->GetLineCount(textfile->GetLineCount());
 				assert(linecount > 0);
 				if (buffer->syntax) {
+					for(ulng j = 0; j < buffer->syntax_count; j++) {
+						PGSyntax* next = buffer->syntax[j].next;
+						while (next) {
+							assert(next->next != next);
+							PGSyntax* tmp = next->next;
+							delete next;
+							next = tmp;
+						}
+					}
 					free(buffer->syntax);
+					buffer->syntax = nullptr;
 				}
-				buffer->syntax = (PGSyntax*)malloc(sizeof(PGSyntax) * linecount);
+				buffer->syntax_count = linecount;
+				buffer->syntax = (PGSyntax*)calloc(linecount, sizeof(PGSyntax));
 
 				int index = 0;
 				for (auto it = TextLineIterator(textfile, textfile->buffers[current_block]); ; it++) {
@@ -305,7 +316,7 @@ void TextFile::OpenFile(std::string path) {
 	panther::DestroyFileContents(base);
 	loaded = 1;
 	is_loaded = true;
-	
+
 	if (highlighter) {
 		// we parse the first 10 blocks before opening the textfield for viewing
 		// (heuristic: probably should be dependent on highlight speed/amount of text/etc)
@@ -563,7 +574,7 @@ void TextFile::InsertText(std::string text) {
 	PerformOperation(delta);
 }
 
-void TextFile::InsertLines(std::vector<std::string>& lines, size_t i) {
+void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	Cursor* cursor = cursors[i];
 	assert(cursor->SelectionIsEmpty());
 	// InsertText should be used to insert text to a line
@@ -691,14 +702,14 @@ void TextFile::InsertLines(std::vector<std::string>& lines, size_t i) {
 
 // insert text into the textfile at each cursors' position
 // text can contain newlines
-void TextFile::InsertLines(std::vector<std::string>& lines) {
+void TextFile::InsertLines(const std::vector<std::string>& lines) {
 	if (!is_loaded) return;
 
-	TextDelta* delta = new AddLines(lines);
+	TextDelta* delta = new AddText(lines);
 	PerformOperation(delta);
 }
 
-std::vector<std::string> TextFile::SplitLines(std::string text) {
+std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 	std::vector<std::string> lines;
 	lng start = 0;
 	lng current = 0;
@@ -991,6 +1002,7 @@ void TextFile::VerifyTextfile() {
 		}
 		assert(buffers[i]->current_size < buffers[i]->buffer_size);
 	}
+	assert(cursors.size() > 0);
 	for (int i = 0; i < cursors.size(); i++) {
 		Cursor* c = cursors[i];
 		assert(i == cursors.size() - 1 || Cursor::CursorOccursFirst(c, cursors[i + 1]));
@@ -1090,7 +1102,9 @@ void TextFile::Undo() {
 	if (this->deltas.size() == 0) return;
 	TextDelta* delta = this->deltas.back();
 	Lock(PGWriteLock);
+	VerifyTextfile();
 	this->Undo(delta);
+	VerifyTextfile();
 	Unlock(PGWriteLock);
 	this->deltas.pop_back();
 	this->redos.push_back(delta);
@@ -1176,22 +1190,14 @@ void TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			} else if (selection) {
 				text->removed_text.push_back("");
 			}
-			InsertText(add->text, i);
+			if (add->lines.size() == 1) {
+				InsertText(add->lines[0], i);
+			} else {
+				InsertLines(add->lines, i);
+			}
 			if (!redo) {
 				add->stored_cursors.push_back(BackupCursor(i));
 			}
-		}
-		break;
-	}
-	case PGDeltaAddLines: {
-		AddLines* add = (AddLines*)delta;
-		for (size_t i = 0; i < cursors.size(); i++) {
-			if (!cursors[i]->SelectionIsEmpty()) {
-				// first delete the selection, if any
-				// FIXME: add deleted text to undo if redo == false
-				DeleteSelection(i);
-			}
-			InsertLines(add->lines, i);
 		}
 		break;
 	}
@@ -1202,11 +1208,13 @@ void TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			if (delete_selection) {
 				if (!cursors[i]->SelectionIsEmpty()) {
 					if (!redo) {
-						remove->removed_text.push_back("");
+						remove->removed_text.push_back(cursors[i]->GetText());
+						remove->stored_cursors.push_back(BackupCursor(i));
 					}
 					DeleteSelection(i);
 				} else if (!redo) {
 					remove->removed_text.push_back("");
+					remove->stored_cursors.push_back(BackupCursor(i));
 				}
 			} else {
 				if (!redo) {
@@ -1251,7 +1259,11 @@ void TextFile::PerformOperation(TextDelta* delta, bool redo) {
 }
 
 void TextFile::Undo(AddText& delta, int i) {
-	cursors[i]->OffsetSelectionPosition(-(lng)delta.text.size());
+	lng offset = -1;
+	for(int line = 0; line < delta.lines.size(); line++) {
+		offset += delta.lines[line].size() + 1;
+	}
+	cursors[i]->OffsetSelectionPosition(-offset);
 	DeleteSelection(i);
 }
 
@@ -1291,6 +1303,9 @@ void TextFile::Undo(TextDelta* delta) {
 		}
 		break;
 	}
+	default:
+		assert(0);
+		break;
 	}
 	if (delta->next) {
 		Undo(delta->next);
