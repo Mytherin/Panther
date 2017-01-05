@@ -92,7 +92,7 @@ void PeriodicWindowRedraw(void) {
 		Scheduler::SetThreadCount(8);
 
 		CreateTimer(res, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
-		
+
 		TextFile* textfile = FileManager::OpenFile("/Users/myth/pyconversion.c");
 		TextFile* textfile2 = FileManager::OpenFile("/Users/myth/Data/tibiawiki_pages_current.xml");
 		PGContainer* tabbed = new PGContainer(res);
@@ -138,6 +138,12 @@ void PeriodicWindowRedraw(void) {
 }
 
 - (void)drawRect:(NSRect)invalidateRect {
+	NSRect window_size = [self getBounds];
+	if (global_handle->manager->width != window_size.size.width || 
+		global_handle->manager->height != window_size.size.height) {
+		global_handle->manager->SetSize(PGSize(window_size.size.width, window_size.size.height));
+	}
+
 	SkBitmap bitmap;
 
 	PGIRect rect(
@@ -325,7 +331,9 @@ void PeriodicWindowRedraw(void) {
 		userInfo:object
 		repeats:flags & PGTimerExecuteOnce ? NO : YES];
 }
+
 @end
+
 
 PGPoint GetMousePosition(PGWindowHandle window) {
 	//get current mouse position

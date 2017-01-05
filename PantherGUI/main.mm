@@ -20,6 +20,7 @@ int main(int argc, const char *argv[])
     [view setWantsLayer:YES];
     window.contentView = view;
     [window makeFirstResponder:view];
+
 /*
     AppDelegate *applicationDelegate = [[AppDelegate alloc] init];      // Instantiate App  delegate
     [application setDelegate:applicationDelegate];                      // Assign delegate to the NSApplication
