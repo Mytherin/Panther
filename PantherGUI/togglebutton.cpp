@@ -3,7 +3,7 @@
 #include "togglebutton.h"
 
 ToggleButton::ToggleButton(PGWindowHandle window, Control* parent, bool toggled) : 
-	Button(window, parent), toggled(toggled) {
+	Button(window, parent), toggled(toggled), on_toggle(nullptr) {
 
 	this->OnPressed([](Button* button) {
 		ToggleButton* toggle = dynamic_cast<ToggleButton*>(button);

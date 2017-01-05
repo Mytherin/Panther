@@ -17,7 +17,7 @@ private:
 	PGColor untoggled_color;
 	PGColor toggled_color;
 
-	PGToggleCallback on_toggle;
+	PGToggleCallback on_toggle = nullptr;
 
 	bool toggled;
 };
