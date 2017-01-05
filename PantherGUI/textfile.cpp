@@ -751,7 +751,7 @@ void TextFile::SetCursorLocation(lng line, lng character) {
 void TextFile::SetCursorLocation(lng start_line, lng start_character, lng end_line, lng end_character) {
 	ClearExtraCursors();
 	cursors[0]->SetCursorLocation(end_line, end_character);
-	Cursor::NormalizeCursors(this, cursors, true);
+	cursors[0]->SetCursorStartLocation(start_line, start_character);
 	if (textfield) textfield->SelectionChanged();
 }
 
