@@ -943,7 +943,7 @@ void TextFile::DeleteLines() {
 void TextFile::DeleteLine(PGDirection direction) {
 	if (!is_loaded) return;
 
-	TextDelta* delta = new RemoveText(direction, PGDeltaRemoveLine);
+	TextDelta* delta = new RemoveSelection(direction, PGDeltaRemoveLine);
 	PerformOperation(delta);
 }
 
@@ -1065,14 +1065,15 @@ void TextFile::DeleteCharacter(PGDirection direction, size_t i) {
 void TextFile::DeleteCharacter(PGDirection direction) {
 	if (!is_loaded) return;
 
-	TextDelta* delta = new RemoveText(direction, PGDeltaRemoveText);
+
+	TextDelta* delta = new RemoveSelection(direction, PGDeltaRemoveCharacter);
 	PerformOperation(delta);
 }
 
 void TextFile::DeleteWord(PGDirection direction) {
 	if (!is_loaded) return;
 
-	TextDelta* delta = new RemoveText(direction, PGDeltaRemoveWord);
+	TextDelta* delta = new RemoveSelection(direction, PGDeltaRemoveWord);
 	PerformOperation(delta);
 }
 
@@ -1158,10 +1159,11 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	Lock(PGWriteLock);
 	VerifyTextfile();
 	// perform the operation
-	PerformOperation(delta, false);
+	bool success = PerformOperation(delta, false);
 	// release the locks again
 	VerifyTextfile();
 	Unlock(PGWriteLock);
+	if (!success) return;
 	AddDelta(delta);
 	if (this->textfield) {
 		this->textfield->TextChanged();
@@ -1170,14 +1172,14 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	InvalidateParsing();
 }
 
-void TextFile::PerformOperation(TextDelta* delta, bool redo) {
+bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	switch (delta->type) {
 	case PGDeltaAddText: {
 		AddText* add = (AddText*)delta;
 		bool selection = !redo && CursorsContainSelection(cursors);
 		RemoveText* text = nullptr;
 		if (selection) {
-			add->next = new RemoveText(PGDirectionLeft, PGDeltaRemoveText);
+			add->next = new RemoveText();
 			text = (RemoveText*)add->next;
 		}
 		for (size_t i = 0; i < cursors.size(); i++) {
@@ -1203,33 +1205,27 @@ void TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	}
 	case PGDeltaRemoveText: {
 		RemoveText* remove = (RemoveText*)delta;
-		bool delete_selection = CursorsContainSelection(cursors);
+		assert(CursorsContainSelection(cursors));
 		for (size_t i = 0; i < cursors.size(); i++) {
-			if (delete_selection) {
-				if (!cursors[i]->SelectionIsEmpty()) {
-					if (!redo) {
-						remove->removed_text.push_back(cursors[i]->GetText());
-						remove->stored_cursors.push_back(BackupCursor(i));
-					}
-					DeleteSelection(i);
-				} else if (!redo) {
-					remove->removed_text.push_back("");
+			if (!cursors[i]->SelectionIsEmpty()) {
+				if (!redo) {
+					remove->removed_text.push_back(cursors[i]->GetText());
 					remove->stored_cursors.push_back(BackupCursor(i));
 				}
-			} else {
-				if (!redo) {
-					remove->removed_text.push_back("");
-				}
-				DeleteCharacter(remove->direction, i);
+				DeleteSelection(i);
+			} else if (!redo) {
+				remove->removed_text.push_back("");
+				remove->stored_cursors.push_back(BackupCursor(i));
 			}
 		}
 		Cursor::NormalizeCursors(this, cursors, true);
 		break;
 	}
 	case PGDeltaRemoveLine: {
-		RemoveText* remove = (RemoveText*)delta;
-		RemoveText remove_text = RemoveText(remove->direction, PGDeltaRemoveText);
-
+		RemoveSelection* remove = (RemoveSelection*)delta;
+		if (!redo) {
+			remove->stored_cursors = BackupCursors();
+		}
 		for (int i = 0; i < cursors.size(); i++) {
 			if (remove->direction == PGDirectionLeft) {
 				cursors[i]->SelectStartOfLine();
@@ -1237,25 +1233,58 @@ void TextFile::PerformOperation(TextDelta* delta, bool redo) {
 				cursors[i]->SelectEndOfLine();
 			}
 		}
+		if (!CursorsContainSelection(cursors)) {
+			return false;
+		}
 		Cursor::NormalizeCursors(this, cursors, false);
-		PerformOperation(&remove_text, redo);
-		break;
+		if (!redo) {
+			remove->next = new RemoveText();
+		}
+		return PerformOperation(remove->next, redo);
 	}
 	case PGDeltaRemoveWord: {
-		RemoveText* remove = (RemoveText*)delta;
-		RemoveText remove_text = RemoveText(remove->direction, PGDeltaRemoveText);
-		for (auto it = cursors.begin(); it != cursors.end(); it++) {
-			if ((*it)->SelectionIsEmpty()) {
+		RemoveSelection* remove = (RemoveSelection*)delta;
+		if (!redo) {
+			remove->stored_cursors = BackupCursors();
+		}
+		if (!CursorsContainSelection(cursors)) {
+			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				(*it)->OffsetSelectionWord(remove->direction);
 			}
 		}
-		PerformOperation(&remove_text, redo);
-		break;
+		if (!CursorsContainSelection(cursors)) {
+			return false;
+		}
+		Cursor::NormalizeCursors(this, cursors, false);
+		if (!redo) {
+			remove->next = new RemoveText();
+		}
+		return PerformOperation(remove->next, redo);
+	}
+	case PGDeltaRemoveCharacter: {
+		RemoveSelection* remove = (RemoveSelection*)delta;
+		if (!redo) {
+			remove->stored_cursors = BackupCursors();
+		}
+		if (!CursorsContainSelection(cursors)) {
+			for (auto it = cursors.begin(); it != cursors.end(); it++) {
+				(*it)->OffsetSelectionCharacter(remove->direction);
+			}
+		}
+		if (!CursorsContainSelection(cursors)) {
+			return false;
+		}
+		Cursor::NormalizeCursors(this, cursors, false);
+		if (!redo) {
+			remove->next = new RemoveText();
+		}
+		return PerformOperation(remove->next, redo);
 	}
 	default:
 		assert(0);
-		break;
+		return false;
 	}
+	return true;
 }
 
 void TextFile::Undo(AddText& delta, int i) {
@@ -1302,6 +1331,15 @@ void TextFile::Undo(TextDelta* delta) {
 			cursors[0] = RestoreCursor(delta->stored_cursors[index]);
 		}
 		break;
+	}
+	case PGDeltaRemoveLine:
+	case PGDeltaRemoveCharacter:
+	case PGDeltaRemoveWord: {
+		RemoveSelection* remove = (RemoveSelection*)delta;
+		assert(remove->next);
+		Undo(remove->next);
+		RestoreCursors(remove->stored_cursors);
+		return;
 	}
 	default:
 		assert(0);

@@ -13,9 +13,10 @@ class TextFile;
 typedef enum {
 	PGDeltaAddText,
 	PGDeltaRemoveText,
+	PGDeltaCursor,
 	PGDeltaRemoveLine,
+	PGDeltaRemoveCharacter,
 	PGDeltaRemoveWord,
-	PGDeltaMultiple,
 	PGDeltaUnknown
 } PGTextType;
 
@@ -44,9 +45,15 @@ public:
 
 class RemoveText : public TextDelta {
 public:
-	PGDirection direction;
 	std::vector<std::string> removed_text;
 
-	RemoveText(PGDirection direction, PGTextType type) : 
+	RemoveText() : 
+		TextDelta(PGDeltaRemoveText) { }
+};
+
+class RemoveSelection : public TextDelta {
+public:
+	PGDirection direction;
+	RemoveSelection(PGDirection direction, PGTextType type) : 
 		TextDelta(type), direction(direction) { }
 };

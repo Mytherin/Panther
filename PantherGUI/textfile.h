@@ -197,7 +197,7 @@ private:
 	void Undo(RemoveText& delta, std::string& text, int i);
 
 	void PerformOperation(TextDelta* delta);
-	void PerformOperation(TextDelta* delta, bool redo);
+	bool PerformOperation(TextDelta* delta, bool redo);
 	std::vector<Interval> GetCursorIntervals();
 
 	Task* current_task = nullptr;
