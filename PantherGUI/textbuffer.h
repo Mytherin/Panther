@@ -70,6 +70,8 @@ public:
 	// gets all the lines in the buffer as TextLines
 	std::vector<TextLine> GetLines();
 	ulng GetBufferLocationFromCursor(lng line, lng character);
+	void GetCursorFromBufferLocation(lng position, lng& line, lng& character);
+
 	PGCursorPosition GetCursorFromPosition(ulng position);
 	TextLine GetLineFromPosition(ulng position);
 };

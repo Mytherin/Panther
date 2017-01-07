@@ -60,6 +60,28 @@ TextLine PGTextBuffer::GetLineFromPosition(ulng pos) {
 	return TextLine(position, end - position, syntax);
 }
 
+void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& character) {
+	if (position >= current_size) {
+		assert(this->next);
+		return this->next->GetCursorFromBufferLocation(position - current_size, line, character);
+	} else if (position < 0) {
+		assert(this->prev);
+		return this->prev->GetCursorFromBufferLocation(position + this->prev->current_size, line, character);
+	}
+	assert(position < current_size);
+	line = start_line;
+	character = 0;
+	char* current_position = buffer;
+	for (int i = 0; i < position; i++) {
+		if (current_position[i] == '\n') {
+			line++;
+			character = 0;
+		} else {
+			character++;
+		}
+	}
+}
+
 ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 	lng current_line = start_line;
 	lng current_character = 0;
