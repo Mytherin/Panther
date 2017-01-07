@@ -52,7 +52,13 @@ void Cursor::OffsetLine(lng offset) {
 
 
 void Cursor::OffsetSelectionLine(lng offset) {
-	PGFontHandle textfield_font = file->textfield->GetTextfieldFont();
+	PGFontHandle textfield_font;
+	if (!file->textfield) {
+		textfield_font = PGCreateFont();
+		SetTextFontSize(textfield_font, 15);
+	} else {
+		textfield_font = file->textfield->GetTextfieldFont();
+	}
 	PGCursorPosition sel = SelectedPosition();
 	lng start_line = sel.line;
 	lng start_character = sel.character;

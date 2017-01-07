@@ -14,7 +14,7 @@ void Tester::RunTest(TestFunction testFunction) {
 	}
 }
 
-void Tester::RunTextFieldTest(std::string name, TextFieldTestFunction testFunction, std::string input, std::string expectedOutput) {
+void Tester::RunTextFileTest(std::string name, TextFileTestFunction testFunction, std::string input, std::string expectedOutput) {
 	// write the input to the file
 	FILE* f;
 #ifdef WIN32
@@ -24,23 +24,21 @@ void Tester::RunTextFieldTest(std::string name, TextFieldTestFunction testFuncti
 #endif
 	fwrite(input.c_str(), input.size(), 1, f);
 	fclose(f);
-	// create a temporary text field
-	TextField* testField = new TextField(NULL, std::string(TEMPORARY_FILE), true);
-	assert(testField->GetTextFile().IsLoaded());
+	// create a temporary textfile
+	TextFile* textfile = new TextFile(nullptr, TEMPORARY_FILE, true);
 	// run the actual test
-	std::string result = testFunction(testField);
+	std::string result = testFunction(textfile);
 	if (result.size() != 0) {
 		std::cout << "Tester failed test " << name << " with output:" << std::endl;
 		std::cout << result << std::endl;
-		delete testField;
+		delete textfile;
 		return;
 	}
 	// if the test did not return an error message, check the output of the text field after the operation
 	std::string resultingText = "";
-	TextFile* textFile = &testField->GetTextFile();
-	for (int i = 0; i < textFile->GetLineCount(); i++) {
-		resultingText += std::string(textFile->GetLine(i)->GetLine(), textFile->GetLine(i)->GetLength());
-		if (i + 1 < textFile->GetLineCount())
+	for (int i = 0; i < textfile->GetLineCount(); i++) {
+		resultingText += std::string(textfile->GetLine(i).GetLine(), textfile->GetLine(i).GetLength());
+		if (i + 1 < textfile->GetLineCount())
 			resultingText += "\n";
 	}
 	if (resultingText != expectedOutput) {
@@ -54,10 +52,10 @@ void Tester::RunTextFieldTest(std::string name, TextFieldTestFunction testFuncti
 	}
 }
 
-void Tester::RunTextFieldFileTest(std::string name, TextFieldTestFunction testFunction, std::string path, std::string expectedOutput) {
+void Tester::RunTextFileFileTest(std::string name, TextFileTestFunction testFunction, std::string path, std::string expectedOutput) {
 	std::ostringstream buf;
 	path = std::string(__FILE__).substr(0, strlen(__FILE__) - strlen("tester.cpp")) + path;
 	std::ifstream input (path.c_str()); 
 	buf << input.rdbuf(); 
-	RunTextFieldTest(name, testFunction, buf.str(), expectedOutput);
+	RunTextFileTest(name, testFunction, buf.str(), expectedOutput);
 }

@@ -7,11 +7,11 @@
 
 typedef std::string(*TestFunction)();
 
-typedef std::string(*TextFieldTestFunction)(TextField* textField);
+typedef std::string(*TextFileTestFunction)(TextFile* textFile);
 
 class Tester {
 public:
 	void RunTest(TestFunction testFunction);
-	void RunTextFieldTest(std::string name, TextFieldTestFunction testFunction, std::string input, std::string expectedOutput);
-	void RunTextFieldFileTest(std::string name, TextFieldTestFunction testFunction, std::string file_input, std::string expectedOutput);
+	void RunTextFileTest(std::string name, TextFileTestFunction testFunction, std::string input, std::string expectedOutput);
+	void RunTextFileFileTest(std::string name, TextFileTestFunction testFunction, std::string file_input, std::string expectedOutput);
 };

@@ -1091,7 +1091,7 @@ void TextFile::AddNewLine(std::string text) {
 }
 
 void TextFile::SetUnsavedChanges(bool changes) {
-	if (changes != unsaved_changes) {
+	if (changes != unsaved_changes && textfield) {
 		RefreshWindow(textfield->GetWindow());
 	}
 	unsaved_changes = changes;
@@ -1494,67 +1494,12 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, PGTextB
 				return PGFindMatch(-1, -1, -1, -1);
 			}
 			std::string line = std::string(current_buffer->buffer, current_buffer->current_size);
-			// FIXME: don't use utf8_tolower, it has slow performance
-			if (!regex && !match_case) {
-				line = utf8_tolower(line);
-			}
 
-			size_t pos = std::string::npos;
-			if (!regex) {
-				if (current_buffer == start_buffer) {
-					// at the beginning line, we have to keep the begin_character in mind
-					size_t start = 0, end = line.size();
-					std::string l;
-					if (direction == PGDirectionLeft) {
-						// if we search left, we search UP TO the begin character
-						l = line.substr(0, begin_position);
-						pos = l.rfind(text);
-					} else {
-						// if we search right, we search STARTING FROM the begin character
-						l = line.substr(begin_position);
-						pos = l.find(text);
-						if (pos != std::string::npos) {
-							// correct "pos" to account for the substr we did
-							pos += begin_position;
-						}
-					}
-				} else {
-					pos = direction == PGDirectionLeft ? line.rfind(text) : line.find(text);
-				}
-				if (pos != std::string::npos) {
-					lng start_line, start_character, end_line, end_character;
-					current_buffer->GetCursorFromBufferLocation(pos, start_line, start_character);
-					current_buffer->GetCursorFromBufferLocation(pos + text.size(), end_line, end_character);
-					return PGFindMatch(start_character, start_line, end_character, end_line);
-				}
-			} else {
-				PGRegexMatch match;
-				match.matched = false;
-
-				size_t pos = std::string::npos;
-				if (current_buffer == start_buffer) {
-					size_t start = 0, end = line.size();
-					size_t addition = 0;
-					std::string l;
-					if (direction == PGDirectionLeft) {
-						l = line.substr(0, begin_position);
-					} else {
-						l = line.substr(begin_position);
-						addition = begin_position;
-					}
-					match = PGMatchRegex(regex_handle, l, direction);
-					match.start += (int)addition;
-					match.end += (int)addition;
-				} else {
-					match = PGMatchRegex(regex_handle, line, direction);
-				}
-				if (match.matched) {
-					PGDeleteRegex(regex_handle);
-					lng start_line, start_character, end_line, end_character;
-					current_buffer->GetCursorFromBufferLocation(match.start, start_line, start_character);
-					current_buffer->GetCursorFromBufferLocation(match.end, end_line, end_character);
-					return PGFindMatch(start_character, start_line, end_character, end_line);
-				}
+			PGFindMatch match = regex ?
+				FindMatch(regex_handle, direction, current_buffer == start_buffer ? begin_position : 0, match_case, current_buffer, line) :
+				FindMatch(text, direction, current_buffer == start_buffer ? begin_position : 0, match_case, current_buffer, line);
+			if (match.start_line >= 0) {
+				return match;
 			}
 		}
 		if (wrap && !wrapped_search) {
@@ -1571,6 +1516,70 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, PGTextB
 		} else {
 			break;
 		}
+	}
+	return PGFindMatch(-1, -1, -1, -1);
+}
+
+PGFindMatch TextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line) {
+	size_t pos = std::string::npos;
+	PGRegexMatch match;
+	match.matched = false;
+	if (begin_position > 0) {
+		size_t start = 0, end = line.size();
+		size_t addition = 0;
+		std::string l;
+		if (direction == PGDirectionLeft) {
+			l = line.substr(0, begin_position);
+		} else {
+			l = line.substr(begin_position);
+			addition = begin_position;
+		}
+		match = PGMatchRegex(regex_handle, l, direction);
+		match.start += (int)addition;
+		match.end += (int)addition;
+	} else {
+		match = PGMatchRegex(regex_handle, line, direction);
+	}
+	if (match.matched) {
+		PGDeleteRegex(regex_handle);
+		lng start_line, start_character, end_line, end_character;
+		buffer->GetCursorFromBufferLocation(match.start, start_line, start_character);
+		buffer->GetCursorFromBufferLocation(match.end, end_line, end_character);
+		return PGFindMatch(start_character, start_line, end_character, end_line);
+	}
+	return PGFindMatch(-1, -1, -1, -1);
+}
+
+PGFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line) {
+	if (match_case) {
+		line = utf8_tolower(line);
+	}
+	size_t pos = std::string::npos;
+	if (begin_position > 0) {
+		// at the beginning line, we have to keep the begin_character in mind
+		size_t start = 0, end = line.size();
+		std::string l;
+		if (direction == PGDirectionLeft) {
+			// if we search left, we search UP TO the begin character
+			l = line.substr(0, begin_position);
+			pos = l.rfind(pattern);
+		} else {
+			// if we search right, we search STARTING FROM the begin character
+			l = line.substr(begin_position);
+			pos = l.find(pattern);
+			if (pos != std::string::npos) {
+				// correct "pos" to account for the substr we did
+				pos += begin_position;
+			}
+		}
+	} else {
+		pos = direction == PGDirectionLeft ? line.rfind(pattern) : line.find(pattern);
+	}
+	if (pos != std::string::npos) {
+		lng start_line, start_character, end_line, end_character;
+		buffer->GetCursorFromBufferLocation(pos, start_line, start_character);
+		buffer->GetCursorFromBufferLocation(pos + pattern.size(), end_line, end_character);
+		return PGFindMatch(start_character, start_line, end_character, end_line);
 	}
 	return PGFindMatch(-1, -1, -1, -1);
 }

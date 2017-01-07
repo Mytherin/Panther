@@ -8,6 +8,7 @@
 #include "scheduler.h"
 #include "syntaxhighlighter.h"
 #include "language.h"
+#include "regex.h"
 
 #include <string>
 #include <vector>
@@ -175,6 +176,8 @@ private:
 
 	void DeleteSelection(int cursornr);
 
+	PGFindMatch FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line);
+	PGFindMatch FindMatch(std::string pattern, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line);
 	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
 	PGFindMatch FindMatch(std::string text, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
 

@@ -72,12 +72,12 @@
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../PantherGUI;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;../PantherGUI;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;../PantherGUI;D:\icu\x64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Debug;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;../PantherGUI;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;../PantherGUI;D:\icu\x64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -92,9 +92,10 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>skia.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -118,54 +119,88 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>skia.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\PantherGUI\assert.h" />
+    <ClInclude Include="..\PantherGUI\basictextfield.h" />
     <ClInclude Include="..\PantherGUI\blockingconcurrentqueue.h" />
+    <ClInclude Include="..\PantherGUI\button.h" />
     <ClInclude Include="..\PantherGUI\c.h" />
     <ClInclude Include="..\PantherGUI\concurrentqueue.h" />
+    <ClInclude Include="..\PantherGUI\container.h" />
     <ClInclude Include="..\PantherGUI\control.h" />
+    <ClInclude Include="..\PantherGUI\controlmanager.h" />
     <ClInclude Include="..\PantherGUI\cursor.h" />
     <ClInclude Include="..\PantherGUI\encoding.h" />
+    <ClInclude Include="..\PantherGUI\filemanager.h" />
+    <ClInclude Include="..\PantherGUI\findtext.h" />
     <ClInclude Include="..\PantherGUI\keywords.h" />
+    <ClInclude Include="..\PantherGUI\language.h" />
     <ClInclude Include="..\PantherGUI\logger.h" />
-    <ClInclude Include="..\PantherGUI\main.h" />
     <ClInclude Include="..\PantherGUI\mmap.h" />
+    <ClInclude Include="..\PantherGUI\regex.h" />
+    <ClInclude Include="..\PantherGUI\renderer.h" />
     <ClInclude Include="..\PantherGUI\scheduler.h" />
+    <ClInclude Include="..\PantherGUI\scrollbar.h" />
+    <ClInclude Include="..\PantherGUI\simpletextfield.h" />
+    <ClInclude Include="..\PantherGUI\statusbar.h" />
+    <ClInclude Include="..\PantherGUI\style.h" />
     <ClInclude Include="..\PantherGUI\syntax.h" />
     <ClInclude Include="..\PantherGUI\syntaxhighlighter.h" />
+    <ClInclude Include="..\PantherGUI\tabcontrol.h" />
     <ClInclude Include="..\PantherGUI\text.h" />
-    <ClInclude Include="..\PantherGUI\textblock.h" />
+    <ClInclude Include="..\PantherGUI\textbuffer.h" />
     <ClInclude Include="..\PantherGUI\textdelta.h" />
     <ClInclude Include="..\PantherGUI\textfield.h" />
     <ClInclude Include="..\PantherGUI\textfile.h" />
-    <ClInclude Include="..\PantherGUI\textline.h" />
     <ClInclude Include="..\PantherGUI\thread.h" />
+    <ClInclude Include="..\PantherGUI\togglebutton.h" />
+    <ClInclude Include="..\PantherGUI\unicode.h" />
     <ClInclude Include="..\PantherGUI\utils.h" />
     <ClInclude Include="..\PantherGUI\windowfunctions.h" />
     <ClInclude Include="..\PantherGUI\xml.h" />
     <ClInclude Include="tester.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\PantherGUI\basictextfield.cpp" />
+    <ClCompile Include="..\PantherGUI\button.cpp" />
     <ClCompile Include="..\PantherGUI\c.cpp" />
+    <ClCompile Include="..\PantherGUI\container.cpp" />
     <ClCompile Include="..\PantherGUI\control.cpp" />
+    <ClCompile Include="..\PantherGUI\controlmanager.cpp" />
     <ClCompile Include="..\PantherGUI\cursor.cpp" />
+    <ClCompile Include="..\PantherGUI\encoding.cpp" />
     <ClCompile Include="..\PantherGUI\file.cpp" />
+    <ClCompile Include="..\PantherGUI\filemanager.cpp" />
+    <ClCompile Include="..\PantherGUI\findtext.cpp" />
     <ClCompile Include="..\PantherGUI\keywords.cpp" />
+    <ClCompile Include="..\PantherGUI\language.cpp" />
     <ClCompile Include="..\PantherGUI\logger.cpp" />
     <ClCompile Include="..\PantherGUI\mmap.cpp" />
+    <ClCompile Include="..\PantherGUI\regex.cpp" />
+    <ClCompile Include="..\PantherGUI\renderer.cpp" />
     <ClCompile Include="..\PantherGUI\scheduler.cpp" />
+    <ClCompile Include="..\PantherGUI\scrollbar.cpp" />
+    <ClCompile Include="..\PantherGUI\simpletextfield.cpp" />
+    <ClCompile Include="..\PantherGUI\statusbar.cpp" />
+    <ClCompile Include="..\PantherGUI\style.cpp" />
     <ClCompile Include="..\PantherGUI\syntaxhighlighter.cpp" />
+    <ClCompile Include="..\PantherGUI\tabcontrol.cpp" />
     <ClCompile Include="..\PantherGUI\text.cpp" />
+    <ClCompile Include="..\PantherGUI\textbuffer.cpp" />
     <ClCompile Include="..\PantherGUI\textfield.cpp" />
     <ClCompile Include="..\PantherGUI\textfile.cpp" />
-    <ClCompile Include="..\PantherGUI\textline.cpp" />
     <ClCompile Include="..\PantherGUI\thread.cpp" />
+    <ClCompile Include="..\PantherGUI\togglebutton.cpp" />
+    <ClCompile Include="..\PantherGUI\unicode.cpp" />
+    <ClCompile Include="..\PantherGUI\utils.cpp" />
     <ClCompile Include="..\PantherGUI\windowfunctions.cpp" />
     <ClCompile Include="..\PantherGUI\xml.cpp" />
     <ClCompile Include="dummywindowfunctions.cpp" />
