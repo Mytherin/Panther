@@ -17,6 +17,7 @@ typedef enum {
 	PGDeltaRemoveLine,
 	PGDeltaRemoveCharacter,
 	PGDeltaRemoveWord,
+	PGDeltaAddEmptyLine,
 	PGDeltaUnknown
 } PGTextType;
 
@@ -56,4 +57,11 @@ public:
 	PGDirection direction;
 	RemoveSelection(PGDirection direction, PGTextType type) : 
 		TextDelta(type), direction(direction) { }
+};
+
+class InsertLineBefore : public TextDelta {
+public:
+	PGDirection direction;
+	InsertLineBefore(PGDirection direction) : 
+		TextDelta(PGDeltaAddEmptyLine), direction(direction) { }
 };

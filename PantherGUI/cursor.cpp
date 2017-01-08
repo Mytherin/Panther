@@ -458,7 +458,7 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 			cursors[i]->Merge(cursors[j]);
 			delete cursors[j];
 			cursors.erase(cursors.begin() + j);
-			i -= 2;
+			i--;
 		}
 	}
 	if (scroll_textfield) {

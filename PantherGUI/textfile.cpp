@@ -758,6 +758,7 @@ void TextFile::SetCursorLocation(lng start_line, lng start_character, lng end_li
 void TextFile::AddNewCursor(lng line, lng character) {
 	cursors.push_back(new Cursor(this, line, character));
 	active_cursor = cursors.back();
+	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	Cursor::NormalizeCursors(this, cursors, false);
 }
 
@@ -937,7 +938,7 @@ void TextFile::MoveLines(int offset) {
 
 void TextFile::DeleteLines() {
 	if (!is_loaded) return;
-	assert(0);
+
 }
 
 void TextFile::DeleteLine(PGDirection direction) {
@@ -949,7 +950,9 @@ void TextFile::DeleteLine(PGDirection direction) {
 
 void TextFile::AddEmptyLine(PGDirection direction) {
 	if (!is_loaded) return;
-	assert(0);
+
+	TextDelta* delta = new InsertLineBefore(direction);
+	PerformOperation(delta);
 }
 
 std::string TextFile::CopyText() {
@@ -1282,6 +1285,27 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 		}
 		return PerformOperation(remove->next, redo);
 	}
+	case PGDeltaAddEmptyLine: {
+		InsertLineBefore* ins = (InsertLineBefore*)delta;
+		if (!redo) {
+			ins->stored_cursors = BackupCursors();
+		}
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			if (ins->direction == PGDirectionLeft) {
+				(*it)->OffsetStartOfLine();
+			} else {
+				(*it)->OffsetEndOfLine();
+			}
+		}
+		Cursor::NormalizeCursors(this, cursors, false);
+		if (!redo) {
+			std::vector <std::string> lines;
+			lines.push_back("");
+			lines.push_back("");
+			ins->next = new AddText(lines);
+		}
+		return PerformOperation(ins->next, redo);
+	}
 	default:
 		assert(0);
 		return false;
@@ -1341,6 +1365,13 @@ void TextFile::Undo(TextDelta* delta) {
 		assert(remove->next);
 		Undo(remove->next);
 		RestoreCursors(remove->stored_cursors);
+		return;
+	}
+	case PGDeltaAddEmptyLine: {
+		InsertLineBefore* ins = (InsertLineBefore*)delta;
+		assert(ins->next);
+		Undo(ins->next);
+		RestoreCursors(ins->stored_cursors);
 		return;
 	}
 	default:
