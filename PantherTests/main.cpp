@@ -64,7 +64,6 @@ int main() {
 	for (int i = 0; i < 100; i++) {
 		tester.RunTextFileTest("Simple Insert Newline", SimpleInsertNewline, "hello world", "hello\n\n world");
 	}
-	
 	tester.RunTextFileTest("Simple Deletion", SimpleDeletion, "hello world", "hllo world");
 	tester.RunTextFileTest("Forward Deletion", ForwardDeletion, "hello world", "ello world");
 	tester.RunTextFileTest("Forward Word Deletion", ForwardWordDeletion, "hello world", " world");

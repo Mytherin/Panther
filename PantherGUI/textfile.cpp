@@ -680,7 +680,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 					// the is on the same line as our initial cursor
 					// it is now part of the final buffer we inserted
 					cursors[j]->BUF(bufpos) = buffer;
-					cursors[j]->BUFPOS(bufpos) = final_line_size + (line_position - cursors[j]->BUFPOS(bufpos));
+					cursors[j]->BUFPOS(bufpos) = buffer->current_size - (line_position - cursors[j]->BUFPOS(bufpos)) - 1;
 				} else {
 					// the cursor occurs in the same initial buffer
 					// but not on the same line
@@ -752,7 +752,7 @@ void TextFile::SetCursorLocation(lng start_line, lng start_character, lng end_li
 	ClearExtraCursors();
 	cursors[0]->SetCursorLocation(end_line, end_character);
 	cursors[0]->SetCursorStartLocation(start_line, start_character);
-	if (textfield) textfield->SelectionChanged();
+	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::AddNewCursor(lng line, lng character) {
@@ -938,7 +938,7 @@ void TextFile::MoveLines(int offset) {
 
 void TextFile::DeleteLines() {
 	if (!is_loaded) return;
-
+	assert(0);
 }
 
 void TextFile::DeleteLine(PGDirection direction) {
@@ -992,7 +992,7 @@ void TextFile::PasteText(std::string& text) {
 }
 
 void TextFile::VerifyTextfile() {
-	//#ifdef _DEBUG
+	#ifdef PANTHER_DEBUG
 	for (size_t i = 0; i < buffers.size(); i++) {
 		if (i < buffers.size() - 1) {
 			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
@@ -1014,7 +1014,7 @@ void TextFile::VerifyTextfile() {
 		assert(std::find(buffers.begin(), buffers.end(), c->start_buffer) != buffers.end());
 		assert(std::find(buffers.begin(), buffers.end(), c->end_buffer) != buffers.end());
 	}
-	//#endif
+	#endif
 }
 
 
