@@ -15,6 +15,7 @@ std::string SimpleCopyPaste(TextFile* textfile);
 std::string MultilineCopyPaste(TextFile* textfile);
 std::string MultilineCopyPasteReplaceText(TextFile* textfile);
 std::string ManyLinesCopyPaste(TextFile* textfile);
+std::string ManyLinesCopyPasteWhitespace(TextFile* textfile);
 std::string UndoSimpleDeletion(TextFile* textfile);
 std::string UndoForwardDeletion(TextFile* textfile);
 std::string UndoForwardWordDeletion(TextFile* textfile);
@@ -79,6 +80,7 @@ int main() {
 	tester.RunTextFileTest("Multiline Copy Paste", MultilineCopyPaste, "hello world\nhow are you doing?", "hello world\nhow are you doing?hello world\nhow are you doing?");
 	tester.RunTextFileTest("Multiline Copy Paste In Text", MultilineCopyPasteReplaceText, "hello world\nhow are you doing?", "hello world\nhello world\nhow are you doing? are you doing?");
 	tester.RunTextFileTest("Many Lines Copy Paste", ManyLinesCopyPaste, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\n\n\n\n\nhello\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\n\n\n\n\nhello\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\n\n\n\n\nhello\n");
+	tester.RunTextFileTest("Many Lines Copy Paste (Whitespace)", ManyLinesCopyPasteWhitespace, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n");
 
 	tester.RunTextFileTest("Undo Simple Deletion", UndoSimpleDeletion, "hello world", "hello world");
 	tester.RunTextFileTest("Undo Forward Deletion", UndoForwardDeletion, "hello world", "hello world");
@@ -251,6 +253,13 @@ std::string ManyLinesCopyPaste(TextFile* textfile) {
 	textfile->SelectEndOfFile();
 	SetClipboardText(nullptr, textfile->CopyText());
 	textfile->OffsetCharacter(PGDirectionRight);
+	textfile->PasteText(GetClipboardText(nullptr));
+	return std::string("");
+}
+
+std::string ManyLinesCopyPasteWhitespace(TextFile* textfile) {
+	textfile->SelectEverything();
+	SetClipboardText(nullptr, textfile->CopyText());
 	textfile->PasteText(GetClipboardText(nullptr));
 	return std::string("");
 }

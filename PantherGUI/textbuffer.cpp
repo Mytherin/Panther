@@ -98,6 +98,7 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 		}
 		i += offset;
 	}
+	assert(0);
 	return 0;
 }
 

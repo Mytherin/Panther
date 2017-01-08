@@ -713,10 +713,11 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 	std::vector<std::string> lines;
 	lng start = 0;
 	lng current = 0;
+	lng offset = 0;
 	for (auto it = text.begin(); it != text.end(); it++) {
 		if (*it == '\r') {
 			if (*(it + 1) == '\n') {
-				current++;
+				offset = 1;
 				it++;
 			} else {
 				lines.push_back(text.substr(start, current - start));
@@ -727,8 +728,9 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 		}
 		if (*it == '\n') {
 			lines.push_back(text.substr(start, current - start));
-			start = current + 1;
+			start = current + 1 + offset;
 			current = start;
+			offset = 0;
 			continue;
 		}
 		current++;
@@ -1181,22 +1183,15 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	switch (delta->type) {
 	case PGDeltaAddText: {
 		AddText* add = (AddText*)delta;
-		bool selection = !redo && CursorsContainSelection(cursors);
-		RemoveText* text = nullptr;
+		bool selection = CursorsContainSelection(cursors);
 		if (selection) {
-			add->next = new RemoveText();
-			text = (RemoveText*)add->next;
+			if (!redo) {
+				add->next = new RemoveText();
+			}
+			PerformOperation(add->next, redo);
 		}
 		for (size_t i = 0; i < cursors.size(); i++) {
-			if (!cursors[i]->SelectionIsEmpty()) {
-				if (!redo) {
-					text->removed_text.push_back(cursors[i]->GetText());
-					add->next->stored_cursors.push_back(BackupCursor(i));
-				}
-				DeleteSelection(i);
-			} else if (selection) {
-				text->removed_text.push_back("");
-			}
+			assert(cursors[i]->SelectionIsEmpty());
 			if (add->lines.size() == 1) {
 				InsertText(add->lines[0], i);
 			} else {
@@ -1352,6 +1347,7 @@ void TextFile::Undo(TextDelta* delta) {
 		for (int i = 0; i < delta->stored_cursors.size(); i++) {
 			int index = delta->stored_cursors.size() - (i + 1);
 			cursors.insert(cursors.begin(), RestoreCursorPartial(delta->stored_cursors[index]));
+			VerifyTextfile();
 			Undo(*remove, remove->removed_text[index], 0);
 			delete cursors[0];
 			cursors[0] = RestoreCursor(delta->stored_cursors[index]);

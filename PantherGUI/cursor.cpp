@@ -119,7 +119,7 @@ void Cursor::OffsetSelectionPosition(lng offset) {
 	while (start_buffer_position < 0) {
 		if (start_buffer->prev) {
 			start_buffer = start_buffer->prev;
-			start_buffer_position += start_buffer->current_size - 1;
+			start_buffer_position += start_buffer->current_size;
 		} else {
 			start_buffer_position = 0;
 		}
