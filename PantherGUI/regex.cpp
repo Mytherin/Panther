@@ -27,7 +27,8 @@ PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& string, PGDirection
 	UErrorCode status = U_ZERO_ERROR;
 	PGRegexMatch match;
 	handle->matched = false;
-	handle->matcher->reset(UnicodeString::fromUTF8(string.c_str()));
+	auto unicode_string = UnicodeString::fromUTF8(string.c_str());
+	handle->matcher->reset(unicode_string);
 	int start, end;
 	if (direction == PGDirectionRight) {
 		// find the next match of the regex in the string, if any

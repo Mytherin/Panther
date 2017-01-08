@@ -23,8 +23,6 @@ public:
 	void Replace();
 	void ReplaceAll();
 
-	lng selected_match = -1;
-
 	void ToggleReplace();
 private:
 	bool replace = false;
@@ -42,6 +40,12 @@ private:
 	ToggleButton* toggle_wholeword;
 	ToggleButton* toggle_wrap;
 	ToggleButton* toggle_highlight;
+
+	void SetTextfile(TextFile* textfile);
+
+	PGCursorPosition begin_pos;
+	PGCursorPosition end_pos;
+	TextFile* current_textfile;
 
 	SimpleTextField* replace_field = nullptr;
 	Button* replace_button = nullptr;

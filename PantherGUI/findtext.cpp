@@ -98,7 +98,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 			ControlManager* manager = GetControlManager(f);
 			TextFile& tf = manager->active_textfield->GetTextFile();
 			tf.ClearMatches();
-			f->selected_match = -1;
+			tf.SetSelectedMatch(-1);
 		}
 	});
 
@@ -113,6 +113,10 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 		tf->ToggleReplace();
 	});
 
+	ControlManager* manager = GetControlManager(this);
+	TextFile& tf = manager->active_textfield->GetTextFile();
+	SetTextfile(&tf);
+
 	if (replace) {
 		ToggleReplace();
 	}
@@ -120,6 +124,12 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 
 FindText::~FindText() {
 
+}
+
+void FindText::SetTextfile(TextFile* textfile) {
+	this->current_textfile = textfile;
+	begin_pos = textfile->GetActiveCursor()->BeginPosition();
+	end_pos = textfile->GetActiveCursor()->EndPosition();
 }
 
 void FindText::ToggleReplace() {
@@ -215,11 +225,12 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
+	SetTextfile(&tf);
 
 	bool found_result = tf.FindMatch(field->GetText(), direction,
 		&error_message,
 		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled(), 
-		selected_match, include_selection);
+		include_selection);
 	if (!error_message) {
 		// successful search
 		this->field->SetValidInput(true);
@@ -236,15 +247,15 @@ void FindText::FindAll(PGDirection direction) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
-	auto begin_pos = tf.GetActiveCursor()->BeginPosition();
-	auto end_pos = tf.GetActiveCursor()->EndPosition();
 	std::string text = field->GetText();
+	if (&tf != current_textfile)
+		SetTextfile(&tf);
+	tf.SetSelectedMatch(0);
 	tf.FindAllMatches(text, direction, 
 		begin_pos.line, begin_pos.position, 
 		end_pos.line, end_pos.position,
 		&error_message,
 		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled());
-	selected_match = 0;
 	if (!error_message) {
 		this->field->SetValidInput(true);
 		this->Invalidate();

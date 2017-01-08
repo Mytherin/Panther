@@ -137,7 +137,7 @@ public:
 	void SelectMatches();
 	bool FinishedSearch() { return finished_search; }
 
-	bool FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, lng& selected_match, bool include_selection);
+	bool FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, bool include_selection);
 	void FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
 
 	int GetLineHeight();
@@ -169,6 +169,7 @@ public:
 
 	void ClearMatches();
 	const std::vector<PGFindMatch>& GetFindMatches() { return matches; }
+	void SetSelectedMatch(lng selected_match) { selected_match = selected_match; }
 private:
 	// insert text at the specified cursor number, text must not include newlines
 	void InsertText(std::string text, size_t cursornr);
@@ -183,6 +184,7 @@ private:
 
 	bool finished_search = false;
 	std::vector<PGFindMatch> matches;
+	lng selected_match = -1;
 
 	void SetUnsavedChanges(bool changes);
 

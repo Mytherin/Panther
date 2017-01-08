@@ -4,7 +4,7 @@
 #include "textfile.h"
 #include "unicode.h"
 
-lng TEXT_BUFFER_SIZE = 0;
+lng TEXT_BUFFER_SIZE = 4096;
 
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
 	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr) {
@@ -349,6 +349,7 @@ TextLineIterator::TextLineIterator(TextFile* textfile, lng line) :
 	buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, line)];
 
 	lng current_line = buffer->start_line;
+	assert(line >= current_line);
 	textline.line = buffer->buffer;
 	textline.length = buffer->current_size;
 	for (lng i = 0; i < buffer->current_size; ) {
