@@ -273,6 +273,7 @@ void FindText::Replace() {
 		ControlManager* manager = GetControlManager(this);
 		TextFile& tf = manager->active_textfield->GetTextFile();
 		tf.InsertText(replacement);
+		SetTextfile(&tf);
 		if (this->toggle_highlight) {
 			this->FindAll(PGDirectionRight);
 		}

@@ -140,7 +140,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		auto matches = textfile->GetFindMatches();
 		position_y = initial_position_y;
 		for (auto it = matches.begin(); it != matches.end(); it++) {
-			if (it->start_line > linenr || it->end_line < start_line) continue;
+			if (it->end_line < start_line) continue;
+			if (it->start_line > linenr) break;
 			lng startline = std::max(it->start_line, start_line);
 			lng endline = std::min(it->end_line, linenr);
 			position_y = y + (startline - start_line) * line_height - rectangle->y;
