@@ -166,7 +166,7 @@ PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGT
 			lng current_line = 0;
 			lng halfway_point = buffer->buffer_size / 2;
 			for (lng i = current_position - 1; i >= 0; i--) {
-				if (i == 0) {
+				if (i == 0 && buffer->buffer[i] != '\n') {
 					// only a single line in the buffer -> something went wrong
 					assert(current_position != buffer->current_size - 1);
 				}
@@ -206,7 +206,7 @@ PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGT
 							position -= split_point;
 							text_buffer = new_buffer;
 						}
-						if (text_buffer->buffer_size - text_buffer->current_size < (lng)text.size()) {
+						if (text_buffer->buffer_size - text_buffer->current_size <= (lng)text.size()) {
 							// even after splitting, the text does not fit within the buffer
 							// extend the current buffer
 							lng new_size = std::max((lng)(buffer->buffer_size + buffer->buffer_size / 5), (lng) (buffer->buffer_size + text.size() + 1));

@@ -63,8 +63,11 @@ int main() {
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(8);
 
-	lng buffer_sizes[] = { 0, 100, 4096 };
-	for (int i = 0; i < 3; i++) {
+	std::vector<lng> buffer_sizes;
+	buffer_sizes.push_back(0);
+	buffer_sizes.push_back(100);
+	buffer_sizes.push_back(4096);
+	for (int i = 0; i < buffer_sizes.size(); i++) {
 		std::cout << "RUNNING TESTS WITH BUFFER SIZE { " << buffer_sizes[i] << " }" << std::endl;
 		SetTextBufferSize(buffer_sizes[i]);
 		RunTests();
