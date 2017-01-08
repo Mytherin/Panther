@@ -17,13 +17,16 @@ public:
 	void OnResize(PGSize old_size, PGSize new_size);
 
 	bool HighlightMatches() { return toggle_highlight->IsToggled(); }
-
+	
+	void SelectAllMatches();
 	bool Find(PGDirection direction, bool include_selection = false);
 	void FindAll(PGDirection direction);
 	void Replace();
 	void ReplaceAll();
 
 	void ToggleReplace();
+
+	void Close();
 private:
 	bool replace = false;
 

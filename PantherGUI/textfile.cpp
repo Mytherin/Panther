@@ -1846,6 +1846,7 @@ void TextFile::SelectMatches() {
 		cursors.push_back(c);
 		c->SetCursorStartLocation((*it).end_line, (*it).end_character);
 	}
+	if (textfield) textfield->SelectionChanged();
 }
 
 TextLineIterator TextFile::GetIterator(lng linenumber) {

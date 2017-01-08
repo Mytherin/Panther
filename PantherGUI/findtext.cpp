@@ -9,11 +9,7 @@
 
 static void CancelOperation(Control* c, void* data, PGModifier modifier) {
 	// user pressed escape, cancelling the find operation
-	Control* control = (Control*)data;
-	dynamic_cast<PGContainer*>(control->parent)->RemoveControl(control);
-	ControlManager* manager = GetControlManager(control);
-	TextFile& tf = manager->active_textfield->GetTextFile();
-	tf.ClearMatches();
+	((FindText*)data)->Close();
 }
 
 static void ExecuteFind(Control* c, void* data, PGModifier modifier) {
@@ -108,6 +104,11 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	find_button->OnPressed([](Button* b) {
 		dynamic_cast<FindText*>(b->parent)->Find(PGDirectionRight);
 	});
+	find_all->OnPressed([](Button* b) {
+		FindText* ft = dynamic_cast<FindText*>(b->parent);
+		ft->SelectAllMatches();
+		ft->Close();
+	});
 	find_expand->OnPressed([](Button* b) {
 		FindText* tf = dynamic_cast<FindText*>(b->parent);
 		tf->ToggleReplace();
@@ -161,7 +162,9 @@ void FindText::ToggleReplace() {
 			dynamic_cast<FindText*>(b->parent)->Replace();
 		});
 		replace_all_button->OnPressed([](Button* b) {
-			dynamic_cast<FindText*>(b->parent)->ReplaceAll();
+			FindText* ft = dynamic_cast<FindText*>(b->parent);
+			ft->ReplaceAll();
+			ft->Close();
 		});
 
 		find_expand->y = base_y;
@@ -243,6 +246,17 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	return found_result;
 }
 
+void FindText::SelectAllMatches() {
+	ControlManager* manager = GetControlManager(this);
+	TextFile& tf = manager->active_textfield->GetTextFile();
+
+	if (tf.FinishedSearch()) {
+		tf.SelectMatches();
+	} else {
+		assert(0);
+		// wait?
+	}
+}
 void FindText::FindAll(PGDirection direction) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
@@ -293,6 +307,7 @@ void FindText::ReplaceAll() {
 			this->FindAll(PGDirectionRight);
 		}
 	} else {
+		assert(0);
 		// wait?
 	}
 }
@@ -317,4 +332,11 @@ bool FindText::KeyboardButton(PGButton button, PGModifier modifier) {
 		}
 	}
 	return PGContainer::KeyboardButton(button, modifier);
+}
+
+void FindText::Close() {
+	ControlManager* manager = GetControlManager(this);
+	TextFile& tf = manager->active_textfield->GetTextFile();
+	tf.ClearMatches();
+	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
 }
