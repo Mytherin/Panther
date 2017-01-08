@@ -252,7 +252,7 @@ void TextFile::OpenFile(std::string path) {
 			char* line_start = prev;
 			lng line_size = (lng)((ptr - prev) - offset);
 			if (current_buffer == nullptr ||
-				(current_buffer->current_size + line_size >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
+				(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 				// create a new buffer
 				PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
 				if (current_buffer) current_buffer->next = new_buffer;
@@ -287,7 +287,7 @@ void TextFile::OpenFile(std::string path) {
 		char* line_start = prev;
 		lng line_size = (lng)(ptr - prev);
 		if (current_buffer == nullptr ||
-			(current_buffer->current_size + line_size >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
+			(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 			// create a new buffer
 			PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
 			if (current_buffer) current_buffer->next = new_buffer;
@@ -422,7 +422,7 @@ void TextFile::InsertText(std::string text, size_t i) {
 			if (update.new_buffer == nullptr) {
 				c2->BUFPOS(bufpos) += update.split_point;
 			} else {
-				if (c2->BUFPOS(bufpos) > update.split_point) {
+				if (c2->BUFPOS(bufpos) >= update.split_point) {
 					// cursor moves to new buffer
 					c2->BUF(bufpos) = update.new_buffer;
 					c2->BUFPOS(bufpos) -= update.split_point;
@@ -528,7 +528,7 @@ void TextFile::DeleteSelection(int i) {
 				for (int bufpos = 0; bufpos < 2; bufpos++) {
 					if (cursors[j]->BUF(bufpos) == end.buffer) {
 						cursors[j]->BUF(bufpos) = begin.buffer;
-						cursors[j]->BUFPOS(bufpos) += begin.position;
+						cursors[j]->BUFPOS(bufpos) = begin.position + (cursors[j]->BUFPOS(bufpos) - end.position);
 					}
 				}
 			}

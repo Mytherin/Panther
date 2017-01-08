@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 
-#define TEXT_BUFFER_SIZE 100
+
+extern lng TEXT_BUFFER_SIZE;
 
 class TextFile;
 struct TextLine;
@@ -126,3 +127,5 @@ private:
 	lng current_line;
 	TextLine textline;
 };
+
+void SetTextBufferSize(lng bufsiz);

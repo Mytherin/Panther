@@ -3,6 +3,7 @@
 #include "tester.h"
 #include <iostream>
 
+std::string DoNothing(TextFile* textfile);
 std::string SimpleDeletion(TextFile* textfile);
 std::string ForwardDeletion(TextFile* textfile);
 std::string ForwardWordDeletion(TextFile* textfile);
@@ -56,11 +57,26 @@ std::string MultiCursorMultiLineDelete(TextFile* textfile);
 
 std::string Testerino(TextFile* textfile);
 
+void RunTests();
+
 int main() {
-	Tester tester;
-	
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(8);
+
+	lng buffer_sizes[] = { 0, 100, 4096 };
+	for (int i = 0; i < 3; i++) {
+		std::cout << "RUNNING TESTS WITH BUFFER SIZE { " << buffer_sizes[i] << " }" << std::endl;
+		SetTextBufferSize(buffer_sizes[i]);
+		RunTests();
+	}
+
+	std::string line;
+	std::getline(std::cin, line);
+}
+
+
+void RunTests() {
+	Tester tester;
 	
 	for (int i = 0; i < 100; i++) {
 		tester.RunTextFileTest("Simple Insert Newline", SimpleInsertNewline, "hello world", "hello\n\n world");
@@ -69,6 +85,7 @@ int main() {
 	tester.RunTextFileTest("Forward Deletion", ForwardDeletion, "hello world", "ello world");
 	tester.RunTextFileTest("Forward Word Deletion", ForwardWordDeletion, "hello world", " world");
 	tester.RunTextFileTest("Selection Deletion", SelectionDeletion, "hello world", "ho world");
+	tester.RunTextFileTest("Load Newline", DoNothing, "hello\n world", "hello\n world");
 	tester.RunTextFileTest("Delete Newline", DeleteNewline, "hello\n world", "hello world");
 	tester.RunTextFileTest("Forward Delete Newline", ForwardDeleteNewline, "hello\n world", "hello world");
 	tester.RunTextFileTest("Detect Newline Type (Unix)", DetectUnixNewlineType, "hello\nworld", "hello\nworld");
@@ -97,7 +114,7 @@ int main() {
 	tester.RunTextFileTest("Undo Many Operations", UndoManyOperations, "hello world\nhow are you doing?", "ahello world\nhow are you doing?");
 	tester.RunTextFileTest("Redo Many Operations", RedoManyOperations, "hello world\nhow are you doing?", "\nhell\nhello worldhello world\nhow are you doing?hello worldo");
 	tester.RunTextFileTest("Mixed Undo Redo", MixedUndoRedo, "hello world\nhow are you doing?", "\nhell\nhello worldhello world\nhow are you doing?hello worldo");
-	
+
 	tester.RunTextFileTest("Multi Cursor Insert", MultiCursorInsert, "hello world", "haello waorld");
 	tester.RunTextFileTest("Multi Cursor Newline", MultiCursorNewline, "hello world", "h\nello w\norld");
 	tester.RunTextFileTest("Multi Cursor Deletion", MultiCursorDeletion, "hello world", "hllo wrld");
@@ -109,7 +126,7 @@ int main() {
 	tester.RunTextFileTest("Multi Cursor Undo Deletion", MultiCursorUndoDelete, "hello world", "halo wald");
 	tester.RunTextFileTest("Multi Cursor Undo Complex", MultiCursorUndoComplex, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n");
 	tester.RunTextFileTest("Multi Cursor Redo Complex", MultiCursorRedoComplex, "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\ndef hello():\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n    return \"hello world\";\n\ndef hello():\n    return \"hello world\";\n\n\nprint(hello())\n\n\nprint(hello())\n");
-	
+
 	tester.RunTextFileTest("Paste Insert Undo Paste", PasteInsertUndoPaste, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "a");
 	tester.RunTextFileTest("Multi Line Delete", MultiLineDelete, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n");
 	tester.RunTextFileTest("Multi Line Multi Cursor Delete", MultiLineMultiCursorDelete, "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n", "\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\naaorld\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n\ndef hello():\n	return \"hello world\";\n\n\nprint(hello())\n");
@@ -124,8 +141,6 @@ int main() {
 
 	std::cout << "Successfully completed all tests!" << std::endl;
 
-	std::string line;
-	std::getline(std::cin, line);
 }
 
 static void TypeWord(char* string, TextFile* textfile) {
@@ -133,6 +148,10 @@ static void TypeWord(char* string, TextFile* textfile) {
 		textfile->InsertText(*string);
 		string++;
 	}
+}
+
+std::string DoNothing(TextFile* textfile) {
+	return std::string("");
 }
 
 std::string SimpleDeletion(TextFile* textfile) {

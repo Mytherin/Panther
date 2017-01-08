@@ -4,12 +4,14 @@
 #include "textfile.h"
 #include "unicode.h"
 
+lng TEXT_BUFFER_SIZE = 0;
+
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
 	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {
 		buffer_size = TEXT_BUFFER_SIZE;
 	} else {
-		buffer_size = size + size / 5;
+		buffer_size = size + size / 5 + 2;
 	}
 	buffer = (char*)malloc(buffer_size);
 	if (text) {
@@ -44,12 +46,13 @@ std::vector<TextLine> PGTextBuffer::GetLines() {
 
 TextLine PGTextBuffer::GetLineFromPosition(ulng pos) {
 	char* position = buffer + pos;
-	if (*position == '\n') position--;
-	while (position > buffer && *position != '\n') {
-		position--;
+	if (pos > 0) {
+		if (*position == '\n') position--;
+		while (position > buffer && *position != '\n') {
+			position--;
+		}
+		if (*position == '\n') position++;
 	}
-	if (*position == '\n') position++;
-
 	char* end = buffer + pos;
 	while (end < buffer + current_size && *end != '\n') {
 		end++;
@@ -439,4 +442,8 @@ void TextLineIterator::NextLine() {
 
 TextLine TextLineIterator::GetLine() {
 	return textline;
+}
+
+void SetTextBufferSize(lng bufsiz) {
+	TEXT_BUFFER_SIZE = bufsiz;
 }
