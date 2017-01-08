@@ -15,6 +15,7 @@ PGContainer::~PGContainer() {
 }
 
 bool PGContainer::KeyboardButton(PGButton button, PGModifier modifier) {
+	FlushRemoves();
 	if (focused_control) {
 		if (focused_control->KeyboardButton(button, modifier)) {
 			return true;
@@ -30,6 +31,7 @@ bool PGContainer::KeyboardButton(PGButton button, PGModifier modifier) {
 }
 
 bool PGContainer::KeyboardCharacter(char character, PGModifier modifier) {
+	FlushRemoves();
 	if (focused_control) {
 		if (focused_control->KeyboardCharacter(character, modifier)) {
 			return true;
@@ -45,6 +47,7 @@ bool PGContainer::KeyboardCharacter(char character, PGModifier modifier) {
 }
 
 bool PGContainer::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
+	FlushRemoves();
 	if (focused_control) {
 		if (focused_control->KeyboardUnicode(character, modifier)) {
 			return true;
@@ -60,12 +63,14 @@ bool PGContainer::KeyboardUnicode(PGUTF8Character character, PGModifier modifier
 }
 
 void PGContainer::PeriodicRender(void) {
+	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		(*it)->PeriodicRender();
 	}
 }
 
 void PGContainer::Draw(PGRendererHandle renderer, PGIRect* rect) {
+	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if (rect && !PGIRectanglesOverlap(PGIRect((*it)->X(), (*it)->Y(), (*it)->width, (*it)->height), *rect)) {
 			continue;
@@ -79,6 +84,7 @@ void PGContainer::MouseClick(int x, int y, PGMouseButton button, PGModifier modi
 }
 
 void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
 	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
@@ -93,6 +99,7 @@ void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modif
 }
 
 void PGContainer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
 	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
@@ -111,6 +118,7 @@ void PGContainer::MouseDoubleClick(int x, int y, PGMouseButton button, PGModifie
 }
 
 void PGContainer::MouseWheel(int x, int y, int distance, PGModifier modifier) {
+	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
 	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
@@ -122,6 +130,7 @@ void PGContainer::MouseWheel(int x, int y, int distance, PGModifier modifier) {
 }
 
 void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
+	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
 	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
@@ -132,6 +141,7 @@ void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 }
 
 void PGContainer::OnResize(PGSize old_size, PGSize new_size) {
+	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		(*it)->size_resolved = false;
 	}
@@ -142,6 +152,7 @@ void PGContainer::OnResize(PGSize old_size, PGSize new_size) {
 }
 
 PGCursorType PGContainer::GetCursor(PGPoint mouse) {
+	FlushRemoves();
 	mouse.x -= this->x;
 	mouse.y -= this->y;
 	for (lng i = controls.size() - 1; i >= 0; i--) {
@@ -154,6 +165,7 @@ PGCursorType PGContainer::GetCursor(PGPoint mouse) {
 }
 
 bool PGContainer::IsDragging() {
+	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)->IsDragging()) {
 			return true;
@@ -164,6 +176,7 @@ bool PGContainer::IsDragging() {
 }
 
 void PGContainer::AddControl(Control* control) {
+	FlushRemoves();
 	assert(control);
 	control->parent = this;
 	controls.push_back(control);
@@ -173,6 +186,19 @@ void PGContainer::AddControl(Control* control) {
 }
 
 void PGContainer::RemoveControl(Control* control) {
+	pending_removes.push_back(control);
+}
+
+
+void PGContainer::FlushRemoves() {
+	std::vector<Control*> removals = pending_removes;
+	pending_removes.clear();
+	for (auto it = removals.begin(); it != removals.end(); it++) {
+		ActuallyRemoveControl(*it);
+	}
+}
+
+void PGContainer::ActuallyRemoveControl(Control* control) {
 	assert(control);
 	assert(std::find(controls.begin(), controls.end(), control) != controls.end());
 	this->controls.erase(std::find(controls.begin(), controls.end(), control));
@@ -202,6 +228,7 @@ void PGContainer::RemoveControl(Control* control) {
 }
 
 Control* PGContainer::GetMouseOverControl(int x, int y) {
+	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if (PGRectangleContains((*it)->GetRectangle(), PGPoint(x, y))) {
 			return *it;

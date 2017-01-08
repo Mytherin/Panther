@@ -97,7 +97,16 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 			tf.SetSelectedMatch(-1);
 		}
 	});
+	auto update_highlight = [](Button* b, bool toggled) {
+		FindText* f = dynamic_cast<FindText*>(b->parent);
+		if (f->toggle_highlight) {
+			f->FindAll(PGDirectionRight);
+		}};
 
+	toggle_regex->OnToggle(update_highlight);
+	toggle_matchcase->OnToggle(update_highlight);
+	toggle_wholeword->OnToggle(update_highlight);
+	toggle_wrap->OnToggle(update_highlight);
 	find_prev->OnPressed([](Button* b) {
 		dynamic_cast<FindText*>(b->parent)->Find(PGDirectionLeft);
 	});
@@ -302,9 +311,12 @@ void FindText::ReplaceAll() {
 
 	if (tf.FinishedSearch()) {
 		tf.SelectMatches();
-		tf.InsertText(replacement);
-		if (this->toggle_highlight) {
-			this->FindAll(PGDirectionRight);
+		if (tf.GetCursors().size() > 0) {
+			// check if there are any matches
+			tf.InsertText(replacement);
+			if (this->toggle_highlight) {
+				this->FindAll(PGDirectionRight);
+			}
 		}
 	} else {
 		assert(0);
