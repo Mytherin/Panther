@@ -608,7 +608,7 @@ std::string MultiCursorDeleteInsert(TextFile* textfile) {
 
 std::string PartialDeleteCursorSameLine(TextFile* textfile) {
 	textfile->SetCursorLocation(3, 1, 0, 0);
-	textfile->AddNewCursor(3, 17);
+	textfile->AddNewCursor(3, 7);
 	textfile->InsertText('a');
 
 	return std::string("");

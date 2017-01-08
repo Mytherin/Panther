@@ -669,7 +669,6 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 		buffer->next = extra_buffer;
 		extra_buffer->prev = buffer;
 		buffers.insert(buffers.begin() + buffer_position, extra_buffer);
-		buffer = extra_buffer;
 	}
 	for (size_t j = i + 1; j < cursors.size(); j++) {
 		if (cursors[j]->start_buffer != start_buffer &&
@@ -686,10 +685,13 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 					// but not on the same line
 					// thus the cursor now points to the extra_buffer
 					cursors[j]->BUF(bufpos) = extra_buffer;
-					cursors[j]->BUFPOS(bufpos) = cursors[j]->BUFPOS(bufpos) - line_position;
+					cursors[j]->BUFPOS(bufpos) = cursors[j]->BUFPOS(bufpos) - line_position - 1;
 				}
 			}
 		}
+	}
+	if (extra_buffer) {
+		buffer = extra_buffer;
 	}
 	buffer = buffer->next;
 	while (buffer) {
