@@ -252,7 +252,9 @@ void PeriodicWindowRedraw(void) {
 	if ( [string length] == 1 ) {
 		// see: https://developer.apple.com/reference/appkit/nsevent/1535851-function_key_unicodes
 		keyChar = [string characterAtIndex:0];
-		if (keyChar == 127) {
+		if (keyChar == 27) {
+			button = PGButtonEscape;
+		} else if (keyChar == 127) {
 			button = PGButtonBackspace;
 		} else if (keyChar == '\r') {
 			button = PGButtonEnter;
@@ -265,7 +267,7 @@ void PeriodicWindowRedraw(void) {
 		} else if (keyChar == NSDownArrowFunctionKey) {
 			button = PGButtonDown;
 		} else if (keyChar == NSInsertFunctionKey) {
-
+			assert(0);
 		} else if (keyChar == NSDeleteFunctionKey) {
 			button = PGButtonDelete;
 		} else if (keyChar == NSHomeFunctionKey) {
@@ -277,17 +279,17 @@ void PeriodicWindowRedraw(void) {
 		} else if (keyChar == NSPageDownFunctionKey) {
 			button = PGButtonPageDown;
 		} else if (keyChar == NSPrintScreenFunctionKey) {
-			
+			assert(0);
 		} else if (keyChar == NSScrollLockFunctionKey) {
-			
+			assert(0);
 		} else if (keyChar == NSPauseFunctionKey) {
-			
+			assert(0);
 		} else if (keyChar == NSUndoFunctionKey) {
-			
+			assert(0);
 		} else if (keyChar == NSRedoFunctionKey) {
-			
+			assert(0);
 		} else if (keyChar == NSFindFunctionKey) {
-			
+			assert(0);
 		}
 		if (button != PGButtonNone) {
 			global_handle->manager->KeyboardButton(button, modifiers);
@@ -400,14 +402,24 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 }
 
 void SetClipboardText(PGWindowHandle window, std::string text) {
-	//[[NSPasteboard generalPasteboard] clearContents];
-	//[[NSPasteboard generalPasteboard] setString:helloField.stringValue  forType:NSStringPboardType];
-	assert(0);
+	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+	[pasteboard clearContents];
+     NSArray *copiedObjects = [NSArray arrayWithObject:[NSString stringWithUTF8String:text.c_str()]];
+	[pasteboard writeObjects:copiedObjects];
 }
 
 std::string GetClipboardText(PGWindowHandle window) {
-	assert(0);
-	return std::string("");
+	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+    NSArray *classArray = [NSArray arrayWithObject:[NSString class]];
+    NSDictionary *options = [NSDictionary dictionary];
+ 
+    BOOL ok = [pasteboard canReadObjectForClasses:classArray options:options];
+    if (ok) {
+        NSArray *objectsToPaste = [pasteboard readObjectsForClasses:classArray options:options];
+        NSString *pasted_text = [objectsToPaste objectAtIndex:0];
+        return std::string([pasted_text UTF8String]);
+    }
+    return std::string("");
 }
 
 PGLineEnding GetSystemLineEnding() {

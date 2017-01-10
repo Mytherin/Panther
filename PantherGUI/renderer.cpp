@@ -42,7 +42,11 @@ SkPaint* CreateTextPaint() {
 
 static void CreateFallbackFonts(PGFontHandle font) {
 	SkPaint* fallback_paint = CreateTextPaint();
+#ifdef WIN32
 	auto fallback_font = SkTypeface::MakeFromFile("NotoSansHans-Regular.otf");
+#else
+	auto fallback_font = SkTypeface::MakeFromFile("/Users/myth/Programs/Panther/PantherGUI/NotoSansHans-Regular.otf");
+#endif
 	fallback_paint->setTypeface(fallback_font);
 	font->fallback_paints.push_back(fallback_paint);
 }
