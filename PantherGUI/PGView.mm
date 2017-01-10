@@ -28,10 +28,12 @@ struct PGPopupMenu {
 	PGWindowHandle window;
 	std::map<int, PGControlCallback> callbacks;
 	Control* control;
+	NSMenu* menu;
 };
 
 struct PGWindow {
     NSWindow *window;
+    NSEvent *event;
 	PGView* view;
 	ControlManager* manager;
 	PGRendererHandle renderer;
@@ -200,39 +202,46 @@ void PeriodicWindowRedraw(void) {
 	return flags;
 }
 
-- (void)mouseDown:(NSEvent *)event {
+- (void)mouseDown:(NSEvent *)event { 
+    global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseDown(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
 }
 
 - (void)mouseUp:(NSEvent *)event {
+    global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseUp(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
 }
 
 - (void)rightMouseDown:(NSEvent *)event {
+	global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseDown(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
+	global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseUp(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
 }
 
 - (void)otherMouseDown:(NSEvent *)event {
 	// FIXME: not just middle mouse button
+	global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseDown(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
 }
 
 - (void)otherMouseUp:(NSEvent *)event {
 	// FIXME: not just middle mouse button
+	global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseUp(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
 }
 
 - (void)scrollWheel:(NSEvent *)event {
+	global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseWheel(flags.x, flags.y, [event deltaY] < 0 ? -120 : 120, flags.modifiers);
 }
@@ -332,6 +341,19 @@ void PeriodicWindowRedraw(void) {
 		selector:@selector(targetMethod:)
 		userInfo:object
 		repeats:flags & PGTimerExecuteOnce ? NO : YES];
+}
+
+-(void)controlCallback:(NSValue*)_callback :(NSValue*)_control {
+	PGControlCallback callback = (PGControlCallback) [_callback pointerValue];
+	Control* control = (Control*) [_control pointerValue];
+	callback(control);
+}
+
+-(void)popupMenuPress:(NSMenuItem*)sender {
+	NSArray* array = (NSArray*)[sender representedObject];
+	PGControlCallback callback = (PGControlCallback)[(NSValue*)array[0] pointerValue];
+	Control* control = (Control*)[(NSValue*)array[1] pointerValue];
+	callback(control);
 }
 
 @end
@@ -464,24 +486,36 @@ void* GetWindowManager(PGWindowHandle window) {
 
 
 PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
-	assert(0);
-	return nullptr;
+	PGPopupMenuHandle handle = new PGPopupMenu();
+	handle->control = control;
+	handle->window = window;
+	handle->menu = [[NSMenu alloc] initWithTitle:@"Contextual Menu"];
+	return handle;
 }
 
-void PGPopupMenuInsertSubmenu(PGPopupMenuHandle, PGPopupMenuHandle submenu, std::string submenu_name) {
-	assert(0);
+void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submenu, std::string submenu_name) {
+	// FIXME
+	//assert(0);
 }
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags) {
-	assert(0);
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags) {
+	NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:text.c_str()] action:@selector(popupMenuPress:) keyEquivalent:@""];
+	NSValue* _callback = [NSValue valueWithPointer:(void*)callback];
+	NSValue* _handle = [NSValue valueWithPointer:(void*)handle->control];
+	NSArray* array = @[_callback, _handle];
+	[item setRepresentedObject:array];
+    [handle->menu addItem:item];
 }
 
-void PGPopupMenuInsertSeparator(PGPopupMenuHandle) {
-	assert(0);
+void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
+	[handle->menu addItem:[NSMenuItem separatorItem]];
+	// FIXME
+	//assert(0);
 }
 
-void PGDisplayPopupMenu(PGPopupMenuHandle, PGTextAlign align) {
-	assert(0);
+void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGTextAlign align) {
+	 NSObject *newObject = [[NSObject alloc] init];
+	[NSMenu popUpContextMenu:handle->menu withEvent:handle->window->event forView:handle->window->view];
 }
 
 void PGDisplayPopupMenu(PGPopupMenuHandle, PGPoint, PGTextAlign align) {
