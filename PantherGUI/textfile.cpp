@@ -1744,6 +1744,13 @@ void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng star
 		PGDeleteRegex(handle);
 	}
 	if (!is_loaded) return;
+	if (text.size() == 0) {
+		Lock(PGWriteLock);
+		matches.clear();
+		Unlock(PGWriteLock);
+		if (textfield) textfield->SelectionChanged();
+		return;
+	}
 
 	FindInformation* info = new FindInformation();
 	info->textfile = this;
@@ -1814,6 +1821,13 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 		}
 		Unlock(PGWriteLock);
 		return true;
+	}
+	if (text.size() == 0) {
+		Lock(PGWriteLock);
+		matches.clear();
+		Unlock(PGWriteLock);
+		if (textfield) textfield->SelectionChanged();
+		return false;
 	}
 	// otherwise, search only for the next match in either direction
 	*error_message = nullptr;

@@ -237,8 +237,6 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
-	if (field->GetText().size() == 0)
-		return false;
 	SetTextfile(&tf);
 
 	bool found_result = tf.FindMatch(field->GetText(), direction,
@@ -261,20 +259,25 @@ void FindText::SelectAllMatches() {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 
-	if (tf.FinishedSearch()) {
-		tf.SelectMatches();
+	if (this->toggle_highlight) {
+		// toggle-highlight is turned on
+		// so we should already be searching
+		// wait for the search to finish
+		while (!tf.FinishedSearch());
 	} else {
-		assert(0);
-		// wait?
+		// otherwise, we have to actually perform the search
+		// FIXME: if FindAll becomes non-blocking, we have to call the
+		// blocking version here
+		this->FindAll(PGDirectionRight);
 	}
+	assert(tf.FinishedSearch());
+	tf.SelectMatches();
 }
 void FindText::FindAll(PGDirection direction) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
 	std::string text = field->GetText();
-	if (text.size() == 0)
-		return;
 	if (&tf != current_textfile)
 		SetTextfile(&tf);
 	tf.SetSelectedMatch(0);
@@ -313,18 +316,13 @@ void FindText::ReplaceAll() {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 
-	if (tf.FinishedSearch()) {
-		tf.SelectMatches();
-		if (tf.GetCursors().size() > 0) {
-			// check if there are any matches
-			tf.InsertText(replacement);
-			if (this->toggle_highlight) {
-				this->FindAll(PGDirectionRight);
-			}
+	this->SelectAllMatches();
+	if (tf.GetCursors().size() > 0) {
+		// check if there are any matches
+		tf.InsertText(replacement);
+		if (this->toggle_highlight) {
+			this->FindAll(PGDirectionRight);
 		}
-	} else {
-		assert(0);
-		// wait?
 	}
 }
 
