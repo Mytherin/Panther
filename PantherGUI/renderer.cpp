@@ -51,13 +51,13 @@ static void CreateFallbackFonts(PGFontHandle font) {
 	font->fallback_paints.push_back(fallback_paint);
 }
 
-PGFontHandle PGCreateFont() {
+PGFontHandle PGCreateFont(bool italic, bool bold) {
 #ifdef WIN32
 	char* default_font = "Consolas";
 #else
 	char* default_font = "menlo";
 #endif
-	return PGCreateFont(default_font, false, false);
+	return PGCreateFont(default_font, italic, bold);
 }
 
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
@@ -463,4 +463,49 @@ void SetTextFontSize(PGFontHandle font, PGScalar height) {
 
 PGScalar GetTextFontSize(PGFontHandle font) {
 	return font->textpaint->getTextSize();
+}
+
+void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *text,
+	PGScalar x, PGScalar y, PGScalar width, PGScalar height,
+	PGColor text_color, PGColor page_color, PGColor edge_color) {
+	// render the background color
+	RenderRectangle(renderer, PGRect(x, y, width, height), page_color, PGDrawStyleFill);
+	// render four edges of the file icon
+	RenderLine(renderer, PGLine(PGPoint(x, y), PGPoint(x + width * 0.8f, y)), edge_color, 2);
+	RenderLine(renderer, PGLine(PGPoint(x, y), PGPoint(x, y + height)), edge_color, 2);
+	RenderLine(renderer, PGLine(PGPoint(x, y + height), PGPoint(x + width, y + height)), edge_color, 2);
+	RenderLine(renderer, PGLine(PGPoint(x + width, y + height * 0.2f), PGPoint(x + width, y + height)), edge_color, 2);
+	// render the diagonal
+	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y), PGPoint(x + width, y + height * 0.2f)), edge_color, 2);
+	// render the two edges of the fold
+	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y), PGPoint(x + width * 0.8f, y + height * 0.2f)), edge_color, 1);
+	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y + height * 0.2f), PGPoint(x + width, y + height * 0.2f)), edge_color, 1);
+	// render the file extension
+	SetTextColor(font, text_color);
+	PGScalar original_size = GetTextFontSize(font);
+	PGScalar current_size = original_size;
+	PGScalar text_width = MeasureTextWidth(font, text);
+	PGScalar text_height = GetTextHeight(font);
+	int state = -1;
+	while (true) {
+		if (text_height > 0.5f * height || text_width > 0.8f * width) {
+			if (state == 0)
+				break;
+			current_size--;
+			state = 1;
+		} else if (text_height < 0.5f * height || text_width < 0.8f * width) {
+			if (state == 1)
+				break;
+			current_size++;
+			state = 0;
+		} else {
+			break;
+		}
+		SetTextFontSize(font, current_size);
+		text_width = MeasureTextWidth(font, text);
+		text_height = GetTextHeight(font);
+	}
+	RenderText(renderer, font, text, strlen(text), x + 0.5f * width, y + 0.5f * height - GetTextHeight(font) / 2, PGTextAlignHorizontalCenter);
+
+	SetTextFontSize(font, original_size);
 }

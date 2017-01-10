@@ -27,6 +27,7 @@ public:
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 
 	void Draw(PGRendererHandle, PGIRect*);
+	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, bool selected_tab);
 
 	void PrevTab();
 	void NextTab();

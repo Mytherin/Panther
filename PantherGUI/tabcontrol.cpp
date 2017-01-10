@@ -10,7 +10,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield) :
 	for (auto it = files.begin(); it != files.end(); it++) {
 		this->tabs.push_back(Tab(*it));
 	}
-	this->font = PGCreateFont();
+	this->font = PGCreateFont(false, true);
 	SetTextFontSize(this->font, 13);
 }
 
@@ -39,32 +39,51 @@ void TabControl::PeriodicRender() {
 	}
 }
 
+void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, bool selected_tab) {
+	TextFile* file = tab.file;
+	std::string filename = file->GetName();
+
+	const PGScalar tab_padding = 5;
+	const PGScalar file_icon_height = this->height * 0.8f;
+	const PGScalar file_icon_width = file_icon_height * 0.8f;
+
+	tab.target_x = position_x;
+	tab.width = file_icon_width + 5 + MeasureTextWidth(font, filename.c_str(), filename.size());
+	PGScalar current_x = tab.x;
+	PGRect rect(x + current_x, y, tab.width + tab_padding * 2, this->height);
+	current_x += 2.5f;
+	RenderRectangle(renderer, rect, 
+		selected_tab ? PGStyleManager::GetColor(PGColorTabControlSelected) : 
+		               PGStyleManager::GetColor(PGColorTabControlBackground), 
+		PGDrawStyleFill);
+
+	lng pos = filename.find_last_of('.');
+	std::string ext = pos == std::string::npos ? std::string("") : filename.substr(pos + 1);
+	std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+	RenderFileIcon(renderer, font, ext.c_str(), current_x, y + (height - file_icon_height) / 2, file_icon_width, file_icon_height,
+		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255,255,255), PGColor(30, 30, 30), PGColor(91, 91, 91));
+	current_x += file_icon_width + 2.5f;
+	if (file->HasUnsavedChanges()) {
+		SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlUnsavedText));
+	} else {
+		SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlText));
+	}
+	RenderText(renderer, font, filename.c_str(), filename.length(), x + current_x + tab_padding, y + (height - GetTextHeight(font)) / 2);
+	position_x += tab.width + tab_padding * 2;
+}
+
 void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar x = X() - rectangle->x;
 	PGScalar y = Y() - rectangle->y;
 	PGScalar position_x = 0;
-	PGScalar tab_padding = 5;
 	PGColor color = PGStyleManager::GetColor(PGColorTabControlBackground);
+
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
-		TextFile* file = (*it).file;
-		std::string filename = file->GetName();
-		(*it).target_x = position_x;
-		(*it).width = MeasureTextWidth(font, filename.c_str(), filename.size());
-		PGRect rect(x + (*it).x, y, (*it).width + tab_padding * 2, this->height);
-		RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTabControlBackground), PGDrawStyleFill);
-		if (index != active_tab) {
-			PGRect rect(x + (*it).x, y, (*it).width + tab_padding * 2, this->height);
-			if (file->HasUnsavedChanges()) {
-				SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlUnsavedText));
-			} else {
-				SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlText));
-			}
-			RenderText(renderer, font, filename.c_str(), filename.length(), x + (*it).x + tab_padding, y);
-		}
-		position_x += (*it).width + tab_padding * 2;
+		RenderTab(renderer, *it, position_x, x, y, index == active_tab);
 		index++;
 	}
+	/*
 	// render the active tab
 	if (active_tab >= 0) {
 		// the active tab is rendered last so it appears on top of other tabs when being dragged
@@ -78,7 +97,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 			SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlText));
 		}
 		RenderText(renderer, font, filename.c_str(), filename.length(), x +tabs[active_tab].x + tab_padding, y);
-	}
+	}*/
 	// FIXME: color
 	RenderLine(renderer, PGLine(x, y + this->height - 1, x + this->width, y + this->height - 1), PGColor(80, 150, 200));
 }

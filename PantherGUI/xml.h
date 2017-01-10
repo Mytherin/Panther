@@ -17,4 +17,6 @@ class XMLLanguage : public PGLanguage {
 	std::string GetName() { return "XML"; }
 	SyntaxHighlighter* CreateHighlighter() { return new XMLHighlighter(); }
 	bool MatchesFileExtension(std::string extension) { return extension == "xml"; }
+	virtual std::string GetExtension() { return "XML"; }
+	PGColor GetColor() { return PGColor(34, 139, 34); }
 };

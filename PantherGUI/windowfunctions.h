@@ -260,6 +260,7 @@ PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *te
 void RenderText(PGRendererHandle renderer, PGFontHandle font, const char* text, size_t length, PGScalar x, PGScalar y, PGScalar max_position = INT_MAX);
 // Render squiggles under text at the specified location
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color);
+void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *text, PGScalar x, PGScalar y, PGScalar width, PGScalar height, PGColor text_color, PGColor page_color, PGColor edge_color);
 
 PGBitmapHandle CreateBitmapForText(PGFontHandle font, const char* text, size_t length);
 PGRendererHandle CreateRendererForBitmap(PGBitmapHandle handle);
@@ -277,7 +278,7 @@ void DeleteImage(PGBitmapHandle bitmap);
 
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold);
 PGFontHandle PGCreateFont(char* filename);
-PGFontHandle PGCreateFont();
+PGFontHandle PGCreateFont(bool italic = false, bool bold = false);
 void PGDestroyFont(PGFontHandle font);
 // Sets the color of the text rendered with the RenderText method
 void SetTextColor(PGFontHandle font, PGColor color);

@@ -1071,8 +1071,7 @@ void TextFile::DeleteCharacter(PGDirection direction, size_t i) {
 
 void TextFile::DeleteCharacter(PGDirection direction) {
 	if (!is_loaded) return;
-
-
+	
 	TextDelta* delta = new RemoveSelection(direction, PGDeltaRemoveCharacter);
 	PerformOperation(delta);
 }
