@@ -43,12 +43,26 @@ typedef enum {
 class BasicTextField;
 struct Interval;
 
+struct PGBufferFindMatch {
+	lng start_buffer_pos;
+	lng end_buffer_pos;
+
+	static bool MatchOccursFirst(PGBufferFindMatch a, PGBufferFindMatch b);
+
+	PGBufferFindMatch() : start_buffer_pos(-1), end_buffer_pos(-1) { }
+	PGBufferFindMatch(lng start_buffer_pos, lng end_buffer_pos) : 
+		start_buffer_pos(start_buffer_pos), end_buffer_pos(end_buffer_pos) { }
+};
+
 struct PGFindMatch {
 	lng start_character;
 	lng start_line;
 	lng end_character;
 	lng end_line;
 
+	static std::vector<PGFindMatch> FromBufferMatches(PGTextBuffer* buffer, std::vector<PGBufferFindMatch> matches);
+
+	PGFindMatch(PGTextBuffer*, PGBufferFindMatch*);
 	PGFindMatch() : start_character(-1), start_line(-1), end_character(-1), end_line(-1) { }
 	PGFindMatch(lng start_character, lng start_line, lng end_character, lng end_line) : 
 		start_character(start_character), start_line(start_line), end_character(end_character), end_line(end_line) { }
@@ -177,8 +191,8 @@ private:
 
 	void DeleteSelection(int cursornr);
 
-	PGFindMatch FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line);
-	PGFindMatch FindMatch(std::string pattern, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line);
+	PGBufferFindMatch FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line);
+	PGBufferFindMatch FindMatch(std::string pattern, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line);
 	PGFindMatch FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
 	PGFindMatch FindMatch(std::string text, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
 

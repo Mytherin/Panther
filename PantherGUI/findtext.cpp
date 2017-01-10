@@ -237,6 +237,8 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
+	if (field->GetText().size() == 0)
+		return false;
 	SetTextfile(&tf);
 
 	bool found_result = tf.FindMatch(field->GetText(), direction,
@@ -271,6 +273,8 @@ void FindText::FindAll(PGDirection direction) {
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
 	std::string text = field->GetText();
+	if (text.size() == 0)
+		return;
 	if (&tf != current_textfile)
 		SetTextfile(&tf);
 	tf.SetSelectedMatch(0);
