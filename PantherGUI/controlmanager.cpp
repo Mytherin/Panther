@@ -170,6 +170,13 @@ void ControlManager::UnregisterControlForMouseEvents(Control* control) {
 	assert(0);
 }
 
+void ControlManager::DropFile(std::string filename) {
+	TextFile* file = FileManager::OpenFile(filename);
+	if (file) {
+		active_tabcontrol->AddTab(file);
+	}
+}
+
 ControlManager* GetControlManager(Control* c) {
 	return (ControlManager*)GetWindowManager(c->window);
 }

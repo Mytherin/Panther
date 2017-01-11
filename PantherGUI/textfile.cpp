@@ -1940,6 +1940,7 @@ std::vector<PGFindMatch> PGFindMatch::FromBufferMatches(PGTextBuffer* buffer, st
 		i += offset;
 	}
 	assert(0);
+	return resulting_matches;
 }
 
 bool PGBufferFindMatch::MatchOccursFirst(PGBufferFindMatch a, PGBufferFindMatch b) {

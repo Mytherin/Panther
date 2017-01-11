@@ -328,3 +328,5 @@ std::string ShowSaveFileDialog();
 PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint); 
 
 std::string OpenFileMenu();
+
+void DropFile(PGWindowHandle handle, std::string filename);

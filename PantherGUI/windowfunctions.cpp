@@ -1,6 +1,7 @@
 
 #include "control.h"
 #include "windowfunctions.h"
+#include "controlmanager.h"
 
 PGTextAlign PGTextAlignBottom = 0x01;
 PGTextAlign PGTextAlignTop = 0x02;
@@ -110,4 +111,9 @@ std::string GetMouseButtonName(PGMouseButton modifier) {
 
 PGPoint GetMousePosition(PGWindowHandle window, Control* c) {
 	return GetMousePosition(window) - c->Position();
+}
+
+
+void DropFile(PGWindowHandle handle, std::string filename) {
+	((ControlManager*)GetWindowManager(handle))->DropFile(filename);
 }

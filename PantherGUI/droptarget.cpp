@@ -1,5 +1,8 @@
 
 #include "droptarget.h"
+#include "main.h"
+
+#include <shlobj.h>
 
 //
 //	Position the edit control's caret under the mouse
@@ -26,23 +29,24 @@ PGDropTarget::~PGDropTarget() {
 
 void DropData(HWND hwnd, IDataObject *pDataObject) {
 	// construct a FORMATETC object
-	FORMATETC fmtetc = { CF_TEXT, 0, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+	FORMATETC fmtetc = { CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
 	STGMEDIUM stgmed;
 
-	// FIXME
+
 	// See if the dataobject contains any TEXT stored as a HGLOBAL
 	if (pDataObject->QueryGetData(&fmtetc) == S_OK) {
 		// Yippie! the data is there, so go get it!
 		if (pDataObject->GetData(&fmtetc, &stgmed) == S_OK) {
 			// we asked for the data as a HGLOBAL, so access it appropriately
 			PVOID data = GlobalLock(stgmed.hGlobal);
-
-			SetWindowText(hwnd, (char *)data);
-
+			DROPFILES* files = (DROPFILES*)data;
+			char* filename_ptr = ((char*)files) + files->pFiles;
+			std::string filename = UCS2toUTF8((PWSTR)filename_ptr);
 			GlobalUnlock(stgmed.hGlobal);
-
 			// release the data using the COM API
 			ReleaseStgMedium(&stgmed);
+			PGWindowHandle handle = GetHWNDHandle(hwnd);
+			DropFile(handle, filename);
 		}
 	}
 }

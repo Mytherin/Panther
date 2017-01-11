@@ -37,6 +37,8 @@ public:
 	void RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr);
 	void UnregisterMouseRegion(PGIRect* rect);
 
+	void DropFile(std::string filename);
+
 	TextField* active_textfield;
 	TabControl* active_tabcontrol;
 	StatusBar* statusbar;

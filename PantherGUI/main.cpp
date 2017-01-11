@@ -22,6 +22,7 @@
 
 #include <malloc.h>
 
+#include <shobjidl.h>
 #include <windowsx.h>
 #include <vector>
 
@@ -219,7 +220,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	return (int)msg.wParam;
 }
 
-size_t ucs2length(char* data) {
+size_t UCS2Length(char* data) {
 	int i = 0;
 	while (true) {
 		if (!data[i] && !data[i + 1]) {
@@ -230,7 +231,7 @@ size_t ucs2length(char* data) {
 }
 
 std::string UCS2toUTF8(PWSTR data) {
-	std::string text = std::string(((char*)data), ucs2length((char*)data));
+	std::string text = std::string(((char*)data), UCS2Length((char*)data));
 	char* result;
 	// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
 	size_t length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
@@ -695,7 +696,7 @@ std::string GetClipboardText(PGWindowHandle window) {
 
 		// get the text from the clipboard
 		HANDLE data = GetClipboardData(CF_UNICODETEXT);
-		std::string text = std::string(((char*)data), ucs2length((char*)data));
+		std::string text = std::string(((char*)data), UCS2Length((char*)data));
 
 		CloseClipboard();
 		// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
@@ -882,8 +883,6 @@ std::string OpenFileMenu() {
 	return "";
 }
 
-#include <shobjidl.h>
-
 std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directories, bool allow_multiple_selection) {
 	std::vector<std::string> files;
 
@@ -1006,4 +1005,9 @@ std::string ShowSaveFileDialog() {
 		assert(0);
 	}
 	return res;
+}
+
+PGWindowHandle GetHWNDHandle(HWND hwnd) {
+	// FIXME:
+	return global_handle;
 }
