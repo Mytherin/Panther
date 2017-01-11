@@ -113,6 +113,7 @@ public:
 	void Redo();
 
 	void SaveChanges();
+	void SaveAs(std::string path);
 
 	PGFileEncoding GetFileEncoding() { return encoding; }
 	PGLineEnding GetLineEnding() { return lineending; }

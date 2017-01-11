@@ -244,8 +244,14 @@ std::string UTF8toUCS2(std::string text) {
 	char* result = nullptr;
 	size_t length = PGConvertText(text, &result, PGEncodingUTF8, PGEncodingUTF16Platform);
 	assert(length > 0);
-	std::string res = std::string(result, length + 2);
+	// UCS 2 strings have to be terminated by two null-terminators
+	// but the string we get is only terminated by one
+	// so we add an extra null-terminator
+	char* temporary_buffer = (char*)calloc(length + 2, 1);
+	memcpy(temporary_buffer, result, length);
 	free(result);
+	std::string res = std::string(temporary_buffer, length + 2);
+	free(temporary_buffer);
 	return res;
 }
 
@@ -896,7 +902,6 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 		hr = pFileOpen->SetTitle((LPCWSTR)title.c_str());
 		if (!SUCCEEDED(hr)) return files;
 
-
 		// Before setting, always get the options first in order 
 		// not to override existing options.
 		hr = pFileOpen->GetOptions(&dwFlags);
@@ -943,9 +948,62 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 
 		pFileOpen->Release();
 	} else {
-		// use GetOpenFileName() as needed...
+		// FIXME: use GetOpenFileName() instead
 		assert(0);
 	}
 
 	return files;
+}
+
+std::string ShowSaveFileDialog() {
+	std::string res = std::string("");
+	IFileSaveDialog *pFileSave;
+	HRESULT hr;
+
+	// Create the FileOpenDialog object.
+	hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL,
+		IID_IFileSaveDialog, reinterpret_cast<void**>(&pFileSave));
+
+	if (SUCCEEDED(hr)) {
+		// Set the options on the dialog.
+		DWORD dwFlags;
+
+		std::string title = UTF8toUCS2("Save File");
+		hr = pFileSave->SetTitle((LPCWSTR)title.c_str());
+		if (!SUCCEEDED(hr)) return res;
+
+		// Before setting, always get the options first in order 
+		// not to override existing options.
+		hr = pFileSave->GetOptions(&dwFlags);
+		if (!SUCCEEDED(hr)) return res;
+
+		dwFlags |= FOS_FORCEFILESYSTEM;
+
+		hr = pFileSave->SetOptions(dwFlags);
+
+		// Show the Open dialog box.
+		hr = pFileSave->Show(NULL);
+
+		// Get the file name from the dialog box.
+		if (!SUCCEEDED(hr)) return res;
+
+		IShellItem *pItem;
+		hr = pFileSave->GetResult(&pItem);
+		if (!SUCCEEDED(hr)) return res;
+
+		PWSTR pszFilePath;
+		hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+		if (!SUCCEEDED(hr)) return res;
+
+		res = UCS2toUTF8(pszFilePath);
+
+		CoTaskMemFree(pszFilePath);
+		pItem->Release();
+
+		pFileSave->Release();
+	} else {
+		// FIXME: use old API instead
+		assert(0);
+	}
+	return res;
 }

@@ -323,6 +323,7 @@ void OpenFolderInExplorer(std::string path);
 void OpenFolderInTerminal(std::string path);
 
 std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directories, bool allow_multiple_selection);
+std::string ShowSaveFileDialog();
 
 PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint); 
 

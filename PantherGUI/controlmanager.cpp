@@ -101,6 +101,18 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 		}
 		}
 	}
+
+	if (modifier == PGModifierCtrlShift) {
+		switch (character) {
+		case 'S':
+			std::string filename = ShowSaveFileDialog();
+			if (filename.size() != 0) {
+				this->active_textfield->GetTextFile().SaveAs(filename);
+			}
+			break;
+		}
+
+	}
 	return PGContainer::KeyboardCharacter(character, modifier);
 }
 

@@ -1397,6 +1397,10 @@ void TextFile::SaveChanges() {
 	// FIXME: respect file encoding
 	// FIXME: handle errors properly
 	PGFileHandle handle = panther::OpenFile(this->path, PGFileReadWrite);
+	if (!handle) {
+		assert(0);
+		return;
+	}
 	lng position = 0;
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		char* line = (*it)->buffer;
@@ -1430,6 +1434,16 @@ void TextFile::SaveChanges() {
 	}
 	this->Unlock(PGReadLock);
 	panther::CloseFile(handle);
+}
+
+
+void TextFile::SaveAs(std::string path) {
+	if (!is_loaded) return;
+	this->path = path;
+	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
+	lng pos = path.find_last_of('.');
+	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
+	this->SaveChanges();
 }
 
 void TextFile::ChangeLineEnding(PGLineEnding lineending) {
