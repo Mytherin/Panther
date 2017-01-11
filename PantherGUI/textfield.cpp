@@ -183,7 +183,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	bool toggle = false;
 	auto line_iterator = textfile->GetIterator(linenr);
 	auto buffer = line_iterator.CurrentBuffer();
-	toggle = PGTextBuffer::GetBuffer(textfile->buffers, buffer->start_line) % 2 == 0;
+	toggle = PGTextBuffer::GetBuffer(textfile->buffers, buffer->start_line) % 2 != 0;
 	while ((current_line = line_iterator.GetLine()).IsValid()) {
 		// only render lines that fall within the render rectangle
 		if (position_y > rectangle->height) break;
@@ -822,24 +822,11 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 	return BasicTextField::KeyboardCharacter(character, modifier);
 }
 
-void TextField::MouseWheel(int x, int y, int distance, PGModifier modifier) {
+void TextField::MouseWheel(int x, int y, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
-		lng lineoffset_y = textfile->GetLineOffset();
-		if (SetScrollOffset(lineoffset_y - (distance / 120) * 2)) {
-			this->Invalidate();
-		}
+		textfile->OffsetLineOffset(-distance);
+		this->Invalidate();
 	}
-}
-
-bool
-TextField::SetScrollOffset(lng offset) {
-	lng lineoffset_y = textfile->GetLineOffset();
-	lng new_y = std::min(std::max(offset, (lng)0), (lng)(textfile->GetLineCount() - 1));
-	if (new_y != lineoffset_y) {
-		textfile->SetLineOffset(new_y);
-		return true;
-	}
-	return false;
 }
 
 void TextField::InvalidateLine(lng line) {

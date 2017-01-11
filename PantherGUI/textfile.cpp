@@ -746,9 +746,9 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 	return lines;
 }
 
-void TextFile::OffsetLineOffset(lng offset) {
-	lineoffset_y = lineoffset_y + offset;
-	lineoffset_y = std::max(std::min(lineoffset_y, linecount - 1), (lng)0);
+void TextFile::OffsetLineOffset(double offset) {
+	yoffset = yoffset + offset;
+	yoffset = std::max(std::min(yoffset, linecount - 1.0), 0.0);
 }
 
 void TextFile::SetCursorLocation(lng line, lng character) {

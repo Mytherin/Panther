@@ -34,6 +34,8 @@ SkPaint* CreateTextPaint() {
 	SkPaint* textpaint = new SkPaint();
 	textpaint->setTextSize(SkIntToScalar(15));
 	textpaint->setAntiAlias(true);
+	textpaint->setLinearText(true);
+	textpaint->setSubpixelText(true);
 	textpaint->setStyle(SkPaint::kFill_Style);
 	textpaint->setTextEncoding(SkPaint::kUTF8_TextEncoding);
 	textpaint->setTextAlign(SkPaint::kLeft_Align);
@@ -63,7 +65,7 @@ PGFontHandle PGCreateFont(bool italic, bool bold) {
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
 	PGFontHandle font = new PGFont();
 
-	SkFontStyle style(bold ? SkFontStyle::kBold_Weight : SkFontStyle::kNormal_Weight, SkFontStyle::kNormal_Width, italic ? SkFontStyle::kItalic_Slant : SkFontStyle::kUpright_Slant);
+	SkFontStyle style(bold ? SkFontStyle::kBold_Weight : SkFontStyle::kLight_Weight, SkFontStyle::kNormal_Width, italic ? SkFontStyle::kItalic_Slant : SkFontStyle::kUpright_Slant);
 
 	font->textpaint = CreateTextPaint();
 	auto main_font = SkTypeface::MakeFromName(fontname, style);

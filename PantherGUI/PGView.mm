@@ -242,9 +242,11 @@ void PeriodicWindowRedraw(void) {
 }
 
 - (void)scrollWheel:(NSEvent *)event {
+	if ([event deltaY] == 0) return;
 	global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	global_handle->manager->MouseWheel(flags.x, flags.y, [event deltaY] < 0 ? -120 : 120, flags.modifiers);
+	NSLog(@"%f", [event deltaY]);
+	global_handle->manager->MouseWheel(flags.x, flags.y, [event deltaY], flags.modifiers);
 }
 /*
 - (void)mouseDragged:(NSEvent *)event {

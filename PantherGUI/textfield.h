@@ -26,7 +26,7 @@ public:
 	~TextField();
 
 	void Draw(PGRendererHandle, PGIRect*);
-	void MouseWheel(int x, int y, int distance, PGModifier modifier);
+	void MouseWheel(int x, int y, double distance, PGModifier modifier);
 	void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
@@ -84,8 +84,6 @@ private:
 	void SetMinimapOffset(PGScalar offset);
 
 	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
-
-	bool SetScrollOffset(lng offset);
 
 	std::map<lng, PGBitmapHandle> minimap_line_cache;
 };

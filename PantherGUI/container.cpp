@@ -117,7 +117,7 @@ void PGContainer::MouseDoubleClick(int x, int y, PGMouseButton button, PGModifie
 	assert(0);
 }
 
-void PGContainer::MouseWheel(int x, int y, int distance, PGModifier modifier) {
+void PGContainer::MouseWheel(int x, int y, double distance, PGModifier modifier) {
 	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
 	for (lng i = controls.size() - 1; i >= 0; i--) {
