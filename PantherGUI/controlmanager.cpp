@@ -75,7 +75,9 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 			std::vector<std::string> files = ShowOpenFileDialog(true, false, true);
 			for(auto it = files.begin(); it != files.end(); it++) {
 				TextFile* file = FileManager::OpenFile(*it);
-				active_tabcontrol->AddTab(file);
+				if (file) {
+					active_tabcontrol->AddTab(file);
+				}
 			}
 			this->Invalidate();
 			break;	

@@ -80,9 +80,9 @@ class TextFile {
 public:
 	// create an in-memory textfile with currently unspecified path
 	TextFile(BasicTextField* textfield);
-	// load textfile from a file
-	TextFile(BasicTextField* textfield, std::string filename, bool immediate_load = false);
 	~TextFile();
+
+	static TextFile* OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load = false);
 
 	TextLineIterator GetIterator(lng linenumber);
 	TextLine GetLine(lng linenumber);
@@ -185,6 +185,9 @@ public:
 	const std::vector<PGFindMatch>& GetFindMatches() { return matches; }
 	void SetSelectedMatch(lng selected_match) { selected_match = selected_match; }
 private:
+	// load textfile from a file
+	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false);
+
 	// insert text at the specified cursor number, text must not include newlines
 	void InsertText(std::string text, size_t cursornr);
 	void DeleteCharacter(PGDirection direction, size_t i);
@@ -217,7 +220,7 @@ private:
 	std::vector<Cursor*> cursors;
 	Cursor* active_cursor;
 
-	void OpenFile(std::string filename);
+	void OpenFile(char* base_data, lng size);
 
 	void AddDelta(TextDelta* delta);
 	void Undo(TextDelta* delta);

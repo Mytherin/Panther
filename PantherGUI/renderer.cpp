@@ -92,7 +92,7 @@ void PGDestroyFont(PGFontHandle font) {
 }
 
 PGRendererHandle InitializeRenderer() {
-	SkPaint* paint = new SkPaint();
+	SkPaint* paint = CreateTextPaint();
 	PGRendererHandle renderer = new PGRenderer();
 	paint->setStyle(SkPaint::kFill_Style);
 	renderer->canvas = nullptr;

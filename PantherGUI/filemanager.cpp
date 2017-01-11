@@ -11,7 +11,8 @@ TextFile* FileManager::_OpenFile() {
 }
 
 TextFile* FileManager::_OpenFile(std::string path) {
-	TextFile* textfile = new TextFile(nullptr, path, false);
+	TextFile* textfile = TextFile::OpenTextFile(nullptr, path, false);
+	if (!textfile) return nullptr;
 	open_files.push_back(textfile);
 	return textfile;
 }

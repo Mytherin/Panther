@@ -193,6 +193,7 @@ void TabControl::NewTab() {
 }
 
 void TabControl::AddTab(TextFile* file) {
+	assert(file);
 	tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
 	active_tab++;
 	SwitchToFile(tabs[active_tab].file);

@@ -10,14 +10,15 @@
 
 struct OpenFileInformation {
 	TextFile* textfile;
-	std::string path;
+	char* base;
+	lng size;
 
-	OpenFileInformation(TextFile* file, std::string path) : textfile(file), path(path) {}
+	OpenFileInformation(TextFile* file, char* base, lng size) : textfile(file), base(base), size(size) {}
 };
 
 void TextFile::OpenFileAsync(Task* task, void* inp) {
 	OpenFileInformation* info = (OpenFileInformation*)inp;
-	info->textfile->OpenFile(info->path);
+	info->textfile->OpenFile(info->base, info->size);
 	delete info;
 }
 
@@ -32,7 +33,7 @@ TextFile::TextFile(BasicTextField* textfield) : textfield(textfield), highlighte
 	unsaved_changes = true;
 }
 
-TextFile::TextFile(BasicTextField* textfield, std::string path, bool immediate_load) : textfield(textfield), highlighter(nullptr), path(path) {
+TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load) : textfield(textfield), highlighter(nullptr), path(path) {
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
@@ -48,13 +49,24 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, bool immediate_l
 	is_loaded = false;
 	// FIXME: switch to immediate_load for small files
 	if (!immediate_load) {
-		OpenFileInformation* info = new OpenFileInformation(this, path);
+		OpenFileInformation* info = new OpenFileInformation(this, base, size);
 		this->current_task = new Task((PGThreadFunctionParams)OpenFileAsync, info);
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
-		OpenFile(path);
+		OpenFile(base, size);
 		is_loaded = true;
 	}
+}
+
+
+TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load) {
+	lng size = 0;
+	char* base = (char*)panther::ReadFile(filename, size);
+	if (!base || size < 0) {
+		// FIXME: proper error message
+		return nullptr;
+	}
+	return new TextFile(textfield, filename, base, size, immediate_load);
 }
 
 TextFile::~TextFile() {
@@ -201,14 +213,7 @@ void TextFile::Unlock(PGLockType type) {
 	}
 }
 
-void TextFile::OpenFile(std::string path) {
-	lng size = 0;
-	char* base = (char*)panther::ReadFile(path, size);
-	if (!base || size < 0) {
-		// FIXME: proper error message
-		return;
-	}
-
+void TextFile::OpenFile(char* base, lng size) {
 	this->lineending = PGLineEndingUnknown;
 	this->indentation = PGIndentionTabs;
 	char* ptr = base;

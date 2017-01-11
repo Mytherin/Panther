@@ -534,7 +534,7 @@ void OpenFolderInTerminal(std::string path) {
 std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directories, bool allow_multiple_selection) {
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
 
-	// Configure your panel the way you want it
+	// panel configuration
 	[panel setCanChooseFiles:allow_files ? YES : NO];
 	[panel setCanChooseDirectories:allow_directories ? YES : NO];
 	[panel setAllowsMultipleSelection:allow_multiple_selection ? YES : NO];
@@ -543,6 +543,8 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 	NSInteger result = [panel runModal];
 	if (result == NSFileHandlingPanelOKButton) {
 		for (NSURL *fileURL in [panel URLs]) {
+			// we remove the file:// prefix, we are not dealing with URLs
+			// but with local files (hopefully)
 			std::string str = std::string([[fileURL absoluteString] UTF8String]);
 			assert(str.substr(0, 7) == std::string("file://"));
 			selected_files.push_back(str.substr(7));
