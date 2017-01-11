@@ -219,6 +219,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	return (int)msg.wParam;
 }
 
+size_t ucs2length(char* data) {
+	int i = 0;
+	while (true) {
+		if (!data[i] && !data[i + 1]) {
+			return i;
+		}
+		i += 2;
+	}
+}
+
+std::string UCS2toUTF8(PWSTR data) {
+	std::string text = std::string(((char*)data), ucs2length((char*)data));
+	char* result;
+	// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
+	size_t length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
+	assert(length > 0);
+	text = std::string(result, length);
+	free(result);
+	return text;
+}
+
+std::string UTF8toUCS2(std::string text) {
+	char* result = nullptr;
+	size_t length = PGConvertText(text, &result, PGEncodingUTF8, PGEncodingUTF16Platform);
+	assert(length > 0);
+	std::string res = std::string(result, length + 2);
+	free(result);
+	return res;
+}
+
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message) {
@@ -653,16 +683,6 @@ void SetClipboardText(PGWindowHandle window, std::string text) {
 	}
 }
 
-size_t ucs2length(char* data) {
-	int i = 0;
-	while (true) {
-		if (!data[i] && !data[i + 1]) {
-			return i;
-		}
-		i += 2;
-	}
-}
-
 std::string GetClipboardText(PGWindowHandle window) {
 	if (OpenClipboard(window->hwnd)) {
 		char* result = nullptr;
@@ -854,4 +874,78 @@ PGPoint ConvertWindowToScreen(PGWindowHandle window, PGPoint point) {
 
 std::string OpenFileMenu() {
 	return "";
+}
+
+#include <shobjidl.h>
+
+std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directories, bool allow_multiple_selection) {
+	std::vector<std::string> files;
+
+	IFileOpenDialog *pFileOpen;
+	HRESULT hr;
+
+	// Create the FileOpenDialog object.
+	hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+		IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+
+	if (SUCCEEDED(hr)) {
+		// Set the options on the dialog.
+		DWORD dwFlags;
+
+		std::string title = UTF8toUCS2("Open File");
+		hr = pFileOpen->SetTitle((LPCWSTR)title.c_str());
+		if (!SUCCEEDED(hr)) return files;
+
+
+		// Before setting, always get the options first in order 
+		// not to override existing options.
+		hr = pFileOpen->GetOptions(&dwFlags);
+		if (!SUCCEEDED(hr)) return files;
+
+		if (allow_directories)
+			dwFlags |= FOS_PICKFOLDERS;
+		if (allow_multiple_selection)
+			dwFlags |= FOS_ALLOWMULTISELECT;
+		dwFlags |= FOS_FORCEFILESYSTEM;
+
+		hr = pFileOpen->SetOptions(dwFlags);
+
+		// Show the Open dialog box.
+		hr = pFileOpen->Show(NULL);
+
+		// Get the file name from the dialog box.
+		if (!SUCCEEDED(hr)) return files;
+
+		IShellItemArray *pArray;
+		hr = pFileOpen->GetResults(&pArray);
+		if (!SUCCEEDED(hr)) return files;
+
+		DWORD FILECOUNT = 0;
+		hr = pArray->GetCount(&FILECOUNT);
+		if (!SUCCEEDED(hr)) return files;
+
+		for (DWORD i = 0; i < FILECOUNT; i++) {
+			IShellItem* pItem;
+			hr = pArray->GetItemAt(i, &pItem);
+			if (!SUCCEEDED(hr)) return files;
+
+			PWSTR pszFilePath;
+			hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+			if (!SUCCEEDED(hr)) return files;
+
+			files.push_back(UCS2toUTF8(pszFilePath));
+
+			CoTaskMemFree(pszFilePath);
+			pItem->Release();
+		}
+		pArray->Release();
+
+
+		pFileOpen->Release();
+	} else {
+		// use GetOpenFileName() as needed...
+		assert(0);
+	}
+
+	return files;
 }
