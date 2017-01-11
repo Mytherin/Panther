@@ -38,6 +38,7 @@ public:
 	void UnregisterMouseRegion(PGIRect* rect);
 
 	TextField* active_textfield;
+	TabControl* active_tabcontrol;
 	StatusBar* statusbar;
 private:
 	PGIRect invalidated_area;

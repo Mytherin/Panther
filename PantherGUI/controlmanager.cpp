@@ -3,6 +3,7 @@
 #include "findtext.h"
 #include "statusbar.h"
 #include "textfield.h"
+#include "filemanager.h"
 
 ControlManager::ControlManager(PGWindowHandle window) : PGContainer(window) {
 
@@ -70,6 +71,15 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 	if (modifier == PGModifierCtrl) {
 		bool replace = false;
 		switch (character) {
+		case 'O': {
+			std::vector<std::string> files = ShowOpenFileDialog(true, false, true);
+			for(auto it = files.begin(); it != files.end(); it++) {
+				TextFile* file = FileManager::OpenFile(*it);
+				active_tabcontrol->AddTab(file);
+			}
+			this->Invalidate();
+			break;	
+		}
 		case 'H':
 			replace = true;
 		case 'F': {

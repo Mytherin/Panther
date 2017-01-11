@@ -10,7 +10,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield) :
 	for (auto it = files.begin(); it != files.end(); it++) {
 		this->tabs.push_back(Tab(*it));
 	}
-	this->font = PGCreateFont(false, true);
+	this->font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(this->font, 13);
 }
 
@@ -68,7 +68,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	} else {
 		SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlText));
 	}
-	RenderText(renderer, font, filename.c_str(), filename.length(), x + current_x + tab_padding, y + (height - GetTextHeight(font)) / 2);
+	RenderText(renderer, font, filename.c_str(), filename.length(), x + current_x + tab_padding, y);
 	position_x += tab.width + tab_padding * 2;
 }
 
@@ -187,6 +187,12 @@ bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
 
 void TabControl::NewTab() {
 	TextFile* file = FileManager::OpenFile();
+	tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
+	active_tab++;
+	SwitchToFile(tabs[active_tab].file);
+}
+
+void TabControl::AddTab(TextFile* file) {
 	tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
 	active_tab++;
 	SwitchToFile(tabs[active_tab].file);

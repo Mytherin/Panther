@@ -32,6 +32,7 @@ public:
 	void PrevTab();
 	void NextTab();
 	void CloseTab(int tab);
+	void AddTab(TextFile* textfile);
 	void NewTab();
 
 	bool IsDragging() {

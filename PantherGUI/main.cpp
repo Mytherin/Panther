@@ -201,6 +201,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	manager->statusbar = bar;
 	manager->active_textfield = textfield;
+	manager->active_tabcontrol = tabs;
 	// The parameters to ShowWindow explained:
 	// hWnd: the value returned from CreateWindow
 	// nCmdShow: the fourth parameter from WinMain

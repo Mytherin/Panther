@@ -32,8 +32,8 @@ struct PGPopupMenu {
 };
 
 struct PGWindow {
-    NSWindow *window;
-    NSEvent *event;
+	NSWindow *window;
+	NSEvent *event;
 	PGView* view;
 	ControlManager* manager;
 	PGRendererHandle renderer;
@@ -78,10 +78,10 @@ void PeriodicWindowRedraw(void) {
 
 - (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window
 {
-    if(self = [super initWithFrame:frameRect]) {
+	if(self = [super initWithFrame:frameRect]) {
 		NSRect rect = [self getBounds];
-    	PGWindowHandle res = new PGWindow();
-    	res->window = window;
+		PGWindowHandle res = new PGWindow();
+		res->window = window;
 		res->view = self;
 		ControlManager* manager = new ControlManager(res);
 		res->manager = manager;
@@ -129,14 +129,15 @@ void PeriodicWindowRedraw(void) {
 
 		manager->statusbar = bar;
 		manager->active_textfield = textfield;
+		manager->active_tabcontrol = tabs;
 		
 		manager->SetPosition(PGPoint(0, 0));
 		manager->SetSize(PGSize(rect.size.width, rect.size.height));
 		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 
 		global_handle = res;
-    }
-    return self;
+	}
+	return self;
 }
 
 - (void)drawRect:(NSRect)invalidateRect {
@@ -203,13 +204,13 @@ void PeriodicWindowRedraw(void) {
 }
 
 - (void)mouseDown:(NSEvent *)event { 
-    global_handle->event = event;
+	global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseDown(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
 }
 
 - (void)mouseUp:(NSEvent *)event {
-    global_handle->event = event;
+	global_handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	global_handle->manager->MouseUp(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
 }
@@ -312,8 +313,8 @@ void PeriodicWindowRedraw(void) {
 	}
 	/*
 	int key = [event keyCode];
-    NSLog(@"Characters: %@", [event characters]);
-    NSLog(@"KeyCode: %hu", [event keyCode]);
+	NSLog(@"Characters: %@", [event characters]);
+	NSLog(@"KeyCode: %hu", [event keyCode]);
 	
 	if (key == kUpArrowCharCode) {
 		button = PGButtonUp;
@@ -426,22 +427,22 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 void SetClipboardText(PGWindowHandle window, std::string text) {
 	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
 	[pasteboard clearContents];
-     NSArray *copiedObjects = [NSArray arrayWithObject:[NSString stringWithUTF8String:text.c_str()]];
+	 NSArray *copiedObjects = [NSArray arrayWithObject:[NSString stringWithUTF8String:text.c_str()]];
 	[pasteboard writeObjects:copiedObjects];
 }
 
 std::string GetClipboardText(PGWindowHandle window) {
 	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-    NSArray *classArray = [NSArray arrayWithObject:[NSString class]];
-    NSDictionary *options = [NSDictionary dictionary];
+	NSArray *classArray = [NSArray arrayWithObject:[NSString class]];
+	NSDictionary *options = [NSDictionary dictionary];
  
-    BOOL ok = [pasteboard canReadObjectForClasses:classArray options:options];
-    if (ok) {
-        NSArray *objectsToPaste = [pasteboard readObjectsForClasses:classArray options:options];
-        NSString *pasted_text = [objectsToPaste objectAtIndex:0];
-        return std::string([pasted_text UTF8String]);
-    }
-    return std::string("");
+	BOOL ok = [pasteboard canReadObjectForClasses:classArray options:options];
+	if (ok) {
+		NSArray *objectsToPaste = [pasteboard readObjectsForClasses:classArray options:options];
+		NSString *pasted_text = [objectsToPaste objectAtIndex:0];
+		return std::string([pasted_text UTF8String]);
+	}
+	return std::string("");
 }
 
 PGLineEnding GetSystemLineEnding() {
@@ -504,7 +505,7 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGContro
 	NSValue* _handle = [NSValue valueWithPointer:(void*)handle->control];
 	NSArray* array = @[_callback, _handle];
 	[item setRepresentedObject:array];
-    [handle->menu addItem:item];
+	[handle->menu addItem:item];
 }
 
 void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
@@ -529,6 +530,27 @@ void OpenFolderInExplorer(std::string path) {
 void OpenFolderInTerminal(std::string path) {
 	assert(0);
 }
+
+std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directories, bool allow_multiple_selection) {
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
+
+	// Configure your panel the way you want it
+	[panel setCanChooseFiles:allow_files ? YES : NO];
+	[panel setCanChooseDirectories:allow_directories ? YES : NO];
+	[panel setAllowsMultipleSelection:allow_multiple_selection ? YES : NO];
+
+	std::vector<std::string> selected_files;
+	NSInteger result = [panel runModal];
+	if (result == NSFileHandlingPanelOKButton) {
+		for (NSURL *fileURL in [panel URLs]) {
+			std::string str = std::string([[fileURL absoluteString] UTF8String]);
+			assert(str.substr(0, 7) == std::string("file://"));
+			selected_files.push_back(str.substr(7));
+		}
+	}
+	return selected_files;
+}
+
 
 PGPoint ConvertWindowToScreen(PGWindowHandle window, PGPoint point) {
 	assert(0);

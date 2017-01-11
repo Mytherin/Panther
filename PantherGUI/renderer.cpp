@@ -471,16 +471,17 @@ void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *te
 	// render the background color
 	RenderRectangle(renderer, PGRect(x, y, width, height), page_color, PGDrawStyleFill);
 	// render four edges of the file icon
-	RenderLine(renderer, PGLine(PGPoint(x, y), PGPoint(x + width * 0.8f, y)), edge_color, 2);
-	RenderLine(renderer, PGLine(PGPoint(x, y), PGPoint(x, y + height)), edge_color, 2);
-	RenderLine(renderer, PGLine(PGPoint(x, y + height), PGPoint(x + width, y + height)), edge_color, 2);
-	RenderLine(renderer, PGLine(PGPoint(x + width, y + height * 0.2f), PGPoint(x + width, y + height)), edge_color, 2);
+	RenderLine(renderer, PGLine(PGPoint(x, y), PGPoint(x + width * 0.8f, y)), edge_color, 1);
+	RenderLine(renderer, PGLine(PGPoint(x, y), PGPoint(x, y + height)), edge_color, 1);
+	RenderLine(renderer, PGLine(PGPoint(x, y + height), PGPoint(x + width, y + height)), edge_color, 1);
+	RenderLine(renderer, PGLine(PGPoint(x + width, y + height * 0.2f), PGPoint(x + width, y + height)), edge_color, 1);
 	// render the diagonal
-	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y), PGPoint(x + width, y + height * 0.2f)), edge_color, 2);
+	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y), PGPoint(x + width, y + height * 0.2f)), edge_color, 1);
 	// render the two edges of the fold
 	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y), PGPoint(x + width * 0.8f, y + height * 0.2f)), edge_color, 1);
 	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y + height * 0.2f), PGPoint(x + width, y + height * 0.2f)), edge_color, 1);
 	// render the file extension
+	if (strlen(text) == 0) return;
 	SetTextColor(font, text_color);
 	PGScalar original_size = GetTextFontSize(font);
 	PGScalar current_size = original_size;
