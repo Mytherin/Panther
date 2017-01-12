@@ -22,6 +22,7 @@ class StatusBar;
 class ControlManager : public PGContainer {
 public:
 	ControlManager(PGWindowHandle window);
+	~ControlManager() { is_destroyed = true; }
 
 	void PeriodicRender(void);
 
@@ -45,6 +46,7 @@ public:
 private:
 	PGIRect invalidated_area;
 	bool invalidated;
+	bool is_destroyed = false;
 
 	std::vector<PGMouseRegion> regions;
 };

@@ -82,6 +82,12 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 			this->Invalidate();
 			break;	
 		}
+		case 'T': {
+			std::vector<TextFile*> files;
+			files.push_back(new TextFile(nullptr));
+			PGCreateWindow(files);
+			break;
+		}
 		case 'H':
 			replace = true;
 		case 'F': {
@@ -147,6 +153,7 @@ void ControlManager::RegisterMouseRegion(PGIRect* rect, Control* control, PGMous
 }
 
 void ControlManager::UnregisterMouseRegion(PGIRect* rect) {
+	if (is_destroyed) return;
 	for (auto it = regions.begin(); it != regions.end(); it++) {
 		if ((*it).rect == rect) {
 			regions.erase(it);
@@ -161,6 +168,7 @@ void ControlManager::RegisterControlForMouseEvents(Control* control) {
 }
 
 void ControlManager::UnregisterControlForMouseEvents(Control* control) {
+	if (is_destroyed) return;
 	for (auto it = regions.begin(); it != regions.end(); it++) {
 		if ((*it).control == control) {
 			regions.erase(it);

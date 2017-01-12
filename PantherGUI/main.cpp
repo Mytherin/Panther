@@ -36,6 +36,7 @@ public:
 	ControlManager* manager = nullptr;
 	PGRendererHandle renderer = nullptr;
 	PGPopupMenuHandle popup = nullptr;
+	IDropTarget* drop_target;
 	HCURSOR cursor;
 
 	PGWindow() : modifier(PGModifierNone) {}
@@ -59,7 +60,9 @@ struct PGPopupMenu {
 	Control* control;
 };
 
-std::map<lng, PGWindowHandle> handle_map = {};
+std::map<HWND, PGWindowHandle> handle_map = {};
+WNDCLASSEX wcex;
+int cmdshow;
 
 HCURSOR cursor_standard = nullptr;
 HCURSOR cursor_crosshair = nullptr;
@@ -67,15 +70,14 @@ HCURSOR cursor_hand = nullptr;
 HCURSOR cursor_ibeam = nullptr;
 HCURSOR cursor_wait = nullptr;
 
+static TCHAR szWindowClass[] = _T("Panther");
+static TCHAR szTitle[] = _T("Panther");
+
 #define MAX_REFRESH_FREQUENCY 1000/30
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	static TCHAR szWindowClass[] = _T("Panther");
-	static TCHAR szTitle[] = _T("Panther");
-
 	OleInitialize(nullptr);
-
-	WNDCLASSEX wcex;
+	cmdshow = nCmdShow;
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -114,57 +116,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	cursor_ibeam = LoadCursor(nullptr, IDC_IBEAM);
 	cursor_wait = LoadCursor(nullptr, IDC_WAIT);
 
-	// The parameters to CreateWindow explained:
-	// szWindowClass: the name of the application
-	// szTitle: the text that appears in the title bar
-	// WS_OVERLAPPEDWINDOW: the type of window to create
-	// CW_USEDEFAULT, CW_USEDEFAULT: initial position (x, y)
-	// 500, 100: initial size (width, length)
-	// NULL: the parent of this window
-	// NULL: this application does not have a menu bar
-	// hInstance: the first parameter from WinMain
-	// NULL: not used in this application
-	HWND hWnd = CreateWindow(
-		szWindowClass,
-		szTitle,
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT,
-		1016, 738,
-		nullptr,
-		nullptr,
-		hInstance,
-		nullptr
-		);
-	if (!hWnd) {
-		MessageBox(nullptr,
-			_T("Call to CreateWindow failed!"),
-			_T("Win32 Guided Tour"),
-			0);
-
-		return 1;
-	}
-
-	SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_COMPOSITED);
-	
-	PGWindowHandle res = new PGWindow();
-	res->hwnd = hWnd;
-	res->cursor = cursor_standard;
-	res->renderer = InitializeRenderer();
-	SetHWNDHandle(hWnd, res);
-
-	IDropTarget* drop_target;
-	RegisterDropWindow(hWnd, &drop_target);
-
-	ControlManager* manager = new ControlManager(res);
-	manager->SetPosition(PGPoint(0, 0));
-	manager->SetSize(PGSize(1000, 700));
-	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
-	res->manager = manager;
-
-	CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
-		SendMessage(res->hwnd, WM_COMMAND, 0, 0);
-	}, PGTimerFlagsNone);
-
 	PGLanguageManager::AddLanguage(new CLanguage());
 	PGLanguageManager::AddLanguage(new XMLLanguage());
 
@@ -177,53 +128,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
 	TextFile* textfile = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
 	TextFile* textfile2 = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml");
-	PGContainer* tabbed = new PGContainer(res);
-	tabbed->width = 0;
-	tabbed->height = TEXT_TAB_HEIGHT;
-	TextField* textfield = new TextField(res, textfile);
-	textfield->SetAnchor(PGAnchorTop);
-	textfield->percentage_height = 1;
-	textfield->percentage_width = 1;
-	TabControl* tabs = new TabControl(res, textfield);
-	tabs->SetAnchor(PGAnchorTop | PGAnchorLeft);
-	tabs->fixed_height = TEXT_TAB_HEIGHT;
-	tabs->percentage_width = 1;
-	tabbed->AddControl(tabs);
-	tabbed->AddControl(textfield);
-	textfield->vertical_anchor = tabs;
+	
+	std::vector<TextFile*> files;
+	files.push_back(textfile);
+	files.push_back(textfile2);
 
-	StatusBar* bar = new StatusBar(res, textfield);
-	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
-	bar->percentage_width = 1;
-	bar->fixed_height = STATUSBAR_HEIGHT;
-
-	tabbed->SetAnchor(PGAnchorBottom);
-	tabbed->percentage_height = 1;
-	tabbed->percentage_width = 1;
-	tabbed->vertical_anchor = bar;
-	//tabbed->SetPosition(PGPoint(50, 50));
-	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
-
-	manager->AddControl(tabbed);
-	manager->AddControl(bar);
-
-	manager->statusbar = bar;
-	manager->active_textfield = textfield;
-	manager->active_tabcontrol = tabs;
-	// The parameters to ShowWindow explained:
-	// hWnd: the value returned from CreateWindow
-	// nCmdShow: the fourth parameter from WinMain
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
+	PGWindowHandle handle = PGCreateWindow(files);
 
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-	UnregisterDropWindow(hWnd, drop_target);
 
-	//GdiplusShutdown(gdiplusToken);
 	return (int)msg.wParam;
 }
 
@@ -533,7 +450,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_ERASEBKGND:
 		return 1;
 	case WM_DESTROY:
-		PostQuitMessage(0);
+		PGCloseWindow(handle);
+		if (handle_map.size() == 0) {
+			// no windows left, exit the program
+			PostQuitMessage(0);
+		}
 		break;
 	case WM_SIZE: {
 		if (wParam != SIZE_MINIMIZED) {
@@ -594,33 +515,105 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(void) {
-	PGWindowHandle res = new PGWindow();
-	if (!res) {
-		return nullptr;
-	}
+PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
 	HINSTANCE hInstance = GetModuleHandle(nullptr);
-
+	// The parameters to CreateWindow explained:
+	// szWindowClass: the name of the application
+	// szTitle: the text that appears in the title bar
+	// WS_OVERLAPPEDWINDOW: the type of window to create
+	// CW_USEDEFAULT, CW_USEDEFAULT: initial position (x, y)
+	// 500, 100: initial size (width, length)
+	// NULL: the parent of this window
+	// NULL: this application does not have a menu bar
+	// hInstance: the first parameter from WinMain
+	// NULL: not used in this application
 	HWND hWnd = CreateWindow(
-		"Panther",
-		"Panther GUI",
+		szWindowClass,
+		szTitle,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		500, 100,
+		1016, 738,
 		nullptr,
 		nullptr,
 		hInstance,
 		nullptr
 		);
+
 	if (!hWnd) {
 		return nullptr;
 	}
+
+	SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_COMPOSITED);
+
+	PGWindowHandle res = new PGWindow();
+	if (!res) {
+		return nullptr;
+	}
 	res->hwnd = hWnd;
+	res->cursor = cursor_standard;
+	res->renderer = InitializeRenderer();
+	SetHWNDHandle(hWnd, res);
+
+	RegisterDropWindow(hWnd, &res->drop_target);
+
+	ControlManager* manager = new ControlManager(res);
+	manager->SetPosition(PGPoint(0, 0));
+	manager->SetSize(PGSize(1000, 700));
+	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+	res->manager = manager;
+
+	CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
+		SendMessage(res->hwnd, WM_COMMAND, 0, 0);
+	}, PGTimerFlagsNone);
+
+
+	PGContainer* tabbed = new PGContainer(res);
+	tabbed->width = 0;
+	tabbed->height = TEXT_TAB_HEIGHT;
+	TextField* textfield = new TextField(res, initial_files[0]);
+	textfield->SetAnchor(PGAnchorTop);
+	textfield->percentage_height = 1;
+	textfield->percentage_width = 1;
+	TabControl* tabs = new TabControl(res, textfield);
+	tabs->SetAnchor(PGAnchorTop | PGAnchorLeft);
+	tabs->fixed_height = TEXT_TAB_HEIGHT;
+	tabs->percentage_width = 1;
+	tabbed->AddControl(tabs);
+	tabbed->AddControl(textfield);
+	textfield->vertical_anchor = tabs;
+
+	StatusBar* bar = new StatusBar(res, textfield);
+	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
+	bar->percentage_width = 1;
+	bar->fixed_height = STATUSBAR_HEIGHT;
+
+	tabbed->SetAnchor(PGAnchorBottom);
+	tabbed->percentage_height = 1;
+	tabbed->percentage_width = 1;
+	tabbed->vertical_anchor = bar;
+	//tabbed->SetPosition(PGPoint(50, 50));
+	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
+
+	manager->AddControl(tabbed);
+	manager->AddControl(bar);
+
+	manager->statusbar = bar;
+	manager->active_textfield = textfield;
+	manager->active_tabcontrol = tabs;
+	// The parameters to ShowWindow explained:
+	// hWnd: the value returned from CreateWindow
+	// nCmdShow: the fourth parameter from WinMain
+	ShowWindow(hWnd, cmdshow);
+	UpdateWindow(hWnd);
 	return res;
 }
 
-void CloseWindow(PGWindowHandle window) {
+void PGCloseWindow(PGWindowHandle window) {
 	if (!window) return;
+	delete window->manager;
+	delete window->renderer;
+	UnregisterDropWindow(window->hwnd, window->drop_target);
+	handle_map.erase(window->hwnd);
 	if (window->hwnd) CloseWindow(window->hwnd);
 	free(window);
 }
@@ -1023,13 +1016,11 @@ std::string ShowSaveFileDialog() {
 }
 
 PGWindowHandle GetHWNDHandle(HWND hwnd) {
-	lng id = (lng) GetWindowLong(hwnd, GWL_ID);
-	if (handle_map.count(id) == 0) return nullptr;
-	return handle_map[id];
+	if (handle_map.count(hwnd) == 0) return nullptr;
+	return handle_map[hwnd];
 }
 
 void SetHWNDHandle(HWND hwnd, PGWindowHandle window) {
-	lng id = (lng) GetWindowLong(hwnd, GWL_ID);
-	assert(handle_map.count(id) == 0);
-	handle_map[id] = window;
+	assert(handle_map.count(hwnd) == 0);
+	handle_map[hwnd] = window;
 }

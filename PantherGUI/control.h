@@ -78,7 +78,7 @@ public:
 	PGAnchor anchor;
 	Control* vertical_anchor = nullptr;
 	Control* horizontal_anchor = nullptr;
-
+	
 	PGWindowHandle window;
 	bool HasFocus();
 

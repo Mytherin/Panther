@@ -16,7 +16,6 @@ BasicTextField::BasicTextField(PGWindowHandle window, TextFile* textfile) :
 }
 
 BasicTextField::~BasicTextField() {
-	delete textfile;
 }
 
 void BasicTextField::PeriodicRender(void) {
