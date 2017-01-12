@@ -226,10 +226,15 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 	TabDragDropStruct* td = (TabDragDropStruct*)data;
 	if (mouse.x >= 0 && mouse.x <= this->width && mouse.y >= -100 & mouse.y <= 100) {
 		td->accepted = true;
-	} else {
-		dragging_tab.x = -1;
-		dragging_tab.file = nullptr;
+		if (this == td->tabs) {
+			// FIXME: do not add tab, but simply move the existing tab around
+			// FIXME: set accepted to some other value so the distinction can be made
+		} else {
+			this->AddTab(td->file);
+		}
 	}
+	dragging_tab.x = -1;
+	dragging_tab.file = nullptr;
 	this->Invalidate();
 }
 
@@ -304,6 +309,8 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 					textfiles.push_back(data->file);
 					PGCreateWindow(mouse, textfiles);
 					data->tabs->CloseTab(data->file);
+				} else {
+					// FIXME: close tab if tab has been moved to other window
 				}
 				data->tabs->active_tab_hidden = false;
 			}, new TabDragDropStruct(tabs[selected_tab].file, this));
