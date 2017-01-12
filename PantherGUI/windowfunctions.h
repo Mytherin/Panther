@@ -25,6 +25,9 @@ typedef struct PGPopupMenu* PGPopupMenuHandle;
 struct PGBitmap;
 typedef struct PGBitmap* PGBitmapHandle;
 
+struct PGDropData;
+typedef struct PGDropData* PGDropHandle;
+
 typedef float PGScalar;
 
 class Control;
@@ -212,6 +215,7 @@ std::string GetModifierName(PGModifier);
 class TextFile;
 
 // Window Functions
+PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_files);
 PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files);
 void PGCloseWindow(PGWindowHandle window);
 void ShowWindow(PGWindowHandle window);
@@ -332,3 +336,13 @@ PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint);
 std::string OpenFileMenu();
 
 void DropFile(PGWindowHandle handle, std::string filename);
+
+enum PGDragDropType {
+	PGDragDropNone,
+	PGDragDropTabs
+};
+
+typedef void(*PGDropCallback)(PGPoint mouse, void* data);
+
+PGDropHandle PGStartDragDrop(PGWindowHandle window, PGDropCallback, void*);
+

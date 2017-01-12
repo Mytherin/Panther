@@ -140,6 +140,45 @@ void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
+
+bool PGContainer::AcceptsDragDrop(PGDragDropType type) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
+		if (controls[i]->AcceptsDragDrop(type)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void PGContainer::DragDrop(PGDragDropType type, int x, int y, void* data) {
+	PGPoint mouse(x - this->x, y - this->y);
+	for (lng i = controls.size() - 1; i >= 0; i--) {
+		Control* c = controls[i];
+		if (c->AcceptsDragDrop(type)) {
+			c->DragDrop(type, mouse.x, mouse.y, data);
+		}
+	}
+}
+
+void PGContainer::PerformDragDrop(PGDragDropType type, int x, int y, void* data) {
+	PGPoint mouse(x - this->x, y - this->y);
+	for (lng i = controls.size() - 1; i >= 0; i--) {
+		Control* c = controls[i];
+		if (c->AcceptsDragDrop(type)) {
+			c->PerformDragDrop(type, mouse.x, mouse.y, data);
+		}
+	}
+}
+
+void PGContainer::ClearDragDrop(PGDragDropType type) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
+		Control* c = controls[i];
+		if (c->AcceptsDragDrop(type)) {
+			c->ClearDragDrop(type);
+		}
+	}
+}
+
 void PGContainer::OnResize(PGSize old_size, PGSize new_size) {
 	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {

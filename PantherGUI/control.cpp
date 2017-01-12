@@ -46,6 +46,22 @@ void Control::MouseMove(int x, int y, PGMouseButton buttons) {
 
 }
 
+bool Control::AcceptsDragDrop(PGDragDropType type) {
+	return false;
+}
+
+void Control::DragDrop(PGDragDropType type, int x, int y, void* data) {
+
+}
+
+void Control::PerformDragDrop(PGDragDropType type, int x, int y, void* data) {
+
+}
+
+void Control::ClearDragDrop(PGDragDropType type) {
+
+}
+
 bool Control::KeyboardButton(PGButton button, PGModifier modifier) {
 	return false;
 }

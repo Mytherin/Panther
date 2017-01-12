@@ -29,6 +29,11 @@ public:
 	virtual void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 
+	virtual bool AcceptsDragDrop(PGDragDropType type);
+	virtual void DragDrop(PGDragDropType type, int x, int y, void* data);
+	virtual void PerformDragDrop(PGDragDropType type, int x, int y, void* data);
+	virtual void ClearDragDrop(PGDragDropType type);
+
 	virtual void OnResize(PGSize old_size, PGSize new_size);
 
 	virtual bool ControlTakesFocus() { return true; }
