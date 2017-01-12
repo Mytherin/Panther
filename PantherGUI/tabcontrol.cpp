@@ -9,6 +9,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	if (files.size() == 0)
 		files.push_back(new TextFile(nullptr));
 	for (auto it = files.begin(); it != files.end(); it++) {
+		file_manager.OpenFile(*it);
 		this->tabs.push_back(Tab(*it));
 	}
 	this->font = PGCreateFont("myriad", false, true);
@@ -171,7 +172,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 }
 
 bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
-	if (modifier & PGModifierCtrl) {
+	if (modifier == PGModifierCtrl) {
 		switch (character) {
 		case 'W':
 			CloseTab(active_tab);

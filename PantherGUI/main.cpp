@@ -516,6 +516,7 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 }
 
 PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
+	assert(initial_files.size() > 0);
 	HINSTANCE hInstance = GetModuleHandle(nullptr);
 	// The parameters to CreateWindow explained:
 	// szWindowClass: the name of the application
