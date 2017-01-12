@@ -126,8 +126,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextFile* textfile = FileManager::OpenFile("C:\\Users\\wieis\\Desktop\\syntaxtest.c");
-	TextFile* textfile2 = FileManager::OpenFile("E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml");
+	TextFile* textfile = TextFile::OpenTextFile(nullptr, "C:\\Users\\wieis\\Desktop\\syntaxtest.c", false);
+	TextFile* textfile2 = TextFile::OpenTextFile(nullptr, "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml", false);
 	
 	std::vector<TextFile*> files;
 	files.push_back(textfile);
@@ -574,7 +574,7 @@ PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
 	textfield->SetAnchor(PGAnchorTop);
 	textfield->percentage_height = 1;
 	textfield->percentage_width = 1;
-	TabControl* tabs = new TabControl(res, textfield);
+	TabControl* tabs = new TabControl(res, textfield, initial_files);
 	tabs->SetAnchor(PGAnchorTop | PGAnchorLeft);
 	tabs->fixed_height = TEXT_TAB_HEIGHT;
 	tabs->percentage_width = 1;

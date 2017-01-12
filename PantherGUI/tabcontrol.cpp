@@ -4,9 +4,10 @@
 #include "style.h"
 
 
-TabControl::TabControl(PGWindowHandle window, TextField* textfield) : 
-	Control(window), active_tab(0), textfield(textfield) {
-	std::vector<TextFile*>& files = FileManager::GetFiles();
+TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files) : 
+	Control(window), active_tab(0), textfield(textfield), file_manager() {
+	if (files.size() == 0)
+		files.push_back(new TextFile(nullptr));
 	for (auto it = files.begin(); it != files.end(); it++) {
 		this->tabs.push_back(Tab(*it));
 	}
@@ -186,10 +187,17 @@ bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
 }
 
 void TabControl::NewTab() {
-	TextFile* file = FileManager::OpenFile();
+	TextFile* file = file_manager.OpenFile();
 	tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
 	active_tab++;
 	SwitchToFile(tabs[active_tab].file);
+}
+
+void TabControl::OpenFile(std::string path) {
+	TextFile* textfile = file_manager.OpenFile(path);
+	if (textfile) {
+		AddTab(textfile);
+	}
 }
 
 void TabControl::AddTab(TextFile* file) {
@@ -261,7 +269,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 }
 
 void TabControl::PrevTab() {
-	std::vector<TextFile*> files = FileManager::GetFiles();
+	std::vector<TextFile*> files = file_manager.GetFiles();
 	active_tab--;
 	if (active_tab < 0) active_tab = files.size() - 1;
 
@@ -269,7 +277,7 @@ void TabControl::PrevTab() {
 }
 
 void TabControl::NextTab() {
-	std::vector<TextFile*> files = FileManager::GetFiles();
+	std::vector<TextFile*> files = file_manager.GetFiles();
 	active_tab++;
 	if (active_tab >= files.size()) active_tab = 0;
 
@@ -283,12 +291,12 @@ void TabControl::CloseTab(int tab) {
 	} else if (tab == active_tab) {
 		if (tabs.size() == 1) {
 			// open an in-memory file to replace the current file
-			TextFile* file = FileManager::OpenFile();
+			TextFile* file = file_manager.OpenFile();
 			tabs.push_back(Tab(file));
 		}
 		SwitchToFile(tabs[1].file);
 	}
-	FileManager::CloseFile(tabs[tab].file);
+	file_manager.CloseFile(tabs[tab].file);
 	tabs.erase(tabs.begin() + tab);
 }
 

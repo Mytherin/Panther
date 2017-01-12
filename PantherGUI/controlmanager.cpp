@@ -74,10 +74,7 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 		case 'O': {
 			std::vector<std::string> files = ShowOpenFileDialog(true, false, true);
 			for(auto it = files.begin(); it != files.end(); it++) {
-				TextFile* file = FileManager::OpenFile(*it);
-				if (file) {
-					active_tabcontrol->AddTab(file);
-				}
+				active_tabcontrol->OpenFile(*it);
 			}
 			this->Invalidate();
 			break;	
@@ -179,10 +176,7 @@ void ControlManager::UnregisterControlForMouseEvents(Control* control) {
 }
 
 void ControlManager::DropFile(std::string filename) {
-	TextFile* file = FileManager::OpenFile(filename);
-	if (file) {
-		active_tabcontrol->AddTab(file);
-	}
+	active_tabcontrol->OpenFile(filename);
 }
 
 ControlManager* GetControlManager(Control* c) {

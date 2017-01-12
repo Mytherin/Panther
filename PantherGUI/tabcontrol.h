@@ -3,6 +3,7 @@
 
 #include "control.h"
 #include "textfield.h"
+#include "filemanager.h"
 
 struct Tab {
 	TextFile* file;
@@ -15,7 +16,7 @@ struct Tab {
 
 class TabControl : public Control {
 public:
-	TabControl(PGWindowHandle window, TextField* textfield);
+	TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files);
 
 	void PeriodicRender(void);
 
@@ -29,6 +30,7 @@ public:
 	void Draw(PGRendererHandle, PGIRect*);
 	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, bool selected_tab);
 
+	void OpenFile(std::string path);
 	void PrevTab();
 	void NextTab();
 	void CloseTab(int tab);
@@ -40,6 +42,8 @@ public:
 	}
 	int currently_selected_tab = 0;
 protected:
+	FileManager file_manager;
+
 	PGFontHandle font;
 
 	int GetSelectedTab(int x);
