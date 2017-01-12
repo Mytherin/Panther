@@ -3,23 +3,19 @@
 #include "control.h"
 #include "textfield.h"
 #include "time.h"
-#include "scheduler.h"
 #include "renderer.h"
 #include "controlmanager.h"
 #include "filemanager.h"
 #include "container.h"
 #include "statusbar.h"
 
-#include "xml.h"
-#include "c.h"
-
 #include <sys/time.h>
 #include <cctype>
 
-#import "PGView.h"
-
 #include "control.h"
 
+#import "PGView.h"
+#import "PGWindow.h"
 #import "PGDrawBitmap.h"
 
 // clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm c.cpp control.cpp cursor.cpp keywords.cpp logger.cpp scheduler.cpp text.cpp syntaxhighlighter.cpp textfield.cpp textfile.cpp textline.cpp thread.cpp windowfunctions.cpp xml.cpp file.cpp tabcontrol.cpp tabbedtextfield.cpp renderer.cpp filemanager.cpp controlmanager.cpp utils.cpp  -o main
@@ -48,63 +44,60 @@ struct PGMouseFlags {
 
 @interface PGTimerObject : NSObject {
 	PGTimerCallback callback;
+	PGWindowHandle handle;
 }
--(id)initWithCallback:(PGTimerCallback)callback;
+-(id)initWithCallback:(PGTimerCallback)callback :(PGWindowHandle)whandle;
 -(void)callFunction;
 @end
 
 @implementation PGTimerObject
--(id)initWithCallback:(PGTimerCallback)cb {
+-(id)initWithCallback:(PGTimerCallback)cb :(PGWindowHandle)whandle{
 	self = [super init];
 	if (self) {
 		callback = cb;
+		handle = whandle;
 	}
 	return self;
 }
 -(void)callFunction {
-	callback();
+	callback(handle);
 }
 @end
 
-PGWindowHandle global_handle;
+struct PGTimer {
+	PGTimerObject* user_data;
+	NSTimer* timer;
+};
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
-void PeriodicWindowRedraw(void) {
-	global_handle->manager->PeriodicRender();
+void PeriodicWindowRedraw(PGWindowHandle window) {
+	window->manager->PeriodicRender();
 }
 
 @implementation PGView : NSView
 
-- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window
+- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(std::vector<TextFile*>)textfiles
 {
 	if(self = [super initWithFrame:frameRect]) {
 		NSRect rect = [self getBounds];
-		PGWindowHandle res = new PGWindow();
-		res->window = window;
-		res->view = self;
-		ControlManager* manager = new ControlManager(res);
-		res->manager = manager;
-		res->renderer = InitializeRenderer();
-			
-		PGLanguageManager::AddLanguage(new CLanguage());
-		PGLanguageManager::AddLanguage(new XMLLanguage());
+		handle = new PGWindow();
+		handle->window = window;
+		handle->view = self;
+		ControlManager* manager = new ControlManager(handle);
+		handle->manager = manager;
+		handle->renderer = InitializeRenderer();
 
-		Scheduler::Initialize();
-		Scheduler::SetThreadCount(8);
+		timer = CreateTimer(handle, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
-		CreateTimer(res, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
-
-		TextFile* textfile = FileManager::OpenFile("/Users/myth/pyconversion.c");
-		TextFile* textfile2 = FileManager::OpenFile("/Users/myth/Data/tibiawiki_pages_current.xml");
-		PGContainer* tabbed = new PGContainer(res);
+		PGContainer* tabbed = new PGContainer(handle);
 		tabbed->width = 0;
 		tabbed->height = TEXT_TAB_HEIGHT;
-		TextField* textfield = new TextField(res, textfile);
+		TextField* textfield = new TextField(handle, textfiles[0]);
 		textfield->SetAnchor(PGAnchorTop);
 		textfield->percentage_height = 1;
 		textfield->percentage_width = 1;
-		TabControl* tabs = new TabControl(res, textfield);
+		TabControl* tabs = new TabControl(handle, textfield, textfiles);
 		tabs->SetAnchor(PGAnchorTop | PGAnchorLeft);
 		tabs->fixed_height = TEXT_TAB_HEIGHT;
 		tabs->percentage_width = 1;
@@ -112,7 +105,7 @@ void PeriodicWindowRedraw(void) {
 		tabbed->AddControl(textfield);
 		textfield->vertical_anchor = tabs;
 
-		StatusBar* bar = new StatusBar(res, textfield);
+		StatusBar* bar = new StatusBar(handle, textfield);
 		bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 		bar->percentage_width = 1;
 		bar->fixed_height = STATUSBAR_HEIGHT;
@@ -134,17 +127,15 @@ void PeriodicWindowRedraw(void) {
 		manager->SetPosition(PGPoint(0, 0));
 		manager->SetSize(PGSize(rect.size.width, rect.size.height));
 		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
-
-		global_handle = res;
 	}
 	return self;
 }
 
 - (void)drawRect:(NSRect)invalidateRect {
 	NSRect window_size = [self getBounds];
-	if (global_handle->manager->width != window_size.size.width || 
-		global_handle->manager->height != window_size.size.height) {
-		global_handle->manager->SetSize(PGSize(window_size.size.width, window_size.size.height));
+	if (handle->manager->width != window_size.size.width || 
+		handle->manager->height != window_size.size.height) {
+		handle->manager->SetSize(PGSize(window_size.size.width, window_size.size.height));
 	}
 
 	SkBitmap bitmap;
@@ -155,11 +146,17 @@ void PeriodicWindowRedraw(void) {
 		invalidateRect.size.width,
 		invalidateRect.size.height);
 
-	RenderControlsToBitmap(global_handle->renderer, bitmap, rect, global_handle->manager);
+	RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager);
 
 	// draw bitmap
 	CGContextRef context = (CGContextRef) [[NSGraphicsContext currentContext] graphicsPort];
 	SkCGDrawBitmap(context, bitmap, 0, 0);
+}
+
+-(void)performClose {
+	DeleteTimer(timer);
+	delete handle->manager;
+	DeleteRenderer(handle->renderer);
 }
 
 -(NSRect)getBounds {
@@ -204,54 +201,53 @@ void PeriodicWindowRedraw(void) {
 }
 
 - (void)mouseDown:(NSEvent *)event { 
-	global_handle->event = event;
+	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	global_handle->manager->MouseDown(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
+	handle->manager->MouseDown(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
 }
 
 - (void)mouseUp:(NSEvent *)event {
-	global_handle->event = event;
+	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	global_handle->manager->MouseUp(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
+	handle->manager->MouseUp(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
 }
 
 - (void)rightMouseDown:(NSEvent *)event {
-	global_handle->event = event;
+	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	global_handle->manager->MouseDown(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
+	handle->manager->MouseDown(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-	global_handle->event = event;
+	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	global_handle->manager->MouseUp(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
+	handle->manager->MouseUp(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
 }
 
 - (void)otherMouseDown:(NSEvent *)event {
 	// FIXME: not just middle mouse button
-	global_handle->event = event;
+	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	global_handle->manager->MouseDown(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
+	handle->manager->MouseDown(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
 }
 
 - (void)otherMouseUp:(NSEvent *)event {
 	// FIXME: not just middle mouse button
-	global_handle->event = event;
+	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	global_handle->manager->MouseUp(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
+	handle->manager->MouseUp(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
 }
 
 - (void)scrollWheel:(NSEvent *)event {
 	if ([event deltaY] == 0) return;
-	global_handle->event = event;
+	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	NSLog(@"%f", [event deltaY]);
-	global_handle->manager->MouseWheel(flags.x, flags.y, [event deltaY], flags.modifiers);
+	handle->manager->MouseWheel(flags.x, flags.y, [event deltaY], flags.modifiers);
 }
 /*
 - (void)mouseDragged:(NSEvent *)event {
 	PGMouseFlags flags = [self getMouseFlags:event];
-	global_handle->manager->MouseMove(flags.x, flags.y,  flags.button);
+	handle->manager->MouseMove(flags.x, flags.y,  flags.button);
 }*/
 
 - (void)keyDown:(NSEvent *)event {
@@ -304,13 +300,13 @@ void PeriodicWindowRedraw(void) {
 			assert(0);
 		}
 		if (button != PGButtonNone) {
-			global_handle->manager->KeyboardButton(button, modifiers);
+			handle->manager->KeyboardButton(button, modifiers);
 		} else if (keyChar >= 0x20 && keyChar <= 0x7E) {
 			if (modifiers == PGModifierShift)
 				modifiers = PGModifierNone;
 			if (modifiers != PGModifierNone)
 				keyChar = toupper(keyChar);
-			global_handle->manager->KeyboardCharacter(keyChar, modifiers);
+			handle->manager->KeyboardCharacter(keyChar, modifiers);
 		}
 	}
 	/*
@@ -329,6 +325,10 @@ void PeriodicWindowRedraw(void) {
 	}*/
 }
 
+-(PGWindowHandle)getHandle {
+	return handle;
+}
+
 - (void)keyUp:(NSEvent *)event {
 
 }
@@ -337,13 +337,16 @@ void PeriodicWindowRedraw(void) {
 	[[theTimer userInfo] callFunction];
 }
 
-- (void)scheduleTimer:(int)ms :(PGTimerCallback)callback :(PGTimerFlags)flags {
-	PGTimerObject* object = [[PGTimerObject alloc] initWithCallback:callback];
-	[NSTimer scheduledTimerWithTimeInterval:ms / 1000.0
+- (PGTimerHandle)scheduleTimer:(PGWindowHandle)window_handle :(int)ms :(PGTimerCallback)callback :(PGTimerFlags)flags {
+	PGTimerHandle timer_handle = new PGTimer();
+	PGTimerObject* object = [[PGTimerObject alloc] initWithCallback:callback:window_handle];
+	timer_handle->user_data = object;
+	timer_handle->timer = [NSTimer scheduledTimerWithTimeInterval:ms / 1000.0
 		target:self
 		selector:@selector(targetMethod:)
 		userInfo:object
 		repeats:flags & PGTimerExecuteOnce ? NO : YES];
+	return timer_handle;
 }
 
 -(void)controlCallback:(NSValue*)_callback :(NSValue*)_control {
@@ -383,9 +386,23 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(void) {
-	assert(0);
-	return nullptr;
+PGWindowHandle PGCreateWindow(std::vector<TextFile*> textfiles) {
+	PGNSWindow *window;
+    NSRect contentSize = NSMakeRect(0, 0, 1000.0, 700.0);
+    NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
+
+    window = [[PGNSWindow alloc] initWithContentRect:contentSize styleMask:windowStyleMask backing:NSBackingStoreBuffered defer:YES];
+    window.backgroundColor = [NSColor whiteColor];
+    NSView *view = [[PGView alloc] initWithFrame:contentSize:window:textfiles];
+    [view setWantsLayer:YES];
+    window.contentView = view;
+    [window makeFirstResponder:view];
+
+
+    [window cascadeTopLeftFromPoint:NSMakePoint(20,20)];
+    [window setTitle:@"PantherGUI"];
+    [window makeKeyAndOrderFront:nil];
+	return [(PGView*)view getHandle];
 }
 
 
@@ -464,23 +481,13 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 	return;
 }
 
-struct PGTimer {
-
-};
-
 PGTimerHandle CreateTimer(PGWindowHandle handle, int ms, PGTimerCallback callback, PGTimerFlags flags) {
-	[handle->view scheduleTimer:ms:callback:flags];
-	/*
-	dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(ms * NSEC_PER_MSEC));
-	dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-		callback();
-		CreateTimer(ms, callback, flags);
-	});*/
-	return nullptr;
+	return [handle->view scheduleTimer:handle:ms:callback:flags];
 }
 
 void DeleteTimer(PGTimerHandle handle) {
-
+	[handle->timer invalidate];
+	delete handle;
 }
 
 void* GetWindowManager(PGWindowHandle window) {
@@ -553,6 +560,10 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 		}
 	}
 	return selected_files;
+}
+
+std::string ShowSaveFileDialog() {
+	return "";
 }
 
 

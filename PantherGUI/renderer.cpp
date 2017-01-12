@@ -247,7 +247,7 @@ void DeleteImage(PGBitmapHandle handle) {
 }
 
 void DeleteRenderer(PGRendererHandle renderer) {
-	delete renderer->canvas;
+	//delete renderer->canvas;
 	delete renderer;
 }
 

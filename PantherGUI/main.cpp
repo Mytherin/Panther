@@ -612,7 +612,7 @@ PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
 void PGCloseWindow(PGWindowHandle window) {
 	if (!window) return;
 	delete window->manager;
-	delete window->renderer;
+	DeleteRenderer(window->renderer);
 	UnregisterDropWindow(window->hwnd, window->drop_target);
 	handle_map.erase(window->hwnd);
 	if (window->hwnd) CloseWindow(window->hwnd);
