@@ -241,7 +241,7 @@ typedef enum {
 	PGTimerExecuteOnce = 0x01,
 } PGTimerFlags;
 
-typedef void (*PGTimerCallback)(void);
+typedef void (*PGTimerCallback)(PGWindowHandle);
 
 PGTimerHandle CreateTimer(PGWindowHandle handle, int ms, PGTimerCallback, PGTimerFlags);
 void DeleteTimer(PGTimerHandle);

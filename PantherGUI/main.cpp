@@ -25,6 +25,7 @@
 #include <shobjidl.h>
 #include <windowsx.h>
 #include <vector>
+#include <map>
 
 #include "renderer.h"
 
@@ -40,8 +41,14 @@ public:
 	PGWindow() : modifier(PGModifierNone) {}
 };
 
+struct PGTimerParameter {
+	PGTimerCallback callback;
+	PGWindowHandle window;
+};
+
 struct PGTimer {
 	HANDLE timer;
+	PGTimerParameter *parameter;
 };
 
 struct PGPopupMenu {
@@ -52,7 +59,7 @@ struct PGPopupMenu {
 	Control* control;
 };
 
-PGWindowHandle global_handle;
+std::map<lng, PGWindowHandle> handle_map = {};
 
 HCURSOR cursor_standard = nullptr;
 HCURSOR cursor_crosshair = nullptr;
@@ -138,15 +145,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_COMPOSITED);
-
-	IDropTarget* drop_target;
-	RegisterDropWindow(hWnd, &drop_target);
-
+	
 	PGWindowHandle res = new PGWindow();
 	res->hwnd = hWnd;
 	res->cursor = cursor_standard;
 	res->renderer = InitializeRenderer();
-	global_handle = res;
+	SetHWNDHandle(hWnd, res);
+
+	IDropTarget* drop_target;
+	RegisterDropWindow(hWnd, &drop_target);
 
 	ControlManager* manager = new ControlManager(res);
 	manager->SetPosition(PGPoint(0, 0));
@@ -154,8 +161,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	res->manager = manager;
 
-	CreateTimer(res, MAX_REFRESH_FREQUENCY, []() {
-		SendMessage(global_handle->hwnd, WM_COMMAND, 0, 0);
+	CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
+		SendMessage(res->hwnd, WM_COMMAND, 0, 0);
 	}, PGTimerFlagsNone);
 
 	PGLanguageManager::AddLanguage(new CLanguage());
@@ -258,6 +265,7 @@ std::string UTF8toUCS2(std::string text) {
 
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	PGWindowHandle handle = GetHWNDHandle(hWnd);
 	switch (message) {
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
@@ -269,7 +277,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			ps.rcPaint.right - ps.rcPaint.left,
 			ps.rcPaint.bottom - ps.rcPaint.top);
 
-		RenderControlsToBitmap(global_handle->renderer, bitmap, rect, global_handle->manager);
+		RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager);
 
 		BITMAPINFO bmi;
 		memset(&bmi, 0, sizeof(bmi));
@@ -301,13 +309,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGButton button = PGButtonNone;
 		switch (wParam) {
 		case VK_SHIFT:
-			global_handle->modifier |= PGModifierShift;
+			handle->modifier |= PGModifierShift;
 			break;
 		case VK_CONTROL:
-			global_handle->modifier |= PGModifierCtrl;
+			handle->modifier |= PGModifierCtrl;
 			break;
 		case VK_MENU:
-			global_handle->modifier |= PGModifierAlt;
+			handle->modifier |= PGModifierAlt;
 			break;
 		case VK_TAB:
 			button = PGButtonTab;
@@ -403,13 +411,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			break;
 		}
 		if (button != PGButtonNone) {
-			global_handle->manager->KeyboardButton(button, global_handle->modifier);
+			handle->manager->KeyboardButton(button, handle->modifier);
 			return 0;
 		} else if ((wParam >= 0x41 && wParam <= 0x5A) || character != '\0') {
 			if (character == '\0')
 				character = (char)wParam;
-			if (global_handle->modifier != PGModifierNone) {
-				global_handle->manager->KeyboardCharacter(character, global_handle->modifier);
+			if (handle->modifier != PGModifierNone) {
+				handle->manager->KeyboardCharacter(character, handle->modifier);
 				return 0;
 			}
 		}
@@ -418,13 +426,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_KEYUP:
 		switch (wParam) {
 		case VK_SHIFT:
-			global_handle->modifier &= ~PGModifierShift;
+			handle->modifier &= ~PGModifierShift;
 			break;
 		case VK_CONTROL:
-			global_handle->modifier &= ~PGModifierCtrl;
+			handle->modifier &= ~PGModifierCtrl;
 			break;
 		case VK_MENU:
-			global_handle->modifier &= ~PGModifierAlt;
+			handle->modifier &= ~PGModifierAlt;
 			break;
 		}
 		break;
@@ -438,13 +446,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		if (size == 1) {
 			if (wParam < 0x20 || wParam >= 0x7F)
 				break;
-			global_handle->manager->KeyboardCharacter(output[0], PGModifierNone);
+			handle->manager->KeyboardCharacter(output[0], PGModifierNone);
 		} else {
 			PGUTF8Character u;
 			u.length = size;
 			memcpy(u.character, output, size);
 
-			global_handle->manager->KeyboardUnicode(u, PGModifierNone);
+			handle->manager->KeyboardUnicode(u, PGModifierNone);
 		}
 		free(output);
 		break;
@@ -456,12 +464,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		POINT point;
 		point.x = GET_X_LPARAM(lParam);
 		point.y = GET_Y_LPARAM(lParam);
-		ScreenToClient(global_handle->hwnd, &point);
+		ScreenToClient(handle->hwnd, &point);
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
 		int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-		global_handle->manager->MouseWheel(point.x, point.y, zDelta / 30.0, modifier);
+		handle->manager->MouseWheel(point.x, point.y, zDelta / 30.0, modifier);
 		break;
 	}
 	case WM_LBUTTONDOWN: {
@@ -470,7 +478,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->manager->MouseDown(x, y, PGLeftMouseButton, modifier);
+		handle->manager->MouseDown(x, y, PGLeftMouseButton, modifier);
 		break;
 	}
 	case WM_LBUTTONUP: {
@@ -479,7 +487,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->manager->MouseUp(x, y, PGLeftMouseButton, modifier);
+		handle->manager->MouseUp(x, y, PGLeftMouseButton, modifier);
 		break;
 	}
 	case WM_MBUTTONDOWN: {
@@ -488,7 +496,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->manager->MouseDown(x, y, PGMiddleMouseButton, modifier);
+		handle->manager->MouseDown(x, y, PGMiddleMouseButton, modifier);
 		break;
 	}
 	case WM_MBUTTONUP: {
@@ -497,7 +505,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->manager->MouseUp(x, y, PGMiddleMouseButton, modifier);
+		handle->manager->MouseUp(x, y, PGMiddleMouseButton, modifier);
 		break;
 	}
 
@@ -507,7 +515,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->manager->MouseDown(x, y, PGRightMouseButton, modifier);
+		handle->manager->MouseDown(x, y, PGRightMouseButton, modifier);
 		break;
 	}
 	case WM_RBUTTONUP: {
@@ -516,11 +524,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		PGModifier modifier = 0;
 		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		global_handle->manager->MouseUp(x, y, PGRightMouseButton, modifier);
+		handle->manager->MouseUp(x, y, PGRightMouseButton, modifier);
 		break;
 	}
 	case WM_SETCURSOR:
-		SetCursor(global_handle->popup ? cursor_standard : global_handle->cursor);
+		SetCursor(handle->popup ? cursor_standard : handle->cursor);
 		return true;
 	case WM_ERASEBKGND:
 		return 1;
@@ -531,25 +539,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		if (wParam != SIZE_MINIMIZED) {
 			int width = LOWORD(lParam);
 			int height = HIWORD(lParam);
-			PGSize old_size = GetWindowSize(global_handle);
-			global_handle->manager->SetSize(PGSize(width, height));
-			RedrawWindow(global_handle);
+			PGSize old_size = GetWindowSize(handle);
+			handle->manager->SetSize(PGSize(width, height));
+			RedrawWindow(handle);
 		}
 		break;
 	}
 	case WM_COMMAND: {
 		if (wParam == 0 && lParam == 0) {
-			global_handle->manager->PeriodicRender();
+			handle->manager->PeriodicRender();
 			break;
 		}
 		int index = LOWORD(wParam);
-		if (global_handle->popup) {
-			PGControlCallback callback = global_handle->popup->callbacks[index];
+		if (handle->popup) {
+			PGControlCallback callback = handle->popup->callbacks[index];
 			if (callback) {
-				callback(global_handle->popup->control);
+				callback(handle->popup->control);
 			}
-			delete global_handle->popup;
-			global_handle->popup = nullptr;
+			delete handle->popup;
+			handle->popup = nullptr;
 		}
 		break;
 	}
@@ -719,7 +727,8 @@ char GetSystemPathSeparator() {
 }
 
 VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN TimerOrWaitFired) {
-	((PGTimerCallback)lpParam)();
+	PGTimerParameter* parameter = (PGTimerParameter*) lpParam;
+	parameter->callback(parameter->window);
 }
 
 PGTimerHandle CreateTimer(PGWindowHandle wnd, int ms, PGTimerCallback callback, PGTimerFlags flags) {
@@ -727,11 +736,15 @@ PGTimerHandle CreateTimer(PGWindowHandle wnd, int ms, PGTimerCallback callback, 
 	ULONG timer_flags = 0;
 	if (timer_flags & PGTimerExecuteOnce) timer_flags |= WT_EXECUTEONLYONCE;
 
+	PGTimerParameter* parameter = new PGTimerParameter();
+	parameter->callback = callback;
+	parameter->window = wnd;
+
 	if (!CreateTimerQueueTimer(
 		&timer,
 		nullptr,
 		TimerRoutine,
-		callback,
+		(void*) parameter,
 		(DWORD)ms,
 		flags & PGTimerExecuteOnce ? (DWORD)0 : (DWORD)ms,
 		timer_flags))
@@ -739,11 +752,13 @@ PGTimerHandle CreateTimer(PGWindowHandle wnd, int ms, PGTimerCallback callback, 
 
 	PGTimerHandle handle = new PGTimer();
 	handle->timer = timer;
+	handle->parameter = parameter;
 	return handle;
 }
 
 void DeleteTimer(PGTimerHandle handle) {
 	DeleteTimerQueueTimer(nullptr, handle->timer, nullptr);
+	free(handle->parameter);
 }
 
 bool WindowHasFocus(PGWindowHandle window) {
@@ -1008,6 +1023,13 @@ std::string ShowSaveFileDialog() {
 }
 
 PGWindowHandle GetHWNDHandle(HWND hwnd) {
-	// FIXME:
-	return global_handle;
+	lng id = (lng) GetWindowLong(hwnd, GWL_ID);
+	if (handle_map.count(id) == 0) return nullptr;
+	return handle_map[id];
+}
+
+void SetHWNDHandle(HWND hwnd, PGWindowHandle window) {
+	lng id = (lng) GetWindowLong(hwnd, GWL_ID);
+	assert(handle_map.count(id) == 0);
+	handle_map[id] = window;
 }

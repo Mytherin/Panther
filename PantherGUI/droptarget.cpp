@@ -32,7 +32,6 @@ void DropData(HWND hwnd, IDataObject *pDataObject) {
 	FORMATETC fmtetc = { CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
 	STGMEDIUM stgmed;
 
-
 	// See if the dataobject contains any TEXT stored as a HGLOBAL
 	if (pDataObject->QueryGetData(&fmtetc) == S_OK) {
 		// Yippie! the data is there, so go get it!
@@ -137,7 +136,8 @@ ULONG PGDropTarget::Release(void) {
 }
 
 bool PGDropTarget::QueryDataObject(IDataObject *pDataObject) {
-	return true;
+	FORMATETC fmtetc = { CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+	return pDataObject->QueryGetData(&fmtetc) == S_OK;
 }
 
 void RegisterDropWindow(HWND hwnd, IDropTarget **ppDropTarget) {
