@@ -278,12 +278,11 @@ struct PGDropData {
 	DWORD result;
 };
 
-PGDropHandle PGStartDragDrop(PGWindowHandle window, PGDropCallback callback, void* data) {
+void PGStartDragDrop(PGWindowHandle window, PGBitmapHandle image, PGDropCallback callback, void* data, size_t data_length) {
 	PGDropHandle handle = new PGDropData();
 	handle->object = new PGDataObject(window, callback, data);
 	handle->source = new PGDropSource(callback, data);
 
 	HRESULT hresult = DoDragDrop(handle->object, handle->source, DROPEFFECT_MOVE | DROPEFFECT_COPY, &handle->result);
 	delete handle;
-	return nullptr;
 }

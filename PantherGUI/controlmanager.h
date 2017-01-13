@@ -26,8 +26,8 @@ public:
 
 	void PeriodicRender(void);
 
-	void RefreshWindow();
-	void RefreshWindow(PGIRect rectangle);
+	void RefreshWindow(bool redraw_now = false);
+	void RefreshWindow(PGIRect rectangle, bool redraw_now = false);
 
 	bool KeyboardCharacter(char character, PGModifier modifier);
 

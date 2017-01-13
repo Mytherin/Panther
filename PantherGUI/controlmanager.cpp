@@ -120,11 +120,12 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 	return PGContainer::KeyboardCharacter(character, modifier);
 }
 
-void ControlManager::RefreshWindow() {
+void ControlManager::RefreshWindow(bool redraw_now) {
 	this->invalidated = true;
+	if (redraw_now) RedrawWindow(window);
 }
 
-void ControlManager::RefreshWindow(PGIRect rectangle) {
+void ControlManager::RefreshWindow(PGIRect rectangle, bool redraw_now) {
 	// invalidate a rectangle
 	if (this->invalidated_area.width == 0) {
 		// if there is no currently invalidated rectangle,
@@ -144,6 +145,7 @@ void ControlManager::RefreshWindow(PGIRect rectangle) {
 			this->invalidated_area.x + this->invalidated_area.width >= rectangle.x + rectangle.width &&
 			this->invalidated_area.y + this->invalidated_area.height >= rectangle.y + rectangle.height);
 	}
+	if (redraw_now) RedrawWindow(window, invalidated_area);
 }
 
 void ControlManager::RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data) {

@@ -39,9 +39,9 @@ public:
 	virtual void MouseEnter();
 	virtual void MouseLeave();
 
-	virtual void Invalidate();
-	virtual void Invalidate(PGIRect);
-	virtual void Invalidate(PGRect);
+	virtual void Invalidate(bool redraw_now = false);
+	virtual void Invalidate(PGIRect, bool redraw_now = false);
+	virtual void Invalidate(PGRect, bool redraw_now = false);
 
 	virtual Control* GetActiveControl() { return nullptr; }
 	virtual bool ControlTakesFocus() { return false; }

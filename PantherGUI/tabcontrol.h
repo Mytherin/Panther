@@ -48,6 +48,7 @@ public:
 	bool IsDragging() {
 		return drag_tab;
 	}
+
 	int currently_selected_tab = 0;
 protected:
 	PGScalar MeasureTabWidth(Tab& tab);
@@ -69,6 +70,6 @@ protected:
 	PGScalar tab_offset;
 	int active_tab;
 
-	bool drag_tab = false;
 	PGScalar drag_offset;
+	bool drag_tab;
 };

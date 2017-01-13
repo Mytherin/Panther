@@ -602,12 +602,12 @@ void HideWindow(PGWindowHandle window) {
 
 }
 
-void RefreshWindow(PGWindowHandle window) {
-	window->manager->RefreshWindow();
+void RefreshWindow(PGWindowHandle window, bool redraw_now) {
+	window->manager->RefreshWindow(redraw_now);
 }
 
-void RefreshWindow(PGWindowHandle window, PGIRect rectangle) {
-	window->manager->RefreshWindow(rectangle);
+void RefreshWindow(PGWindowHandle window, PGIRect rectangle, bool redraw_now) {
+	window->manager->RefreshWindow(rectangle, redraw_now);
 }
 
 void RedrawWindow(PGWindowHandle window) {

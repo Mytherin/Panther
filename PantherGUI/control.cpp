@@ -74,16 +74,16 @@ bool Control::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
 	return false;
 }
 
-void Control::Invalidate() {
-	RefreshWindow(this->window, PGIRect((int)X(), (int)Y(), (int)this->width, (int)this->height));
+void Control::Invalidate(bool redraw_now) {
+	RefreshWindow(this->window, PGIRect((int)X(), (int)Y(), (int)this->width, (int)this->height), redraw_now);
 }
 
-void Control::Invalidate(PGIRect rectangle) {
-	this->Invalidate();
+void Control::Invalidate(PGIRect rectangle, bool redraw_now) {
+	this->Invalidate(redraw_now);
 }
 
-void Control::Invalidate(PGRect rectangle) {
-	this->Invalidate(PGIRect((int)rectangle.x, (int)rectangle.y, (int)rectangle.width, (int)rectangle.height));
+void Control::Invalidate(PGRect rectangle, bool redraw_now) {
+	this->Invalidate(PGIRect((int)rectangle.x, (int)rectangle.y, (int)rectangle.width, (int)rectangle.height), redraw_now);
 }
 
 bool Control::HasFocus() {

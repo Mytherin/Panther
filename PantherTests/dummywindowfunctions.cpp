@@ -79,7 +79,7 @@ lng GetTime(void) {
 	return 0;
 }
 
-void RefreshWindow(PGWindowHandle window, PGIRect rect) {
+void RefreshWindow(PGWindowHandle window, PGIRect rect, bool redraw_now) {
 
 }
 
