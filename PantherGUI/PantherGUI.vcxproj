@@ -211,6 +211,7 @@
     <ClInclude Include="unicode.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />
+    <ClInclude Include="windows_structs.h" />
     <ClInclude Include="xml.h" />
   </ItemGroup>
   <ItemGroup>

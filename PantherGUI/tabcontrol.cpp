@@ -4,8 +4,8 @@
 #include "style.h"
 
 
-TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files) : 
-	Control(window), active_tab(0), textfield(textfield), file_manager() {
+TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files) :
+	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr), active_tab_hidden(false) {
 	if (files.size() == 0)
 		files.push_back(new TextFile(nullptr));
 	for (auto it = files.begin(); it != files.end(); it++) {
@@ -26,7 +26,7 @@ void TabControl::PeriodicRender() {
 		}
 		PGScalar current_x = (*it).x;
 		PGScalar offset = ((*it).target_x - (*it).x) / 3;
-		if (((*it).x < (*it).target_x && (*it).x + offset > (*it).target_x) || 
+		if (((*it).x < (*it).target_x && (*it).x + offset >(*it).target_x) ||
 			(panther::abs((*it).x + offset - (*it).target_x) < 1)) {
 			(*it).x = (*it).target_x;
 		} else {
@@ -49,20 +49,20 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	const PGScalar file_icon_height = this->height * 0.8f;
 	const PGScalar file_icon_width = file_icon_height * 0.8f;
 
-	tab.width = file_icon_width + 5 + MeasureTextWidth(font, filename.c_str(), filename.size());
+	tab.width = MeasureTabWidth(tab);
 	PGScalar current_x = tab.x;
 	PGRect rect(x + current_x, y, tab.width + tab_padding * 2, this->height);
 	current_x += 2.5f;
-	RenderRectangle(renderer, rect, 
-		selected_tab ? PGStyleManager::GetColor(PGColorTabControlSelected) : 
-		               PGStyleManager::GetColor(PGColorTabControlBackground), 
+	RenderRectangle(renderer, rect,
+		selected_tab ? PGStyleManager::GetColor(PGColorTabControlSelected) :
+		PGStyleManager::GetColor(PGColorTabControlBackground),
 		PGDrawStyleFill);
 
 	lng pos = filename.find_last_of('.');
 	std::string ext = pos == std::string::npos ? std::string("") : filename.substr(pos + 1);
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 	RenderFileIcon(renderer, font, ext.c_str(), current_x, y + (height - file_icon_height) / 2, file_icon_width, file_icon_height,
-		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255,255,255), PGColor(30, 30, 30), PGColor(91, 91, 91));
+		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGColor(30, 30, 30), PGColor(91, 91, 91));
 	current_x += file_icon_width + 2.5f;
 	if (file->HasUnsavedChanges()) {
 		SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlUnsavedText));
@@ -79,11 +79,22 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar position_x = 0;
 	PGColor color = PGStyleManager::GetColor(PGColorTabControlBackground);
 
+	bool rendered = false;
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
-		it->target_x = position_x;
-		RenderTab(renderer, *it, position_x, x, y, index == active_tab);
+		if (!active_tab_hidden || index != active_tab) {
+			if (dragging_tab.file != nullptr && position_x + it->width > dragging_tab.x && !rendered) {
+				rendered = true;
+				position_x += MeasureTabWidth(dragging_tab);
+			}
+			it->target_x = position_x;
+			RenderTab(renderer, *it, position_x, x, y, index == active_tab);
+		}
 		index++;
+	}
+	if (dragging_tab.file != nullptr) {
+		position_x = dragging_tab.x;
+		RenderTab(renderer, dragging_tab, position_x, x, y, true);
 	}
 	/*
 	// render the active tab
@@ -102,6 +113,16 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	}*/
 	// FIXME: color
 	RenderLine(renderer, PGLine(x, y + this->height - 1, x + this->width, y + this->height - 1), PGColor(80, 150, 200));
+}
+
+PGScalar TabControl::MeasureTabWidth(Tab& tab) {
+	TextFile* file = tab.file;
+	std::string filename = file->GetName();
+
+	const PGScalar tab_padding = 5;
+	const PGScalar file_icon_height = this->height * 0.8f;
+	const PGScalar file_icon_width = file_icon_height * 0.8f;
+	return file_icon_width + 5 + MeasureTextWidth(font, filename.c_str(), filename.size());
 }
 
 bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -138,6 +159,9 @@ bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
 }
 
 void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
+	return;
+
+
 	x -= this->x; y -= this->y;
 	if (buttons & PGLeftMouseButton) {
 		tabs[active_tab].x = x - drag_offset;
@@ -171,6 +195,80 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
+
+bool TabControl::AcceptsDragDrop(PGDragDropType type) {
+	return type == PGDragDropTabs;
+}
+
+struct TabDragDropStruct {
+	TabDragDropStruct(TextFile* file, TabControl* tabs) : file(file), tabs(tabs), accepted(nullptr) {}
+	TextFile* file;
+	TabControl* tabs;
+	TabControl* accepted = nullptr;
+};
+
+void TabControl::DragDrop(PGDragDropType type, int x, int y, void* data) {
+	PGPoint mouse(x - this->x, y - this->y);
+	assert(type == PGDragDropTabs);
+	if (mouse.x >= 0 && mouse.x <= this->width && mouse.y >= -100 & mouse.y <= 100) {
+		dragging_tab.file = ((TabDragDropStruct*)data)->file;
+		dragging_tab.width = MeasureTabWidth(dragging_tab);
+		dragging_tab.x = mouse.x - dragging_tab.width / 2;
+		dragging_tab.target_x = mouse.x - dragging_tab.width / 2;
+	} else {
+		dragging_tab.x = -1;
+		dragging_tab.file = nullptr;
+	}
+	this->Invalidate();
+}
+
+void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) {
+	PGPoint mouse(x - this->x, y - this->y);
+	assert(type == PGDragDropTabs);
+	TabDragDropStruct* td = (TabDragDropStruct*)data;
+	if (mouse.x >= 0 && mouse.x <= this->width && mouse.y >= -100 & mouse.y <= 100) {
+		td->accepted = this;
+		if (this == td->tabs) {
+			PGScalar position_x = 0;
+			lng index = 0;
+			lng current_index = 0;
+			lng new_index = tabs.size() - 1;
+			for (auto it = tabs.begin(); it != tabs.end(); it++, index++) {
+				if (index == active_tab) continue;
+				PGScalar width = MeasureTabWidth(*it);
+				if (position_x + width > mouse.x) {
+					new_index = current_index;
+					break;
+				}
+				position_x += width;
+				current_index++;
+			}
+			if (new_index != active_tab) {
+				Tab current_tab = tabs[active_tab];
+				tabs.erase(tabs.begin() + active_tab);
+				current_tab.x = mouse.x;
+				tabs.insert(tabs.begin() + new_index, current_tab);
+				active_tab = new_index;
+			} else {
+				tabs[active_tab].x = mouse.x;
+			}
+		} else {
+			this->OpenFile(td->file);
+		}
+	}
+	dragging_tab.x = -1;
+	dragging_tab.file = nullptr;
+	this->Invalidate();
+}
+
+void TabControl::ClearDragDrop(PGDragDropType type) {
+	assert(type == PGDragDropTabs);
+	dragging_tab.x = -1;
+	dragging_tab.file = nullptr;
+	this->Invalidate();
+}
+
+
 bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
 	if (modifier == PGModifierCtrl) {
 		switch (character) {
@@ -196,6 +294,13 @@ void TabControl::NewTab() {
 
 void TabControl::OpenFile(std::string path) {
 	TextFile* textfile = file_manager.OpenFile(path);
+	if (textfile) {
+		AddTab(textfile);
+	}
+}
+
+void TabControl::OpenFile(TextFile* textfile) {
+	file_manager.OpenFile(textfile);
 	if (textfile) {
 		AddTab(textfile);
 	}
@@ -230,8 +335,21 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 			RenderTab(renderer, tabs[selected_tab], position_x, 0, 0, false);
 			DeleteRenderer(renderer);
 
-			StartDragging(this->window, bitmap, tabs[selected_tab].file);
-
+			dragging_tab = tabs[selected_tab];
+			active_tab_hidden = true;
+			PGStartDragDrop(window, bitmap, [](PGPoint mouse, void* d) {
+				if (!d) return;
+				TabDragDropStruct* data = (TabDragDropStruct*)d;
+				if (data->accepted == nullptr) {
+					std::vector<TextFile*> textfiles;
+					textfiles.push_back(data->file);
+					PGCreateWindow(mouse, textfiles);
+					data->tabs->CloseTab(data->file);
+				} else if (data->accepted != data->tabs) {
+					data->tabs->CloseTab(data->file);
+				}
+				data->tabs->active_tab_hidden = false;
+			}, new TabDragDropStruct(tabs[selected_tab].file, this), sizeof(TabDragDropStruct));
 			//drag_offset = x - tabs[selected_tab].x;
 			//drag_tab = true;
 			this->Invalidate();
@@ -256,22 +374,22 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
 			this->currently_selected_tab = selected_tab;
-			PGPopupMenuInsertEntry(menu, "Close",  [](Control* control) {
+			PGPopupMenuInsertEntry(menu, "Close", [](Control* control) {
 				TabControl* tb = dynamic_cast<TabControl*>(control);
 				tb->CloseTab(tb->currently_selected_tab);
 				tb->Invalidate();
 			});
-			PGPopupMenuInsertEntry(menu, "Close Other Tabs",  [](Control* control) {
+			PGPopupMenuInsertEntry(menu, "Close Other Tabs", [](Control* control) {
 			}, PGPopupMenuGrayed);
-			PGPopupMenuInsertEntry(menu, "Close Tabs to the Right",  [](Control* control) {
+			PGPopupMenuInsertEntry(menu, "Close Tabs to the Right", [](Control* control) {
 			}, PGPopupMenuGrayed);
 			PGPopupMenuInsertSeparator(menu);
 		}
-		PGPopupMenuInsertEntry(menu, "New File",  [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "New File", [](Control* control) {
 			dynamic_cast<TabControl*>(control)->NewTab();
 			control->Invalidate();
 		});
-		PGPopupMenuInsertEntry(menu, "Open File",  [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Open File", [](Control* control) {
 		}, PGPopupMenuGrayed);
 		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
 	}
@@ -307,6 +425,16 @@ void TabControl::CloseTab(int tab) {
 	}
 	file_manager.CloseFile(tabs[tab].file);
 	tabs.erase(tabs.begin() + tab);
+}
+
+void TabControl::CloseTab(TextFile* textfile) {
+	for (int i = 0; i < tabs.size(); i++) {
+		if (tabs[i].file == textfile) {
+			CloseTab(i);
+			return;
+		}
+	}
+	assert(0);
 }
 
 void TabControl::SwitchToFile(TextFile* file) {

@@ -1,53 +1,15 @@
 
 #include "droptarget.h"
 #include "main.h"
+#include "windows_structs.h"
 
 #include <shlobj.h>
 
-//
-//	Position the edit control's caret under the mouse
-//
-/*void PositionCursor(HWND hwndEdit, POINTL pt) {
-	DWORD curpos;
-
-	// get the character position of mouse
-	ScreenToClient(hwndEdit, (POINT *)&pt);
-	curpos = SendMessage(hwndEdit, EM_CHARFROMPOS, 0, MAKELPARAM(pt.x, pt.y));
-
-	// set cursor position
-	SendMessage(hwndEdit, EM_SETSEL, LOWORD(curpos), LOWORD(curpos));
-}*/
-
-
-PGDropTarget::PGDropTarget(HWND hwnd) : m_hWnd(hwnd) {
-
+PGDropTarget::PGDropTarget(PGWindowHandle handle) : handle(handle), m_hWnd(handle->hwnd), m_lRefCount(1) {
 }
 
 PGDropTarget::~PGDropTarget() {
 
-}
-
-void DropData(HWND hwnd, IDataObject *pDataObject) {
-	// construct a FORMATETC object
-	FORMATETC fmtetc = { CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
-	STGMEDIUM stgmed;
-
-	// See if the dataobject contains any TEXT stored as a HGLOBAL
-	if (pDataObject->QueryGetData(&fmtetc) == S_OK) {
-		// Yippie! the data is there, so go get it!
-		if (pDataObject->GetData(&fmtetc, &stgmed) == S_OK) {
-			// we asked for the data as a HGLOBAL, so access it appropriately
-			PVOID data = GlobalLock(stgmed.hGlobal);
-			DROPFILES* files = (DROPFILES*)data;
-			char* filename_ptr = ((char*)files) + files->pFiles;
-			std::string filename = UCS2toUTF8((PWSTR)filename_ptr);
-			GlobalUnlock(stgmed.hGlobal);
-			// release the data using the COM API
-			ReleaseStgMedium(&stgmed);
-			PGWindowHandle handle = GetHWNDHandle(hwnd);
-			DropFile(handle, filename);
-		}
-	}
 }
 
 HRESULT PGDropTarget::DragEnter(IDataObject * pDataObject, DWORD grfKeyState, POINTL pt, DWORD * pdwEffect) {
@@ -57,15 +19,19 @@ HRESULT PGDropTarget::DragEnter(IDataObject * pDataObject, DWORD grfKeyState, PO
 	if (m_fAllowDrop) {
 		// get the dropeffect based on keyboard state
 		*pdwEffect = DropEffect(grfKeyState, pt, *pdwEffect);
-
 		SetFocus(m_hWnd);
 	} else {
 		*pdwEffect = DROPEFFECT_NONE;
-	}    return S_OK;
+	}
+	return S_OK;
 }
 
 HRESULT PGDropTarget::DragOver(DWORD grfKeyState, POINTL pt, DWORD * pdwEffect) {
 	if (m_fAllowDrop) {
+		if (fmt == PG_CLIPBOARD_FORMAT) {
+			PGPoint mouse = GetMousePosition(handle);
+			handle->manager->DragDrop(PGDragDropTabs, mouse.x, mouse.y, data);
+		}
 		*pdwEffect = DropEffect(grfKeyState, pt, *pdwEffect);
 	} else {
 		*pdwEffect = DROPEFFECT_NONE;
@@ -75,12 +41,42 @@ HRESULT PGDropTarget::DragOver(DWORD grfKeyState, POINTL pt, DWORD * pdwEffect) 
 }
 
 HRESULT PGDropTarget::DragLeave(void) {
+	if (m_fAllowDrop) {
+		if (fmt == PG_CLIPBOARD_FORMAT) {
+			handle->manager->ClearDragDrop(PGDragDropTabs);
+		}
+	}
 	return S_OK;
 }
 
 HRESULT PGDropTarget::Drop(IDataObject * pDataObject, DWORD grfKeyState, POINTL pt, DWORD * pdwEffect) {
 	if (m_fAllowDrop) {
-		DropData(m_hWnd, pDataObject);
+		// construct a FORMATETC object
+		FORMATETC fmtetc = { CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+		STGMEDIUM stgmed;
+
+		// See if the dataobject contains any TEXT stored as a HGLOBAL
+		if (pDataObject->QueryGetData(&fmtetc) == S_OK) {
+			// Yippie! the data is there, so go get it!
+			if (pDataObject->GetData(&fmtetc, &stgmed) == S_OK) {
+				// we asked for the data as a HGLOBAL, so access it appropriately
+				PVOID data = GlobalLock(stgmed.hGlobal);
+				DROPFILES* files = (DROPFILES*)data;
+				char* filename_ptr = ((char*)files) + files->pFiles;
+				std::string filename = UCS2toUTF8((PWSTR)filename_ptr);
+				GlobalUnlock(stgmed.hGlobal);
+				// release the data using the COM API
+				ReleaseStgMedium(&stgmed);
+				DropFile(handle, filename);
+			}
+			return S_OK;
+		}
+		fmtetc.cfFormat = PG_CLIPBOARD_FORMAT;
+		if (pDataObject->QueryGetData(&fmtetc) == S_OK) {
+			PGPoint mouse = GetMousePosition(handle);
+			handle->manager->PerformDragDrop(PGDragDropTabs, mouse.x, mouse.y, data);
+		}
+
 		*pdwEffect = DropEffect(grfKeyState, pt, *pdwEffect);
 	} else {
 		*pdwEffect = DROPEFFECT_NONE;
@@ -90,6 +86,11 @@ HRESULT PGDropTarget::Drop(IDataObject * pDataObject, DWORD grfKeyState, POINTL 
 
 DWORD PGDropTarget::DropEffect(DWORD grfKeyState, POINTL pt, DWORD dwAllowed) {
 	DWORD dwEffect = 0;
+
+	if (fmt == PG_CLIPBOARD_FORMAT) {
+		dwEffect = dwAllowed & DROPEFFECT_MOVE;
+		return dwEffect;
+	}
 
 	// 1. check "pt" -> do we allow a drop at the specified coordinates?
 	// 2. work out that the drop-effect should be based on grfKeyState	
@@ -137,28 +138,152 @@ ULONG PGDropTarget::Release(void) {
 
 bool PGDropTarget::QueryDataObject(IDataObject *pDataObject) {
 	FORMATETC fmtetc = { CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
-	return pDataObject->QueryGetData(&fmtetc) == S_OK;
+	if (pDataObject->QueryGetData(&fmtetc) == S_OK) {
+		this->fmt = CF_HDROP;
+		return true;
+	}
+
+	fmtetc.cfFormat = PG_CLIPBOARD_FORMAT;
+	if (pDataObject->QueryGetData(&fmtetc) == S_OK) {
+		this->fmt = PG_CLIPBOARD_FORMAT;
+		STGMEDIUM medium;
+		pDataObject->GetData(&fmtetc, &medium);
+		this->data = (void*)medium.pstg;
+		return true;
+	}
+
+	this->fmt = -1;
+
+	return false;
 }
 
-void RegisterDropWindow(HWND hwnd, IDropTarget **ppDropTarget) {
-	PGDropTarget *pDropTarget = new PGDropTarget(hwnd);
+void RegisterDropWindow(PGWindowHandle handle, IDropTarget **ppDropTarget) {
+	PGDropTarget *pDropTarget = new PGDropTarget(handle);
 
 	// acquire a strong lock
 	CoLockObjectExternal(pDropTarget, TRUE, FALSE);
 
 	// tell OLE that the window is a drop target
-	RegisterDragDrop(hwnd, pDropTarget);
+	RegisterDragDrop(handle->hwnd, pDropTarget);
 
 	*ppDropTarget = pDropTarget;
 }
 
-void UnregisterDropWindow(HWND hwnd, IDropTarget *pDropTarget) {
+void UnregisterDropWindow(PGWindowHandle handle, IDropTarget *pDropTarget) {
 	// remove drag+drop
-	RevokeDragDrop(hwnd);
+	RevokeDragDrop(handle->hwnd);
 
 	// remove the strong lock
 	CoLockObjectExternal(pDropTarget, FALSE, TRUE);
 
 	// release our own reference
 	pDropTarget->Release();
+}
+
+HRESULT PGDropSource::GiveFeedback(DWORD dwEffect) {
+	return DRAGDROP_S_USEDEFAULTCURSORS;
+}
+
+HRESULT PGDropSource::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState) {
+	if (fEscapePressed) {
+		return DRAGDROP_S_CANCEL;
+	}
+	if ((grfKeyState & MK_LBUTTON) == 0) {
+		return DRAGDROP_S_DROP;
+	}
+	return S_OK;
+}
+
+HRESULT PGDropSource::QueryInterface(REFIID iid, void ** ppvObject) {
+	if (iid == IID_IDropSource || iid == IID_IUnknown) {
+		AddRef();
+		*ppvObject = this;
+		return S_OK;
+	} else {
+		*ppvObject = 0;
+		return E_NOINTERFACE;
+	}
+}
+
+ULONG PGDropSource::AddRef(void) {
+	return InterlockedIncrement(&m_lRefCount);
+}
+
+ULONG PGDropSource::Release(void) {
+	LONG count = InterlockedDecrement(&m_lRefCount);
+
+	if (count == 0) {
+		delete this;
+		return 0;
+	} else {
+		return count;
+	}
+}
+
+PGDataObject::PGDataObject(PGWindowHandle handle, PGDropCallback callback, void* data) : 
+	handle(handle), callback(callback), data(data), m_lRefCount(0) {
+}
+
+PGDataObject::~PGDataObject() {
+}
+
+
+HRESULT PGDataObject::QueryGetData(FORMATETC *pformatetc) {
+	if (pformatetc->cfFormat == PG_CLIPBOARD_FORMAT)
+		return S_OK;
+	return DV_E_FORMATETC;
+}
+
+HRESULT PGDataObject::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium) {
+	if (pformatetcIn->cfFormat == PG_CLIPBOARD_FORMAT) {
+		pmedium->pstg = (IStorage*)data;
+		return S_OK;
+	}
+	return DV_E_FORMATETC;
+}
+
+HRESULT PGDataObject::QueryInterface(REFIID iid, void ** ppvObject) {
+	if (iid == IID_IDataObject || iid == IID_IUnknown) {
+		AddRef();
+		*ppvObject = this;
+		return S_OK;
+	} else {
+		*ppvObject = 0;
+		return E_NOINTERFACE;
+	}
+}
+
+ULONG PGDataObject::AddRef(void) {
+	return InterlockedIncrement(&m_lRefCount);
+}
+
+ULONG PGDataObject::Release(void) {
+	LONG count = InterlockedDecrement(&m_lRefCount);
+
+	if (count == 0) {
+		POINT point;
+		if (GetCursorPos(&point)) {
+			callback(PGPoint(point.x, point.y), data);
+		}
+		delete this;
+		return 0;
+	} else {
+		return count;
+	}
+}
+
+struct PGDropData {
+	PGDataObject* object;
+	PGDropSource* source;
+	DWORD result;
+};
+
+PGDropHandle PGStartDragDrop(PGWindowHandle window, PGDropCallback callback, void* data) {
+	PGDropHandle handle = new PGDropData();
+	handle->object = new PGDataObject(window, callback, data);
+	handle->source = new PGDropSource(callback, data);
+
+	HRESULT hresult = DoDragDrop(handle->object, handle->source, DROPEFFECT_MOVE | DROPEFFECT_COPY, &handle->result);
+	delete handle;
+	return nullptr;
 }

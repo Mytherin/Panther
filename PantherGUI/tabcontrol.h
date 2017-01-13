@@ -27,13 +27,21 @@ public:
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 
+	bool AcceptsDragDrop(PGDragDropType type);
+	void DragDrop(PGDragDropType type, int x, int y, void* data);
+	void ClearDragDrop(PGDragDropType type);
+	void PerformDragDrop(PGDragDropType type, int x, int y, void* data);
+
+
 	void Draw(PGRendererHandle, PGIRect*);
 	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, bool selected_tab);
 
 	void OpenFile(std::string path);
+	void OpenFile(TextFile* textfile);
 	void PrevTab();
 	void NextTab();
 	void CloseTab(int tab);
+	void CloseTab(TextFile* textfile);
 	void AddTab(TextFile* textfile);
 	void NewTab();
 
@@ -42,6 +50,8 @@ public:
 	}
 	int currently_selected_tab = 0;
 protected:
+	PGScalar MeasureTabWidth(Tab& tab);
+
 	FileManager file_manager;
 
 	PGFontHandle font;
@@ -49,6 +59,8 @@ protected:
 	int GetSelectedTab(int x);
 
 	std::vector<Tab> tabs;
+	Tab dragging_tab;
+	bool active_tab_hidden = false;
 
 	TextField* textfield;
 

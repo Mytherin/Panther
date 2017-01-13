@@ -185,6 +185,9 @@ public:
 	void ClearMatches();
 	const std::vector<PGFindMatch>& GetFindMatches() { return matches; }
 	void SetSelectedMatch(lng selected_match) { selected_match = selected_match; }
+
+	void AddRef() { refcount++; }
+	bool DecRef() { return --refcount == 0; }
 private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false);
@@ -262,4 +265,6 @@ private:
 
 	PGMutexHandle text_lock;
 	int shared_counter = 0;
+
+	lng refcount = 0;
 };

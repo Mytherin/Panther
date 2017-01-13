@@ -28,37 +28,7 @@
 #include <map>
 
 #include "renderer.h"
-
-struct PGWindow {
-public:
-	PGModifier modifier;
-	HWND hwnd = nullptr;
-	ControlManager* manager = nullptr;
-	PGRendererHandle renderer = nullptr;
-	PGPopupMenuHandle popup = nullptr;
-	IDropTarget* drop_target;
-	HCURSOR cursor;
-
-	PGWindow() : modifier(PGModifierNone) {}
-};
-
-struct PGTimerParameter {
-	PGTimerCallback callback;
-	PGWindowHandle window;
-};
-
-struct PGTimer {
-	HANDLE timer;
-	PGTimerParameter *parameter;
-};
-
-struct PGPopupMenu {
-	PGWindowHandle window;
-	HMENU menu;
-	int index = 1000;
-	std::map<int, PGControlCallback> callbacks;
-	Control* control;
-};
+#include "windows_structs.h"
 
 std::map<HWND, PGWindowHandle> handle_map = {};
 WNDCLASSEX wcex;
@@ -516,6 +486,10 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 }
 
 PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
+	return PGCreateWindow(PGPoint(CW_USEDEFAULT, CW_USEDEFAULT), initial_files);
+}
+
+PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_files) {
 	assert(initial_files.size() > 0);
 	HINSTANCE hInstance = GetModuleHandle(nullptr);
 	// The parameters to CreateWindow explained:
@@ -532,7 +506,7 @@ PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
 		szWindowClass,
 		szTitle,
 		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT,
+		position.x, position.y,
 		1016, 738,
 		nullptr,
 		nullptr,
@@ -555,7 +529,7 @@ PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
 	res->renderer = InitializeRenderer();
 	SetHWNDHandle(hWnd, res);
 
-	RegisterDropWindow(hWnd, &res->drop_target);
+	RegisterDropWindow(res, &res->drop_target);
 
 	ControlManager* manager = new ControlManager(res);
 	manager->SetPosition(PGPoint(0, 0));
@@ -613,7 +587,7 @@ void PGCloseWindow(PGWindowHandle window) {
 	if (!window) return;
 	delete window->manager;
 	DeleteRenderer(window->renderer);
-	UnregisterDropWindow(window->hwnd, window->drop_target);
+	UnregisterDropWindow(window, window->drop_target);
 	handle_map.erase(window->hwnd);
 	if (window->hwnd) CloseWindow(window->hwnd);
 	free(window);

@@ -207,7 +207,6 @@ void PeriodicWindowRedraw(PGWindowHandle window) {
 }
 
 - (void)mouseUp:(NSEvent *)event {
-	NSLog(@"Mouse Up");
 	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	handle->manager->MouseUp(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
@@ -330,6 +329,10 @@ void PeriodicWindowRedraw(PGWindowHandle window) {
 	return handle;
 }
 
+-(ControlManager*)getManager {
+	return handle->manager;
+}
+
 - (void)keyUp:(NSEvent *)event {
 
 }
@@ -364,29 +367,37 @@ void PeriodicWindowRedraw(PGWindowHandle window) {
 }
 
 
+- (NSDraggingSession *)startDragging:(NSArray<NSDraggingItem *> *)items 
+        event:(NSEvent *)event 
+        source:(id<NSDraggingSource>)source
+        callback:(PGDropCallback)callback
+        data:(void*)data {
+	self->dragging_callback = callback;
+	self->dragging_data = data;
+	NSDraggingSession* session = [handle->view beginDraggingSessionWithItems:items event:event source:source];
+	session.animatesToStartingPositionsOnCancelOrFail = NO;
+	return session;
+}
+
 -(NSDragOperation)draggingSession:(NSDraggingSession *)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context {
     return NSDragOperationEvery;
 }
 
 
 -(void)draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint) screenPoint {
-	NSLog(@"Session begin.");
 }
 
 -(void)draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation {
-	NSLog(@"Session end.");
-	/*
-	std::vector<TextFile*> textfiles;
-	textfiles.push_back(new TextFile(nullptr));
-    PGCreateWindow(textfiles);*/
+	if (dragging_callback) {
+		dragging_callback(PGPoint(screenPoint.x, [self getBounds].size.height - screenPoint.y), dragging_data);
+		dragging_callback = nullptr;
+	}
 }
 
 -(void)draggingSession:(NSDraggingSession *)session movedToPoint:(NSPoint)screenPoint {
-	NSLog(@"%f,%f", screenPoint.x, screenPoint.y);
 }
 
 @end
-
 
 PGPoint GetMousePosition(PGWindowHandle window) {
 	//get current mouse position
@@ -409,7 +420,7 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(std::vector<TextFile*> textfiles) {
+PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> textfiles) {
 	PGNSWindow *window;
     NSRect contentSize = NSMakeRect(0, 0, 1000.0, 700.0);
     NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
@@ -420,12 +431,17 @@ PGWindowHandle PGCreateWindow(std::vector<TextFile*> textfiles) {
     [view setWantsLayer:YES];
     window.contentView = view;
     [window makeFirstResponder:view];
+    [window registerPGView:(PGView*)view];
 
 
-    [window cascadeTopLeftFromPoint:NSMakePoint(20,20)];
+    [window cascadeTopLeftFromPoint:NSMakePoint(position.x, position.y)];
     [window setTitle:@"PantherGUI"];
     [window makeKeyAndOrderFront:nil];
 	return [(PGView*)view getHandle];
+}
+
+PGWindowHandle PGCreateWindow(std::vector<TextFile*> textfiles) {
+	return PGCreateWindow(PGPoint(20, 20), textfiles);
 }
 
 
@@ -595,23 +611,23 @@ PGPoint ConvertWindowToScreen(PGWindowHandle window, PGPoint point) {
 	return PGPoint(0, 0);
 }
 
-void StartDragging(PGWindowHandle handle, PGBitmapHandle image, TextFile* tf) {
+void PGStartDragDrop(PGWindowHandle handle, PGBitmapHandle image, PGDropCallback callback, void* data, size_t data_length) {
 	CGImageRef cg_image = SkCreateCGImageRef(*PGGetBitmap(image));
 	NSImage* nsimage = [[NSImage alloc] initWithCGImage:cg_image size:NSZeroSize];
 
+	NSSize size = [nsimage size];
 
     NSPasteboardItem *pbItem = [NSPasteboardItem new];
+    [pbItem setData:[[NSData alloc] initWithBytes:&data length:sizeof(void*)] forType:@"com.panther.draggingobject"];
 
-	int drag_width = 100;
-	int drag_height = 20;
 
     NSDraggingItem *dragItem = [[NSDraggingItem alloc] initWithPasteboardWriter:pbItem];
     NSPoint dragPosition = [handle->view convertPoint:[handle->event locationInWindow] fromView:nil];
-    dragPosition.x -= drag_width / 2;
-    dragPosition.y -= drag_height /2;
-    NSRect draggingRect = NSMakeRect(dragPosition.x, dragPosition.y, drag_width, drag_height);
+    dragPosition.x -= size.width / 2;
+    dragPosition.y -= size.height /2;
+    NSRect draggingRect = NSMakeRect(dragPosition.x, dragPosition.y, size.width, size.height);
 	[dragItem setDraggingFrame:draggingRect contents:nsimage];
 
-	[handle->view beginDraggingSessionWithItems:[NSArray arrayWithObject:dragItem] event:handle->event source:handle->view];
+	[handle->view startDragging:[NSArray arrayWithObject:dragItem] event:handle->event source:handle->view callback:callback data:data];
 }
 

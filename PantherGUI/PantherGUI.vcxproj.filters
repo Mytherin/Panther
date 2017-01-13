@@ -254,6 +254,9 @@
     <ClInclude Include="assert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="windows_structs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="logo.ico">
