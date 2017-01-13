@@ -27,7 +27,7 @@
     return NSDragOperationCopy;
 }
 
-- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
+-(BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
     NSPasteboard *pboard = [sender draggingPasteboard];
     NSArray *filenames = [pboard propertyListForType:NSFilenamesPboardType];
 
@@ -43,3 +43,5 @@
 }
 
 @end
+
+

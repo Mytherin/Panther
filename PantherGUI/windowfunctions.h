@@ -264,6 +264,7 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char* text, 
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color);
 void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *text, PGScalar x, PGScalar y, PGScalar width, PGScalar height, PGColor text_color, PGColor page_color, PGColor edge_color);
 
+PGBitmapHandle CreateBitmapFromSize(PGScalar width, PGScalar height);
 PGBitmapHandle CreateBitmapForText(PGFontHandle font, const char* text, size_t length);
 PGRendererHandle CreateRendererForBitmap(PGBitmapHandle handle);
 void DeleteRenderer(PGRendererHandle renderer);
@@ -332,3 +333,5 @@ PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint);
 std::string OpenFileMenu();
 
 void DropFile(PGWindowHandle handle, std::string filename);
+
+void StartDragging(PGWindowHandle, PGBitmapHandle image, TextFile* tf);

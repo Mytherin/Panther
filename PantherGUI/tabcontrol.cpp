@@ -49,7 +49,6 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	const PGScalar file_icon_height = this->height * 0.8f;
 	const PGScalar file_icon_width = file_icon_height * 0.8f;
 
-	tab.target_x = position_x;
 	tab.width = file_icon_width + 5 + MeasureTextWidth(font, filename.c_str(), filename.size());
 	PGScalar current_x = tab.x;
 	PGRect rect(x + current_x, y, tab.width + tab_padding * 2, this->height);
@@ -82,6 +81,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
+		it->target_x = position_x;
 		RenderTab(renderer, *it, position_x, x, y, index == active_tab);
 		index++;
 	}
@@ -224,8 +224,16 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 		if (selected_tab >= 0) {
 			active_tab = selected_tab;
 			SwitchToFile(tabs[selected_tab].file);
-			drag_offset = x - tabs[selected_tab].x;
-			drag_tab = true;
+			PGBitmapHandle bitmap = CreateBitmapFromSize(tabs[selected_tab].width, this->height);
+			PGRendererHandle renderer = CreateRendererForBitmap(bitmap);
+			PGScalar position_x = 0;
+			RenderTab(renderer, tabs[selected_tab], position_x, 0, 0, false);
+			DeleteRenderer(renderer);
+
+			StartDragging(this->window, bitmap, tabs[selected_tab].file);
+
+			//drag_offset = x - tabs[selected_tab].x;
+			//drag_tab = true;
 			this->Invalidate();
 			return;
 		}

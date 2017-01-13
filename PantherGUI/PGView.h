@@ -8,7 +8,7 @@
 
 @class PGView;
 
-@interface PGView : NSView {
+@interface PGView : NSView <NSDraggingSource> {
 	PGWindowHandle handle;
 	PGTimerHandle timer;
 }
@@ -18,4 +18,10 @@
 -(NSRect)getBounds;
 - (void)targetMethod:(NSTimer*)timer;
 - (PGTimerHandle)scheduleTimer:(PGWindowHandle)handle :(int)ms :(PGTimerCallback)callback :(PGTimerFlags)flags;
+
+
+-(NSDragOperation)draggingSession:(NSDraggingSession *)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context;
+-(void)draggingSession:(NSDraggingSession *)session willBeginAtPoint:(NSPoint) screenPoint;
+-(void)draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation;
+-(void)draggingSession:(NSDraggingSession *)session movedToPoint:(NSPoint)screenPoint;
 @end

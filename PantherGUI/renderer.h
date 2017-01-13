@@ -14,3 +14,4 @@
 
 void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager);
 PGRendererHandle InitializeRenderer();
+SkBitmap* PGGetBitmap(PGBitmapHandle);

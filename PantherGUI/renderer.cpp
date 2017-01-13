@@ -23,6 +23,11 @@ struct PGBitmap {
 	SkBitmap* bitmap;
 };
 
+
+SkBitmap* PGGetBitmap(PGBitmapHandle handle) {
+	return handle->bitmap;
+}
+
 static SkPaint::Style PGDrawStyleConvert(PGDrawStyle style) {
 	if (style == PGDrawStyleStroke) {
 		return SkPaint::kStroke_Style;
@@ -223,21 +228,25 @@ void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y, 
 	renderer->canvas->drawBitmap(*image->bitmap, x, y);
 }
 
-PGBitmapHandle CreateBitmapForText(PGFontHandle font, const char* text, size_t length) {
+PGBitmapHandle CreateBitmapFromSize(PGScalar width, PGScalar height) {
 	PGBitmapHandle handle = new PGBitmap();
-	PGScalar width = MeasureTextWidth(font, text, length);
-	PGScalar height = GetTextHeight(font);
 	handle->bitmap = new SkBitmap();
 	handle->bitmap->allocN32Pixels((int) width, (int) height);
 	handle->bitmap->allocPixels();
 	return handle;
 }
 
+PGBitmapHandle CreateBitmapForText(PGFontHandle font, const char* text, size_t length) {
+	PGScalar width = MeasureTextWidth(font, text, length);
+	PGScalar height = GetTextHeight(font);
+	return CreateBitmapFromSize(width, height);
+}
+
 PGRendererHandle CreateRendererForBitmap(PGBitmapHandle handle) {
 	PGRendererHandle rend = new PGRenderer();
 	rend->canvas = new SkCanvas(*handle->bitmap);
 	rend->canvas->clear(SkColorSetARGB(0, 0, 0, 0));
-	rend->paint = nullptr;
+	rend->paint = CreateTextPaint();
 	return rend;
 }
 
