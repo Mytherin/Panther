@@ -84,7 +84,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 				position_x += MeasureTabWidth(dragging_tab);
 			}
 			it->target_x = position_x;
-			RenderTab(renderer, *it, position_x, x, y, index == active_tab);
+			RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && index == active_tab);
 		}
 		index++;
 	}
@@ -366,19 +366,27 @@ void TabControl::NextTab() {
 }
 
 void TabControl::CloseTab(int tab) {
+	bool close_window = false;
 	if (tab == active_tab && active_tab > 0) {
 		active_tab--;
 		SwitchToFile(tabs[active_tab].file);
 	} else if (tab == active_tab) {
 		if (tabs.size() == 1) {
+			close_window = true;
+			/*
 			// open an in-memory file to replace the current file
 			TextFile* file = file_manager.OpenFile();
-			tabs.push_back(Tab(file));
+			tabs.push_back(Tab(file));*/
+		} else {
+			SwitchToFile(tabs[1].file);
 		}
-		SwitchToFile(tabs[1].file);
 	}
 	file_manager.CloseFile(tabs[tab].file);
 	tabs.erase(tabs.begin() + tab);
+	this->Invalidate();
+	if (close_window) {
+		PGCloseWindow(this->window);
+	}
 }
 
 void TabControl::CloseTab(TextFile* textfile) {

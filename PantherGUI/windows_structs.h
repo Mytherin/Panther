@@ -14,9 +14,20 @@ public:
 	PGRendererHandle renderer = nullptr;
 	PGPopupMenuHandle popup = nullptr;
 	IDropTarget* drop_target;
+	PGTimerHandle timer;
 	HCURSOR cursor;
+	
+	bool pending_drag_drop = false;
+	bool dragging = false;
 
-	PGWindow() : modifier(PGModifierNone) {}
+	struct DragDropData {
+		PGBitmapHandle image;
+		PGDropCallback callback;
+		void* data;
+		size_t data_length;
+	} drag_drop_data;
+
+	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false) {}
 };
 
 struct PGTimerParameter {

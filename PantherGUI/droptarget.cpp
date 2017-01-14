@@ -272,17 +272,24 @@ ULONG PGDataObject::Release(void) {
 	}
 }
 
-struct PGDropData {
-	PGDataObject* object;
-	PGDropSource* source;
+void PGPerformDragDrop(PGWindowHandle window) {
+	assert(!window->dragging);
+	window->dragging = true;
+
+	PGDataObject* object = new PGDataObject(window, window->drag_drop_data.callback, window->drag_drop_data.data);
+	PGDropSource* source = new PGDropSource(window->drag_drop_data.callback, window->drag_drop_data.data);
 	DWORD result;
-};
+
+	HRESULT hresult = DoDragDrop(object, source, DROPEFFECT_MOVE | DROPEFFECT_COPY, &result);
+
+	window->dragging = false;
+}
+
 
 void PGStartDragDrop(PGWindowHandle window, PGBitmapHandle image, PGDropCallback callback, void* data, size_t data_length) {
-	PGDropHandle handle = new PGDropData();
-	handle->object = new PGDataObject(window, callback, data);
-	handle->source = new PGDropSource(callback, data);
-
-	HRESULT hresult = DoDragDrop(handle->object, handle->source, DROPEFFECT_MOVE | DROPEFFECT_COPY, &handle->result);
-	delete handle;
+	window->pending_drag_drop = true;
+	window->drag_drop_data.image = image;
+	window->drag_drop_data.callback = callback;
+	window->drag_drop_data.data = data;
+	window->drag_drop_data.data_length = data_length;
 }

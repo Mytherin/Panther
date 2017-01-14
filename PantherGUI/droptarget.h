@@ -93,3 +93,4 @@ private:
 
 void RegisterDropWindow(PGWindowHandle handle, IDropTarget **ppDropTarget);
 void UnregisterDropWindow(PGWindowHandle handle, IDropTarget *pDropTarget);
+void PGPerformDragDrop(PGWindowHandle window);

@@ -30,6 +30,8 @@
 #include "renderer.h"
 #include "windows_structs.h"
 
+void DestroyWindow(PGWindowHandle window);
+
 std::map<HWND, PGWindowHandle> handle_map = {};
 WNDCLASSEX wcex;
 int cmdshow;
@@ -153,6 +155,9 @@ std::string UTF8toUCS2(std::string text) {
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	PGWindowHandle handle = GetHWNDHandle(hWnd);
+	if (!handle) {
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
 	switch (message) {
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
@@ -420,7 +425,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_ERASEBKGND:
 		return 1;
 	case WM_DESTROY:
-		PGCloseWindow(handle);
+		DestroyWindow(handle);
 		if (handle_map.size() == 0) {
 			// no windows left, exit the program
 			PostQuitMessage(0);
@@ -439,6 +444,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_COMMAND: {
 		if (wParam == 0 && lParam == 0) {
 			handle->manager->PeriodicRender();
+			if (handle->pending_drag_drop) {
+				handle->pending_drag_drop = false;
+				PGPerformDragDrop(handle);
+			}
 			break;
 		}
 		int index = LOWORD(wParam);
@@ -537,7 +546,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	res->manager = manager;
 
-	CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
+	res->timer = CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
 		SendMessage(res->hwnd, WM_COMMAND, 0, 0);
 	}, PGTimerFlagsNone);
 
@@ -583,14 +592,19 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 	return res;
 }
 
-void PGCloseWindow(PGWindowHandle window) {
-	if (!window) return;
+void DestroyWindow(PGWindowHandle window) {
 	delete window->manager;
 	DeleteRenderer(window->renderer);
+	DeleteTimer(window->timer);
 	UnregisterDropWindow(window, window->drop_target);
 	handle_map.erase(window->hwnd);
-	if (window->hwnd) CloseWindow(window->hwnd);
+	DestroyWindow(window->hwnd);
 	free(window);
+}
+
+void PGCloseWindow(PGWindowHandle window) {
+	if (!window) return;
+	SendMessage(window->hwnd, WM_CLOSE, 0, 0);
 }
 
 void ShowWindow(PGWindowHandle window) {
@@ -726,7 +740,7 @@ PGTimerHandle CreateTimer(PGWindowHandle wnd, int ms, PGTimerCallback callback, 
 
 void DeleteTimer(PGTimerHandle handle) {
 	DeleteTimerQueueTimer(nullptr, handle->timer, nullptr);
-	free(handle->parameter);
+	delete handle->parameter;
 }
 
 bool WindowHasFocus(PGWindowHandle window) {
