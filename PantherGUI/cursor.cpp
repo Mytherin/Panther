@@ -220,48 +220,6 @@ std::string Cursor::GetSelectedWord() {
 		return word;
 
 	return std::string(start_buffer->buffer + minpos, maxpos - minpos);
-
-	//// returns the currently selected word, if any
-	//if (start_line != end_line) return -1;
-
-	//TextLine textline = this->file->GetLine(start_line);
-	//char* line = textline.GetLine();
-	//lng length = textline.GetLength();
-	//// select the word from the start character
-	//// note that words in this context can only contain PGCharacterTypeText
-	//// unlike word selections which can contain any type as long as all characters have the same type
-	//lng start_index = std::max(start_character - 1, (lng)0);
-	//lng end_index = start_index + 1;
-	//PGCharacterClass type = PGCharacterTypeText;
-	//for (end_index = start_index + 1; end_index < length; end_index++) {
-	//	if (GetCharacterClass(line[end_index]) != type) {
-	//		break;
-	//	}
-	//}
-	//for (; start_index >= 0; start_index--) {
-	//	if (GetCharacterClass(line[start_index]) != type) {
-	//		start_index++;
-	//		break;
-	//	}
-	//}
-	//start_index = std::max(start_index, (lng)0);
-	//end_index = std::min(end_index, length);
-	//if (end_index <= start_index) {
-	//	// no word found
-	//	return -1;
-	//}
-	//if (start_index != BeginPosition() || end_index != EndPosition()) {
-	//	// only highlight if the entire word is selected
-	//	return -1;
-	//}
-	//if (end_character < start_index || end_character > end_index) {
-	//	// the end of the selection does not contain the word: no word selected
-	//	return -1;
-	//}
-	//word_start = start_index;
-	//word_end = end_index;
-	//return 0;
-
 }
 
 void Cursor::SelectLine() {
@@ -582,4 +540,38 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 		textfile->SetXOffset(std::max(0.0f, std::min(xoffset, textfile->textfield->GetMaxXOffset())));
 		textfile->SetLineOffset(line_offset);
 	}*/
+}
+
+CursorSelection Cursor::GetCursorSelection() {
+	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
+		return CursorSelection(start_buffer, start_buffer_position, end_buffer, end_buffer_position);
+	} else {
+		return CursorSelection(end_buffer, end_buffer_position, start_buffer, start_buffer_position);
+	}
+}
+
+void Cursor::ApplyMinimalSelection(CursorSelection selection) {
+	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
+		if (!CursorPositionOccursFirst(start_buffer, start_buffer_position, 
+			selection.begin.buffer, selection.begin.position)) {
+			start_buffer = selection.begin.buffer;
+			start_buffer_position = selection.begin.position;
+		}
+		if (!CursorPositionOccursFirst(selection.end.buffer, selection.end.position,
+				end_buffer, end_buffer_position)) {
+			end_buffer = selection.end.buffer;
+			end_buffer_position = selection.end.position;
+		}
+	} else {
+		if (!CursorPositionOccursFirst(end_buffer, end_buffer_position, 
+			selection.begin.buffer, selection.begin.position)) {
+			end_buffer = selection.begin.buffer;
+			end_buffer_position = selection.begin.position;
+		}
+		if (!CursorPositionOccursFirst(selection.end.buffer, selection.end.position,
+			start_buffer, start_buffer_position)) {
+			start_buffer = selection.end.buffer;
+			start_buffer_position = selection.end.position;
+		}
+	}
 }

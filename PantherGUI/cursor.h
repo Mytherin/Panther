@@ -42,6 +42,16 @@ struct CursorData {
 	}
 };
 
+struct CursorSelection {
+	CursorPosition begin;
+	CursorPosition end;
+
+	CursorSelection(PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position) :
+		begin(start_buffer, start_position), end(end_buffer, end_position) { }
+	CursorSelection() : 
+		begin(nullptr, 0), end(nullptr, 0) { }
+};
+
 class Cursor {
 	friend class TextFile;
 public:
@@ -51,6 +61,7 @@ public:
 	Cursor(TextFile* file, CursorData data);
 
 	CursorData GetCursorData();
+	CursorSelection GetCursorSelection();
 
 	void OffsetLine(lng offset);
 	void OffsetCharacter(PGDirection direction);
@@ -87,15 +98,13 @@ public:
 	bool OverlapsWith(Cursor* cursor);
 	void Merge(Cursor* cursor);
 
-	/*bool Contains(lng linenr, lng characternr);
-	bool OverlapsWith(Cursor& cursor);
-	void Merge(Cursor& cursor);*/
-
 	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield = true);
 	static bool CursorOccursFirst(Cursor* a, Cursor* b);
 
 	void SetCursorStartLocation(lng linenr, lng characternr);
 	void SetCursorLocation(lng linenr, lng characternr);
+
+	void ApplyMinimalSelection(CursorSelection selection);
 private:
 	static bool CursorPositionOccursFirst(PGTextBuffer* a, lng a_pos, PGTextBuffer* b, lng b_pos);
 	CursorPosition BeginCursorPosition();

@@ -527,18 +527,21 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 
 		if (modifier == PGModifierNone && last_click.clicks == 0) {
 			textfile->SetCursorLocation(line, character);
+			
 		} else if (modifier == PGModifierShift) {
 			textfile->GetActiveCursor()->SetCursorStartLocation(line, character);
 		} else if (modifier == PGModifierCtrl) {
 			textfile->AddNewCursor(line, character);
 		} else if (last_click.clicks == 1) {
 			textfile->SetCursorLocation(line, character);
-			textfile->GetActiveCursor()->SelectWord();
-			//textfile->FixCursors();
+			Cursor* active_cursor = textfile->GetActiveCursor();
+			active_cursor->SelectWord();
+			minimal_selections[active_cursor] = active_cursor->GetCursorSelection();
 		} else if (last_click.clicks == 2) {
 			textfile->SetCursorLocation(line, character);
-			textfile->GetActiveCursor()->SelectLine();
-			//textfile->FixCursors();
+			Cursor* active_cursor = textfile->GetActiveCursor();
+			active_cursor->SelectLine();
+			minimal_selections[active_cursor] = active_cursor->GetCursorSelection();
 		}
 	} else if (button == PGMiddleMouseButton) {
 		if (drag_type == PGDragSelection) return;
@@ -557,6 +560,11 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	}
 }
 
+void TextField::ClearDragging() {
+	minimal_selections.clear();
+	drag_type = PGDragNone;
+}
+
 void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 	PGPoint mouse(x - this->x, y - this->y);
 	if (PGRectangleContains(scrollbar->GetRectangle(), mouse)) {
@@ -571,7 +579,7 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 	}
 	if (button & PGLeftMouseButton) {
 		if (drag_type != PGDragSelectionCursors) {
-			drag_type = PGDragNone;
+			ClearDragging();
 			this->Invalidate();
 		}
 	} else if (button & PGMiddleMouseButton) {
@@ -635,7 +643,9 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			if (selected_pos.line != line || selected_pos.character != character) {
 				lng old_line = selected_pos.line;
 				active_cursor->SetCursorStartLocation(line, character);
-				Logger::GetInstance()->WriteLogMessage(std::string("if (!active_cursor) active_cursor = cursors.front();\nactive_cursor->SetCursorStartLocation(") + std::to_string(line) + std::string(", ") + std::to_string(character) + std::string(");\nCursor::NormalizeCursors(textfield, cursors, false);"));
+				if (minimal_selections.count(active_cursor) > 0) {
+					active_cursor->ApplyMinimalSelection(minimal_selections[active_cursor]);
+				}
 				Cursor::NormalizeCursors(textfile, textfile->GetCursors());
 			}
 		} else if (drag_type == PGDragMinimap) {
@@ -666,7 +676,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			this->Invalidate();
 		}
 	} else {
-		drag_type = PGDragNone;
+		ClearDragging();
 		if (this->display_minimap && mouse.x >= this->width - SCROLLBAR_SIZE - GetMinimapWidth() && mouse.x <= this->width - SCROLLBAR_SIZE) {
 			this->InvalidateMinimap();
 		}

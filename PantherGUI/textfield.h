@@ -72,6 +72,9 @@ private:
 	bool display_scrollbar;
 	bool display_horizontal_scrollbar = false;
 	PGScalar drag_offset;
+	std::map<Cursor*, CursorSelection> minimal_selections;
+
+	void ClearDragging();
 
 	PGScalar max_xoffset;
 
