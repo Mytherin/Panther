@@ -72,4 +72,8 @@ protected:
 
 	PGScalar drag_offset;
 	bool drag_tab;
+
+	PGScalar tab_padding;
+	PGScalar file_icon_height;
+	PGScalar file_icon_width;
 };

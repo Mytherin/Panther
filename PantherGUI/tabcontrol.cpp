@@ -14,6 +14,8 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	}
 	this->font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(this->font, 13);
+
+	tab_padding = 5;
 }
 
 void TabControl::PeriodicRender() {
@@ -41,9 +43,8 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	TextFile* file = tab.file;
 	std::string filename = file->GetName();
 
-	const PGScalar tab_padding = 5;
-	const PGScalar file_icon_height = this->height * 0.8f;
-	const PGScalar file_icon_width = file_icon_height * 0.8f;
+	file_icon_height = this->height * 0.8f;
+	file_icon_width = file_icon_height * 0.8f;
 
 	tab.width = MeasureTabWidth(tab);
 	PGScalar current_x = tab.x;
@@ -79,7 +80,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		if (!active_tab_hidden || index != active_tab) {
-			if (dragging_tab.file != nullptr && position_x + it->width > dragging_tab.x && !rendered) {
+			if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x && !rendered) {
 				rendered = true;
 				position_x += MeasureTabWidth(dragging_tab);
 			}
@@ -98,10 +99,6 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 PGScalar TabControl::MeasureTabWidth(Tab& tab) {
 	TextFile* file = tab.file;
 	std::string filename = file->GetName();
-
-	const PGScalar tab_padding = 5;
-	const PGScalar file_icon_height = this->height * 0.8f;
-	const PGScalar file_icon_width = file_icon_height * 0.8f;
 	return file_icon_width + 5 + MeasureTextWidth(font, filename.c_str(), filename.size());
 }
 
@@ -188,6 +185,7 @@ void TabControl::DragDrop(PGDragDropType type, int x, int y, void* data) {
 		dragging_tab.file = tab_data->file;
 		dragging_tab.width = MeasureTabWidth(dragging_tab);
 		dragging_tab.x = mouse.x - tab_data->drag_offset;
+		dragging_tab.target_x = mouse.x;
 	} else {
 		dragging_tab.x = -1;
 		dragging_tab.file = nullptr;
@@ -201,31 +199,38 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 	TabDragDropStruct* td = (TabDragDropStruct*)data;
 	if (mouse.x >= 0 && mouse.x <= this->width && mouse.y >= -100 & mouse.y <= 100) {
 		td->accepted = this;
-		if (this == td->tabs) {
-			PGScalar position_x = 0;
-			lng index = 0;
-			lng current_index = 0;
-			lng new_index = tabs.size() - 1;
-			for (auto it = tabs.begin(); it != tabs.end(); it++, index++) {
-				if (index == active_tab) continue;
-				PGScalar width = MeasureTabWidth(*it);
-				if (position_x + width > mouse.x) {
-					new_index = current_index;
-					break;
-				}
-				position_x += width;
-				current_index++;
+		PGScalar tab_pos = mouse.x - td->drag_offset;
+		PGScalar position_x = 0;
+		lng index = 0;
+		lng current_index = 0;
+		lng new_index = tabs.size() - 1;
+		for (auto it = tabs.begin(); it != tabs.end(); it++, index++) {
+			// we skip the active tab if the file is from the current tab control
+			// because the active tab is the file we are dragging
+			if (this == td->tabs && index == active_tab) continue;
+			PGScalar width = MeasureTabWidth(*it);
+			if (position_x + width / 2 > tab_pos) {
+				new_index = current_index;
+				break;
 			}
+			position_x += width + tab_padding * 2;
+			current_index++;
+		}
+		if (this == td->tabs) {
+			// if the tab is from this tab control,
+			// we only move the tab around
 			if (new_index != active_tab) {
 				Tab current_tab = tabs[active_tab];
 				tabs.erase(tabs.begin() + active_tab);
-				current_tab.x = mouse.x - td->drag_offset;
 				tabs.insert(tabs.begin() + new_index, current_tab);
 				active_tab = new_index;
-			} else {
-				tabs[active_tab].x = mouse.x - td->drag_offset;
 			}
+			tabs[active_tab].x = tab_pos;
+			tabs[active_tab].target_x = tab_pos;
 		} else {
+			// if the tab is from a different tab control 
+			// we have to open the file
+			active_tab = new_index - 1;
 			this->OpenFile(td->file);
 		}
 	}
