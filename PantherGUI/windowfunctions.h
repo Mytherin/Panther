@@ -283,6 +283,12 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 
 void DeleteImage(PGBitmapHandle bitmap);
 
+enum PGTextStyle {
+	PGTextStyleNormal,
+	PGTextStyleBold,
+	PGTextStyleItalic
+};
+
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold);
 PGFontHandle PGCreateFont(char* filename);
 PGFontHandle PGCreateFont(bool italic = false, bool bold = false);
@@ -293,6 +299,7 @@ PGColor GetTextColor(PGFontHandle font);
 // Sets the font used by the RenderText method
 void SetTextFontSize(PGFontHandle font, PGScalar height);
 PGScalar GetTextFontSize(PGFontHandle font);
+void SetTextStyle(PGFontHandle font, PGTextStyle style);
 
 Control* GetFocusedControl(PGWindowHandle window);
 bool WindowHasFocus(PGWindowHandle window);

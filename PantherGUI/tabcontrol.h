@@ -15,6 +15,7 @@ struct Tab {
 };
 
 class TabControl : public Control {
+	friend class TextField; //FIXME
 public:
 	TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files);
 

@@ -12,11 +12,16 @@ struct PGRenderer {
 };
 
 struct PGFont {
-	SkPaint* textpaint;
+	SkPaint* textpaint = nullptr;
+	SkPaint* normaltext = nullptr;
+	SkPaint* boldtext = nullptr;
+	SkPaint* italictext = nullptr;
 	PGScalar character_width;
 	PGScalar text_offset;
 	int tabwidth = 4;
 	std::vector<SkPaint*> fallback_paints;
+
+	PGFont() : normaltext(nullptr), boldtext(nullptr), italictext(nullptr) { }
 };
 
 struct PGBitmap {
@@ -70,11 +75,24 @@ PGFontHandle PGCreateFont(bool italic, bool bold) {
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
 	PGFontHandle font = new PGFont();
 
-	SkFontStyle style(bold ? SkFontStyle::kBold_Weight : SkFontStyle::kLight_Weight, SkFontStyle::kNormal_Width, italic ? SkFontStyle::kItalic_Slant : SkFontStyle::kUpright_Slant);
+	SkFontStyle style(SkFontStyle::kLight_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
 
-	font->textpaint = CreateTextPaint();
+	font->normaltext = CreateTextPaint();
 	auto main_font = SkTypeface::MakeFromName(fontname, style);
-	font->textpaint->setTypeface(main_font);
+	font->normaltext->setTypeface(main_font);
+	if (bold) {
+		style = SkFontStyle(SkFontStyle::kBold_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
+		font->boldtext = CreateTextPaint();
+		main_font = SkTypeface::MakeFromName(fontname, style);
+		font->boldtext->setTypeface(main_font);
+	}
+	if (italic) {
+		style = SkFontStyle(SkFontStyle::kLight_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kItalic_Slant);
+		font->italictext = CreateTextPaint();
+		main_font = SkTypeface::MakeFromName(fontname, style);
+		font->italictext->setTypeface(main_font);
+	}
+	font->textpaint = font->normaltext;
 
 	CreateFallbackFonts(font);
 
@@ -84,9 +102,10 @@ PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
 PGFontHandle PGCreateFont(char* filename) {
 	PGFontHandle font = new PGFont();
 
-	font->textpaint = CreateTextPaint();
+	font->normaltext = CreateTextPaint();
 	auto main_font = SkTypeface::MakeFromFile(filename);
-	font->textpaint->setTypeface(main_font);
+	font->normaltext->setTypeface(main_font);
+	font->textpaint = font->normaltext;
 
 	CreateFallbackFonts(font);
 
@@ -94,7 +113,9 @@ PGFontHandle PGCreateFont(char* filename) {
 }
 
 void PGDestroyFont(PGFontHandle font) {
-	delete font->textpaint;
+	if (font->normaltext) delete font->normaltext;
+	if (font->boldtext) delete font->boldtext;
+	if (font->italictext) delete font->italictext;
 	delete font;
 }
 
@@ -447,7 +468,15 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 }
 
 void SetTextColor(PGFontHandle font, PGColor color) {
-	font->textpaint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	if (font->normaltext) {
+		font->normaltext->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	}
+	if (font->boldtext) {
+		font->boldtext->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	}
+	if (font->italictext) {
+		font->italictext->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	}
 	for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 		(*it)->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	}
@@ -467,6 +496,15 @@ void SetTextFontSize(PGFontHandle font, PGScalar height) {
 		font->character_width = -1;
 	}
 	font->text_offset = font->textpaint->getFontBounds().height() / 2 + font->textpaint->getFontBounds().height() / 4;
+	if (font->normaltext) {
+		font->normaltext->setTextSize(height);
+	}
+	if (font->boldtext) {
+		font->boldtext->setTextSize(height);
+	}
+	if (font->italictext) {
+		font->italictext->setTextSize(height);
+	}
 	for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
 		(*it)->setTextSize(height);
 	}
@@ -520,4 +558,17 @@ void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *te
 	RenderText(renderer, font, text, strlen(text), x + 0.5f * width, y + 0.5f * height - GetTextHeight(font) / 2, PGTextAlignHorizontalCenter);
 
 	SetTextFontSize(font, original_size);
+}
+
+void SetTextStyle(PGFontHandle font, PGTextStyle style) {
+	if (style == PGTextStyleNormal) {
+		assert(font->normaltext);
+		font->textpaint = font->normaltext;
+	} else if (style == PGTextStyleBold) {
+		assert(font->boldtext);
+		font->textpaint = font->boldtext;
+	} else if (style == PGTextStyleItalic) {
+		assert(font->italictext);
+		font->textpaint = font->italictext;
+	}
 }

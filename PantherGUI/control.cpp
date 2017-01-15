@@ -75,7 +75,7 @@ bool Control::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
 }
 
 void Control::Invalidate(bool redraw_now) {
-	RefreshWindow(this->window, PGIRect((int)X(), (int)Y(), (int)this->width, (int)this->height), redraw_now);
+	RefreshWindow(this->window, PGIRect((int)X() - 1, (int)Y() - 1, (int)this->width + 2, (int)this->height + 2), redraw_now);
 }
 
 void Control::Invalidate(PGIRect rectangle, bool redraw_now) {

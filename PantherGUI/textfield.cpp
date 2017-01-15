@@ -12,6 +12,8 @@
 #include "simpletextfield.h"
 #include "statusbar.h"
 
+#include "searchbox.h"
+
 #define SCROLLBAR_PADDING 4
 
 void TextField::MinimapMouseEvent(bool mouse_enter) {
@@ -757,6 +759,24 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 		case '-': {
 			SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) - 1);
 			this->Invalidate();
+			return true;
+		}
+		case 'P': {
+			// Search project files
+			std::vector<SearchEntry> entries;
+			ControlManager* cm = GetControlManager(this);
+			TabControl* tb = cm->active_tabcontrol;
+			for (auto it = tb->tabs.begin(); it != tb->tabs.end(); it++) {
+				SearchEntry entry;
+				entry.display_name = it->file->name;
+				entry.text = it->file->path;
+				entry.data = it->file;
+				entries.push_back(entry);
+			}
+			SearchBox* search_box = new SearchBox(this->window, entries);
+			search_box->SetSize(PGSize(this->width * 0.5f, GetTextHeight(textfield_font) + 200));
+			search_box->SetPosition(PGPoint(this->x + this->width * 0.25f, this->y + 25));
+			dynamic_cast<PGContainer*>(this->parent)->AddControl(search_box);
 			return true;
 		}
 		case 'G': {

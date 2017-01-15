@@ -154,6 +154,7 @@
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="scrollbar.cpp" />
+    <ClCompile Include="searchbox.cpp" />
     <ClCompile Include="simpletextfield.cpp" />
     <ClCompile Include="statusbar.cpp" />
     <ClCompile Include="style.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="scrollbar.h" />
+    <ClInclude Include="searchbox.h" />
     <ClInclude Include="simpletextfield.h" />
     <ClInclude Include="statusbar.h" />
     <ClInclude Include="style.h" />
