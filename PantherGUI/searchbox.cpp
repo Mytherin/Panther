@@ -25,11 +25,10 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 		((SearchBox*)data)->Close();
 	}, (void*) this);
 	field->OnSuccessfulExit([](Control* c, void* data, PGModifier modifier) {
-		((SearchBox*)data)->Close();
+		((SearchBox*)data)->Close(true);
 	}, (void*) this);
 	field->OnTextChanged([](Control* c, void* data) {
 		((SearchBox*)data)->Filter(((SimpleTextField*)c)->GetText());
-
 	}, (void*) this);
 	this->AddControl(field);
 }
@@ -39,11 +38,36 @@ SearchBox::~SearchBox() {
 }
 
 bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
+	if (modifier == PGModifierNone) {
+		switch (button) {
+		case PGButtonDown:
+			if (displayed_entries.size() > 0) {
+				selected_entry--;
+				if (selected_entry <= 0) {
+					selected_entry = displayed_entries.size() - 1;
+				}
+				SearchRank& rank = displayed_entries[selected_entry];
+				SearchEntry& entry = entries[rank.index];
+				selection_changed(this, rank, entry, selection_changed_data);
+			}
+			return true;
+		case PGButtonUp:
+			if (displayed_entries.size() > 0) {
+				selected_entry++;
+				if (selected_entry >= displayed_entries.size()) {
+					selected_entry = 0;
+				}
+				SearchRank& rank = displayed_entries[selected_entry];
+				SearchEntry& entry = entries[rank.index];
+				selection_changed(this, rank, entry, selection_changed_data);
+			}
+			return true;
+		}
+	}
 	return PGContainer::KeyboardButton(button, modifier);
 }
 
 void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::string text, lng start_bold, lng bold_size, PGScalar x, PGScalar y) {
-
 	PGScalar current_position = 0;
 	lng current_character = 0;
 	assert(start_bold < (lng) text.size());
@@ -68,8 +92,9 @@ void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::st
 
 void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	PGScalar x = X() - rect->x, y = Y() - rect->y;
-	PGScalar current_pos = field->height;
-	lng initial_selection = 0;
+	PGScalar current_x = x;
+	PGScalar current_y = y + field->height;
+	lng initial_selection = 0; // FIXME: set to scroll size
 	lng current_selection = initial_selection;
 
 
@@ -82,7 +107,8 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		SetTextFontSize(font, 11);
 		BUTTON_HEIGHT += GetTextHeight(font) + 1;
 	}
-	while (current_pos + BUTTON_HEIGHT < this->height) {
+
+	while ((current_y - y) + BUTTON_HEIGHT < this->height) {
 		if (current_selection >= displayed_entries.size()) break;
 
 		// render the background
@@ -92,30 +118,34 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		}
 
 		if (current_selection != initial_selection) {
-			current_pos += 4;
+			current_y += 4;
 		}
-		RenderRectangle(renderer, PGRect(x, y + current_pos, this->width, BUTTON_HEIGHT), background_color, PGDrawStyleFill);
+		RenderRectangle(renderer, PGRect(current_x, current_y, this->width, BUTTON_HEIGHT), background_color, PGDrawStyleFill);
 
 		if (current_selection != initial_selection) {
 			RenderLine(renderer, PGLine(
-				PGPoint(x, y + current_pos + 4), 
-				PGPoint(x + this->width, y + current_pos + 4)),
+				PGPoint(current_x, current_y + 4), 
+				PGPoint(current_x + this->width, current_y + 4)),
 				PGColor(30, 30, 30), 2);
-			current_pos += 4;
+			current_y += 4;
 		}
 
-		current_pos += 3;
+		current_y += 3;
 		SearchRank& rank = displayed_entries[current_selection];
 		SearchEntry& entry = entries[rank.index];
+		if (render_function) {
+			render_function(renderer, font, rank, entry, current_x, current_y, BUTTON_HEIGHT - 6);
+		}
 		// render the text
 		SetTextFontSize(font, 13);
-		RenderTextPartialBold(renderer, font, entry.display_name, rank.pos, filter_size, x + 5, y + current_pos + 1);
-		current_pos += GetTextHeight(font) + 1;
+		RenderTextPartialBold(renderer, font, entry.display_name, rank.pos, filter_size, current_x + 5, current_y + 1);
+		current_y += GetTextHeight(font) + 1;
 		SetTextFontSize(font, 11);
-		RenderTextPartialBold(renderer, font, entry.text, rank.text_pos, filter_size, x + 5, y + current_pos + 2);
-		current_pos += GetTextHeight(font) + 1;
-		current_pos += 3;
+		RenderTextPartialBold(renderer, font, entry.text, rank.text_pos, filter_size, current_x + 5, current_y + 2);
+		current_y += GetTextHeight(font) + 1;
+		current_y += 3;
 
+		current_x = x;
 		current_selection++;
 	}
 	PGContainer::Draw(renderer, rect);
@@ -125,7 +155,19 @@ void SearchBox::OnResize(PGSize old_size, PGSize new_size) {
 	field->width = new_size.width;
 }
 
-void SearchBox::Close() {
+void SearchBox::Close(bool success) {
+	if (success && displayed_entries.size() > 0) {
+		if (selection_confirmed) {
+			SearchRank& rank = displayed_entries[selected_entry];
+			SearchEntry& entry = entries[rank.index];
+			selection_confirmed(this, rank, entry, selection_confirmed_data);
+		}
+	} else {
+		if (selection_cancelled) {
+			selection_cancelled(this, selection_cancelled_data);
+		}
+	}
+
 	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
 }
 
@@ -162,5 +204,11 @@ void SearchBox::Filter(std::string filter) {
 		index++;
 	}
 	std::reverse(displayed_entries.begin(), displayed_entries.end());
+	selected_entry = 0;
+	if (displayed_entries.size() > 0) {
+		SearchRank& rank = displayed_entries[selected_entry];
+		SearchEntry& entry = entries[rank.index];
+		selection_changed(this, rank, entry, selection_changed_data);
+	}
 	this->Invalidate();
 }

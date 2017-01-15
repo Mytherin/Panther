@@ -45,6 +45,7 @@ public:
 	void CloseTab(TextFile* textfile);
 	void AddTab(TextFile* textfile);
 	void NewTab();
+	void SwitchToTab(TextFile* file);
 
 	bool IsDragging() {
 		return drag_tab;

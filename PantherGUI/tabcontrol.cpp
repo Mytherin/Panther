@@ -55,8 +55,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 		PGStyleManager::GetColor(PGColorTabControlBackground),
 		PGDrawStyleFill);
 
-	lng pos = filename.find_last_of('.');
-	std::string ext = pos == std::string::npos ? std::string("") : filename.substr(pos + 1);
+	std::string ext = file->GetExtension();
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 	RenderFileIcon(renderer, font, ext.c_str(), current_x, y + (height - file_icon_height) / 2, file_icon_width, file_icon_height,
 		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGColor(30, 30, 30), PGColor(91, 91, 91));
@@ -403,6 +402,19 @@ void TabControl::CloseTab(TextFile* textfile) {
 	}
 	assert(0);
 }
+
+void TabControl::SwitchToTab(TextFile* textfile) {
+	for (int i = 0; i < tabs.size(); i++) {
+		if (tabs[i].file == textfile) {
+			SwitchToFile(tabs[i].file);
+			active_tab = i;
+			this->Invalidate();
+			return;
+		}
+	}
+	assert(0);
+}
+
 
 void TabControl::SwitchToFile(TextFile* file) {
 	textfield->SetTextFile(file);

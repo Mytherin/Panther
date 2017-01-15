@@ -776,6 +776,34 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			SearchBox* search_box = new SearchBox(this->window, entries);
 			search_box->SetSize(PGSize(this->width * 0.5f, GetTextHeight(textfield_font) + 200));
 			search_box->SetPosition(PGPoint(this->x + this->width * 0.25f, this->y + 25));
+			search_box->OnRender( 
+				[](PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height) {
+				// render the text file icon next to each open file
+				TextFile* file = (TextFile*)entry.data;
+				std::string& filename = file->GetName();
+				std::string ext = file->GetExtension();
+
+				PGScalar file_icon_height = button_height * 0.6;
+				PGScalar file_icon_width = file_icon_height * 0.8;
+
+				PGColor color = GetTextColor(font);
+				x += 2.5f;
+				std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+				RenderFileIcon(renderer, font, ext.c_str(), x, y + (button_height - file_icon_height) / 2, file_icon_width, file_icon_height,
+					file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGColor(30, 30, 30), PGColor(91, 91, 91));
+				x += file_icon_width + 2.5f;
+				SetTextColor(font, color);
+			});
+
+			TextFile* active_file = textfile;
+			search_box->OnSelectionChanged([](SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data) {
+				ControlManager* cm = GetControlManager(searchbox);
+				cm->active_tabcontrol->SwitchToTab((TextFile*) entry.data);
+			}, (void*) this);
+			search_box->OnSelectionCancelled([](SearchBox* searchbox, void* data) {
+				ControlManager* cm = GetControlManager(searchbox);
+				cm->active_tabcontrol->SwitchToTab((TextFile*) data);
+			}, (void*) active_file);
 			dynamic_cast<PGContainer*>(this->parent)->AddControl(search_box);
 			return true;
 		}

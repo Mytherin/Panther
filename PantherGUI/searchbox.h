@@ -31,6 +31,13 @@ struct SearchRank {
 
 #define SEARCHBOX_MAX_ENTRIES 30
 
+class SearchBox;
+
+typedef void(*SearchBoxRenderFunction)(PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height);
+typedef void(*SearchBoxSelectionChangedFunction)(SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data);
+typedef void(*SearchBoxSelectionConfirmedFunction)(SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data);
+typedef void(*SearchBoxSelectionCancelledFunction)(SearchBox* searchbox, void* data);
+
 class SearchBox : public PGContainer {
 public:
 	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries);
@@ -42,7 +49,12 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
-	void Close();
+	void Close(bool success = false);
+
+	void OnRender(SearchBoxRenderFunction func) { render_function = func; }
+	void OnSelectionChanged(SearchBoxSelectionChangedFunction func, void* data) { selection_changed = func; selection_changed_data = data; }
+	void OnSelectionConfirmed(SearchBoxSelectionConfirmedFunction func, void* data) { selection_confirmed = func; selection_confirmed_data = data; }
+	void OnSelectionCancelled(SearchBoxSelectionCancelledFunction func, void* data) { selection_cancelled = func; selection_cancelled_data = data; }
 private:
 	std::vector<SearchEntry> entries;
 	std::vector<SearchRank> displayed_entries;
@@ -52,6 +64,13 @@ private:
 
 	lng selected_entry;
 	lng filter_size;
+	SearchBoxRenderFunction render_function = nullptr;
+	SearchBoxSelectionChangedFunction selection_changed = nullptr;
+	void* selection_changed_data = nullptr;
+	SearchBoxSelectionConfirmedFunction selection_confirmed = nullptr;
+	void* selection_confirmed_data = nullptr;
+	SearchBoxSelectionCancelledFunction selection_cancelled = nullptr;
+	void* selection_cancelled_data = nullptr;
 
 	void Filter(std::string filter);
 };

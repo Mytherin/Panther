@@ -179,6 +179,7 @@ public:
 	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
+	std::string GetExtension() { return ext; }
 	bool HasUnsavedChanges() { return unsaved_changes; }
 	bool FileInMemory() { return path.size() == 0; }
 
