@@ -62,6 +62,8 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 				selection_changed(this, rank, entry, selection_changed_data);
 			}
 			return true;
+		default:
+			break;
 		}
 	}
 	return PGContainer::KeyboardButton(button, modifier);

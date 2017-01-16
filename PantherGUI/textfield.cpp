@@ -780,7 +780,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				[](PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height) {
 				// render the text file icon next to each open file
 				TextFile* file = (TextFile*)entry.data;
-				std::string& filename = file->GetName();
+				std::string filename = file->GetName();
 				std::string ext = file->GetExtension();
 
 				PGScalar file_icon_height = button_height * 0.6;

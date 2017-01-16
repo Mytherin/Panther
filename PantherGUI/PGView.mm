@@ -445,11 +445,11 @@ PGWindowHandle PGCreateWindow(std::vector<TextFile*> textfiles) {
 }
 
 
-void RefreshWindow(PGWindowHandle window) {
+void RefreshWindow(PGWindowHandle window, bool redraw_now) {
 	RedrawWindow(window);
 }
 
-void RefreshWindow(PGWindowHandle window, PGIRect rectangle) {
+void RefreshWindow(PGWindowHandle window, PGIRect rectangle, bool redraw_now) {
 	RedrawWindow(window, rectangle);
 }
 
@@ -518,6 +518,11 @@ bool WindowHasFocus(PGWindowHandle window) {
 
 void SetCursor(PGWindowHandle window, PGCursorType type) {
 	return;
+}
+
+void PGCloseWindow(PGWindowHandle handle) {
+	assert(0);
+	[handle->window performClose:handle->window];
 }
 
 PGTimerHandle CreateTimer(PGWindowHandle handle, int ms, PGTimerCallback callback, PGTimerFlags flags) {
