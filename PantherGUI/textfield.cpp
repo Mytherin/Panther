@@ -62,7 +62,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	PGScalar max_x = position_x_text + width;
 	if (!minimap)
 		xoffset = textfile->GetXOffset();
-	PGScalar y = Y();
+	PGScalar y = Y() - rectangle->y;
 	lng start_line = textfile->GetLineOffset();
 	std::vector<Cursor*> cursors = textfile->GetCursors();
 	lng linenr = start_line;
@@ -95,7 +95,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		auto selected_pos = (*it)->SelectedPosition();
 		lng startline = std::max(begin_pos.line, start_line);
 		lng endline = std::min(end_pos.line, linenr);
-		position_y = y + (startline - start_line) * line_height - rectangle->y;
+		position_y = y + (startline - start_line) * line_height;
 
 		for (auto line_iterator = textfile->GetIterator(startline); startline <= endline; startline++, line_iterator++) {
 			current_line = line_iterator.GetLine();
@@ -146,7 +146,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			if (it->start_line > linenr) break;
 			lng startline = std::max(it->start_line, start_line);
 			lng endline = std::min(it->end_line, linenr);
-			position_y = y + (startline - start_line) * line_height - rectangle->y;
+			position_y = y + (startline - start_line) * line_height;
 			for (auto line_iterator = textfile->GetIterator(startline); startline <= endline; startline++, line_iterator++) {
 				current_line = line_iterator.GetLine();
 				char* line = current_line.GetLine();
@@ -360,11 +360,11 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 		text_offset = 10 + MeasureTextWidth(textfield_font, line_number.c_str(), line_number.size());
 	}
 	PGPoint position = Position();
-	PGScalar x = position.x, y = position.y;
+	PGScalar x = position.x - rectangle->x, y = position.y  - rectangle->y;
 	// get the mouse position (for rendering hovers)
 	PGPoint mouse = GetMousePosition(window, this);
-	PGScalar position_x = x - rectangle->x;
-	PGScalar position_y = y - rectangle->y;
+	PGScalar position_x = x;
+	PGScalar position_y = y;
 	// textfield/minimap dimensions
 	PGScalar minimap_width = this->display_minimap ? GetMinimapWidth() : 0;
 	PGScalar textfield_width = this->width - minimap_width;
@@ -379,7 +379,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	}
 	// render the actual text field
 	if (textfile->IsLoaded()) {
-		DrawTextField(renderer, textfield_font, rectangle, false, x + text_offset + 2 - rectangle->x, y - rectangle->y, textfield_width, false);
+		DrawTextField(renderer, textfield_font, rectangle, false, x + text_offset + 2, y, textfield_width, false);
 	} else {
 		PGScalar offset = this->width / 10;
 		PGScalar width = this->width - offset * 2;
@@ -392,9 +392,11 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	// render the minimap
 	if (textfile->IsLoaded() && this->display_minimap) {
 		bool mouse_in_minimap = window_has_focus && this->mouse_in_minimap;
-		PGIRect minimap_rect = PGIRect(x + textfield_width, y, minimap_width, this->height);
+		PGIRect minimap_rect = PGIRect(x + textfield_width, rectangle->y, minimap_width, rectangle->height);
+		PGIRect shadow_rect = PGIRect(minimap_rect.x - 5, y, 5, minimap_rect.height);
 
-		DrawTextField(renderer, minimap_font, &minimap_rect, true, x + textfield_width - rectangle->x, y - rectangle->y, minimap_width, mouse_in_minimap);
+		RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
+		DrawTextField(renderer, minimap_font, &minimap_rect, true, x + textfield_width, y, minimap_width, mouse_in_minimap);
 	}
 
 	// render the line numbers
@@ -402,7 +404,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	line_height = GetTextHeight(textfield_font);
 	if (this->display_linenumbers) {
 		// fill in the background of the line numbers
-		position_y = y - rectangle->y;
+		position_y = y;
 		RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
 		SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldLineNumber));

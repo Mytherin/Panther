@@ -4,6 +4,8 @@
 #include "renderer.h"
 #include "unicode.h"
 
+#include <SkGradientShader.h>
+
 struct PGRenderer {
 	SkCanvas* canvas;
 	SkPaint* paint;
@@ -31,6 +33,10 @@ struct PGBitmap {
 
 SkBitmap* PGGetBitmap(PGBitmapHandle handle) {
 	return handle->bitmap;
+}
+
+static SkColor CreateSkColor(PGColor color) {
+	return SkColorSetARGB(color.a, color.r, color.g, color.b);
 }
 
 static SkPaint::Style PGDrawStyleConvert(PGDrawStyle style) {
@@ -160,6 +166,27 @@ void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, P
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	handle->canvas->drawRect(rect, *handle->paint);
 }
+
+void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGColor right) {
+	SkRect rect;
+	rect.fLeft = rectangle.x;
+	rect.fTop = rectangle.y;
+	rect.fRight = rectangle.x + rectangle.width;
+	rect.fBottom = rectangle.y + rectangle.height;
+
+	SkPoint points[2] = {
+		SkPoint::Make(rectangle.x, rectangle.y + rectangle.height / 2),
+		SkPoint::Make(rectangle.x + rectangle.width, rectangle.y + rectangle.height / 2)
+	};
+	SkColor colors[2] = { CreateSkColor(left), CreateSkColor(right) };
+	handle->paint->setShader(SkGradientShader::MakeLinear(
+		points, colors, nullptr, 2,
+		SkShader::kClamp_TileMode, 0, nullptr));
+	handle->paint->setStyle(PGDrawStyleConvert(PGDrawStyleFill));
+	handle->canvas->drawRect(rect, *handle->paint);
+	handle->paint->setShader(nullptr);
+}
+
 
 void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDrawStyle drawStyle) {
 	handle->paint->setAntiAlias(true);

@@ -73,11 +73,11 @@
     <LibraryPath>C:\Users\wieis\Skia\src\skia\out\Static;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;D:\icu\x64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Debug;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;D:\icu\x64\include;D:\Skia\src\skia\include\effects;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;D:\icu\x64\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;D:\icu\x64\include;D:\Skia\src\skia\include\effects;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

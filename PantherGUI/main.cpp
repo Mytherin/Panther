@@ -100,10 +100,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
 	TextFile* textfile = TextFile::OpenTextFile(nullptr, "C:\\Users\\wieis\\Desktop\\syntaxtest.c", false);
 	TextFile* textfile2 = TextFile::OpenTextFile(nullptr, "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml", false);
-	
+	TextFile* textfile3 = TextFile::OpenTextFile(nullptr, "C:\\Users\\wieis\\Desktop\\blns.txt", false);
+
 	std::vector<TextFile*> files;
 	files.push_back(textfile);
 	files.push_back(textfile2);
+	files.push_back(textfile3);
 
 	PGWindowHandle handle = PGCreateWindow(files);
 

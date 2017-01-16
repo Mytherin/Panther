@@ -255,6 +255,7 @@ void DeleteTimer(PGTimerHandle);
 PGRendererHandle GetRendererHandle(PGWindowHandle window);
 lng GetPositionInLine(PGFontHandle font, PGScalar x, const char* text, size_t length);
 
+void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGColor right);
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGDrawStyle drawStyle);
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle style);
 void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDrawStyle style);
