@@ -7,7 +7,7 @@
 lng TEXT_BUFFER_SIZE = 4096;
 
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
-	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr) {
+	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr), start_scroll(-1) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {
 		buffer_size = TEXT_BUFFER_SIZE;
 	} else {
@@ -272,6 +272,27 @@ lng PGTextBuffer::GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line) {
 			first = middle + 1;
 		} else if (line >= buffers[middle]->start_line &&
 			(middle == limit || line < buffers[middle + 1]->start_line)) {
+			return middle;
+		} else {
+			last = middle - 1;
+		}
+		middle = (first + last) / 2;
+	}
+	assert(0);
+	return 0;
+}
+
+lng PGTextBuffer::GetBufferFromScrollPosition(std::vector<PGTextBuffer*>& buffers, lng scrollposition) {
+	lng limit = buffers.size() - 1;
+	lng first = 0;
+	lng last = limit;
+	lng middle = (first + last) / 2;
+	// binary search to find the block that belongs to the buffer
+	while (first <= last) {
+		if (middle != limit && scrollposition >= buffers[middle + 1]->start_scroll) {
+			first = middle + 1;
+		} else if (scrollposition >= buffers[middle]->start_scroll &&
+			(middle == limit || scrollposition < buffers[middle + 1]->start_scroll)) {
 			return middle;
 		} else {
 			last = middle - 1;

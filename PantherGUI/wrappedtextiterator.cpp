@@ -39,14 +39,14 @@ TextLine WrappedTextLineIterator::GetLine() {
 	return wrapped_line;
 }
 
-bool TextLine::WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap) {
+bool TextLine::WrapLine(char* line, lng length, PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap) {
 	PGScalar current_width = 0;
 	lng i = start_wrap;
 	lng last_space = -1;
-	end_wrap = this->length;
-	for (; i < this->length; ) {
-		int offset = utf8_character_length(this->line[i]);
-		current_width += MeasureTextWidth(font, this->line + i, offset);
+	end_wrap = length;
+	for (; i < length; ) {
+		int offset = utf8_character_length(line[i]);
+		current_width += MeasureTextWidth(font, line + i, offset);
 		if (current_width > wrap_width) {
 			// we have to wrap now
 			// try to wrap at the last space
@@ -59,13 +59,28 @@ bool TextLine::WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, 
 			return true;
 		}
 		if (offset == 1) {
-			if (this->line[i] == '\t' || this->line[i] == ' ') {
+			if (line[i] == '\t' || line[i] == ' ') {
 				last_space = i;
 			}
 		}
 		i += offset;
 	}
 	return false;
+}
+
+lng TextLine::RenderedLines(char* line, lng length, PGFontHandle font, PGScalar wrap_width) {
+	lng lines = 1;
+	lng start_wrap = 0;
+	lng end_wrap;
+	while (WrapLine(line, length, font, wrap_width, start_wrap, end_wrap)) {
+		lines++;
+		start_wrap = end_wrap;
+	}
+	return lines;
+}
+
+bool TextLine::WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap) {
+	return TextLine::WrapLine(line, length, font, wrap_width, start_wrap, end_wrap);
 }
 
 void WrappedTextLineIterator::DetermineEndWrap() {

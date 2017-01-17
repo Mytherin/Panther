@@ -797,7 +797,7 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 	if (!textfile->IsLoaded()) return false;
 
-	if (modifier & PGModifierCtrl) {
+	if (modifier == PGModifierCtrl) {
 		switch (character) {
 		case 'S': {
 			textfile->SaveChanges();
@@ -927,6 +927,17 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 			dynamic_cast<PGContainer*>(this->parent)->AddControl(field);
 			return true;
 		}
+		}
+	}
+	if (modifier == PGModifierCtrlShift) {
+		switch (character) {
+		case 'W':
+			// toggle word wrap
+			textfile->SetWordWrap(!textfile->GetWordWrap(), GetTextfieldWidth());
+			this->Invalidate();
+			return true;
+		default:
+			break;
 		}
 	}
 	return BasicTextField::KeyboardCharacter(character, modifier);

@@ -172,7 +172,6 @@ public:
 	lng GetLineFromScrollPosition(PGFontHandle font, PGScalar wrap_width, lng scroll_offset);
 	lng GetScrollPositionFromLine(PGFontHandle font, PGScalar wrap_width, lng linenr);
 
-	PGScalar GetLineWidth(PGFontHandle font, lng line);
 	PGScalar GetMaxLineWidth(PGFontHandle font);
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
@@ -195,6 +194,7 @@ public:
 	void AddRef() { refcount++; }
 	bool DecRef() { return --refcount == 0; }
 
+	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }
 private:
 	// load textfile from a file
@@ -229,7 +229,8 @@ private:
 	lng longest_line = 0;
 	lng xoffset = 0;
 	double yoffset = 0;
-	bool wordwrap = true;
+	bool wordwrap = false;
+	PGScalar wordwrap_width;
 
 	std::vector<Cursor*> cursors;
 	Cursor* active_cursor;
@@ -254,6 +255,7 @@ private:
 	static void RunTextFinder(Task* task, TextFile* textfile, std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool match_case, bool wrap, bool regex);
 
 
+	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateParsing();
 
 	bool is_loaded;
@@ -262,7 +264,9 @@ private:
 	PGTextBuffer* GetBuffer(lng line);
 
 	lng linecount = 0;
-	PGScalar max_length;
+	lng maxscroll = 0;
+	lng max_line_length = 0;
+
 	std::vector<PGScalar> line_lengths;
 	std::vector<PGTextBuffer*> buffers;
 	std::vector<TextDelta*> deltas;
@@ -270,6 +274,8 @@ private:
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
 	PGFileEncoding encoding;
+
+	PGFontHandle default_font = nullptr;
 
 	PGLanguage* language = nullptr;
 	SyntaxHighlighter* highlighter = nullptr;

@@ -36,6 +36,7 @@ public:
 	ulng buffer_size = 0;
 	ulng current_size = 0;
 	ulng start_line = 0;
+	ulng start_scroll = 0;
 
 	ulng syntax_count = 0;
 	PGSyntax* syntax = nullptr;
@@ -48,6 +49,7 @@ public:
 	void Extend(ulng new_size);
 
 	static lng GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line);
+	static lng GetBufferFromScrollPosition(std::vector<PGTextBuffer*>& buffers, lng scrollposition);
 
 	// insert text into the specified buffer, "text" should not contain newlines
 	// this function accounts for extending buffers and creating new buffers
@@ -93,7 +95,11 @@ public:
 
 	// computes how to wrap the line starting at start_wrap
 	// returns true if the line has to be wrapped, false if it fits entirely within wrap_width
-	// if the function returns true, end_wrap is set to a value < textline.width
+	// if the function returns true, end_wrap is set to a value < length
+	static bool WrapLine(char* line, lng length, PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap);
+	// returns the amount of lines this one line is rendered at with the given wrap width
+	static lng RenderedLines(char* line, lng length, PGFontHandle font, PGScalar wrap_width);
+
 	bool WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap);
 
 	PGSyntax syntax;
