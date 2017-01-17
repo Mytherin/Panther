@@ -172,8 +172,11 @@ int TextFile::GetLineHeight() {
 
 
 void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
-	while (buffer && !buffer->parsed) {
+	lng added_scrolls = 0;
+	lng prev_scroll = -1;
+	while (buffer && (!buffer->parsed || (wordwrap && buffer->start_scroll < 0))) {
 		lng linenr = buffer->start_line;
+		lng scroll_lines = 0;
 		for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
 			TextLine line = it.GetLine();
 			if (!line.IsValid()) break;
@@ -187,9 +190,51 @@ void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 			} else if (max_line_length >= 0 && line_lengths[linenr] > line_lengths[max_line_length]) {
 				max_line_length = linenr;
 			}
+			if (wordwrap) {
+				scroll_lines += TextLine::RenderedLines(line.GetLine(), line.GetLength(), textfield->GetTextfieldFont(), wordwrap_width);
+			} else {
+				scroll_lines++;
+			}
 			linenr++;
 		}
+		if (wordwrap) {
+			if (buffer->start_scroll < 0) {
+				assert(prev_scroll >= 0);
+				/*if (buffer->prev == nullptr) {
+					buffer->start_scroll = 0;
+				} else {
+					if (prev_scroll < 0) {
+						assert(buffer->prev->start_scroll >= 0);
+						prev_scroll = buffer->prev->start_scroll + buffer->prev->GetRenderedLines(this, textfield->GetTextfieldFont(), wordwrap_width);
+					}
+					assert(prev_scroll >= 0);
+				}*/
+				added_scrolls += scroll_lines;
+			} else {
+				lng next_scroll = maxscroll;
+				PGTextBuffer* buf = buffer->next;
+				while (buf) {
+					if (buf->start_scroll >= 0) {
+						next_scroll = buf->start_scroll;
+						break;
+					}
+					buf = buf->next;
+				}
+				added_scrolls += scroll_lines - (next_scroll - buffer->start_scroll);
+			}
+			if (prev_scroll >= 0) {
+				buffer->start_scroll = prev_scroll;
+			}
+			prev_scroll = buffer->start_scroll + scroll_lines;
+		}
 		buffer = buffer->next;
+	}
+	if (added_scrolls != 0) {
+		while (buffer) {
+			buffer->start_scroll += added_scrolls;
+			buffer = buffer->next;
+		}
+		maxscroll += added_scrolls;
 	}
 	if (max_line_length < 0) {
 		lng max_index = 0;
@@ -422,6 +467,8 @@ void TextFile::SetWordWrap(bool wordwrap, PGScalar wrap_width) {
 			PGScalar wordwrap_width = textfield->GetTextfieldWidth();
 			scrolloffset += TextLine::RenderedLines(line.GetLine(), line.GetLength(), textfield->GetTextfieldFont(), wordwrap_width);
 		}
+		maxscroll = scrolloffset;
+		VerifyTextfile();
 	} else if (!this->wordwrap) {
 		this->wordwrap_width = -1;
 	}
@@ -830,7 +877,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	// insert linecount into line_lengths
 	std::vector<PGScalar> lengths(added_lines);
 	line_lengths.insert(line_lengths.begin() + begin_position.line, lengths.begin(), lengths.end());
-	InvalidateBuffer(start_buffer);
+	InvalidateBuffer(start_buffer->start_scroll < 0 && start_buffer->prev ? start_buffer->prev : start_buffer);
 	VerifyTextfile();
 }
 
@@ -1131,16 +1178,32 @@ void TextFile::VerifyTextfile() {
 #ifdef PANTHER_DEBUG
 	for (size_t i = 0; i < buffers.size(); i++) {
 		if (i < buffers.size() - 1) {
+			if (wordwrap) {
+				assert(buffers[i]->start_scroll < buffers[i + 1]->start_scroll);
+			}
 			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
 			assert(buffers[i]->next == buffers[i + 1]);
 			// only the final buffer can end with a non-newline character
 			assert(buffers[i]->buffer[buffers[i]->current_size - 1] == '\n');
+		}
+		if (wordwrap) {
+			assert(buffers[i]->start_scroll < 0 || buffers[i]->start_scroll >= buffers[i]->start_line);
 		}
 		if (i > 0) {
 			assert(buffers[i]->prev == buffers[i - 1]);
 		}
 		assert(buffers[i]->current_size < buffers[i]->buffer_size);
 	}
+	// very expensive check, disabled now
+	/*if (wordwrap) {
+		lng scroll_lines = 0;
+		for (size_t i = 0; i < buffers.size(); i++) {
+			assert(buffers[i]->start_scroll == scroll_lines);
+			scroll_lines += buffers[i]->GetRenderedLines(this, textfield->GetTextfieldFont(), wordwrap_width);
+		}
+		assert(scroll_lines == maxscroll);
+	}*/
+
 	assert(cursors.size() > 0);
 	for (int i = 0; i < cursors.size(); i++) {
 		Cursor* c = cursors[i];

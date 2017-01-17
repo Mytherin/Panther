@@ -480,3 +480,12 @@ void SetTextBufferSize(lng bufsiz) {
 	TEXT_BUFFER_SIZE = bufsiz;
 }
 
+lng PGTextBuffer::GetRenderedLines(TextFile* textfile, PGFontHandle font, PGScalar size) {
+	lng rendered_lines = 0;
+	for (auto it = TextLineIterator(textfile, this); it.CurrentBuffer() == this; it++) {
+		TextLine line = it.GetLine();
+		if (!line.IsValid()) break;
+		rendered_lines += TextLine::RenderedLines(line.GetLine(), line.GetLength(), font, size);
+	}
+	return rendered_lines;
+}

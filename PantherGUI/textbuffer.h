@@ -36,7 +36,7 @@ public:
 	ulng buffer_size = 0;
 	ulng current_size = 0;
 	ulng start_line = 0;
-	ulng start_scroll = 0;
+	lng start_scroll = -1;
 
 	ulng syntax_count = 0;
 	PGSyntax* syntax = nullptr;
@@ -79,6 +79,8 @@ public:
 
 	PGCursorPosition GetCursorFromPosition(ulng position);
 	TextLine GetLineFromPosition(ulng position);
+
+	lng GetRenderedLines(TextFile* textfile, PGFontHandle font, PGScalar size);
 };
 
 struct TextLine {
