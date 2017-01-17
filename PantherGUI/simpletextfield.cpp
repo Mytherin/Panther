@@ -62,7 +62,7 @@ void SimpleTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 		if (drag_type == PGDragSelectionCursors) return;
 		drag_type = PGDragSelection;
 		lng line = 0, character = 0;
-		GetCharacterFromPosition(mouse.x, textfile->GetLine(0), character);
+		_GetCharacterFromPosition(mouse.x, textfile->GetLine(0), character);
 
 		PerformMouseClick(mouse);
 
@@ -117,7 +117,7 @@ void SimpleTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 	if (buttons & PGLeftMouseButton) {
 		if (drag_type == PGDragSelection) {
 			lng character;
-			GetCharacterFromPosition(mouse.x, textfile->GetLine(0), character);
+			_GetCharacterFromPosition(mouse.x, textfile->GetLine(0), character);
 			Cursor* active_cursor = textfile->GetActiveCursor();
 			if (active_cursor->SelectedPosition().character != character) {
 				active_cursor->SetCursorStartLocation(0, character);

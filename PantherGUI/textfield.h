@@ -20,6 +20,16 @@ struct TextSelection {
 #define FLICKER_CARET_INTERVAL 15
 #define MAX_MINIMAP_LINE_CACHE 10000
 
+struct RenderedLine {
+	TextLine tline;
+	lng line;
+	lng position;
+	RenderedLine(TextLine tline, lng line, lng position) : tline(tline), line(line), position(position) {
+		this->tline.syntax.next = nullptr;
+		this->tline.syntax.end = -1;
+	}
+};
+
 class TextField : public BasicTextField {
 public:
 	TextField(PGWindowHandle, TextFile* file);
@@ -56,6 +66,10 @@ public:
 
 	void TextChanged();
 	void TextChanged(std::vector<lng> lines);
+protected:
+	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
+	void GetLineFromPosition(PGScalar y, lng& line);
+
 private:
 	Scrollbar* scrollbar;
 	Scrollbar* horizontal_scrollbar;
@@ -75,6 +89,8 @@ private:
 	PGScalar drag_offset;
 	std::map<Cursor*, CursorSelection> minimal_selections;
 
+	std::vector<RenderedLine> rendered_lines;
+
 	void ClearDragging();
 
 	PGScalar max_xoffset;
@@ -87,7 +103,7 @@ private:
 	lng GetMinimapStartLine();
 	void SetMinimapOffset(PGScalar offset);
 
-	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
+	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
 	std::map<lng, PGBitmapHandle> minimap_line_cache;
 };

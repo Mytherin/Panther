@@ -76,6 +76,7 @@ enum PGLockType {
 class TextFile {
 	friend class Cursor;
 	friend class TextLineIterator;
+	friend class WrappedTextLineIterator;
 	friend class TextField;
 public:
 	// create an in-memory textfile with currently unspecified path
@@ -84,7 +85,8 @@ public:
 
 	static TextFile* OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load = false);
 
-	TextLineIterator GetIterator(lng linenumber);
+	TextLineIterator* GetScrollIterator(TextField* textfield, lng scroll_offset);
+	TextLineIterator* GetLineIterator(TextField* textfield, lng linenumber);
 	TextLine GetLine(lng linenumber);
 	void InsertText(char character);
 	void InsertText(PGUTF8Character character);
@@ -167,6 +169,10 @@ public:
 	// same as RestoreCursor, but selections are replaced by the LOWEST value
 	Cursor* RestoreCursorPartial(CursorData data);
 
+	lng GetLineFromScrollPosition(PGFontHandle font, PGScalar wrap_width, lng scroll_offset);
+	lng GetScrollPositionFromLine(PGFontHandle font, PGScalar wrap_width, lng linenr);
+
+	PGScalar GetLineWidth(PGFontHandle font, lng line);
 	PGScalar GetMaxLineWidth(PGFontHandle font);
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
@@ -188,6 +194,8 @@ public:
 
 	void AddRef() { refcount++; }
 	bool DecRef() { return --refcount == 0; }
+
+	bool GetWordWrap() { return wordwrap; }
 private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false);
@@ -221,6 +229,7 @@ private:
 	lng longest_line = 0;
 	lng xoffset = 0;
 	double yoffset = 0;
+	bool wordwrap = true;
 
 	std::vector<Cursor*> cursors;
 	Cursor* active_cursor;

@@ -181,7 +181,7 @@ PGCursorType BasicTextField::GetCursor(PGPoint mouse) {
 	return PGCursorIBeam;
 }
 
-void BasicTextField::GetCharacterFromPosition(PGScalar x, TextLine line, lng& character) {
+void BasicTextField::_GetCharacterFromPosition(PGScalar x, TextLine line, lng& character) {
 	if (!line.IsValid()) {
 		character = 0;
 		return;
@@ -195,7 +195,7 @@ void BasicTextField::GetCharacterFromPosition(PGScalar x, TextLine line, lng& ch
 
 void BasicTextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character) {
 	GetLineFromPosition(y, line);
-	GetCharacterFromPosition(x, textfile->GetLine(line), character);
+	_GetCharacterFromPosition(x, textfile->GetLine(line), character);
 }
 
 void BasicTextField::GetLineFromPosition(PGScalar y, lng& line) {
@@ -206,7 +206,6 @@ void BasicTextField::GetLineFromPosition(PGScalar y, lng& line) {
 }
 
 void BasicTextField::RefreshCursors() {
-	// FIXME: thread safety on setting display_carets_count?
 	display_carets_count = 0;
 	display_carets = true;
 }
@@ -230,6 +229,7 @@ void BasicTextField::PerformMouseClick(PGPoint mouse) {
 }
 
 PGScalar BasicTextField::GetMaxXOffset() {
+	if (textfile->GetWordWrap()) return 0;
 	PGScalar max_textsize = textfile->GetMaxLineWidth(textfield_font);
 	return std::max(max_textsize - GetTextfieldWidth() + text_offset, 0.0f);
 }

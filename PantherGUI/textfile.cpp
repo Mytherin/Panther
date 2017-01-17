@@ -128,13 +128,7 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 				assert(linecount > 0);
 				if (buffer->syntax) {
 					for (ulng j = 0; j < buffer->syntax_count; j++) {
-						PGSyntax* next = buffer->syntax[j].next;
-						while (next) {
-							assert(next->next != next);
-							PGSyntax* tmp = next->next;
-							delete next;
-							next = tmp;
-						}
+						buffer->syntax[j].Delete();
 					}
 					free(buffer->syntax);
 					buffer->syntax = nullptr;
@@ -377,8 +371,44 @@ lng TextFile::GetLineCount() {
 	return linecount;
 }
 
+PGScalar TextFile::GetLineWidth(PGFontHandle font, lng line) {
+	return GetTextFontSize(font) / 10.0 * line_lengths[line];
+}
+
 PGScalar TextFile::GetMaxLineWidth(PGFontHandle font) {
 	return GetTextFontSize(font) / 10.0 * max_length;
+}
+
+lng TextFile::GetLineFromScrollPosition(PGFontHandle font, PGScalar wrap_width, lng scroll_offset) {
+	// FIXME: use some better structure for this
+	lng line = 0;
+	lng current_line = 0;
+	PGScalar ratio = GetTextFontSize(font) / 10.0;
+	for (; current_line < GetLineCount(); current_line++) {
+		PGScalar line_width = ratio * line_lengths[current_line];
+		lng linesize = line_width == 0 ? 1 : std::ceil(line_width / wrap_width);
+		if (line <= scroll_offset && line + linesize >= scroll_offset) {
+			return current_line;
+		}
+		line += linesize;
+	}
+	return current_line;
+}
+
+lng TextFile::GetScrollPositionFromLine(PGFontHandle font, PGScalar wrap_width, lng linenr) {
+	// FIXME: use some better structure for this
+	lng scroll_offset = 0;
+	lng current_line = 0;
+	PGScalar ratio = GetTextFontSize(font) / 10.0;
+	for (; current_line < GetLineCount(); current_line++) {
+		PGScalar line_width = ratio * line_lengths[current_line];
+		lng linesize = line_width == 0 ? 1 : std::ceil(line_width / wrap_width);
+		if (linenr == current_line) {
+			return scroll_offset;
+		}
+		scroll_offset += linesize;
+	}
+	return current_line;
 }
 
 /*void TextFile::SetMaxLineWidth(lng new_width) {
@@ -1735,10 +1765,9 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 			std::vector<PGFindMatch> next = PGFindMatch::FromBufferMatches(current_end_buffer, next_matches);
 
 			textfile->Lock(PGWriteLock);
-			for (auto it = prev.begin(); it != prev.end(); it++) {
-				textfile->selected_match++;
-				textfile->matches.insert(textfile->matches.begin(), *it);
-			}
+			textfile->selected_match += prev.size();
+			textfile->matches.insert(textfile->matches.begin(), prev.begin(), prev.end());
+
 			for (auto it = next.begin(); it != next.end(); it++) {
 				textfile->matches.push_back(*it);
 				if (!found_initial_match) {
@@ -1900,8 +1929,21 @@ void TextFile::SelectMatches() {
 	if (textfield) textfield->SelectionChanged();
 }
 
-TextLineIterator TextFile::GetIterator(lng linenumber) {
-	return TextLineIterator(this, linenumber);
+
+TextLineIterator* TextFile::GetScrollIterator(TextField* textfield, lng scroll_offset) {
+	if (wordwrap) {
+		return new WrappedTextLineIterator(textfield->GetTextfieldFont(), this, 
+			scroll_offset, textfield->GetTextfieldWidth());
+	}
+	return new TextLineIterator(this, scroll_offset);
+}
+
+TextLineIterator* TextFile::GetLineIterator(TextField* textfield, lng linenumber) {
+	if (wordwrap) {
+		return new WrappedTextLineIterator(textfield->GetTextfieldFont(), this, 
+			linenumber, textfield->GetTextfieldWidth(), false);
+	}
+	return new TextLineIterator(this, linenumber);
 }
 
 
@@ -1919,7 +1961,6 @@ std::vector<PGFindMatch> PGFindMatch::FromBufferMatches(PGTextBuffer* buffer, st
 	std::sort(matches.begin(), matches.end(), PGBufferFindMatch::MatchOccursFirst);
 	std::vector<PGFindMatch> resulting_matches;
 	if (matches.size() == 0 || !buffer) return resulting_matches;
-	resulting_matches.reserve(matches.size());
 	PGFindMatch current_match;
 	lng current_line = buffer->start_line;
 	lng current_character = 0;

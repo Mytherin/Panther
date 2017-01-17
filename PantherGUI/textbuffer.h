@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "windowfunctions.h"
+
 
 extern lng TEXT_BUFFER_SIZE;
 
@@ -79,6 +81,7 @@ public:
 
 struct TextLine {
 	friend class TextLineIterator;
+	friend class WrappedTextLineIterator;
 public:
 	TextLine() : line(nullptr), length(0) { syntax.end = -1; }
 	TextLine(char* line, lng length, PGSyntax syntax) : line(line), length(length), syntax(syntax) { }
@@ -87,6 +90,11 @@ public:
 	lng GetLength(void) { return length; }
 	char* GetLine(void) { return line; }
 	bool IsValid() { return line != nullptr; }
+
+	// computes how to wrap the line starting at start_wrap
+	// returns true if the line has to be wrapped, false if it fits entirely within wrap_width
+	// if the function returns true, end_wrap is set to a value < textline.width
+	bool WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap);
 
 	PGSyntax syntax;
 private:
@@ -97,7 +105,7 @@ private:
 class TextLineIterator {
 	friend class TextFile;
 public:
-	TextLine GetLine();
+	virtual TextLine GetLine();
 	friend TextLineIterator& operator++(TextLineIterator& element) {
 		element.NextLine();
 		return element;
@@ -113,19 +121,50 @@ public:
 		return ++element;
 	}
 
+	virtual lng GetCurrentLineNumber() { return current_line; }
+	virtual lng GetCurrentCharacterNumber() { return 0; }
+
 	PGTextBuffer* CurrentBuffer() { return buffer; }
 	TextLineIterator(TextFile* textfile, PGTextBuffer* buffer);
-private:
+protected:
 	TextLineIterator(TextFile* textfile, lng current_line);
+	TextLineIterator();
 
-	void PrevLine();
-	void NextLine();
+	void Initialize(TextFile* tf, lng current_line);
+
+	virtual void PrevLine();
+	virtual void NextLine();
 
 	PGTextBuffer* buffer;
 	lng start_position, end_position;
 	TextFile* textfile;
 	lng current_line;
 	TextLine textline;
+};
+
+
+class WrappedTextLineIterator : public TextLineIterator {
+public:
+	TextLine GetLine();
+
+	lng GetCurrentLineNumber() { return current_line; }
+	lng GetCurrentCharacterNumber() { return start_wrap; }
+
+	WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, lng scroll_offset, PGScalar wrap_width, bool is_scroll_offset = true);
+protected:
+	void PrevLine();
+	void NextLine();
+
+	PGFontHandle font;
+	PGScalar wrap_width;
+	lng start_wrap;
+	lng end_wrap;
+	TextLine wrapped_line;
+
+private:
+	bool delete_syntax = false;
+
+	void DetermineEndWrap();
 };
 
 void SetTextBufferSize(lng bufsiz);

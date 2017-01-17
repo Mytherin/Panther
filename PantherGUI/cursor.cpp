@@ -62,9 +62,65 @@ void Cursor::OffsetSelectionLine(lng offset) {
 	PGCursorPosition sel = SelectedPosition();
 	lng start_line = sel.line;
 	lng start_character = sel.character;
+
+	if (file->GetWordWrap()) {
+		// the file has word wrapping enabled
+		// when we press up/down, we might not go to the next line
+		// but stay on the same line
+		TextLine line = TextLine(start_buffer, start_line);
+		lng start_wrap = 0;
+		lng end_wrap = -1;
+		bool wrap = false;
+		if (offset > 0) {
+			// we have the cursor down
+			while (line.WrapLine(textfield_font, file->textfield->GetTextfieldWidth(), start_wrap, end_wrap)) {
+				if (end_wrap > start_character) {
+					// there is a wrap AFTER this cursor
+					wrap = true;
+					x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+					break;
+				}
+				start_wrap = end_wrap;
+			}
+			if (wrap) {
+				// if there is a wrap after this cursor
+				// we move to a position WITHIN the current line (but in the next wrapped line)
+				start_character = end_wrap + GetPositionInLine(textfield_font, x_position, line.GetLine() + end_wrap, line.GetLength() - end_wrap);
+				SetCursorStartLocation(start_line, start_character);
+				return;
+			} else {
+				// if there is no wrap after this cursor
+				// record the x_position and move to the next line
+				x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+			}
+		} else {
+			lng prev_wrap = -1;
+			// we have to move the cursor up
+			while (true) {
+				bool found = line.WrapLine(textfield_font, file->textfield->GetTextfieldWidth(), start_wrap, end_wrap);
+				if (end_wrap > start_character) {
+					wrap = true;
+					break;
+				}
+				prev_wrap = start_wrap;
+				start_wrap = end_wrap;
+				if (!found) break;
+			}
+			if (wrap && start_wrap > 0) {
+				// there is a wrap before this line
+				// first measure the x-position of the cursor
+				x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+				start_character = prev_wrap + GetPositionInLine(textfield_font, x_position, line.GetLine() + prev_wrap, start_wrap - prev_wrap);
+				SetCursorStartLocation(start_line, start_character);
+				return;
+			}
+		}
+	}
+
 	if (x_position < 0) {
 		x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line).GetLine(), start_character);
 	}
+
 	lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
 	if (new_line != start_line) {
 		start_line = new_line;
@@ -434,6 +490,10 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 			cursor_min_character = std::min(cursor_min_character, cursor_character);
 			cursor_max_character = std::max(cursor_max_character, cursor_character);
 		}
+		if (textfile->GetWordWrap()) {
+			cursor_min = textfile->GetScrollPositionFromLine(textfile->textfield->GetTextfieldFont(), textfile->textfield->GetTextfieldWidth(), cursor_min);
+			cursor_max = textfile->GetScrollPositionFromLine(textfile->textfield->GetTextfieldFont(), textfile->textfield->GetTextfieldWidth(), cursor_max);
+		} 
 		if (cursor_max - cursor_min > textfile->GetLineHeight()) {
 			// cursors are too far apart to show everything, just show the first one
 			line_offset = cursor_min;

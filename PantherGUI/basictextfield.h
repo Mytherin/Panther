@@ -75,9 +75,9 @@ protected:
 	PGDragType drag_type = PGDragNone;
 	MouseClickInstance last_click;
 
-	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
-	void GetLineFromPosition(PGScalar y, lng& line);
-	void GetCharacterFromPosition(PGScalar x, TextLine line, lng& character);
+	virtual void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
+	virtual void GetLineFromPosition(PGScalar y, lng& line);
+	virtual void _GetCharacterFromPosition(PGScalar x, TextLine line, lng& character);
 
 	void PerformMouseClick(PGPoint mouse);
 

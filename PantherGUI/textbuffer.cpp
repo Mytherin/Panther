@@ -209,7 +209,7 @@ PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGT
 						if (text_buffer->buffer_size - text_buffer->current_size <= (lng)text.size()) {
 							// even after splitting, the text does not fit within the buffer
 							// extend the current buffer
-							lng new_size = std::max((lng)(buffer->buffer_size + buffer->buffer_size / 5), (lng) (buffer->buffer_size + text.size() + 1));
+							lng new_size = std::max((lng)(buffer->buffer_size + buffer->buffer_size / 5), (lng)(buffer->buffer_size + text.size() + 1));
 							text_buffer->Extend(new_size);
 						}
 						text_buffer->InsertText(position, text);
@@ -344,8 +344,18 @@ TextLine::TextLine(PGTextBuffer* buffer, lng line) {
 	}
 }
 
-TextLineIterator::TextLineIterator(TextFile* textfile, lng line) : 
-	textfile(textfile), current_line(line) {
+TextLineIterator::TextLineIterator(TextFile* textfile, lng line) {
+	Initialize(textfile, line);
+}
+
+TextLineIterator::TextLineIterator() {
+
+}
+
+void TextLineIterator::Initialize(TextFile* textfile, lng line) {
+	this->textfile = textfile;
+	this->current_line = line;
+
 	buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, line)];
 
 	lng current_line = buffer->start_line;
@@ -374,7 +384,7 @@ TextLineIterator::TextLineIterator(TextFile* textfile, lng line) :
 	}
 }
 
-TextLineIterator::TextLineIterator(TextFile* textfile, PGTextBuffer* buffer) : 
+TextLineIterator::TextLineIterator(TextFile* textfile, PGTextBuffer* buffer) :
 	textfile(textfile) {
 	this->buffer = buffer;
 	this->current_line = buffer->start_line - 1;
@@ -448,3 +458,4 @@ TextLine TextLineIterator::GetLine() {
 void SetTextBufferSize(lng bufsiz) {
 	TEXT_BUFFER_SIZE = bufsiz;
 }
+

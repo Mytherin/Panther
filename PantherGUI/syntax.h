@@ -29,4 +29,14 @@ struct PGSyntax {
 
 	PGSyntax() : type(0), end(-1), next(nullptr) { }
 	~PGSyntax() { }
+
+	void Delete() {
+		PGSyntax* next = this->next;
+		while (next) {
+			assert(next->next != next);
+			PGSyntax* tmp = next->next;
+			delete next;
+			next = tmp;
+		}
+	}
 };

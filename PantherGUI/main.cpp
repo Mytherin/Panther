@@ -746,8 +746,9 @@ void DeleteTimer(PGTimerHandle handle) {
 }
 
 bool WindowHasFocus(PGWindowHandle window) {
+	return true;
 	HWND hwnd = GetForegroundWindow();
-	return hwnd == window->hwnd;
+	return GetDlgCtrlID(hwnd) == GetDlgCtrlID(window->hwnd);
 }
 
 void SetCursor(PGWindowHandle window, PGCursorType type) {
