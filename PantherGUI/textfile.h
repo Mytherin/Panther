@@ -167,8 +167,7 @@ public:
 	// same as RestoreCursor, but selections are replaced by the LOWEST value
 	Cursor* RestoreCursorPartial(CursorData data);
 
-	lng GetMaxLineWidth() { return longest_line; }
-	void SetMaxLineWidth(lng new_width = -1);
+	PGScalar GetMaxLineWidth(PGFontHandle font);
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
 	lng GetLineOffset() { return (lng) yoffset; }
@@ -254,6 +253,8 @@ private:
 	PGTextBuffer* GetBuffer(lng line);
 
 	lng linecount = 0;
+	PGScalar max_length;
+	std::vector<PGScalar> line_lengths;
 	std::vector<PGTextBuffer*> buffers;
 	std::vector<TextDelta*> deltas;
 	std::vector<RedoStruct> redos;

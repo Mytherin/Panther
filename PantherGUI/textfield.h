@@ -63,6 +63,7 @@ private:
 	PGFontHandle minimap_font;
 
 	PGIRect minimap_region;
+	PGRect textfield_region;
 
 	PGScalar line_height;
 	PGScalar minimap_line_height;

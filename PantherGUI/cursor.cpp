@@ -452,8 +452,8 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 			xoffset = cursor_min_character;
 		} else if (cursor_min_character < xoffset) {
 			xoffset = cursor_min_character;
-		} else if (cursor_max_character > xoffset + max_textwidth - 20) {
-			xoffset = cursor_max_character - max_textwidth + 20;
+		} else if (cursor_max_character > xoffset + max_textwidth) {
+			xoffset = cursor_max_character - max_textwidth;
 		}
 		textfile->SetXOffset(std::max(0.0f, std::min(xoffset, textfile->textfield->GetMaxXOffset())));
 		textfile->SetLineOffset(line_offset);

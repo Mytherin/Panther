@@ -369,8 +369,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	PGScalar minimap_width = this->display_minimap ? GetMinimapWidth() : 0;
 	PGScalar textfield_width = this->width - minimap_width;
 	// determine x-offset and clamp it
-	PGScalar max_character_width = MeasureTextWidth(textfield_font, "W", 1);
-	PGScalar max_textsize = textfile->GetMaxLineWidth() * max_character_width;
+	PGScalar max_textsize = textfile->GetMaxLineWidth(textfield_font);
 	max_xoffset = std::max(max_textsize - textfield_width + text_offset, 0.0f);
 	PGScalar xoffset = this->textfile->GetXOffset();
 	if (xoffset > max_xoffset) {
@@ -379,6 +378,8 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	}
 	// render the actual text field
 	if (textfile->IsLoaded()) {
+		textfield_region.width = textfield_width - text_offset - 5;
+		textfield_region.height = this->height;
 		DrawTextField(renderer, textfield_font, rectangle, false, x + text_offset + 2, y, textfield_width, false);
 	} else {
 		PGScalar offset = this->width / 10;
@@ -447,10 +448,12 @@ void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifi
 }
 
 PGScalar TextField::GetTextfieldWidth() {
+	return textfield_region.width;
 	return display_minimap ? this->width - SCROLLBAR_SIZE - GetMinimapWidth() : this->width - SCROLLBAR_SIZE;
 }
 
 PGScalar TextField::GetTextfieldHeight() {
+	return textfield_region.height;
 	return display_horizontal_scrollbar ? this->height - SCROLLBAR_SIZE : this->height;
 }
 

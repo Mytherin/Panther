@@ -222,6 +222,8 @@ void TextFile::OpenFile(char* base, lng size) {
 	loaded = 0;
 	LockMutex(text_lock);
 	lng linenr = 0;
+	PGFontHandle default_font = PGCreateFont();
+	SetTextFontSize(default_font, 10);
 	PGTextBuffer* current_buffer = nullptr;
 	while (*ptr) {
 		int character_offset = utf8_character_length(*ptr);
@@ -272,6 +274,11 @@ void TextFile::OpenFile(char* base, lng size) {
 				current_buffer->buffer[current_buffer->current_size++] = '\n';
 			}
 			assert(current_buffer->current_size < current_buffer->buffer_size);
+			PGScalar length = MeasureTextWidth(default_font, line_start, line_size);
+			if (length > this->max_length) {
+				this->max_length = length;
+			}
+			this->line_lengths.push_back(length);
 
 			linenr++;
 			loaded = ((double)(ptr - base)) / size;
@@ -306,8 +313,14 @@ void TextFile::OpenFile(char* base, lng size) {
 			current_buffer->current_size += line_size;
 			current_buffer->buffer[current_buffer->current_size++] = '\n';
 		}
+		PGScalar length = MeasureTextWidth(default_font, line_start, line_size);
+		if (length > this->max_length) {
+			this->max_length = length;
+		}
+		this->line_lengths.push_back(length);
 		linenr++;
 	}
+	PGDestroyFont(default_font);
 	if (linenr == 0) {
 		lineending = GetSystemLineEnding();
 		current_buffer = new PGTextBuffer("", 1, 0);
@@ -364,7 +377,11 @@ lng TextFile::GetLineCount() {
 	return linecount;
 }
 
-void TextFile::SetMaxLineWidth(lng new_width) {
+PGScalar TextFile::GetMaxLineWidth(PGFontHandle font) {
+	return GetTextFontSize(font) / 10.0 * max_length;
+}
+
+/*void TextFile::SetMaxLineWidth(lng new_width) {
 	if (new_width < 0) {
 		lng max = 0;
 		for (auto it = buffers.begin(); it != buffers.end(); it++) {
@@ -374,7 +391,7 @@ void TextFile::SetMaxLineWidth(lng new_width) {
 	} else {
 		longest_line = new_width;
 	}
-}
+}*/
 
 static bool
 CursorsContainSelection(std::vector<Cursor*>& cursors) {

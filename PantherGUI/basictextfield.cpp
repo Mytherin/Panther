@@ -230,8 +230,7 @@ void BasicTextField::PerformMouseClick(PGPoint mouse) {
 }
 
 PGScalar BasicTextField::GetMaxXOffset() {
-	PGScalar max_character_width = MeasureTextWidth(textfield_font, "W", 1);
-	PGScalar max_textsize = textfile->GetMaxLineWidth() * max_character_width;
+	PGScalar max_textsize = textfile->GetMaxLineWidth(textfield_font);
 	return std::max(max_textsize - GetTextfieldWidth() + text_offset, 0.0f);
 }
 
