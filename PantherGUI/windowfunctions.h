@@ -355,3 +355,4 @@ typedef void(*PGDropCallback)(PGPoint mouse, void* data);
 
 void PGStartDragDrop(PGWindowHandle window, PGBitmapHandle image, PGDropCallback, void* data, size_t data_length);
 
+void PGMessageBox(PGWindowHandle window, std::string title, std::string message);

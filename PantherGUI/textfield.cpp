@@ -13,6 +13,7 @@
 #include "statusbar.h"
 
 #include "searchbox.h"
+#include "settings.h"
 
 #define SCROLLBAR_PADDING 4
 
@@ -25,12 +26,11 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
 	textfile->SetTextField(this);
 
-	line_height = 19;
-
 	ControlManager* manager = GetControlManager(this);
 	manager->RegisterMouseRegion(&minimap_region, this, [](Control* tf, bool mouse_enter, void* data) {
 		return ((TextField*)tf)->MinimapMouseEvent(mouse_enter);
 	});
+
 	textfield_font = PGCreateFont();
 	minimap_font = PGCreateFont();
 
@@ -49,7 +49,14 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 		((TextField*)scroll->parent)->GetTextFile().SetXOffset(value);
 	});
 
-	SetTextFontSize(textfield_font, 15);
+	int size = 0;
+	if (PGSettingsManager::GetSetting("font_size", size)) {
+		SetTextFontSize(textfield_font, size);
+	} else {
+		SetTextFontSize(textfield_font, 15);
+	}
+	PGSettingsManager::GetSetting("display_line_numbers", display_linenumbers);
+	PGSettingsManager::GetSetting("display_minimap", display_minimap);
 	SetTextFontSize(minimap_font, 2.5f);
 }
 

@@ -30,6 +30,8 @@
 #include "renderer.h"
 #include "windows_structs.h"
 
+#include "settings.h"
+
 void DestroyWindow(PGWindowHandle window);
 
 std::map<HWND, PGWindowHandle> handle_map = {};
@@ -90,6 +92,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	PGLanguageManager::AddLanguage(new CLanguage());
 	PGLanguageManager::AddLanguage(new XMLLanguage());
+
+	PGSettingsManager::Initialize();
 
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(2);
@@ -1016,3 +1020,11 @@ void SetHWNDHandle(HWND hwnd, PGWindowHandle window) {
 	assert(handle_map.count(hwnd) == 0);
 	handle_map[hwnd] = window;
 }
+
+void PGMessageBox(PGWindowHandle window, std::string title, std::string message) {
+	std::string ucs2_title = UTF8toUCS2(title);
+	std::string ucs2_message = UTF8toUCS2(message);
+
+	MessageBox(window->hwnd, ucs2_message.c_str(), ucs2_title.c_str(), MB_OK);
+}
+
