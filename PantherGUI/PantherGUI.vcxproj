@@ -145,6 +145,7 @@
     <ClCompile Include="file.cpp" />
     <ClCompile Include="filemanager.cpp" />
     <ClCompile Include="findtext.cpp" />
+    <ClCompile Include="keybindings.cpp" />
     <ClCompile Include="keywords.cpp" />
     <ClCompile Include="language.cpp" />
     <ClCompile Include="logger.cpp" />
@@ -188,6 +189,7 @@
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
     <ClInclude Include="findtext.h" />
+    <ClInclude Include="keybindings.h" />
     <ClInclude Include="keywords.h" />
     <ClInclude Include="language.h" />
     <ClInclude Include="logger.h" />

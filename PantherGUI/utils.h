@@ -28,7 +28,10 @@ namespace panther {
 	}
 
 	char* strdup(const char* source);
+
+	std::string& tolower(std::string str);
 }
+
 
 template< typename... Args >
 std::string string_sprintf(const char* format, Args... args) {
@@ -43,3 +46,4 @@ std::string string_sprintf(const char* format, Args... args) {
 	return std::move(str);
 }
 
+std::string StripQuotes(std::string str);

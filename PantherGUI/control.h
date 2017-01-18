@@ -1,7 +1,8 @@
 #pragma once
 
-#include "windowfunctions.h"
+#include "keybindings.h"
 #include "utils.h"
+#include "windowfunctions.h"
 
 typedef int PGAnchor;
 
@@ -66,7 +67,7 @@ public:
 	virtual bool IsDragging();
 
 	virtual PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
-
+//protected:
 	bool visible;
 
 	PGScalar X();
@@ -83,8 +84,11 @@ public:
 	PGAnchor anchor;
 	Control* vertical_anchor = nullptr;
 	Control* horizontal_anchor = nullptr;
-	
+
 	PGWindowHandle window;
 	bool HasFocus();
 
+protected:
+	bool PressKey(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, PGButton button, PGModifier modifier);
+	bool PressCharacter(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, char character, PGModifier modifier);
 };

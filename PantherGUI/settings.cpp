@@ -2,19 +2,12 @@
 #include "mmap.h"
 #include "settings.h"
 #include "json.h"
+#include "utils.h"
 
 #include <algorithm>
 #include <string> 
 
 using namespace nlohmann;
-
-std::string StripQuotes(std::string str) {
-	if (str[0] == '"')
-		str = str.substr(1);
-	if (str[str.size() - 1] == '"')
-		str = str.substr(0, str.size() - 1);
-	return str;
-}
 
 void PGSettings::LoadSettings(std::string filename) {
 	lng result_size;

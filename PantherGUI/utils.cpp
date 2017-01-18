@@ -1,5 +1,6 @@
 
 #include "windowfunctions.h"
+#include <algorithm>
 
 
 bool PGRectangleContains(PGRect rect, PGPoint point) {
@@ -23,6 +24,14 @@ bool PGIRectanglesOverlap(PGIRect a, PGIRect b) {
 PGRect::PGRect(PGIRect rect) : x(rect.x), y(rect.y), width(rect.width), height(rect.height) {
 }
 
+std::string StripQuotes(std::string str) {
+	if (str[0] == '"')
+		str = str.substr(1);
+	if (str[str.size() - 1] == '"')
+		str = str.substr(0, str.size() - 1);
+	return str;
+}
+
 namespace panther {
 	void strcpy(char* destination, char* source) {
 		while (*source) {
@@ -35,5 +44,10 @@ namespace panther {
 		char* result = (char*) malloc(strlen(source));
 		strcpy(result, (char*) source);
 		return result;
+	}
+
+	std::string& tolower(std::string str) {
+		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+		return str;
 	}
 }

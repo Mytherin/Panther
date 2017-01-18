@@ -30,6 +30,7 @@
 #include "renderer.h"
 #include "windows_structs.h"
 
+#include "keybindings.h"
 #include "settings.h"
 
 void DestroyWindow(PGWindowHandle window);
@@ -94,6 +95,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGLanguageManager::AddLanguage(new XMLLanguage());
 
 	PGSettingsManager::Initialize();
+	PGKeyBindingsManager::Initialize();
 
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(2);

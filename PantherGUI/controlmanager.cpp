@@ -101,13 +101,13 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 
 	if (modifier == PGModifierCtrlShift) {
 		switch (character) {
-		case 'S': {
+		/*case 'S': {
 			std::string filename = ShowSaveFileDialog();
 			if (filename.size() != 0) {
 				this->active_textfield->GetTextFile().SaveAs(filename);
 			}
 			break;
-		}
+		}*/
 		case 'N': {
 			std::vector<TextFile*> files;
 			files.push_back(new TextFile(nullptr));

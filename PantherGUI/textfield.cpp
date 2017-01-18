@@ -17,6 +17,12 @@
 
 #define SCROLLBAR_PADDING 4
 
+
+std::map<std::string, PGKeyFunction> TextField::keybindings_noargs;
+std::map<std::string, PGKeyFunctionArgs> TextField::keybindings_varargs;
+std::map<PGKeyPress, PGKeyFunctionCall> TextField::keybindings;
+
+
 void TextField::MinimapMouseEvent(bool mouse_enter) {
 	this->mouse_in_minimap = mouse_enter;
 	this->InvalidateMinimap();
@@ -758,6 +764,9 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 }
 
 bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
+	if (this->PressKey(TextField::keybindings, button, modifier)) {
+		return true;
+	}
 	switch (button) {
 	case PGButtonDown:
 		if (modifier == PGModifierCtrlShift) {
@@ -814,8 +823,16 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	return BasicTextField::KeyboardButton(button, modifier);
 }
 
+void TextField::IncreaseFontSize(int modifier) {
+	SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) + modifier);
+	this->Invalidate();
+}
+
 bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 	if (!textfile->IsLoaded()) return false;
+	if (this->PressCharacter(TextField::keybindings, character, modifier)) {
+		return true;
+	}
 
 	if (modifier == PGModifierCtrl) {
 		switch (character) {
@@ -1079,4 +1096,41 @@ void TextField::GetLineFromPosition(PGScalar y, lng& line) {
 	line = rendered_lines[line_offset].line;
 }
 
-
+void TextField::InitializeKeybindings() {
+	std::map<std::string, PGKeyFunction>& noargs = TextField::keybindings_noargs;
+	noargs["save"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		tf->GetTextFile().SaveChanges();
+	};
+	noargs["save_as"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		std::string filename = ShowSaveFileDialog();
+		if (filename.size() != 0) {
+			tf->GetTextFile().SaveAs(filename);
+		}
+	};
+	noargs["increase_font_size"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		tf->IncreaseFontSize(1);
+	};
+	noargs["decrease_font_size"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		tf->IncreaseFontSize(-1);
+	};
+	noargs["swap_line_up"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		assert(0);
+	};
+	noargs["swap_line_down"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		assert(0);
+	};
+	std::map<std::string, PGKeyFunctionArgs>& args = TextField::keybindings_varargs;
+	args["insert"] = [](Control* c, std::map<std::string, std::string> args) {
+		TextField* tf = (TextField*)c;
+		if (args.count("characters") == 0) {
+			return;
+		}
+		tf->GetTextFile().PasteText(args["characters"]);
+	};
+}

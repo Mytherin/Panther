@@ -212,3 +212,25 @@ void Control::ResolveSize(PGSize new_size) {
 	this->size_resolved = true;
 	this->OnResize(current_size, PGSize(this->width, this->height));
 }
+
+bool Control::PressKey(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, PGButton button, PGModifier modifier) {
+	PGKeyPress press;
+	press.button = button;
+	press.modifier = modifier;
+	if (keybindings.count(press) > 0) {
+		keybindings[press].Call(this);
+		return true;
+	}
+	return false;
+}
+
+bool Control::PressCharacter(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, char character, PGModifier modifier) {
+	PGKeyPress press;
+	press.character = character;
+	press.modifier = modifier;
+	if (keybindings.find(press) != keybindings.end()) {
+		keybindings[press].Call(this);
+		return true;
+	}
+	return false;
+}
