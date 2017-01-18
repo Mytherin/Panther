@@ -13,7 +13,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 		this->tabs.push_back(Tab(*it));
 	}
 	this->font = PGCreateFont("myriad", false, true);
-	SetTextFontSize(this->font, 13);
+	SetTextFontSize(this->font, 12);
 
 	tab_padding = 5;
 }
@@ -43,30 +43,47 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	TextFile* file = tab.file;
 	std::string filename = file->GetName();
 
-	file_icon_height = this->height * 0.8f;
-	file_icon_width = file_icon_height * 0.8f;
+	PGScalar tab_height = this->height - 2;
 
 	tab.width = MeasureTabWidth(tab);
-	PGScalar current_x = tab.x;
-	PGRect rect(x + current_x, y, tab.width + tab_padding * 2, this->height);
-	current_x += 2.5f;
-	RenderRectangle(renderer, rect,
-		selected_tab ? PGStyleManager::GetColor(PGColorTabControlSelected) :
-		PGStyleManager::GetColor(PGColorTabControlBackground),
-		PGDrawStyleFill);
 
+	PGScalar current_x = tab.x;
+	
+	PGPolygon polygon;
+	polygon.points.push_back(PGPoint(x + current_x, y + tab_height));
+	polygon.points.push_back(PGPoint(x + current_x + 12, y + 4));
+	polygon.points.push_back(PGPoint(x + current_x + tab.width + 15, y + 4));
+	polygon.points.push_back(PGPoint(x + current_x+ tab.width + 27, y + tab_height));
+	polygon.closed = true;
+	RenderPolygon(renderer, polygon, selected_tab ? PGStyleManager::GetColor(PGColorTabControlSelected) :
+		PGStyleManager::GetColor(PGColorTabControlBackground));
+	polygon.closed = false;
+	RenderPolygon(renderer, polygon, PGStyleManager::GetColor(PGColorTabControlBorder), 2);
+
+	current_x += 15;
 	std::string ext = file->GetExtension();
+
+	file_icon_height = tab_height * 0.6f;
+	file_icon_width = file_icon_height * 0.8f;
+
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 	RenderFileIcon(renderer, font, ext.c_str(), current_x, y + (height - file_icon_height) / 2, file_icon_width, file_icon_height,
-		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGColor(30, 30, 30), PGColor(91, 91, 91));
+		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGStyleManager::GetColor(PGColorTabControlBackground), PGStyleManager::GetColor(PGColorTabControlBorder));
+		
 	current_x += file_icon_width + 2.5f;
 	if (file->HasUnsavedChanges()) {
 		SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlUnsavedText));
 	} else {
 		SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlText));
 	}
-	RenderText(renderer, font, filename.c_str(), filename.length(), x + current_x + tab_padding, y);
-	position_x += tab.width + tab_padding * 2;
+
+	SetTextStyle(font, PGTextStyleBold);
+	RenderText(renderer, font, filename.c_str(), filename.length(), x + current_x + tab_padding, y + 6);
+	current_x += (tab.width - 25);
+	RenderLine(renderer, PGLine(PGPoint(current_x, y + 13), PGPoint(current_x + 8, y + 21)), PGStyleManager::GetColor(PGColorTabControlText), 1);
+	RenderLine(renderer, PGLine(PGPoint(current_x, y + 21), PGPoint(current_x + 8, y + 13)), PGStyleManager::GetColor(PGColorTabControlText), 1);
+	
+	position_x += tab.width + file_icon_width;
 }
 
 void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
@@ -92,13 +109,13 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		position_x = dragging_tab.x;
 		RenderTab(renderer, dragging_tab, position_x, x, y, true);
 	}
-	RenderLine(renderer, PGLine(x, y + this->height - 1, x + this->width, y + this->height - 1), PGColor(80, 150, 200));
+	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1), PGColor(80, 150, 200), 2);
 }
 
 PGScalar TabControl::MeasureTabWidth(Tab& tab) {
 	TextFile* file = tab.file;
 	std::string filename = file->GetName();
-	return file_icon_width + 5 + MeasureTextWidth(font, filename.c_str(), filename.size());
+	return file_icon_width + 25 + MeasureTextWidth(font, filename.c_str(), filename.size());
 }
 
 bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {

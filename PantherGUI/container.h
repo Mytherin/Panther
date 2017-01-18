@@ -9,7 +9,7 @@
 #include "tabcontrol.h"
 #include "windowfunctions.h"
 
-#define TEXT_TAB_HEIGHT 20
+#define TEXT_TAB_HEIGHT 30
 
 class PGContainer : public Control {
 public:

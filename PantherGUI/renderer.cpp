@@ -23,7 +23,7 @@ struct PGFont {
 	int tabwidth = 4;
 	std::vector<SkPaint*> fallback_paints;
 
-	PGFont() : normaltext(nullptr), boldtext(nullptr), italictext(nullptr) { }
+	PGFont() : normaltext(nullptr), boldtext(nullptr), italictext(nullptr) {}
 };
 
 struct PGBitmap {
@@ -37,6 +37,10 @@ SkBitmap* PGGetBitmap(PGBitmapHandle handle) {
 
 static SkColor CreateSkColor(PGColor color) {
 	return SkColorSetARGB(color.a, color.r, color.g, color.b);
+}
+static SkPoint CreateSkPoint(PGPoint point) {
+	SkPoint p = { point.x, point.y };
+	return p;
 }
 
 static SkPaint::Style PGDrawStyleConvert(PGDrawStyle style) {
@@ -149,7 +153,7 @@ void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect
 
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGDrawStyle drawStyle) {
 	SkPath path;
-	SkPoint points[] = {{a.x, a.y}, {b.x, b.y}, {c.x, c.y}}; // triangle
+	SkPoint points[] = { {a.x, a.y}, {b.x, b.y}, {c.x, c.y} }; // triangle
 	path.addPoly(points, 3, true);
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
@@ -163,8 +167,28 @@ void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, P
 	rect.fRight = rectangle.x + rectangle.width;
 	rect.fBottom = rectangle.y + rectangle.height;
 	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
-	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	handle->paint->setColor(CreateSkColor(color));
 	handle->canvas->drawRect(rect, *handle->paint);
+}
+
+void RenderPolygon(PGRendererHandle handle, PGPolygon polygon, PGColor color, double stroke_width) {
+	if (polygon.points.size() == 0) return;
+	SkPath path;
+	path.moveTo(CreateSkPoint(polygon.points[0]));
+	for (auto it = polygon.points.begin() + 1; it != polygon.points.end(); it++) {
+		path.lineTo(CreateSkPoint(*it));
+	}
+	if (polygon.closed) {
+		path.close();
+	}
+	if (stroke_width <= 0) {
+		handle->paint->setStyle(SkPaint::kStrokeAndFill_Style);
+	} else {
+		handle->paint->setStyle(SkPaint::kStroke_Style);
+		handle->paint->setStrokeWidth(stroke_width);
+	}
+	handle->paint->setColor(CreateSkColor(color));
+	handle->canvas->drawPath(path, *handle->paint);
 }
 
 void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGColor right) {
@@ -205,7 +229,7 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 	PGScalar x_offset = 0;
 	size_t position = 0;
 	size_t i = 0;
-	for ( ; i < len; ) {
+	for (; i < len; ) {
 		int offset = utf8_character_length(text[i]);
 		if (offset > 1) {
 			// for special unicode characters, we check if the main font can render the character
@@ -279,7 +303,7 @@ void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y, 
 PGBitmapHandle CreateBitmapFromSize(PGScalar width, PGScalar height) {
 	PGBitmapHandle handle = new PGBitmap();
 	handle->bitmap = new SkBitmap();
-	handle->bitmap->allocN32Pixels((int) width, (int) height);
+	handle->bitmap->allocN32Pixels((int)width, (int)height);
 	handle->bitmap->allocPixels();
 	return handle;
 }
@@ -459,9 +483,9 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 	if (start == end) return;
 	max_position -= x;
 	PGScalar selection_start = MeasureTextWidth(font, text, start);
-	PGScalar selection_width = MeasureTextWidth(font, text, end > (lng) len ? len : end);
+	PGScalar selection_width = MeasureTextWidth(font, text, end > (lng)len ? len : end);
 	PGScalar lineheight = GetTextHeight(font);
-	if (end > (lng) len) {
+	if (end > (lng)len) {
 		assert(end == len + 1);
 		selection_width += font->character_width;
 	}
@@ -544,15 +568,18 @@ PGScalar GetTextFontSize(PGFontHandle font) {
 void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *text,
 	PGScalar x, PGScalar y, PGScalar width, PGScalar height,
 	PGColor text_color, PGColor page_color, PGColor edge_color) {
-	// render the background color
-	RenderRectangle(renderer, PGRect(x, y, width, height), page_color, PGDrawStyleFill);
-	// render four edges of the file icon
-	RenderLine(renderer, PGLine(PGPoint(x, y), PGPoint(x + width * 0.8f, y)), edge_color, 1);
-	RenderLine(renderer, PGLine(PGPoint(x, y), PGPoint(x, y + height)), edge_color, 1);
-	RenderLine(renderer, PGLine(PGPoint(x, y + height), PGPoint(x + width, y + height)), edge_color, 1);
-	RenderLine(renderer, PGLine(PGPoint(x + width, y + height * 0.2f), PGPoint(x + width, y + height)), edge_color, 1);
-	// render the diagonal
-	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y), PGPoint(x + width, y + height * 0.2f)), edge_color, 1);
+
+	PGPolygon polygon;
+	polygon.closed = true;
+	polygon.points.push_back(PGPoint(x, y));
+	polygon.points.push_back(PGPoint(x + width * 0.8f, y));
+	polygon.points.push_back(PGPoint(x + width, y + height * 0.2f));
+	polygon.points.push_back(PGPoint(x + width, y + height));
+	polygon.points.push_back(PGPoint(x, y + height));
+
+	RenderPolygon(renderer, polygon, page_color);
+	RenderPolygon(renderer, polygon, edge_color, 1);
+
 	// render the two edges of the fold
 	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y), PGPoint(x + width * 0.8f, y + height * 0.2f)), edge_color, 1);
 	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y + height * 0.2f), PGPoint(x + width, y + height * 0.2f)), edge_color, 1);

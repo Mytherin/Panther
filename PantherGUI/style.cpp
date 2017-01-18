@@ -30,9 +30,10 @@ PGStyleManager::PGStyleManager() {
 	vs.SetColor(PGColorScrollbarDrag, PGColor(239, 235, 239));
 	vs.SetColor(PGColorMinimapHover, PGColor(255, 255, 255, 96));
 	vs.SetColor(PGColorMinimapDrag, PGColor(255, 255, 255, 128));
-	vs.SetColor(PGColorTabControlText, PGColor(231, 231, 231));
-	vs.SetColor(PGColorTabControlUnsavedText, PGColor(222, 77, 77));
+	vs.SetColor(PGColorTabControlText, PGColor(224, 224, 224));
+	vs.SetColor(PGColorTabControlBorder, PGColor(104, 104, 104));
 	vs.SetColor(PGColorTabControlBackground, PGColor(30, 30, 30));
+	vs.SetColor(PGColorTabControlUnsavedText, PGColor(222, 77, 77));
 	vs.SetColor(PGColorTabControlHover, PGColor(28, 151, 234));
 	vs.SetColor(PGColorTabControlSelected, PGColor(0, 122, 204));
 	vs.SetColor(PGColorStatusBarBackground, PGColor(0, 122, 204));

@@ -100,6 +100,14 @@ struct PGLine {
 	PGLine(PGScalar startx, PGScalar starty, PGScalar endx, PGScalar endy) : start(startx, starty), end(endx, endy) { }
 };
 
+struct PGPolygon {
+	std::vector<PGPoint> points;
+	bool closed = true;
+
+	PGPolygon() : points(), closed(true) { }
+	PGPolygon(std::vector<PGPoint> points) : points(points), closed(true) { }
+};
+
 bool PGRectangleContains(PGRect, PGPoint);
 bool PGRectangleContains(PGIRect, PGPoint);
 bool PGIRectanglesOverlap(PGIRect, PGIRect);
@@ -259,6 +267,7 @@ void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGC
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGDrawStyle drawStyle);
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle style);
 void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDrawStyle style);
+void RenderPolygon(PGRendererHandle handle, PGPolygon polygon, PGColor color, double stroke_width = -1);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width = 2);
 void RenderImage(PGRendererHandle window, PGBitmapHandle image, int x, int y, PGScalar max_position = INT_MAX);
 // Render text at the specified location with the specified alignment, returns the width of the rendered text

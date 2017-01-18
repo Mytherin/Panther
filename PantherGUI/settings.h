@@ -9,7 +9,6 @@ public:
 
 	bool GetSetting(std::string name, std::string& value);
 private:
-
 	std::map<std::string, std::string> settings;
 };
 
