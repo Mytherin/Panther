@@ -83,6 +83,7 @@ private:
 	PGScalar minimap_line_height;
 
 	bool display_linenumbers;
+	PGScalar margin_width;
 
 	bool display_scrollbar;
 	bool display_horizontal_scrollbar = false;

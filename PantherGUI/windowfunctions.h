@@ -263,6 +263,12 @@ void DeleteTimer(PGTimerHandle);
 PGRendererHandle GetRendererHandle(PGWindowHandle window);
 lng GetPositionInLine(PGFontHandle font, PGScalar x, const char* text, size_t length);
 
+// set render bounds of the current canvas
+// note that every call to SetRenderBounds MUST be followed by a call to ClearRenderBounds
+void SetRenderBounds(PGRendererHandle, PGRect rectangle);
+// clear the render bounds
+void ClearRenderBounds(PGRendererHandle);
+
 void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGColor right);
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGDrawStyle drawStyle);
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle style);

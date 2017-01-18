@@ -38,9 +38,19 @@ SkBitmap* PGGetBitmap(PGBitmapHandle handle) {
 static SkColor CreateSkColor(PGColor color) {
 	return SkColorSetARGB(color.a, color.r, color.g, color.b);
 }
+
 static SkPoint CreateSkPoint(PGPoint point) {
 	SkPoint p = { point.x, point.y };
 	return p;
+}
+
+static SkRect CreateSkRect(PGRect rectangle) {
+	SkRect rect;
+	rect.fLeft = rectangle.x;
+	rect.fTop = rectangle.y;
+	rect.fRight = rectangle.x + rectangle.width;
+	rect.fBottom = rectangle.y + rectangle.height;
+	return rect;
 }
 
 static SkPaint::Style PGDrawStyleConvert(PGDrawStyle style) {
@@ -161,11 +171,7 @@ void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PG
 }
 
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle drawStyle) {
-	SkRect rect;
-	rect.fLeft = rectangle.x;
-	rect.fTop = rectangle.y;
-	rect.fRight = rectangle.x + rectangle.width;
-	rect.fBottom = rectangle.y + rectangle.height;
+	SkRect rect = CreateSkRect(rectangle);
 	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
 	handle->paint->setColor(CreateSkColor(color));
 	handle->canvas->drawRect(rect, *handle->paint);
@@ -625,4 +631,13 @@ void SetTextStyle(PGFontHandle font, PGTextStyle style) {
 		assert(font->italictext);
 		font->textpaint = font->italictext;
 	}
+}
+
+void SetRenderBounds(PGRendererHandle handle, PGRect rectangle) {
+	handle->canvas->save();
+	handle->canvas->clipRect(CreateSkRect(rectangle));
+}
+
+void ClearRenderBounds(PGRendererHandle handle) {
+	handle->canvas->restore();
 }

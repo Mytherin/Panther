@@ -58,6 +58,7 @@ TextField::TextField(PGWindowHandle window, TextFile* file) :
 	PGSettingsManager::GetSetting("display_line_numbers", display_linenumbers);
 	PGSettingsManager::GetSetting("display_minimap", display_minimap);
 	SetTextFontSize(minimap_font, 2.5f);
+	margin_width = 4;
 }
 
 TextField::~TextField() {
@@ -95,10 +96,13 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		selected_word = cursors[0]->GetSelectedWord();
 	}
 	linenr = start_line + (lng)(rectangle->height / line_height);
-	PGScalar text_offset = position_x_text - position_x - 2;
-	if (display_linenumbers) {
+	PGScalar text_offset = position_x_text - position_x - margin_width * 2;
+	if (!minimap && display_linenumbers) {
 		// clear the linenumber region
 		RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+		if (xoffset > 0) {
+			RenderGradient(renderer, PGRect(position_x + text_offset, position_y, margin_width, this->height), PGColor(0, 0, 0, 128), PGColor(0, 0, 0, 0));
+		}
 	}
 
 	linenr = start_line;
@@ -147,8 +151,10 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 				// render the line number
 				auto line_number = std::to_string(displayed_line + 1);
-				RenderText(renderer, textfield_font, line_number.c_str(), line_number.size(), position_x, position_y);
+				RenderText(renderer, textfield_font, line_number.c_str(), line_number.size(), position_x + margin_width, position_y);
 			}
+
+			SetRenderBounds(renderer, PGRect(position_x_text, y, this->width, this->height));
 
 			char* line = current_line.GetLine();
 			lng length = current_line.GetLength();
@@ -162,7 +168,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				}
 				auto end_pos = cursors[current_cursor]->EndPosition();
 				if (end_pos.line < current_start_line ||
-					end_pos.line == current_start_line && end_pos.character <= current_start_position) {
+					end_pos.line == current_start_line && end_pos.character < current_start_position) {
 					// this cursor has already been rendered
 					current_cursor++;
 					continue;
@@ -192,7 +198,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				}
 
 				start = std::min(length, std::max((lng)0, start));
-				end = std::min(length, std::max((lng)0, end));
+				end = std::min(length + 1, std::max((lng)0, end));
 				if (start != end) {
 					// if there is a selection, render it
 					RenderSelection(renderer,
@@ -394,12 +400,14 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					}
 				}
 			}
+			ClearRenderBounds(renderer);
 		}
 		linenr++;
 		(*line_iterator)++;
 		position_y += line_height;
 	}
 	textfile->Unlock(PGReadLock);
+	ClearRenderBounds(renderer);
 	if (!minimap) {
 		this->line_height = line_height;
 	} else {
@@ -457,7 +465,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	if (textfile->GetWordWrap()) {
 		max_xoffset = 0;
 	} else {
-		max_xoffset = std::max(max_textsize - textfield_width + text_offset, 0.0f);
+		max_xoffset = std::max(max_textsize - textfield_width + text_offset + 2 * margin_width + 10, 0.0f);
 		xoffset = this->textfile->GetXOffset();
 		if (xoffset > max_xoffset) {
 			xoffset = max_xoffset;
@@ -468,7 +476,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	if (textfile->IsLoaded()) {
 		textfield_region.width = textfield_width - text_offset - 5;
 		textfield_region.height = this->height;
-		DrawTextField(renderer, textfield_font, rectangle, false, x, x + text_offset + 2, y, textfield_width, false);
+		DrawTextField(renderer, textfield_font, rectangle, false, x, x + text_offset + margin_width * 2, y, textfield_width, false);
 	} else {
 		PGScalar offset = this->width / 10;
 		PGScalar width = this->width - offset * 2;
