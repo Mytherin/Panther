@@ -113,6 +113,7 @@ void WrappedTextLineIterator::DetermineEndWrap() {
 		PGSyntax* syntax = &wrapped_line.syntax;
 		while (syntax->next) {
 			syntax->end -= start_wrap;
+			syntax->end = std::min(syntax->end, wrapped_line.length);
 			if (syntax->end >= end_wrap) break;
 			syntax->next = new PGSyntax(*syntax->next);
 			syntax = syntax->next;

@@ -23,7 +23,7 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 }
 
 TextFile::TextFile(BasicTextField* textfield) :
-	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr) {
+	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr), current_linenumber(-1) {
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = CreateMutex();
@@ -35,7 +35,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 }
 
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load) :
-	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr) {
+	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), current_linenumber(-1) {
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
@@ -170,8 +170,19 @@ int TextFile::GetLineHeight() {
 	return textfield->GetLineHeight();
 }
 
+void TextFile::ClearCurrentLinenumber() {
+	if (current_linenumber >= 0) {
+		if (wordwrap && (std::abs(textfield->GetTextfieldWidth() - this->wordwrap_width) > 0.1)) {
+			SetWordWrap(true, textfield->GetTextfieldWidth());
+		}
+		lng linenumber = current_linenumber;
+		current_linenumber = -1;
+		yoffset = GetScrollPositionFromLine(textfield->GetTextfieldFont(), textfield->GetTextfieldWidth(), linenumber);
+	}
+}
 
 void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
+	ClearCurrentLinenumber();
 	lng added_scrolls = 0;
 	lng prev_scroll = -1;
 	while (buffer && (!buffer->parsed || (wordwrap && buffer->start_scroll < 0))) {
@@ -200,15 +211,6 @@ void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 		if (wordwrap) {
 			if (buffer->start_scroll < 0) {
 				assert(prev_scroll >= 0);
-				/*if (buffer->prev == nullptr) {
-					buffer->start_scroll = 0;
-				} else {
-					if (prev_scroll < 0) {
-						assert(buffer->prev->start_scroll >= 0);
-						prev_scroll = buffer->prev->start_scroll + buffer->prev->GetRenderedLines(this, textfield->GetTextfieldFont(), wordwrap_width);
-					}
-					assert(prev_scroll >= 0);
-				}*/
 				added_scrolls += scroll_lines;
 			} else {
 				lng next_scroll = maxscroll;
@@ -492,6 +494,7 @@ PGScalar TextFile::GetMaxLineWidth(PGFontHandle font) {
 }
 
 lng TextFile::GetLineFromScrollPosition(PGFontHandle font, PGScalar wrap_width, lng scroll_offset) {
+	ClearCurrentLinenumber();
 	PGTextBuffer* buffer = buffers[PGTextBuffer::GetBufferFromScrollPosition(buffers, scroll_offset)];
 
 	if (buffer->next && buffer->next->start_scroll == buffer->start_scroll + 1) {
@@ -512,6 +515,7 @@ lng TextFile::GetLineFromScrollPosition(PGFontHandle font, PGScalar wrap_width, 
 }
 
 lng TextFile::GetScrollPositionFromLine(PGFontHandle font, PGScalar wrap_width, lng linenr) {
+	ClearCurrentLinenumber();
 	PGTextBuffer* buffer = buffers[PGTextBuffer::GetBuffer(buffers, linenr)];
 
 	if (buffer->next && buffer->next->start_scroll == buffer->start_scroll + 1) {
@@ -920,9 +924,15 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 	return lines;
 }
 
+void TextFile::SetLineOffset(double offset) { 
+	ClearCurrentLinenumber();
+	yoffset = offset;
+}
+
 void TextFile::OffsetLineOffset(double offset) {
+	ClearCurrentLinenumber();
 	yoffset = yoffset + offset;
-	yoffset = std::max(std::min(yoffset, (double) GetMaxYScroll()), 0.0);
+	yoffset = std::max(std::min(yoffset, (double)GetMaxYScroll()), 0.0);
 }
 
 void TextFile::SetCursorLocation(lng line, lng character) {

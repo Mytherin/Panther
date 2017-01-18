@@ -100,7 +100,12 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	bool parsed = false;
 
 	bool toggle = false;
-	auto line_iterator = textfile->GetScrollIterator(this, linenr);
+	TextLineIterator* line_iterator;
+	if (textfile->current_linenumber >= 0) {
+		line_iterator = textfile->GetLineIterator(this, textfile->current_linenumber);
+	} else {
+		line_iterator = textfile->GetScrollIterator(this, linenr);
+	}
 	auto buffer = line_iterator->CurrentBuffer();
 	toggle = PGTextBuffer::GetBuffer(textfile->buffers, buffer->start_line) % 2 != 0;
 	lng current_cursor = 0;
@@ -992,6 +997,11 @@ void TextField::OnResize(PGSize old_size, PGSize new_size) {
 	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, this->height - (display_horizontal_scrollbar ? SCROLLBAR_SIZE : 0) - 2 * SCROLLBAR_PADDING));
 	horizontal_scrollbar->SetPosition(PGPoint(SCROLLBAR_PADDING, this->height - horizontal_scrollbar->height));
 	horizontal_scrollbar->SetSize(PGSize(this->width - SCROLLBAR_SIZE - 2 * SCROLLBAR_PADDING, SCROLLBAR_SIZE));
+	if (textfile->GetWordWrap()) {
+		if (textfile->current_linenumber < 0) {
+			textfile->current_linenumber = textfile->GetLineFromScrollPosition(this->textfield_font, textfile->wordwrap_width, textfile->GetLineOffset());
+		}
+	}
 }
 
 PGCursorType TextField::GetCursor(PGPoint mouse) {

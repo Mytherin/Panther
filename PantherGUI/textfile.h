@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+
 #include "assert.h"
 
 typedef enum {
@@ -177,7 +178,7 @@ public:
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
 	lng GetLineOffset() { return (lng) yoffset; }
-	void SetLineOffset(double offset) { yoffset = offset; }
+	void SetLineOffset(double offset);
 	void OffsetLineOffset(double offset);
 	Cursor*& GetActiveCursor();
 	std::vector<Cursor*>& GetCursors() { return cursors; }
@@ -230,6 +231,10 @@ private:
 	lng longest_line = 0;
 	lng xoffset = 0;
 	double yoffset = 0;
+	lng current_linenumber = -1;
+
+	void ClearCurrentLinenumber();
+
 	bool wordwrap = false;
 	PGScalar wordwrap_width;
 
