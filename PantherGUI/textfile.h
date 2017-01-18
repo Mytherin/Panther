@@ -123,6 +123,7 @@ public:
 	PGLanguage* GetLanguage() { return language; }
 
 	lng GetLineCount();
+	lng GetMaxYScroll() { return wordwrap ? maxscroll : GetLineCount() - 1; }
 
 	void Lock(PGLockType type);
 	void Unlock(PGLockType type);

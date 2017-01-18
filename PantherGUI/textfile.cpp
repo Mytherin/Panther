@@ -508,7 +508,7 @@ lng TextFile::GetLineFromScrollPosition(PGFontHandle font, PGScalar wrap_width, 
 		}
 		linenr++;
 	}
-	return linenr;
+	return linenr - 1;
 }
 
 lng TextFile::GetScrollPositionFromLine(PGFontHandle font, PGScalar wrap_width, lng linenr) {
@@ -727,7 +727,7 @@ void TextFile::DeleteSelection(int i) {
 
 	// delete linecount from line_lengths
 	if (lines_deleted > 0) {
-		line_lengths.erase(line_lengths.begin() + begin_position.line, line_lengths.begin() + lines_deleted);
+		line_lengths.erase(line_lengths.begin() + begin_position.line, line_lengths.begin() + begin_position.line + lines_deleted);
 		if (max_line_length >= begin_position.line && max_line_length < begin_position.line + lines_deleted) {
 			max_line_length = -1;
 		}
@@ -922,7 +922,7 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 
 void TextFile::OffsetLineOffset(double offset) {
 	yoffset = yoffset + offset;
-	yoffset = std::max(std::min(yoffset, linecount - 1.0), 0.0);
+	yoffset = std::max(std::min(yoffset, (double) GetMaxYScroll()), 0.0);
 }
 
 void TextFile::SetCursorLocation(lng line, lng character) {

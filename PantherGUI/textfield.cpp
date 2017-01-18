@@ -424,10 +424,10 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 
 	// determine the width of the line numbers
 	std::vector<Cursor*> cursors = textfile->GetCursors();
-	lng line_count = textfile->GetLineCount();
+	lng line_count = textfile->GetMaxYScroll();
 	text_offset = 0;
 	if (this->display_linenumbers) {
-		auto line_number = std::to_string(std::max((lng)10, textfile->GetLineCount() + 1));
+		auto line_number = std::to_string(std::max((lng)10, textfile->GetMaxYScroll() + 1));
 		text_offset = 10 + MeasureTextWidth(textfield_font, line_number.c_str(), line_number.size());
 	}
 	PGPoint position = Position();
@@ -478,7 +478,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 
 	// render the scrollbar
 	if (this->display_scrollbar) {
-		scrollbar->UpdateValues(0, textfile->GetLineCount() - 1, GetLineHeight(), textfile->GetLineOffset());
+		scrollbar->UpdateValues(0, textfile->GetMaxYScroll(), GetLineHeight(), textfile->GetLineOffset());
 		scrollbar->Draw(renderer, rectangle);
 		// horizontal scrollbar
 		display_horizontal_scrollbar = max_xoffset > 0;
@@ -520,17 +520,17 @@ PGScalar TextField::GetMinimapOffset() {
 lng TextField::GetMinimapStartLine() {
 	lng lines_rendered = this->height / (minimap_line_height == 0 ? 1 : minimap_line_height);
 	// percentage of text
-	double percentage = (double)textfile->GetLineOffset() / textfile->GetLineCount();
-	return std::min(std::max((lng)(textfile->GetLineOffset() - (lines_rendered * percentage)), (lng)0), this->textfile->GetLineCount() - 1);
+	double percentage = (double)textfile->GetLineOffset() / textfile->GetMaxYScroll();
+	return std::min(std::max((lng)(textfile->GetLineOffset() - (lines_rendered * percentage)), (lng)0), this->textfile->GetMaxYScroll());
 }
 
 void TextField::SetMinimapOffset(PGScalar offset) {
 	// compute lineoffset_y from minimap offset
 	double percentage = (double)offset / this->height;
 	lng lines_rendered = this->height / minimap_line_height;
-	lng start_line = std::max((lng)(((lng)((std::max((lng)1, this->textfile->GetLineCount() - 1) * percentage))) - (lines_rendered * percentage)), (lng)0);
+	lng start_line = std::max((lng)(((lng)((std::max((lng)1, this->textfile->GetMaxYScroll()) * percentage))) - (lines_rendered * percentage)), (lng)0);
 	lng lineoffset_y = start_line + (lng)(lines_rendered * percentage);
-	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile->GetLineCount() - 1));
+	lineoffset_y = std::max((lng)0, std::min(lineoffset_y, this->textfile->GetMaxYScroll()));
 	textfile->SetLineOffset(lineoffset_y);
 }
 
@@ -538,7 +538,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	if (!textfile->IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
 	if (PGRectangleContains(scrollbar->GetRectangle(), mouse)) {
-		scrollbar->UpdateValues(0, textfile->GetLineCount() - 1, GetLineHeight(), textfile->GetLineOffset());
+		scrollbar->UpdateValues(0, textfile->GetMaxYScroll(), GetLineHeight(), textfile->GetLineOffset());
 		scrollbar->MouseDown(mouse.x, mouse.y, button, modifier);
 		return;
 	}
@@ -620,7 +620,7 @@ void TextField::ClearDragging() {
 void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 	PGPoint mouse(x - this->x, y - this->y);
 	if (PGRectangleContains(scrollbar->GetRectangle(), mouse)) {
-		scrollbar->UpdateValues(0, textfile->GetLineCount() - 1, GetLineHeight(), textfile->GetLineOffset());
+		scrollbar->UpdateValues(0, textfile->GetMaxYScroll(), GetLineHeight(), textfile->GetLineOffset());
 		scrollbar->MouseUp(mouse.x, mouse.y, button, modifier);
 		return;
 	}
@@ -675,7 +675,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 	if (!textfile->IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
 	if (scrollbar->IsDragging()) {
-		scrollbar->UpdateValues(0, textfile->GetLineCount() - 1, GetLineHeight(), textfile->GetLineOffset());
+		scrollbar->UpdateValues(0, textfile->GetMaxYScroll(), GetLineHeight(), textfile->GetLineOffset());
 		scrollbar->MouseMove(mouse.x, mouse.y, buttons);
 		return;
 	}
