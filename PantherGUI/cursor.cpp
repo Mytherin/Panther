@@ -113,6 +113,26 @@ void Cursor::OffsetSelectionLine(lng offset) {
 				start_character = prev_wrap + GetPositionInLine(textfield_font, x_position, line.GetLine() + prev_wrap, start_wrap - prev_wrap);
 				SetCursorStartLocation(start_line, start_character);
 				return;
+			} else {
+				// we are on the first part of the currently wrapped line
+				// however, the line ABOVE us might be wrapped as well
+				// we want to move the cursor to the LAST part of that line
+				if (x_position < 0) {
+					x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line).GetLine(), start_character);
+				}
+
+				lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
+				if (new_line != start_line) {
+					start_line = new_line;
+					start_wrap = 0;
+					line = this->file->GetLine(start_line);
+					while (line.WrapLine(textfield_font, file->textfield->GetTextfieldWidth(), start_wrap, end_wrap)) {
+						start_wrap = end_wrap;
+					}
+					start_character = GetPositionInLine(textfield_font, x_position, line.GetLine() + start_wrap, end_wrap - start_wrap);
+					SetCursorStartLocation(start_line, start_wrap + start_character);
+				}
+				return;
 			}
 		}
 	}
