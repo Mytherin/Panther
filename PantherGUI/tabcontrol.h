@@ -8,8 +8,8 @@
 struct Tab {
 	TextFile* file;
 	PGScalar width;
-	PGScalar x;
-	PGScalar target_x;
+	PGScalar x = -1;
+	PGScalar target_x = -1;
 
 	Tab(TextFile* file) : file(file), x(-1), target_x(-1) { }
 };
