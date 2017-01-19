@@ -186,8 +186,12 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 						if (keybindings_varargs->count(command) != 0) {
 							function.has_args = true;
 							function.function = (void*)(*keybindings_varargs)[command];
-							assert(0);
-							// fixme: assign function arguments
+							auto args = keybinding["args"];
+							for(auto arg = args.begin(); arg != args.end(); arg++) {
+								if (arg.value().is_string()) {
+									function.arguments[arg.key()] = arg.value().dump();
+								}
+							}
 						} else {
 							// command not found
 							continue;
