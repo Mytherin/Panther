@@ -46,11 +46,11 @@ namespace panther {
 		return result;
 	}
 
-	std::string& tolower(std::string& str) {
+	std::string tolower(std::string str) {
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 		return str;
 	}
-	std::string& toupper(std::string& str) {
+	std::string toupper(std::string str) {
 		std::transform(str.begin(), str.end(), str.begin(), ::toupper);
 		return str;
 	}

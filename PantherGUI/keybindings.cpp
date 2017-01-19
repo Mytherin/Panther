@@ -138,8 +138,7 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 	
 	for (auto it = j.begin(); it != j.end(); it++) {
 		if (it.value().is_array()) {
-			std::string control = it.key();
-			panther::tolower(control);
+			std::string control = panther::tolower(it.key());
 			auto keys = it.value();
 			std::map<PGKeyPress, PGKeyFunctionCall>* functions = nullptr;
 			std::map<std::string, PGKeyFunction>* keybindings_noargs = nullptr;
