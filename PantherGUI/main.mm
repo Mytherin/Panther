@@ -6,6 +6,9 @@
 #include "c.h"
 #include "scheduler.h"
 
+#include "settings.h"
+#include "keybindings.h"
+
 // Compilation: clang++ -framework Cocoa -fobjc-arc -lobjc test.mm AppDelegate.mm -o test
 
 // clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm -o main
@@ -19,6 +22,9 @@ int main(int argc, const char *argv[])
     PGLanguageManager::AddLanguage(new CLanguage());
     PGLanguageManager::AddLanguage(new XMLLanguage());
 
+    PGSettingsManager::Initialize();
+    PGKeyBindingsManager::Initialize();
+
     Scheduler::Initialize();
     Scheduler::SetThreadCount(8);
 
@@ -30,7 +36,7 @@ int main(int argc, const char *argv[])
 
     PGCreateWindow(textfiles);
 
-
+    
     [NSApp activateIgnoringOtherApps:YES];
     [NSApp run];                                                  // Call the Apps Run method
 

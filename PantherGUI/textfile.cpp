@@ -172,7 +172,7 @@ int TextFile::GetLineHeight() {
 
 void TextFile::ClearCurrentLinenumber() {
 	if (current_linenumber >= 0) {
-		if (wordwrap && (std::abs(textfield->GetTextfieldWidth() - this->wordwrap_width) > 0.1)) {
+		if (wordwrap && (panther::abs(textfield->GetTextfieldWidth() - this->wordwrap_width) > 0.1)) {
 			SetWordWrap(true, textfield->GetTextfieldWidth());
 		}
 		lng linenumber = current_linenumber;

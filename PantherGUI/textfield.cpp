@@ -168,13 +168,13 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			while (current_cursor < cursors.size()) {
 				auto begin_pos = cursors[current_cursor]->BeginPosition();
 				if (begin_pos.line > current_start_line ||
-					begin_pos.line == current_start_line && begin_pos.character > current_start_position + length) {
+					(begin_pos.line == current_start_line && begin_pos.character > current_start_position + length)) {
 					// this cursor is not rendered on this line yet
 					break;
 				}
 				auto end_pos = cursors[current_cursor]->EndPosition();
 				if (end_pos.line < current_start_line ||
-					end_pos.line == current_start_line && end_pos.character < current_start_position) {
+					(end_pos.line == current_start_line && end_pos.character < current_start_position)) {
 					// this cursor has already been rendered
 					current_cursor++;
 					continue;
@@ -246,12 +246,12 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			while (current_match < matches.size()) {
 				auto match = matches[current_match];
 				if (match.start_line > current_start_line ||
-					match.start_line == current_start_line && match.start_character > current_start_position + length) {
+					(match.start_line == current_start_line && match.start_character > current_start_position + length)) {
 					// this match is not rendered on this line yet
 					break;
 				}
 				if (match.end_line < current_start_line ||
-					match.end_line == current_start_line && match.end_character <= current_start_position) {
+					(match.end_line == current_start_line && match.end_character <= current_start_position)) {
 					// this match has already been rendered
 					current_match++;
 					continue;

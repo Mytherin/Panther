@@ -31,6 +31,7 @@ struct PGWindow {
 	NSWindow *window;
 	NSEvent *event;
 	PGView* view;
+	bool pending_destroy = false;
 	ControlManager* manager;
 	PGRendererHandle renderer;
 };
@@ -71,8 +72,11 @@ struct PGTimer {
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
-void PeriodicWindowRedraw(PGWindowHandle window) {
-	window->manager->PeriodicRender();
+void PeriodicWindowRedraw(PGWindowHandle handle) {
+	handle->manager->PeriodicRender();
+	if (handle->pending_destroy) {
+		[handle->window performClose:handle->window];
+	}
 }
 
 @implementation PGView : NSView
@@ -521,8 +525,7 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 }
 
 void PGCloseWindow(PGWindowHandle handle) {
-	assert(0);
-	[handle->window performClose:handle->window];
+	handle->pending_destroy = true;
 }
 
 PGTimerHandle CreateTimer(PGWindowHandle handle, int ms, PGTimerCallback callback, PGTimerFlags flags) {

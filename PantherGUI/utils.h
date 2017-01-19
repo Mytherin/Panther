@@ -29,7 +29,7 @@ namespace panther {
 
 	char* strdup(const char* source);
 
-	std::string& tolower(std::string str);
+	std::string& tolower(std::string& str);
 }
 
 
