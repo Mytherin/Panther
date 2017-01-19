@@ -106,6 +106,8 @@ public:
 
 	void ApplyMinimalSelection(CursorSelection selection);
 private:
+	void _SetCursorStartLocation(lng linenr, lng characternr);
+
 	static bool CursorPositionOccursFirst(PGTextBuffer* a, lng a_pos, PGTextBuffer* b, lng b_pos);
 	CursorPosition BeginCursorPosition();
 	CursorPosition EndCursorPosition();

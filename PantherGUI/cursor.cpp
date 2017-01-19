@@ -61,7 +61,7 @@ void Cursor::OffsetSelectionLine(lng offset) {
 	}
 	PGCursorPosition sel = SelectedPosition();
 	lng start_line = sel.line;
-	lng start_character = sel.character;
+	lng start_character = sel.position;
 
 	if (file->GetWordWrap()) {
 		// the file has word wrapping enabled
@@ -77,7 +77,9 @@ void Cursor::OffsetSelectionLine(lng offset) {
 				if (end_wrap > start_character) {
 					// there is a wrap AFTER this cursor
 					wrap = true;
-					x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+					if (x_position < 0) {
+						x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+					}
 					break;
 				}
 				start_wrap = end_wrap;
@@ -86,19 +88,21 @@ void Cursor::OffsetSelectionLine(lng offset) {
 				// if there is a wrap after this cursor
 				// we move to a position WITHIN the current line (but in the next wrapped line)
 				start_character = end_wrap + GetPositionInLine(textfield_font, x_position, line.GetLine() + end_wrap, line.GetLength() - end_wrap);
-				SetCursorStartLocation(start_line, start_character);
+				_SetCursorStartLocation(start_line, start_character);
 				return;
 			} else {
 				// if there is no wrap after this cursor
 				// record the x_position and move to the next line
-				x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+				if (x_position < 0) {
+					x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+				}
 			}
 		} else {
 			lng prev_wrap = -1;
 			// we have to move the cursor up
 			while (true) {
 				bool found = line.WrapLine(textfield_font, file->textfield->GetTextfieldWidth(), start_wrap, end_wrap);
-				if (end_wrap > start_character) {
+				if (end_wrap >= start_character) {
 					wrap = true;
 					break;
 				}
@@ -109,9 +113,11 @@ void Cursor::OffsetSelectionLine(lng offset) {
 			if (wrap && start_wrap > 0) {
 				// there is a wrap before this line
 				// first measure the x-position of the cursor
-				x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+				if (x_position < 0) {
+					x_position = MeasureTextWidth(textfield_font, line.GetLine() + start_wrap, start_character - start_wrap);
+				}
 				start_character = prev_wrap + GetPositionInLine(textfield_font, x_position, line.GetLine() + prev_wrap, start_wrap - prev_wrap);
-				SetCursorStartLocation(start_line, start_character);
+				_SetCursorStartLocation(start_line, start_character);
 				return;
 			} else {
 				// we are on the first part of the currently wrapped line
@@ -130,7 +136,7 @@ void Cursor::OffsetSelectionLine(lng offset) {
 						start_wrap = end_wrap;
 					}
 					start_character = GetPositionInLine(textfield_font, x_position, line.GetLine() + start_wrap, end_wrap - start_wrap);
-					SetCursorStartLocation(start_line, start_wrap + start_character);
+					_SetCursorStartLocation(start_line, start_wrap + start_character);
 				}
 				return;
 			}
@@ -146,7 +152,7 @@ void Cursor::OffsetSelectionLine(lng offset) {
 		start_line = new_line;
 		TextLine line = this->file->GetLine(start_line);
 		start_character = GetPositionInLine(textfield_font, x_position, line.GetLine(), line.GetLength());
-		SetCursorStartLocation(start_line, start_character);
+		_SetCursorStartLocation(start_line, start_character);
 	}
 }
 
@@ -351,9 +357,13 @@ void Cursor::SetCursorLocation(lng linenr, lng characternr) {
 	x_position = -1;
 }
 
-void Cursor::SetCursorStartLocation(lng linenr, lng characternr) {
+void Cursor::_SetCursorStartLocation(lng linenr, lng characternr) {
 	start_buffer = file->GetBuffer(linenr);
 	start_buffer_position = start_buffer->GetBufferLocationFromCursor(linenr, characternr);
+}
+
+void Cursor::SetCursorStartLocation(lng linenr, lng characternr) {
+	_SetCursorStartLocation(linenr, characternr);
 	x_position = -1;
 }
 
