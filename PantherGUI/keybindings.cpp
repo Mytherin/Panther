@@ -1,6 +1,10 @@
 
 #include "keybindings.h"
+
+#include "controlmanager.h"
 #include "textfield.h"
+#include "tabcontrol.h"
+#include "simpletextfield.h"
 
 #include "json.h"
 
@@ -8,8 +12,10 @@ using namespace nlohmann;
 
 PGKeyBindingsManager::PGKeyBindingsManager() {
 	// initialize all keybindings
-
-	// initialize textfield keybindings
+	BasicTextField::InitializeKeybindings();
+	ControlManager::InitializeKeybindings();
+	SimpleTextField::InitializeKeybindings();
+	TabControl::InitializeKeybindings();
 	TextField::InitializeKeybindings();
 
 	LoadSettings("default-keybindings.json");
@@ -121,9 +127,46 @@ bool PGKeyBindingsManager::ParseKeyPress(std::string keys, PGKeyPress& keypress)
 	return false;
 }
 
+#define INITIALIZE_CONTROL(control)       \
+	functions = &(control::keybindings);   \
+	keybindings_noargs = &(control::keybindings_noargs);  \
+	keybindings_varargs = &(control::keybindings_varargs)
+
+std::string ParseEscapeCharacters(std::string str) {
+	if (str.size() == 0) return "";
+	char* temporary_buffer = (char*) malloc((str.size() + 1) * sizeof(char));
+	if (!temporary_buffer) {
+		return "";
+	}
+	lng index = 0;
+	size_t i;
+	for (i = 0; i < str.size() - 1; i++) {
+		if (str[i] == '\\') {
+			if (str[i + 1] == 'n') {
+				temporary_buffer[index++] = '\n';
+				i++;
+			} else if (str[i + 1] == '\\') {
+				temporary_buffer[index++] = '\\';
+				i++;
+			} else if (str[i + 1] == 't') {
+				temporary_buffer[index++] = '\t';
+				i++;
+			}
+		} else {
+			temporary_buffer[index++] = str[i];
+		}
+	}
+	if (i == str.size() - 1) {
+		temporary_buffer[index++] = str[str.size() - 1];
+	}
+	std::string result = std::string(temporary_buffer, index);
+	free(temporary_buffer);
+	return result;
+}
+
 void PGKeyBindingsManager::LoadSettings(std::string filename) {
 	lng result_size;
-	char* ptr = (char*) panther::ReadFile(filename, result_size);
+	char* ptr = (char*)panther::ReadFile(filename, result_size);
 	if (!ptr) {
 		// FIXME:
 		assert(0);
@@ -131,11 +174,11 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 	}
 	json j;
 	//try {
-		j = json::parse(ptr);
+	j = json::parse(ptr);
 	/*} catch(...) {
 		return;
 	}*/
-	
+
 	for (auto it = j.begin(); it != j.end(); it++) {
 		if (it.value().is_array()) {
 			std::string control = panther::tolower(it.key());
@@ -143,11 +186,19 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 			std::map<PGKeyPress, PGKeyFunctionCall>* functions = nullptr;
 			std::map<std::string, PGKeyFunction>* keybindings_noargs = nullptr;
 			std::map<std::string, PGKeyFunctionArgs>* keybindings_varargs = nullptr;
-			if (control == "textfield") {
-				functions = &TextField::keybindings;
-				keybindings_noargs = &TextField::keybindings_noargs;
-				keybindings_varargs = &TextField::keybindings_varargs;
+
+			if (control == "global") {
+				INITIALIZE_CONTROL(ControlManager);
+			} else if (control == "textfield") {
+				INITIALIZE_CONTROL(TextField);
+			} else if (control == "simpletextfield") {
+				INITIALIZE_CONTROL(SimpleTextField);
+			} else if (control == "basictextfield") {
+				INITIALIZE_CONTROL(BasicTextField);
+			} else if (control == "tabcontrol") {
+				INITIALIZE_CONTROL(TabControl);
 			}
+
 			if (functions && keybindings_noargs && keybindings_varargs) {
 				for (auto key = keys.begin(); key != keys.end(); key++) {
 					auto keybinding = key.value();
@@ -159,10 +210,8 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 						// no command found
 						continue;
 					}
-					std::string keys = keybinding["key"];
-					std::string command = keybinding["command"];
-					panther::tolower(keys);
-					panther::tolower(command);
+					std::string keys = panther::tolower(keybinding["key"]);
+					std::string command = panther::tolower(keybinding["command"]);
 					// parse the key
 					PGKeyPress keypress;
 					if (!ParseKeyPress(keys, keypress)) {
@@ -186,10 +235,8 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 							function.has_args = true;
 							function.function = (void*)(*keybindings_varargs)[command];
 							auto args = keybinding["args"];
-							for(auto arg = args.begin(); arg != args.end(); arg++) {
-								if (arg.value().is_string()) {
-									function.arguments[arg.key()] = arg.value().dump();
-								}
+							for (auto arg = args.begin(); arg != args.end(); arg++) {
+								function.arguments[arg.key()] = ParseEscapeCharacters(StripQuotes(arg.value().dump()));
 							}
 						} else {
 							// command not found

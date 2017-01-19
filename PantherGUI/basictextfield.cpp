@@ -4,6 +4,8 @@
 
 #include "container.h"
 
+PG_CONTROL_INITIALIZE_KEYBINDINGS(BasicTextField);
+
 BasicTextField::BasicTextField(PGWindowHandle window, TextFile* textfile) :
 	Control(window), textfile(textfile) {
 	if (textfile)
@@ -47,8 +49,10 @@ void BasicTextField::PeriodicRender(void) {
 }
 
 bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
+	if (this->PressKey(BasicTextField::keybindings, button, modifier)) {
+		return true;
+	}
 	switch (button) {
-
 	case PGButtonLeft:
 		if (modifier == PGModifierNone) {
 			textfile->OffsetCharacter(PGDirectionLeft);
@@ -101,30 +105,6 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 			return false;
 		}
 		return true;
-	case PGButtonDelete:
-		if (modifier == PGModifierNone) {
-			this->textfile->DeleteCharacter(PGDirectionRight);
-		} else if (modifier == PGModifierCtrl) {
-			this->textfile->DeleteWord(PGDirectionRight);
-		} else if (modifier == PGModifierShift) {
-			textfile->DeleteLines();
-		} else if (modifier == PGModifierCtrlShift) {
-			this->textfile->DeleteLine(PGDirectionRight);
-		} else {
-			return false;
-		}
-		return true;
-	case PGButtonBackspace:
-		if (modifier == PGModifierNone || modifier == PGModifierShift) {
-			this->textfile->DeleteCharacter(PGDirectionLeft);
-		} else if (modifier == PGModifierCtrl) {
-			this->textfile->DeleteWord(PGDirectionLeft);
-		} else if (modifier == PGModifierCtrlShift) {
-			this->textfile->DeleteLine(PGDirectionLeft);
-		} else {
-			return false;
-		}
-		return true;
 	default:
 		return false;
 	}
@@ -133,36 +113,11 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 
 bool BasicTextField::KeyboardCharacter(char character, PGModifier modifier) {
 	if (!textfile->IsLoaded()) return false;
-
 	if (modifier == PGModifierNone) {
 		this->textfile->InsertText(character);
 		return true;
-	} else if (modifier & PGModifierCtrl) {
-		switch (character) {
-		case 'Z':
-			this->textfile->Undo();
-			return true;
-		case 'Y':
-			this->textfile->Redo();
-			return true;
-		case 'A':
-			this->textfile->SelectEverything();
-			return true;
-		case 'C': {
-			std::string text = textfile->CopyText();
-			SetClipboardText(window, text);
-			return true;
-		}
-		case 'V': {
-			if (modifier & PGModifierShift) {
-				// FIXME: cycle through previous copy-pastes
-			} else {
-				std::string text = GetClipboardText(window);
-				textfile->PasteText(text);
-			}
-			return true;
-		}
-		}
+	} else if (this->PressCharacter(BasicTextField::keybindings, character, modifier)) {
+		return true;
 	}
 	return false;
 }
@@ -262,4 +217,69 @@ void BasicTextField::OnTextChanged(PGControlDataCallback callback, void* data) {
 	this->text_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
 }
 
-
+void BasicTextField::InitializeKeybindings() {
+	std::map<std::string, PGKeyFunction>& noargs = BasicTextField::keybindings_noargs;
+	noargs["undo"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->Undo();
+	};
+	noargs["redo"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->Redo();
+	};
+	noargs["select_all"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->SelectEverything();
+	};
+	noargs["copy"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		std::string text = t->textfile->CopyText();
+		SetClipboardText(t->window, text);
+	};
+	noargs["paste"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		std::string text = GetClipboardText(t->window);
+		t->textfile->PasteText(text);
+	};
+	noargs["cut"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		std::string text = t->textfile->CutText();
+		SetClipboardText(t->window, text);
+	};
+	noargs["left_delete"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->DeleteCharacter(PGDirectionLeft);
+	};
+	noargs["left_delete_word"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->DeleteWord(PGDirectionLeft);
+	};
+	noargs["left_delete_line"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->DeleteLine(PGDirectionLeft);
+	};
+	noargs["right_delete"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->DeleteCharacter(PGDirectionRight);
+	};
+	noargs["right_delete_word"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->DeleteWord(PGDirectionRight);
+	};
+	noargs["right_delete_line"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->DeleteLine(PGDirectionRight);
+	};
+	noargs["delete_selected_lines"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->DeleteLines();
+	};
+	std::map<std::string, PGKeyFunctionArgs>& args = BasicTextField::keybindings_varargs;
+	args["insert"] = [](Control* c, std::map<std::string, std::string> args) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (args.count("characters") == 0) {
+			return;
+		}
+		tf->GetTextFile().PasteText(args["characters"]);
+	};
+}

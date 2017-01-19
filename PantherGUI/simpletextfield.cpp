@@ -4,6 +4,8 @@
 
 #include "container.h"
 
+PG_CONTROL_INITIALIZE_KEYBINDINGS(SimpleTextField);
+
 SimpleTextField::SimpleTextField(PGWindowHandle window) :
 	BasicTextField(window, new TextFile(nullptr)), valid_input(true) {
 	this->height = GetTextHeight(textfield_font) + 6;
@@ -131,15 +133,10 @@ void SimpleTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 }
 
 bool SimpleTextField::KeyboardButton(PGButton button, PGModifier modifier) {
+	if (this->PressKey(SimpleTextField::keybindings, button, modifier)) {
+		return true;
+	}
 	switch (button) {
-	case PGButtonEscape:
-		if (on_user_cancel)
-			on_user_cancel(this, on_user_cancel_data, modifier);
-		return true;
-	case PGButtonEnter:
-		if (on_successful_exit)
-			on_successful_exit(this, on_successful_exit_data, modifier);
-		return true;
 	case PGButtonUp:
 	case PGButtonDown:
 	case PGButtonPageUp:
@@ -160,4 +157,20 @@ std::string SimpleTextField::GetText() {
 
 void SimpleTextField::SetValidInput(bool valid) {
 	valid_input = valid;
+}
+
+void SimpleTextField::InitializeKeybindings() {
+	std::map<std::string, PGKeyFunction>& noargs = SimpleTextField::keybindings_noargs;
+	noargs["cancel"] = [](Control* c) {
+		SimpleTextField* t = (SimpleTextField*)c;
+		if (t->on_user_cancel) {
+			t->on_user_cancel(t, t->on_user_cancel_data);
+		}
+	};
+	noargs["confirm"] = [](Control* c) {
+		SimpleTextField* t = (SimpleTextField*)c;
+		if (t->on_successful_exit) {
+			t->on_successful_exit(t, t->on_successful_exit_data);
+		}
+	};
 }

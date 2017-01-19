@@ -43,6 +43,11 @@ public:
 	TextField* active_textfield;
 	TabControl* active_tabcontrol;
 	StatusBar* statusbar;
+
+	void ShowFindReplace(bool replace = false);
+	void CreateNewWindow();
+
+	PG_CONTROL_KEYBINDINGS;
 private:
 	PGIRect invalidated_area;
 	bool invalidated;

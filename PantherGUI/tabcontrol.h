@@ -52,6 +52,8 @@ public:
 	}
 
 	int currently_selected_tab = 0;
+
+	PG_CONTROL_KEYBINDINGS;
 protected:
 	PGScalar MeasureTabWidth(Tab& tab);
 

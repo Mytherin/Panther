@@ -27,7 +27,10 @@ TextFile::TextFile(BasicTextField* textfield) :
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = CreateMutex();
+	default_font = PGCreateFont();
+	SetTextFontSize(default_font, 10);
 	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
+	this->line_lengths.push_back(0);
 	cursors.push_back(new Cursor(this));
 	this->linecount = 1;
 	is_loaded = true;
@@ -41,6 +44,8 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
 	this->current_task = nullptr;
 	this->text_lock = CreateMutex();
+	default_font = PGCreateFont();
+	SetTextFontSize(default_font, 10);
 	loaded = 0;
 
 	this->language = PGLanguageManager::GetLanguage(ext);
@@ -301,8 +306,6 @@ void TextFile::OpenFile(char* base, lng size) {
 	LockMutex(text_lock);
 	lng linenr = 0;
 	lng scrolloffset = 0;
-	default_font = PGCreateFont();
-	SetTextFontSize(default_font, 10);
 	PGTextBuffer* current_buffer = nullptr;
 	PGScalar max_length = 0;
 	while (*ptr) {
@@ -490,6 +493,7 @@ lng TextFile::GetLineCount() {
 }
 
 PGScalar TextFile::GetMaxLineWidth(PGFontHandle font) {
+	if (!is_loaded) return 0;
 	return GetTextFontSize(font) / 10.0 * line_lengths[max_line_length];
 }
 
@@ -1146,6 +1150,18 @@ void TextFile::AddEmptyLine(PGDirection direction) {
 
 	TextDelta* delta = new InsertLineBefore(direction);
 	PerformOperation(delta);
+}
+
+std::string TextFile::CutText() {
+	std::string text = CopyText();
+	if (!CursorsContainSelection(cursors)) {
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			(*it)->SelectLine();
+		}
+		Cursor::NormalizeCursors(this, cursors, false);
+	}
+	this->DeleteCharacter(PGDirectionLeft);
+	return text;
 }
 
 std::string TextFile::CopyText() {

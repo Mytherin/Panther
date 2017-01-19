@@ -5,6 +5,8 @@
 #include "textfield.h"
 #include "filemanager.h"
 
+PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
+
 ControlManager::ControlManager(PGWindowHandle window) : PGContainer(window) {
 
 }
@@ -68,54 +70,8 @@ void ControlManager::PeriodicRender(void) {
 }
 
 bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
-	if (modifier == PGModifierCtrl) {
-		bool replace = false;
-		switch (character) {
-		case 'O': {
-			std::vector<std::string> files = ShowOpenFileDialog(true, false, true);
-			for(auto it = files.begin(); it != files.end(); it++) {
-				active_tabcontrol->OpenFile(*it);
-			}
-			this->Invalidate();
-			break;	
-		}
-		case 'H':
-			replace = true;
-		case 'F': {
-			// Find text
-			FindText* view = new FindText(this->window, replace);
-			view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-			view->vertical_anchor = statusbar;
-			for (auto it = controls.begin(); it != controls.end(); it++) {
-				if ((*it)->vertical_anchor == statusbar) {
-					(*it)->vertical_anchor = view;
-				}
-			}
-			this->TriggerResize();
-			this->AddControl(view);
-			this->Invalidate();
-			return true;
-		}
-		}
-	}
-
-	if (modifier == PGModifierCtrlShift) {
-		switch (character) {
-		/*case 'S': {
-			std::string filename = ShowSaveFileDialog();
-			if (filename.size() != 0) {
-				this->active_textfield->GetTextFile().SaveAs(filename);
-			}
-			break;
-		}*/
-		case 'N': {
-			std::vector<TextFile*> files;
-			files.push_back(new TextFile(nullptr));
-			PGCreateWindow(files);
-			break;
-		}
-		}
-
+	if (this->PressCharacter(ControlManager::keybindings, character, modifier)) {
+		return true;
 	}
 	return PGContainer::KeyboardCharacter(character, modifier);
 }
@@ -184,4 +140,46 @@ void ControlManager::DropFile(std::string filename) {
 
 ControlManager* GetControlManager(Control* c) {
 	return (ControlManager*)GetWindowManager(c->window);
+}
+
+void ControlManager::ShowFindReplace(bool replace) {
+	// Find text
+	FindText* view = new FindText(this->window, replace);
+	view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
+	view->vertical_anchor = statusbar;
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if ((*it)->vertical_anchor == statusbar) {
+			(*it)->vertical_anchor = view;
+		}
+	}
+	this->TriggerResize();
+	this->AddControl(view);
+	this->Invalidate();
+}
+
+void ControlManager::CreateNewWindow() {
+	std::vector<TextFile*> files;
+	files.push_back(new TextFile(nullptr));
+	PGCreateWindow(files);
+}
+
+void ControlManager::InitializeKeybindings() {
+	std::map<std::string, PGKeyFunction>& noargs = ControlManager::keybindings_noargs;
+	noargs["new_window"] = [](Control* c) {
+		ControlManager* t = (ControlManager*)c;
+		t->CreateNewWindow();
+	};
+	noargs["close_window"] = [](Control* c) {
+		ControlManager* t = (ControlManager*)c;
+		PGCloseWindow(t->window);
+	};
+	std::map<std::string, PGKeyFunctionArgs>& args = ControlManager::keybindings_varargs;
+	args["show_find"] = [](Control* c, std::map<std::string, std::string> args) {
+		ControlManager* t = (ControlManager*)c;
+		bool replace = false;
+		if (args.count("replace") > 0) {
+			replace = panther::tolower(args["replace"]) == "true";
+		}
+		t->ShowFindReplace(replace);
+	};
 }

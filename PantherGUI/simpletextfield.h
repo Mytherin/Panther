@@ -11,7 +11,6 @@
 // Simple textfields do not have scrollbars or minimaps, and can only scroll
 // in the X dimension.
 
-typedef void(*PGControlModifierCallback)(Control* control, void* data, PGModifier modifier);
 
 class SimpleTextField : public BasicTextField {
 public:
@@ -27,15 +26,17 @@ public:
 
 	void SetValidInput(bool valid);
 
-	void OnUserCancel(PGControlModifierCallback callback, void* data) { on_user_cancel = callback; on_user_cancel_data = data; }
-	void OnSuccessfulExit(PGControlModifierCallback callback, void* data) { on_successful_exit = callback; on_successful_exit_data = data; }
+	void OnUserCancel(PGControlDataCallback callback, void* data) { on_user_cancel = callback; on_user_cancel_data = data; }
+	void OnSuccessfulExit(PGControlDataCallback callback, void* data) { on_successful_exit = callback; on_successful_exit_data = data; }
 
 	std::string GetText();
+
+	PG_CONTROL_KEYBINDINGS;
 protected:
 	bool valid_input = true;
 
-	PGControlModifierCallback on_user_cancel = nullptr;
+	PGControlDataCallback on_user_cancel = nullptr;
 	void* on_user_cancel_data = nullptr;
-	PGControlModifierCallback on_successful_exit = nullptr;
+	PGControlDataCallback on_successful_exit = nullptr;
 	void* on_successful_exit_data = nullptr;
 };

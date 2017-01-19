@@ -104,6 +104,7 @@ public:
 	void AddEmptyLine(PGDirection direction);
 	void MoveLines(int offset);
 
+	std::string CutText();
 	std::string CopyText();
 	void PasteText(std::string& text);
 

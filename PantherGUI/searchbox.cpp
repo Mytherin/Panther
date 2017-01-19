@@ -3,7 +3,6 @@
 #include "style.h"
 #include "unicode.h"
 
-
 SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0) {
 	lng index = 0;
@@ -21,10 +20,10 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 	field->width = this->width;
 	field->x = 0;
 	field->y = 0;
-	field->OnUserCancel([](Control* c, void* data, PGModifier modifier) {
+	field->OnUserCancel([](Control* c, void* data) {
 		((SearchBox*)data)->Close();
 	}, (void*) this);
-	field->OnSuccessfulExit([](Control* c, void* data, PGModifier modifier) {
+	field->OnSuccessfulExit([](Control* c, void* data) {
 		((SearchBox*)data)->Close(true);
 	}, (void*) this);
 	field->OnTextChanged([](Control* c, void* data) {

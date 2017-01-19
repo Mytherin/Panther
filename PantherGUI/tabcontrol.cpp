@@ -3,6 +3,7 @@
 #include "filemanager.h"
 #include "style.h"
 
+PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files) :
 	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr), active_tab_hidden(false), drag_tab(false) {
@@ -119,34 +120,8 @@ PGScalar TabControl::MeasureTabWidth(Tab& tab) {
 }
 
 bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
-	switch (button) {
-	case PGButtonTab:
-		if (modifier == PGModifierCtrlShift) {
-			PrevTab();
-			this->Invalidate();
-			return true;
-		} else if (modifier == PGModifierCtrl) {
-			NextTab();
-			this->Invalidate();
-			return true;
-		}
-		break;
-	case PGButtonPageUp:
-		if (modifier == PGModifierCtrl) {
-			PrevTab();
-			this->Invalidate();
-			return true;
-		}
-		break;
-	case PGButtonPageDown:
-		if (modifier == PGModifierCtrl) {
-			NextTab();
-			this->Invalidate();
-			return true;
-		}
-		break;
-	default:
-		return false;
+	if (this->PressKey(TabControl::keybindings, button, modifier)) {
+		return true;
 	}
 	return false;
 }
@@ -264,17 +239,8 @@ void TabControl::ClearDragDrop(PGDragDropType type) {
 
 
 bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
-	if (modifier == PGModifierCtrl) {
-		switch (character) {
-		case 'W':
-			CloseTab(active_tab);
-			this->Invalidate();
-			return true;
-		case 'N':
-			NewTab();
-			this->Invalidate();
-			return true;
-		}
+	if (this->PressCharacter(TabControl::keybindings, character, modifier)) {
+		return true;
 	}
 	return false;
 }
@@ -435,4 +401,36 @@ void TabControl::SwitchToTab(TextFile* textfile) {
 
 void TabControl::SwitchToFile(TextFile* file) {
 	textfield->SetTextFile(file);
+}
+
+void TabControl::InitializeKeybindings() {
+	std::map<std::string, PGKeyFunction>& noargs = TabControl::keybindings_noargs;
+	noargs["open_file"] = [](Control* c) {
+		TabControl* t = (TabControl*)c;
+		std::vector<std::string> files = ShowOpenFileDialog(true, false, true);
+		for(auto it = files.begin(); it != files.end(); it++) {
+			t->OpenFile(*it);
+		}
+		t->Invalidate();
+	};
+	noargs["close_tab"] = [](Control* c) {
+		TabControl* t = (TabControl*)c;
+		t->CloseTab(t->active_tab);
+		t->Invalidate();
+	};
+	noargs["new_tab"] = [](Control* c) {
+		TabControl* t = (TabControl*)c;
+		t->NewTab();
+		t->Invalidate();
+	};
+	noargs["next_tab"] = [](Control* c) {
+		TabControl* t = (TabControl*)c;
+		t->NextTab();
+		t->Invalidate();
+	};
+	noargs["prev_tab"] = [](Control* c) {
+		TabControl* t = (TabControl*)c;
+		t->PrevTab();
+		t->Invalidate();
+	};
 }

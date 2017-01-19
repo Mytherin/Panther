@@ -68,12 +68,8 @@ public:
 	void TextChanged(std::vector<lng> lines);
 
 	void IncreaseFontSize(int modifier);
-	
-	static void InitializeKeybindings();
-	static std::map<std::string, PGKeyFunction> keybindings_noargs;
-	static std::map<std::string, PGKeyFunctionArgs> keybindings_varargs;
 
-	static std::map<PGKeyPress, PGKeyFunctionCall> keybindings;
+	PG_CONTROL_KEYBINDINGS;
 protected:
 	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
 	void GetLineFromPosition(PGScalar y, lng& line);

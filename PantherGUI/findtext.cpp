@@ -7,15 +7,15 @@
 #define HPADDING_SMALL 5
 #define VPADDING 4
 
-static void CancelOperation(Control* c, void* data, PGModifier modifier) {
+static void CancelOperation(Control* c, void* data) {
 	// user pressed escape, cancelling the find operation
 	((FindText*)data)->Close();
 }
 
-static void ExecuteFind(Control* c, void* data, PGModifier modifier) {
+static void ExecuteFind(Control* c, void* data) {
 	// perform the find operation
 	// if we hold shift, we perform Find Prev instead of Find Next
-	((FindText*)data)->Find(modifier & PGModifierShift ? PGDirectionLeft : PGDirectionRight);
+	((FindText*)data)->Find(PGDirectionRight);
 }
 
 FindText::FindText(PGWindowHandle window, bool replace) :

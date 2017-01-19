@@ -10,8 +10,14 @@
 	"basictextfield": [
 		{ "key": "backspace", "command": "left_delete" },
 		{ "key": "shift+backspace", "command": "left_delete" },
-		{ "key": "ctrl+shift+backspace", "command": "left_delete" },
+		{ "key": "ctrl+backspace", "command": "left_delete_word" },
+		{ "key": "ctrl+shift+backspace", "command": "left_delete_line" },
 		{ "key": "delete", "command": "right_delete" },
+		{ "key": "ctrl+delete", "command": "right_delete_word" },
+		{ "key": "ctrl+shift+delete", "command": "right_delete_line" },
+		{ "key": "shift+delete", "command": "delete_selected_lines" },
+
+
 		{ "key": "tab", "command": "insert", "args": { "characters": "\t" } },
 
 		{ "key": "ctrl+z", "command": "undo" },
@@ -25,9 +31,6 @@
 		{ "key": "ctrl+c", "command": "copy" },
 		{ "key": "ctrl+v", "command": "paste" },
 		{ "key": "ctrl+shift+v", "command": "paste_from_history" },
-
-		{ "key": "ctrl+up", "command": "scroll_lines", "args": {"amount": 1.0 } },
-		{ "key": "ctrl+down", "command": "scroll_lines", "args": {"amount": -1.0 } },
 
 		{ "key": "ctrl+a", "command": "select_all" },
 
@@ -60,7 +63,10 @@
 		{ "key": "ctrl+keypad_minus", "command": "decrease_font_size" },
 		{ "key": "ctrl+equals", "command": "increase_font_size" },
 		{ "key": "ctrl+shift+equals", "command": "decrease_font_size" },
-		{ "key": "ctrl+shift+keypad_plus", "command": "decrease_font_size" }
+		{ "key": "ctrl+shift+keypad_plus", "command": "decrease_font_size" },
+		{ "key": "ctrl+up", "command": "scroll_lines", "args": {"amount": -1.0 } },
+		{ "key": "ctrl+down", "command": "scroll_lines", "args": {"amount": 1.0 } }
+
 	],
 	"tabcontrol": [
 		{ "key": "ctrl+o", "command": "open_file" },

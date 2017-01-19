@@ -17,10 +17,7 @@
 
 #define SCROLLBAR_PADDING 4
 
-
-std::map<std::string, PGKeyFunction> TextField::keybindings_noargs;
-std::map<std::string, PGKeyFunctionArgs> TextField::keybindings_varargs;
-std::map<PGKeyPress, PGKeyFunctionCall> TextField::keybindings;
+PG_CONTROL_INITIALIZE_KEYBINDINGS(TextField);
 
 
 void TextField::MinimapMouseEvent(bool mouse_enter) {
@@ -836,20 +833,6 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 
 	if (modifier == PGModifierCtrl) {
 		switch (character) {
-		case 'S': {
-			textfile->SaveChanges();
-			return true;
-		}
-		case '+': {
-			SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) + 1);
-			this->Invalidate();
-			return true;
-		}
-		case '-': {
-			SetTextFontSize(textfield_font, GetTextFontSize(textfield_font) - 1);
-			this->Invalidate();
-			return true;
-		}
 		case 'P': {
 			// Search project files
 			std::vector<SearchEntry> entries;
@@ -947,7 +930,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 					}
 				}
 			}, (void*) this);
-			field->OnUserCancel([](Control* c, void* data, PGModifier modifier) {
+			field->OnUserCancel([](Control* c, void* data) {
 				// user pressed escape, cancelling the line
 				// restore cursors and position
 				ScrollData* d = (ScrollData*)data;
@@ -956,7 +939,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				delete d;
 				dynamic_cast<PGContainer*>(c->parent)->RemoveControl(c);
 			}, (void*)data);
-			field->OnSuccessfulExit([](Control* c, void* data, PGModifier modifier) {
+			field->OnSuccessfulExit([](Control* c, void* data) {
 				ScrollData* d = (ScrollData*)data;
 				delete d;
 				dynamic_cast<PGContainer*>(c->parent)->RemoveControl(c);
@@ -1126,11 +1109,23 @@ void TextField::InitializeKeybindings() {
 		assert(0);
 	};
 	std::map<std::string, PGKeyFunctionArgs>& args = TextField::keybindings_varargs;
+	// FIXME: duplicate of BasicTextField::insert
 	args["insert"] = [](Control* c, std::map<std::string, std::string> args) {
 		TextField* tf = (TextField*)c;
 		if (args.count("characters") == 0) {
 			return;
 		}
 		tf->GetTextFile().PasteText(args["characters"]);
+	};
+	args["scroll_lines"] = [](Control* c, std::map<std::string, std::string> args) {
+		TextField* tf = (TextField*)c;
+		if (args.count("amount") == 0) {
+			return;
+		}
+		double offset = atof(args["amount"].c_str());
+		if (offset != 0.0) {
+			tf->GetTextFile().OffsetLineOffset(offset);
+			tf->Invalidate();
+		}
 	};
 }

@@ -61,6 +61,8 @@ public:
 
 	void OnSelectionChanged(PGControlDataCallback callback, void* data);
 	void OnTextChanged(PGControlDataCallback callback, void* data);
+
+	PG_CONTROL_KEYBINDINGS;
 protected:
 	TextFile* textfile = nullptr;
 	PGFontHandle textfield_font = nullptr;

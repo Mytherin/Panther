@@ -5,6 +5,18 @@
 
 #include <map>
 
+#define PG_CONTROL_KEYBINDINGS											\
+static void InitializeKeybindings();									\
+static std::map<std::string, PGKeyFunction> keybindings_noargs;			\
+static std::map<std::string, PGKeyFunctionArgs> keybindings_varargs;	\
+static std::map<PGKeyPress, PGKeyFunctionCall> keybindings
+
+
+#define PG_CONTROL_INITIALIZE_KEYBINDINGS(control)								\
+std::map<std::string, PGKeyFunction> control::keybindings_noargs;				\
+std::map<std::string, PGKeyFunctionArgs> control::keybindings_varargs;			\
+std::map<PGKeyPress, PGKeyFunctionCall> control::keybindings					\
+
 class Control;
 
 typedef void(*PGKeyFunction)(Control*);
