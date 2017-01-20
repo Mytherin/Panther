@@ -21,30 +21,26 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	LoadSettings("default-keybindings." + GetOSName() + ".json");
 }
 
+
+void ExtractModifier(std::string& keys, PGModifier& modifier, std::string modifier_text, PGModifier added_modifier) {
+	size_t pos = keys.find(modifier_text.c_str());
+	if (pos != std::string::npos) {
+		modifier |= added_modifier;
+		keys = keys.erase(pos, modifier_text.size());
+	}
+}
+
+
 bool PGKeyBindingsManager::ParseKeyPress(std::string keys, PGKeyPress& keypress) {
 	PGModifier modifier = PGModifierNone;
-	size_t pos = 0;
 
-	pos = keys.find("ctrl+");
-	if (pos != std::string::npos) {
-		modifier |= PGModifierCtrl;
-		keys = keys.erase(pos, strlen("ctrl+"));
-	}
-	pos = keys.find("shift+");
-	if (pos != std::string::npos) {
-		modifier |= PGModifierShift;
-		keys = keys.erase(pos, strlen("shift+"));
-	}
-	pos = keys.find("alt+");
-	if (pos != std::string::npos) {
-		modifier |= PGModifierAlt;
-		keys = keys.erase(pos, strlen("alt+"));
-	}
-	pos = keys.find("cmd+");
-	if (pos != std::string::npos) {
-		modifier |= PGModifierCmd;
-		keys = keys.erase(pos, strlen("cmd+"));
-	}
+	ExtractModifier(keys, modifier, "ctrl+", PGModifierCtrl);
+	ExtractModifier(keys, modifier, "shift+", PGModifierShift);
+	ExtractModifier(keys, modifier, "alt+", PGModifierAlt);
+	ExtractModifier(keys, modifier, "option+", PGModifierAlt);
+	ExtractModifier(keys, modifier, "cmd+", PGModifierCmd);
+	ExtractModifier(keys, modifier, "super+", PGModifierCmd);
+
 	keypress.modifier = modifier;
 	if (keys.size() == 1) {
 		// character

@@ -54,7 +54,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	polygon.points.push_back(PGPoint(x + current_x, y + tab_height));
 	polygon.points.push_back(PGPoint(x + current_x + 12, y + 4));
 	polygon.points.push_back(PGPoint(x + current_x + tab.width + 15, y + 4));
-	polygon.points.push_back(PGPoint(x + current_x+ tab.width + 27, y + tab_height));
+	polygon.points.push_back(PGPoint(x + current_x + tab.width + 27, y + tab_height));
 	polygon.closed = true;
 	RenderPolygon(renderer, polygon, selected_tab ? PGStyleManager::GetColor(PGColorTabControlSelected) :
 		PGStyleManager::GetColor(PGColorTabControlBackground));
@@ -84,7 +84,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	RenderLine(renderer, PGLine(PGPoint(current_x, y + 13), PGPoint(current_x + 8, y + 21)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	RenderLine(renderer, PGLine(PGPoint(current_x, y + 21), PGPoint(current_x + 8, y + 13)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	
-	position_x += tab.width + file_icon_width;
+	position_x += tab.width + 15;
 }
 
 void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
@@ -141,10 +141,13 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 		dragging_tab = tabs[active_tab];
 		active_tab_hidden = true;
 
-		PGBitmapHandle bitmap = CreateBitmapFromSize(tabs[active_tab].width, this->height);
+		PGBitmapHandle bitmap = CreateBitmapFromSize(MeasureTabWidth(tabs[active_tab]) + 30, this->height);
 		PGRendererHandle renderer = CreateRendererForBitmap(bitmap);
 		PGScalar position_x = 0;
+		PGScalar stored_x = tabs[active_tab].x;
+		tabs[active_tab].x = 0;
 		RenderTab(renderer, tabs[active_tab], position_x, 0, 0, false);
+		tabs[active_tab].x = stored_x;
 		DeleteRenderer(renderer);
 		
 		PGStartDragDrop(window, bitmap, [](PGPoint mouse, void* d) {
