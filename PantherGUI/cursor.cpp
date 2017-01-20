@@ -309,6 +309,7 @@ void Cursor::SelectLine() {
 	end_buffer = start_buffer;
 	end_buffer_position = line.GetLine() - end_buffer->buffer;
 	start_buffer_position = line.GetLine() + line.GetLength() - start_buffer->buffer;
+	OffsetSelectionCharacter(PGDirectionRight);
 	x_position = -1;
 }
 
@@ -569,85 +570,6 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 			textfile->textfield->SelectionChanged();
 		}
 	}
-	/*
-	for (int i = 0; i < cursors.size(); i++) {
-		for (int j = i + 1; j < cursors.size(); j++) {
-			if (cursors[i]->OverlapsWith(*cursors[j])) {
-				cursors[i]->Merge(*cursors[j]);
-				if (textfile->active_cursor == cursors[j]) {
-					textfile->active_cursor = cursors[i];
-				}
-				delete cursors[j];
-				cursors.erase(cursors.begin() + j);
-				j--;
-				continue;
-			}
-		}
-		if (cursors[i]->start_line >= cursors[i]->file->GetLineCount()) {
-			if (textfile->active_cursor == cursors[i]) {
-				textfile->active_cursor = nullptr;
-			}
-			delete cursors[i];
-			cursors.erase(cursors.begin() + i);
-			i--;
-			continue;
-		}
-		assert(cursors[i]->start_character >= 0);
-		if (cursors[i]->start_character > cursors[i]->file->GetLine(cursors[i]->start_line).GetLength()) {
-			if (textfile->active_cursor == cursors[i]) {
-				textfile->active_cursor = nullptr;
-			}
-			delete cursors[i];
-			cursors.erase(cursors.begin() + i);
-			i--;
-			continue;
-		}
-	}
-	assert(cursors.size() > 0);
-	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
-	textfile->RefreshCursors();
-	if (textfile->textfield) {
-		textfile->textfield->SelectionChanged();
-	}
-	if (textfile->textfield && scroll_textfield) {
-		lng line_offset = textfile->GetLineOffset();
-		lng line_height = textfile->GetLineHeight();
-		lng line_start = line_offset;
-		lng line_end = line_start + line_height;
-		lng cursor_min = INT_MAX, cursor_max = 0;
-		PGScalar cursor_min_character = INT_MAX, cursor_max_character = 0;
-		for (int i = 0; i < cursors.size(); i++) {
-			lng cursor_line = cursors[i]->start_line;
-			PGScalar cursor_character = cursors[i]->SelectedXPosition();
-			cursor_min = std::min(cursor_min, cursor_line);
-			cursor_max = std::max(cursor_max, cursor_line);
-			cursor_min_character = std::min(cursor_min_character, cursor_character);
-			cursor_max_character = std::max(cursor_max_character, cursor_character);
-		}
-		if (cursor_max - cursor_min > textfile->GetLineHeight()) {
-			// cursors are too far apart to show everything, just show the first one
-			line_offset = cursor_min;
-		} else if (cursor_max > line_end) {
-			// cursor is located past the end of what is visible, offset the view
-			line_offset = cursor_max - line_height + 1;
-		} else if (cursor_min < line_start) {
-			// cursor is located before the start of what is visible, offset the view
-			line_offset = cursor_min;
-		}
-
-		PGScalar xoffset = textfile->GetXOffset();
-		PGScalar max_textwidth = textfile->textfield->GetTextfieldWidth();
-		if (cursor_max_character - cursor_min_character > max_textwidth) {
-			// cursors are too far apart to show everything
-			xoffset = cursor_min_character;
-		} else if (cursor_min_character < xoffset) {
-			xoffset = cursor_min_character;
-		} else if (cursor_max_character > xoffset + max_textwidth - 20) {
-			xoffset = cursor_max_character - max_textwidth + 20;
-		}
-		textfile->SetXOffset(std::max(0.0f, std::min(xoffset, textfile->textfield->GetMaxXOffset())));
-		textfile->SetLineOffset(line_offset);
-	}*/
 }
 
 CursorSelection Cursor::GetCursorSelection() {
