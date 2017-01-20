@@ -88,6 +88,9 @@ public:
 	PGCursorPosition BeginPosition();
 	PGCursorPosition EndPosition();
 
+	PGScalar GetXOffset(CursorPosition position);
+	PGScalar BeginXPosition();
+	PGScalar EndXPosition();
 	PGScalar SelectedXPosition();
 
 	std::string GetLine();

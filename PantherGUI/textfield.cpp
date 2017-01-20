@@ -731,6 +731,8 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		}
 	} else if (buttons & PGMiddleMouseButton) {
 		if (drag_type == PGDragSelectionCursors) {
+			// FIXME: this should work with word wrap
+			assert(0);
 			/*
 			lng line;
 			GetLineFromPosition(mouse.y, line);

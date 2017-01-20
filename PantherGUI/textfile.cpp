@@ -1396,6 +1396,7 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	if (!success) return;
 	SetUnsavedChanges(true);
 	AddDelta(delta);
+	Cursor::NormalizeCursors(this, cursors);
 	if (this->textfield) {
 		this->textfield->TextChanged();
 	}

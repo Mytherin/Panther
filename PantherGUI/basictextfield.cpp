@@ -166,7 +166,7 @@ void BasicTextField::RefreshCursors() {
 }
 
 int BasicTextField::GetLineHeight() {
-	return (int)(this->height / GetTextHeight(textfield_font));
+	return (int)(GetTextfieldHeight() / GetTextHeight(textfield_font)) - 1;
 }
 
 void BasicTextField::PerformMouseClick(PGPoint mouse) {
