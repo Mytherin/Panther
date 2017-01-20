@@ -1030,3 +1030,7 @@ void PGMessageBox(PGWindowHandle window, std::string title, std::string message)
 	MessageBox(window->hwnd, ucs2_message.c_str(), ucs2_title.c_str(), MB_OK);
 }
 
+std::string GetOSName() {
+	return "windows";
+}
+

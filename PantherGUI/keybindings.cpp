@@ -18,7 +18,7 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	TabControl::InitializeKeybindings();
 	TextField::InitializeKeybindings();
 
-	LoadSettings("default-keybindings.json");
+	LoadSettings("default-keybindings." + GetOSName() + ".json");
 }
 
 bool PGKeyBindingsManager::ParseKeyPress(std::string keys, PGKeyPress& keypress) {

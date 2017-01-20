@@ -639,3 +639,7 @@ void PGStartDragDrop(PGWindowHandle handle, PGBitmapHandle image, PGDropCallback
 	[handle->view startDragging:[NSArray arrayWithObject:dragItem] event:handle->event source:handle->view callback:callback data:data];
 }
 
+std::string GetOSName() {
+	return "macos";
+}
+
