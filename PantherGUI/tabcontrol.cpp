@@ -371,6 +371,9 @@ void TabControl::CloseTab(int tab) {
 			SwitchToFile(tabs[1].file);
 		}
 	}
+	if (tabs[tab].file->path.size() > 0) {
+		closed_tabs.push_back(tabs[tab].file->path);
+	}
 	file_manager.CloseFile(tabs[tab].file);
 	tabs.erase(tabs.begin() + tab);
 	this->Invalidate();
@@ -387,6 +390,13 @@ void TabControl::CloseTab(TextFile* textfile) {
 		}
 	}
 	assert(0);
+}
+
+void TabControl::ReopenLastFile() {
+	if (closed_tabs.size() == 0) return;
+
+	this->OpenFile(closed_tabs.back());
+	closed_tabs.pop_back();
 }
 
 void TabControl::SwitchToTab(TextFile* textfile) {
@@ -434,6 +444,11 @@ void TabControl::InitializeKeybindings() {
 	noargs["prev_tab"] = [](Control* c) {
 		TabControl* t = (TabControl*)c;
 		t->PrevTab();
+		t->Invalidate();
+	};
+	noargs["reopen_last_file"] = [](Control* c) {
+		TabControl* t = (TabControl*)c;
+		t->ReopenLastFile();
 		t->Invalidate();
 	};
 }

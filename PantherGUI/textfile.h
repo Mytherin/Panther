@@ -79,6 +79,7 @@ class TextFile {
 	friend class TextLineIterator;
 	friend class WrappedTextLineIterator;
 	friend class TextField;
+	friend class TabControl;
 public:
 	// create an in-memory textfile with currently unspecified path
 	TextFile(BasicTextField* textfield);

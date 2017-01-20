@@ -68,6 +68,7 @@
 		
 		{ "key": "cmd+w", "command": "close_tab" },
 		{ "key": "cmd+n", "command": "new_tab" },
+		{ "key": "cmd+shift+t", "command": "reopen_last_file" },
 
 		{ "key": "cmd+shift+]", "command": "next_tab" },
 		{ "key": "cmd+shift+[", "command": "prev_tab" },

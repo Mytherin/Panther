@@ -46,6 +46,8 @@ public:
 	void AddTab(TextFile* textfile);
 	void NewTab();
 	void SwitchToTab(TextFile* file);
+	void ReopenLastFile();
+
 
 	bool IsDragging() {
 		return drag_tab;
@@ -63,6 +65,7 @@ protected:
 
 	int GetSelectedTab(int x);
 
+	std::vector<std::string> closed_tabs;
 	std::vector<Tab> tabs;
 	Tab dragging_tab;
 	bool active_tab_hidden = false;
