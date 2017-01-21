@@ -843,8 +843,8 @@ PGVerticalScroll TextFile::GetVerticalScroll(lng linenumber, lng characternr) {
 			it->NextLine();
 			if (!it->GetLine().IsValid()) break;
 			if (it->GetCurrentLineNumber() != linenumber) break;
-			scroll.inner_line++;
 			if (it->GetCurrentCharacterNumber() >= characternr) break;
+			scroll.inner_line++;
 		}
 		return scroll;
 	}

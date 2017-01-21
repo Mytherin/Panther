@@ -526,45 +526,76 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 		}
 	}
 	if (scroll_textfield && textfile->textfield) {
-		// FIXME: cursor_line should now be double as well for scrolling purposes
-		/*
-		lng line_offset = textfile->GetLineOffset();
+		PGVerticalScroll line_offset = textfile->GetLineOffset();
 		lng line_height = textfile->GetLineHeight();
-		lng line_start = line_offset;
-		lng line_end = line_start + line_height;
-		lng cursor_min = INT_MAX, cursor_max = 0;
+		PGVerticalScroll end_scroll = PGVerticalScroll(std::min(textfile->GetLineCount() - 1, line_offset.linenumber + line_height), 0);
 		bool word_wrap = textfile->GetWordWrap();
-		PGScalar cursor_min_character = INT_MAX, cursor_max_character = 0;
-		for (int i = 0; i < cursors.size(); i++) {
-			lng cursor_line = cursors[i]->SelectedPosition().line;
-			cursor_min = std::min(cursor_min, cursor_line);
-			cursor_max = std::max(cursor_max, cursor_line);
+		if (word_wrap) {
+			auto it = textfile->GetScrollIterator(textfile->textfield, line_offset);
+			for (lng i = 0; i < line_height; i++, (*it)++) {
+				if (!(*it).GetLine().IsValid()) {
+					break;
+				}
+			}
+			end_scroll = (*it).GetCurrentScrollOffset();
+		}
+		PGCursorPosition cursor_min_position = cursors[0]->SelectedPosition();
+		PGCursorPosition cursor_max_position = cursor_min_position;
+		PGScalar cursor_min_xoffset = word_wrap ? 0 : cursors[0]->SelectedXPosition();
+		PGScalar cursor_max_xoffset = cursor_min_xoffset;
+		for (int i = 1; i < cursors.size(); i++) {
+			auto position = cursors[i]->SelectedPosition();
+			if (position.line < cursor_min_position.line ||
+				(position.line == cursor_min_position.line && position.position < cursor_min_position.position)) {
+				cursor_min_position = position;
+			}
+			if (position.line > cursor_max_position.line ||
+				(position.line == cursor_max_position.line && position.position > cursor_max_position.position)) {
+				cursor_max_position = position;
+			}
 			if (!word_wrap) {
 				PGScalar cursor_position = cursors[i]->SelectedXPosition();
-				cursor_min_character = std::min(cursor_min_character, cursor_position);
-				cursor_max_character = std::max(cursor_max_character, cursor_position);
+				cursor_min_xoffset = std::min(cursor_min_xoffset, cursor_position);
+				cursor_max_xoffset = std::max(cursor_max_xoffset, cursor_position);
 			}
 		}
+		PGVerticalScroll min_scroll = textfile->GetVerticalScroll(cursor_min_position.line, cursor_min_position.position);
+		PGVerticalScroll max_scroll = textfile->GetVerticalScroll(cursor_max_position.line, cursor_max_position.position);
 
-		if (cursor_min >= line_end) {
+		if (max_scroll < line_offset) {
 			// cursor is located past the end of what is visible, offset the view
-			line_offset = cursor_min - line_height;
-		} else if (cursor_max < line_start) {
+			line_offset = max_scroll;
+		} else
+		if (min_scroll > end_scroll) {
 			// cursor is located before the start of what is visible, offset the view
-			line_offset = cursor_max;
+			if (!word_wrap) {
+				line_offset = PGVerticalScroll(std::max((lng) 0, min_scroll.linenumber - line_height), 0);
+			} else {
+				lng count = line_height;
+				auto it = textfile->GetScrollIterator(textfile->textfield, min_scroll);
+				for (; ; (*it)--) {
+					if (!(*it).GetLine().IsValid()) {
+						break;
+					}
+					if (count == 0)
+						break;
+					count--;
+				}
+				line_offset = it->GetCurrentScrollOffset();
+			}
 		}
 		textfile->SetLineOffset(line_offset);
 
 		if (!word_wrap) {
 			PGScalar xoffset = textfile->GetXOffset();
 			PGScalar max_textwidth = textfile->textfield->GetTextfieldWidth() - 20;
-			if (cursor_max_character < xoffset) {
-				xoffset = cursor_max_character;
-			} else if (cursor_min_character > xoffset + max_textwidth) {
-				xoffset = cursor_min_character - max_textwidth;
+			if (cursor_max_xoffset < xoffset) {
+				xoffset = cursor_max_xoffset;
+			} else if (cursor_min_xoffset > xoffset + max_textwidth) {
+				xoffset = cursor_min_xoffset - max_textwidth;
 			}
 			textfile->SetXOffset(std::max(0.0f, std::min(xoffset, textfile->textfield->GetMaxXOffset())));
-		}*/
+		}
 		if (textfile->textfield) {
 			textfile->textfield->SelectionChanged();
 		}

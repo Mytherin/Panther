@@ -149,7 +149,6 @@ protected:
 	TextLine textline;
 };
 
-
 class WrappedTextLineIterator : public TextLineIterator {
 public:
 	TextLine GetLine();
