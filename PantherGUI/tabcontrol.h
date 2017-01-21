@@ -79,6 +79,7 @@ protected:
 
 	bool CloseTabConfirmation(int tab);
 	void ActuallyCloseTab(int tab);
+	void ActuallyCloseTab(TextFile* textfile);
 
 	Tab OpenTab(TextFile* textfile);
 

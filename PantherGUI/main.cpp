@@ -463,6 +463,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
 				DestroyMenu(handle->popup_data.menu->menu);
 			}
+			while (handle->pending_confirmation_box) {
+				handle->pending_confirmation_box = false;
+				PGResponse response = PGResponseCancel;
+				int retval = MessageBox(handle->hwnd, handle->confirmation_box_data.message.c_str(), handle->confirmation_box_data.title.c_str(), MB_YESNOCANCEL | MB_ICONWARNING);
+				if (retval == IDNO) {
+					response = PGResponseNo;
+				} else if (retval == IDYES) {
+					response = PGResponseYes;
+				}
+				handle->confirmation_box_data.callback(handle, handle->confirmation_box_data.control, handle->confirmation_box_data.data, response);
+			}
 			break;
 		}
 		int index = LOWORD(wParam);
@@ -1045,6 +1056,15 @@ PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::stri
 		return PGResponseYes;
 	}
 	return PGResponseCancel;
+}
+
+void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data) {
+	window->pending_confirmation_box = true;
+	window->confirmation_box_data.callback = callback;
+	window->confirmation_box_data.control = control;
+	window->confirmation_box_data.message = message;
+	window->confirmation_box_data.data = data;
+	window->confirmation_box_data.title = title;
 }
 
 std::string GetOSName() {

@@ -5,6 +5,10 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
+#define SAVE_CHANGES_TITLE "Save Changes?"
+#define SAVE_CHANGES_DIALOG "The current file has unsaved changes. Save changes before closing?"
+
+
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files) :
 	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1), active_tab_hidden(false), drag_tab(false), current_id(0) {
 
@@ -166,9 +170,9 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 				std::vector<TextFile*> textfiles;
 				textfiles.push_back(data->file);
 				PGCreateWindow(mouse, textfiles);
-				data->tabs->CloseTab(data->file);
+				data->tabs->ActuallyCloseTab(data->file);
 			} else if (data->accepted != data->tabs) {
-				data->tabs->CloseTab(data->file);
+				data->tabs->ActuallyCloseTab(data->file);
 			}
 			data->tabs->active_tab_hidden = false;
 		}, new TabDragDropStruct(tabs[active_tab].file, this, drag_offset), sizeof(TabDragDropStruct));
@@ -421,7 +425,7 @@ bool TabControl::CloseAllTabs() {
 
 bool TabControl::CloseTabConfirmation(int tab) {
 	if (tabs[tab].file->HasUnsavedChanges()) {
-		PGResponse response = PGConfirmationBox(window, "Save Changes?", "The current file has unsaved changes. Save changes before closing?");
+		PGResponse response = PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG);
 		if (response == PGResponseCancel) {
 			return false;
 		} else if (response == PGResponseYes) {
@@ -432,18 +436,7 @@ bool TabControl::CloseTabConfirmation(int tab) {
 }
 
 void TabControl::ActuallyCloseTab(int tab) {
-	if (tabs[tab].file->path.size() > 0) {
-		closed_tabs.push_back(PGClosedTab(tabs[tab], tab == 0 ? -1 : tabs[tab - 1].id));
-	}
-	file_manager.CloseFile(tabs[tab].file);
-	tabs.erase(tabs.begin() + tab);
-}
-
-void TabControl::CloseTab(int tab) {
 	bool close_window = false;
-	if (!CloseTabConfirmation(tab)) {
-		return;
-	}
 	if (tab == active_tab && active_tab > 0) {
 		active_tab--;
 		SwitchToFile(tabs[active_tab].file);
@@ -454,15 +447,48 @@ void TabControl::CloseTab(int tab) {
 			SwitchToFile(tabs[1].file);
 		}
 	}
-	ActuallyCloseTab(tab);
+	if (tabs[tab].file->path.size() > 0) {
+		closed_tabs.push_back(PGClosedTab(tabs[tab], tab == 0 ? -1 : tabs[tab - 1].id));
+	}
+	file_manager.CloseFile(tabs[tab].file);
+	tabs.erase(tabs.begin() + tab);
 	this->Invalidate();
 	if (close_window) {
 		PGCloseWindow(this->window);
 	}
 }
 
+void TabControl::CloseTab(int tab) {
+	if (tabs[tab].file->HasUnsavedChanges()) {
+		PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG, 
+			[](PGWindowHandle window, Control* control, void* data, PGResponse response) {
+			TabControl* tabs = (TabControl*)control;
+			int tabnr = (int)data;
+			if (response == PGResponseCancel)
+				return;
+			if (response == PGResponseYes) {
+				tabs->tabs[tabnr].file->SaveChanges();
+			}
+			tabs->ActuallyCloseTab(tabnr);
+		}, this, (void*)tab);
+	} else {
+		ActuallyCloseTab(tab);
+	}
+}
+
+
+void TabControl::ActuallyCloseTab(TextFile* textfile) {
+	for (size_t i = 0; i < tabs.size(); i++) {
+		if (tabs[i].file == textfile) {
+			ActuallyCloseTab(i);
+			return;
+		}
+	}
+	assert(0);
+}
+
 void TabControl::CloseTab(TextFile* textfile) {
-	for (int i = 0; i < tabs.size(); i++) {
+	for (size_t i = 0; i < tabs.size(); i++) {
 		if (tabs[i].file == textfile) {
 			CloseTab(i);
 			return;

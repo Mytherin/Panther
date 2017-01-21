@@ -378,7 +378,10 @@ enum PGResponse {
 	PGResponseCancel
 };
 
+typedef void(*PGConfirmationCallback)(PGWindowHandle window, Control* control, void* data, PGResponse response);
+
 PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message);
+void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data);
 
 std::string GetOSName();
 

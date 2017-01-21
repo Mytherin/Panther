@@ -19,6 +19,7 @@ public:
 	
 	bool pending_popup_menu = false;
 	bool pending_drag_drop = false;
+	bool pending_confirmation_box = false;
 	bool dragging = false;
 
 	struct DragDropData {
@@ -33,6 +34,15 @@ public:
 		PGPoint point;
 		PGPopupMenuHandle menu;
 	} popup_data;
+
+	struct ConfirmationBoxData {
+		PGWindowHandle window;
+		std::string title;
+		std::string message;
+		PGConfirmationCallback callback;
+		Control* control;
+		void* data;
+	} confirmation_box_data;
 
 	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), pending_popup_menu(false) {}
 };
