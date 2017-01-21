@@ -206,7 +206,7 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 		PGScalar position_x = 0;
 		lng index = 0;
 		lng current_index = 0;
-		lng new_index = tabs.size() - 1;
+		lng new_index = this == td->tabs ? tabs.size() - 1 : tabs.size();
 		for (auto it = tabs.begin(); it != tabs.end(); it++, index++) {
 			// we skip the active tab if the file is from the current tab control
 			// because the active tab is the file we are dragging
@@ -233,8 +233,7 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 		} else {
 			// if the tab is from a different tab control 
 			// we have to open the file
-			active_tab = new_index - 1;
-			this->OpenFile(td->file);
+			this->OpenFile(td->file, new_index);
 		}
 	}
 	dragging_tab.x = -1;
@@ -287,10 +286,24 @@ void TabControl::OpenFile(TextFile* textfile) {
 	}
 }
 
+void TabControl::OpenFile(TextFile* textfile, lng index) {
+	file_manager.OpenFile(textfile);
+	if (textfile) {
+		AddTab(textfile, index);
+	}
+}
+
 void TabControl::AddTab(TextFile* file) {
 	assert(file);
 	tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
 	active_tab++;
+	SwitchToFile(tabs[active_tab].file);
+}
+
+void TabControl::AddTab(TextFile* file, lng index) {
+	assert(file);
+	tabs.insert(tabs.begin() + index, OpenTab(file));
+	active_tab = index;
 	SwitchToFile(tabs[active_tab].file);
 }
 

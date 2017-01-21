@@ -52,12 +52,14 @@ public:
 
 	void OpenFile(std::string path);
 	void OpenFile(TextFile* textfile);
+	void OpenFile(TextFile* textfile, lng index);
 	void PrevTab();
 	void NextTab();
 	void CloseTab(int tab);
 	void CloseTab(TextFile* textfile);
 	bool CloseAllTabs();
 	void AddTab(TextFile* textfile);
+	void AddTab(TextFile* file, lng index);
 	void NewTab();
 	void SwitchToTab(TextFile* file);
 	void ReopenLastFile();
