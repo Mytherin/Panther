@@ -857,9 +857,10 @@ PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng off
 
 PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng offset, lng& lines_offset) {
 	if (!wordwrap) {
-		lines_offset = std::abs(offset);
+		lng original_linenumber = scroll.linenumber;
 		scroll.linenumber += offset;
 		scroll.linenumber = std::max(std::min(scroll.linenumber, GetMaxYScroll()), (lng)0);
+		lines_offset = std::abs(scroll.linenumber - original_linenumber);
 	} else {
 		lines_offset = 0;
 		lng lines = offset;
