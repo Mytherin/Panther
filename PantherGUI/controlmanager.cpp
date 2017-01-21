@@ -8,10 +8,13 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
 ControlManager::ControlManager(PGWindowHandle window) : PGContainer(window) {
-
+#ifdef PANTHER_DEBUG
+	entrance_count = 0;
+#endif
 }
 
 void ControlManager::PeriodicRender(void) {
+	EnterManager();
 	PGPoint mouse = GetMousePosition(window);
 	PGMouseButton buttons = GetMouseState(window);
 
@@ -67,13 +70,17 @@ void ControlManager::PeriodicRender(void) {
 	}
 	this->invalidated = 0;
 	this->invalidated_area.width = 0;
+	LeaveManager();
 }
 
 bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
+	EnterManager();
 	if (this->PressCharacter(ControlManager::keybindings, character, modifier)) {
 		return true;
 	}
-	return PGContainer::KeyboardCharacter(character, modifier);
+	bool retval = PGContainer::KeyboardCharacter(character, modifier);
+	LeaveManager();
+	return retval;
 }
 
 void ControlManager::RefreshWindow(bool redraw_now) {
@@ -190,3 +197,71 @@ void ControlManager::InitializeKeybindings() {
 		t->ShowFindReplace(replace);
 	};
 }
+
+void ControlManager::EnterManager() {
+#ifdef PANTHER_DEBUG
+	entrance_count++;
+	assert(entrance_count == 1);
+#endif
+}
+
+void ControlManager::LeaveManager() {
+#ifdef PANTHER_DEBUG
+	entrance_count--;
+	assert(entrance_count == 0);
+#endif
+}
+
+void ControlManager::MouseWheel(int x, int y, double distance, PGModifier modifier) {
+	EnterManager();
+	PGContainer::MouseWheel(x, y, distance, modifier);
+	LeaveManager();
+}
+
+bool ControlManager::KeyboardButton(PGButton button, PGModifier modifier) {
+	EnterManager();
+	bool retval = PGContainer::KeyboardButton(button, modifier);
+	LeaveManager();
+	return retval;
+}
+
+bool ControlManager::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
+	EnterManager();
+	bool retval = PGContainer::KeyboardUnicode(character, modifier);
+	LeaveManager();
+	return retval;
+
+}
+
+void ControlManager::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
+	EnterManager();
+	PGContainer::Draw(renderer, rectangle);
+	LeaveManager();
+}
+
+
+void ControlManager::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
+	EnterManager();
+	PGContainer::MouseClick(x, y, button, modifier);
+	LeaveManager();
+}
+
+void ControlManager::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+	EnterManager();
+	PGContainer::MouseDown(x, y, button, modifier);
+	LeaveManager();
+
+}
+
+void ControlManager::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+	EnterManager();
+	PGContainer::MouseUp(x, y, button, modifier);
+	LeaveManager();
+}
+
+void ControlManager::MouseMove(int x, int y, PGMouseButton buttons) {
+	EnterManager();
+	PGContainer::MouseMove(x, y, buttons);
+	LeaveManager();
+}
+

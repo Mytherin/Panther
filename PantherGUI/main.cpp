@@ -456,6 +456,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				handle->pending_drag_drop = false;
 				PGPerformDragDrop(handle);
 			}
+			if (handle->pending_popup_menu) {
+				handle->pending_popup_menu = false;
+				handle->popup = handle->popup_data.menu;
+				SetCursor(cursor_standard);
+				TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
+				DestroyMenu(handle->popup_data.menu->menu);
+			}
 			break;
 		}
 		int index = LOWORD(wParam);
@@ -470,7 +477,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_CLOSE:
-		if (!handle->manager->CloseControlManager()) 
+		if (!handle->manager->CloseControlManager())
 			return 0;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -720,7 +727,7 @@ char GetSystemPathSeparator() {
 }
 
 VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN TimerOrWaitFired) {
-	PGTimerParameter* parameter = (PGTimerParameter*) lpParam;
+	PGTimerParameter* parameter = (PGTimerParameter*)lpParam;
 	parameter->callback(parameter->window);
 }
 
@@ -737,7 +744,7 @@ PGTimerHandle CreateTimer(PGWindowHandle wnd, int ms, PGTimerCallback callback, 
 		&timer,
 		nullptr,
 		TimerRoutine,
-		(void*) parameter,
+		(void*)parameter,
 		(DWORD)ms,
 		flags & PGTimerExecuteOnce ? (DWORD)0 : (DWORD)ms,
 		timer_flags))
@@ -841,10 +848,10 @@ void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGPoint point, PGTextAlign ali
 	} else {
 		alignment |= TPM_BOTTOMALIGN;
 	}
-	SetCursor(cursor_standard);
-	handle->window->popup = handle;
-	TrackPopupMenu(handle->menu, alignment, point.x, point.y, 0, handle->window->hwnd, NULL);
-	DestroyMenu(handle->menu);
+	handle->window->pending_popup_menu = true;
+	handle->window->popup_data.menu = handle;
+	handle->window->popup_data.alignment = alignment;
+	handle->window->popup_data.point = point;
 }
 
 void OpenFolderInExplorer(std::string path) {

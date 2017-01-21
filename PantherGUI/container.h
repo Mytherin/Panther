@@ -26,7 +26,6 @@ public:
 	virtual void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
-	virtual void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 
 	virtual bool AcceptsDragDrop(PGDragDropType type);

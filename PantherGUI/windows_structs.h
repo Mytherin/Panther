@@ -17,6 +17,7 @@ public:
 	PGTimerHandle timer;
 	HCURSOR cursor;
 	
+	bool pending_popup_menu = false;
 	bool pending_drag_drop = false;
 	bool dragging = false;
 
@@ -27,7 +28,13 @@ public:
 		size_t data_length;
 	} drag_drop_data;
 
-	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false) {}
+	struct PopupData {
+		UINT alignment;
+		PGPoint point;
+		PGPopupMenuHandle menu;
+	} popup_data;
+
+	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), pending_popup_menu(false) {}
 };
 
 struct PGTimerParameter {

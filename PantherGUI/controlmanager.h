@@ -26,6 +26,16 @@ public:
 
 	void PeriodicRender(void);
 
+	void MouseWheel(int x, int y, double distance, PGModifier modifier);
+	bool KeyboardButton(PGButton button, PGModifier modifier);
+	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
+	void Draw(PGRendererHandle, PGIRect*);
+
+	void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseMove(int x, int y, PGMouseButton buttons);
+
 	void RefreshWindow(bool redraw_now = false);
 	void RefreshWindow(PGIRect rectangle, bool redraw_now = false);
 
@@ -54,6 +64,12 @@ private:
 	PGIRect invalidated_area;
 	bool invalidated;
 	bool is_destroyed = false;
+
+	void EnterManager();
+	void LeaveManager();
+#ifdef PANTHER_DEBUG
+	int entrance_count = 0;
+#endif
 
 	std::vector<PGMouseRegion> regions;
 };
