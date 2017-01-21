@@ -6,17 +6,23 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files) :
-	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr), active_tab_hidden(false), drag_tab(false) {
+	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1), active_tab_hidden(false), drag_tab(false), current_id(0) {
+
 	if (files.size() == 0)
 		files.push_back(new TextFile(nullptr));
 	for (auto it = files.begin(); it != files.end(); it++) {
 		file_manager.OpenFile(*it);
-		this->tabs.push_back(Tab(*it));
+		this->tabs.push_back(OpenTab(*it));
 	}
 	this->font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(this->font, 12);
 
 	tab_padding = 5;
+}
+
+
+Tab TabControl::OpenTab(TextFile* textfile) {
+	return Tab(textfile, current_id++);
 }
 
 void TabControl::PeriodicRender() {
@@ -102,6 +108,9 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 				position_x += MeasureTabWidth(dragging_tab);
 			}
 			it->target_x = position_x;
+			if (it->x == -1) {
+				it->x = position_x;
+			}
 			RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && index == active_tab);
 		}
 		index++;
@@ -250,7 +259,7 @@ bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
 
 void TabControl::NewTab() {
 	TextFile* file = file_manager.OpenFile();
-	tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
+	tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
 	active_tab++;
 	SwitchToFile(tabs[active_tab].file);
 }
@@ -262,6 +271,15 @@ void TabControl::OpenFile(std::string path) {
 	}
 }
 
+
+void TabControl::ReopenFile(PGClosedTab tab) {
+	TextFile* textfile = file_manager.OpenFile(tab.filepath);
+	if (textfile) {
+		AddTab(textfile, tab.id, tab.neighborid);
+	}
+}
+
+
 void TabControl::OpenFile(TextFile* textfile) {
 	file_manager.OpenFile(textfile);
 	if (textfile) {
@@ -271,8 +289,29 @@ void TabControl::OpenFile(TextFile* textfile) {
 
 void TabControl::AddTab(TextFile* file) {
 	assert(file);
-	tabs.insert(tabs.begin() + active_tab + 1, Tab(file));
+	tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
 	active_tab++;
+	SwitchToFile(tabs[active_tab].file);
+}
+
+void TabControl::AddTab(TextFile* file, lng id, lng neighborid) {
+	assert(file);
+	if (neighborid < 0) {
+		tabs.insert(tabs.begin(), Tab(file, id));
+		active_tab = 0;
+	} else {
+		lng entry = 0;
+		for (auto it = tabs.begin(); it != tabs.end(); it++) {
+			assert(it->id != id);
+			if (it->id == neighborid) {
+				break;
+			}
+			entry++;
+		}
+		assert(entry != tabs.size());
+		tabs.insert(tabs.begin() + entry + 1, Tab(file, id));
+		active_tab = entry + 1;
+	}
 	SwitchToFile(tabs[active_tab].file);
 }
 
@@ -360,14 +399,14 @@ bool TabControl::CloseAllTabs() {
 		active_tab = i;
 		SwitchToFile(tabs[active_tab].file);
 		this->Invalidate();
-		if (!CloseTabInternal(i)) {
+		if (!CloseTabConfirmation(i)) {
 			return false;
 		}
 	}
 	return true;
 }
 
-bool TabControl::CloseTabInternal(int tab) {
+bool TabControl::CloseTabConfirmation(int tab) {
 	if (tabs[tab].file->HasUnsavedChanges()) {
 		PGResponse response = PGConfirmationBox(window, "Save Changes?", "The current file has unsaved changes. Save changes before closing?");
 		if (response == PGResponseCancel) {
@@ -381,7 +420,7 @@ bool TabControl::CloseTabInternal(int tab) {
 
 void TabControl::ActuallyCloseTab(int tab) {
 	if (tabs[tab].file->path.size() > 0) {
-		closed_tabs.push_back(tabs[tab].file->path);
+		closed_tabs.push_back(PGClosedTab(tabs[tab], tab == 0 ? -1 : tabs[tab - 1].id));
 	}
 	file_manager.CloseFile(tabs[tab].file);
 	tabs.erase(tabs.begin() + tab);
@@ -389,7 +428,7 @@ void TabControl::ActuallyCloseTab(int tab) {
 
 void TabControl::CloseTab(int tab) {
 	bool close_window = false;
-	if (!CloseTabInternal(tab)) {
+	if (!CloseTabConfirmation(tab)) {
 		return;
 	}
 	if (tab == active_tab && active_tab > 0) {
@@ -422,8 +461,10 @@ void TabControl::CloseTab(TextFile* textfile) {
 void TabControl::ReopenLastFile() {
 	if (closed_tabs.size() == 0) return;
 
-	this->OpenFile(closed_tabs.back());
+	PGClosedTab tab = closed_tabs.back();
 	closed_tabs.pop_back();
+
+	this->ReopenFile(tab);
 }
 
 void TabControl::SwitchToTab(TextFile* textfile) {

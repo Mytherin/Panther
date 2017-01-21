@@ -6,12 +6,25 @@
 #include "filemanager.h"
 
 struct Tab {
+	lng id = 0;
 	TextFile* file;
 	PGScalar width;
 	PGScalar x = -1;
 	PGScalar target_x = -1;
 
-	Tab(TextFile* file) : file(file), x(-1), target_x(-1) { }
+	Tab(TextFile* file, lng id) : file(file), x(-1), target_x(-1), id(id) { }
+};
+
+struct PGClosedTab {
+	lng id;
+	lng neighborid;
+	std::string filepath;
+
+	PGClosedTab(Tab tab, lng neighborid) {
+		id = tab.id;
+		this->neighborid = neighborid;
+		filepath = tab.file->GetFullPath();
+	}
 };
 
 class TabControl : public Control {
@@ -58,9 +71,14 @@ public:
 
 	PG_CONTROL_KEYBINDINGS;
 protected:
+	void ReopenFile(PGClosedTab tab);
 
-	bool CloseTabInternal(int tab);
+	void AddTab(TextFile* file, lng id, lng neighborid);
+
+	bool CloseTabConfirmation(int tab);
 	void ActuallyCloseTab(int tab);
+
+	Tab OpenTab(TextFile* textfile);
 
 	PGScalar MeasureTabWidth(Tab& tab);
 
@@ -70,7 +88,7 @@ protected:
 
 	int GetSelectedTab(int x);
 
-	std::vector<std::string> closed_tabs;
+	std::vector<PGClosedTab> closed_tabs;
 	std::vector<Tab> tabs;
 	Tab dragging_tab;
 	bool active_tab_hidden = false;
@@ -88,4 +106,6 @@ protected:
 	PGScalar tab_padding;
 	PGScalar file_icon_height;
 	PGScalar file_icon_width;
+
+	lng current_id = 0;
 };
