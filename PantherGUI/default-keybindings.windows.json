@@ -73,6 +73,7 @@
 		
 		{ "key": "ctrl+w", "command": "close_tab" },
 		{ "key": "ctrl+n", "command": "new_tab" },
+		{ "key": "ctrl+shift+t", "command": "reopen_last_file" },
 
 		{ "key": "ctrl+pagedown", "command": "next_tab" },
 		{ "key": "ctrl+pageup", "command": "prev_tab" },

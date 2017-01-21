@@ -469,6 +469,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		}
 		break;
 	}
+	case WM_CLOSE:
+		if (!handle->manager->CloseControlManager()) 
+			return 0;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 		break;
@@ -1024,10 +1027,17 @@ void SetHWNDHandle(HWND hwnd, PGWindowHandle window) {
 }
 
 void PGMessageBox(PGWindowHandle window, std::string title, std::string message) {
-	std::string ucs2_title = UTF8toUCS2(title);
-	std::string ucs2_message = UTF8toUCS2(message);
+	MessageBox(window->hwnd, message.c_str(), title.c_str(), MB_OK);
+}
 
-	MessageBox(window->hwnd, ucs2_message.c_str(), ucs2_title.c_str(), MB_OK);
+PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message) {
+	int retval = MessageBox(window->hwnd, message.c_str(), title.c_str(), MB_YESNOCANCEL | MB_ICONWARNING);
+	if (retval == IDNO) {
+		return PGResponseNo;
+	} else if (retval == IDYES) {
+		return PGResponseYes;
+	}
+	return PGResponseCancel;
 }
 
 std::string GetOSName() {

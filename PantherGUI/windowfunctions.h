@@ -372,6 +372,14 @@ void PGStartDragDrop(PGWindowHandle window, PGBitmapHandle image, PGDropCallback
 
 void PGMessageBox(PGWindowHandle window, std::string title, std::string message);
 
+enum PGResponse {
+	PGResponseYes,
+	PGResponseNo,
+	PGResponseCancel
+};
+
+PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message);
+
 std::string GetOSName();
 
 struct PGVerticalScroll {

@@ -43,6 +43,7 @@ public:
 	void NextTab();
 	void CloseTab(int tab);
 	void CloseTab(TextFile* textfile);
+	bool CloseAllTabs();
 	void AddTab(TextFile* textfile);
 	void NewTab();
 	void SwitchToTab(TextFile* file);
@@ -57,6 +58,10 @@ public:
 
 	PG_CONTROL_KEYBINDINGS;
 protected:
+
+	bool CloseTabInternal(int tab);
+	void ActuallyCloseTab(int tab);
+
 	PGScalar MeasureTabWidth(Tab& tab);
 
 	FileManager file_manager;

@@ -163,6 +163,13 @@ void ControlManager::CreateNewWindow() {
 	PGCreateWindow(files);
 }
 
+bool ControlManager::CloseControlManager() {
+	if (active_tabcontrol) {
+		return active_tabcontrol->CloseAllTabs();
+	}
+	return true;
+}
+
 void ControlManager::InitializeKeybindings() {
 	std::map<std::string, PGKeyFunction>& noargs = ControlManager::keybindings_noargs;
 	noargs["new_window"] = [](Control* c) {

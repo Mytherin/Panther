@@ -44,6 +44,8 @@ public:
 	TabControl* active_tabcontrol;
 	StatusBar* statusbar;
 
+	bool CloseControlManager();
+
 	void ShowFindReplace(bool replace = false);
 	void CreateNewWindow();
 

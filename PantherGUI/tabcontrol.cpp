@@ -355,27 +355,54 @@ void TabControl::NextTab() {
 	SwitchToFile(files[active_tab]);
 }
 
+bool TabControl::CloseAllTabs() {
+	for (size_t i = 0; i < tabs.size(); i++) {
+		active_tab = i;
+		SwitchToFile(tabs[active_tab].file);
+		this->Invalidate();
+		if (!CloseTabInternal(i)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool TabControl::CloseTabInternal(int tab) {
+	if (tabs[tab].file->HasUnsavedChanges()) {
+		PGResponse response = PGConfirmationBox(window, "Save Changes?", "The current file has unsaved changes. Save changes before closing?");
+		if (response == PGResponseCancel) {
+			return false;
+		} else if (response == PGResponseYes) {
+			tabs[tab].file->SaveChanges();
+		}
+	}
+	return true;
+}
+
+void TabControl::ActuallyCloseTab(int tab) {
+	if (tabs[tab].file->path.size() > 0) {
+		closed_tabs.push_back(tabs[tab].file->path);
+	}
+	file_manager.CloseFile(tabs[tab].file);
+	tabs.erase(tabs.begin() + tab);
+}
+
 void TabControl::CloseTab(int tab) {
 	bool close_window = false;
+	if (!CloseTabInternal(tab)) {
+		return;
+	}
 	if (tab == active_tab && active_tab > 0) {
 		active_tab--;
 		SwitchToFile(tabs[active_tab].file);
 	} else if (tab == active_tab) {
 		if (tabs.size() == 1) {
 			close_window = true;
-			/*
-			// open an in-memory file to replace the current file
-			TextFile* file = file_manager.OpenFile();
-			tabs.push_back(Tab(file));*/
 		} else {
 			SwitchToFile(tabs[1].file);
 		}
 	}
-	if (tabs[tab].file->path.size() > 0) {
-		closed_tabs.push_back(tabs[tab].file->path);
-	}
-	file_manager.CloseFile(tabs[tab].file);
-	tabs.erase(tabs.begin() + tab);
+	ActuallyCloseTab(tab);
 	this->Invalidate();
 	if (close_window) {
 		PGCloseWindow(this->window);
