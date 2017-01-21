@@ -185,9 +185,6 @@
     <ClCompile Include="..\PantherGUI\logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\PantherGUI\mmap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\PantherGUI\regex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -243,6 +240,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\PantherGUI\windowfunctions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\wrappedtextiterator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\searchbox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\keybindings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

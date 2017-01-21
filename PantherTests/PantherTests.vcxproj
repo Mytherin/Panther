@@ -72,11 +72,11 @@
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../PantherGUI;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;../PantherGUI;D:\icu\x64\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;../PantherGUI;D:\icu\x64\include;D:\Skia\src\skia\include\effects;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Debug;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;../PantherGUI;D:\icu\x64\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;../PantherGUI;D:\icu\x64\include;D:\Skia\src\skia\include\effects;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -180,14 +180,16 @@
     <ClCompile Include="..\PantherGUI\file.cpp" />
     <ClCompile Include="..\PantherGUI\filemanager.cpp" />
     <ClCompile Include="..\PantherGUI\findtext.cpp" />
+    <ClCompile Include="..\PantherGUI\keybindings.cpp" />
     <ClCompile Include="..\PantherGUI\keywords.cpp" />
     <ClCompile Include="..\PantherGUI\language.cpp" />
     <ClCompile Include="..\PantherGUI\logger.cpp" />
-    <ClCompile Include="..\PantherGUI\mmap.cpp" />
     <ClCompile Include="..\PantherGUI\regex.cpp" />
     <ClCompile Include="..\PantherGUI\renderer.cpp" />
     <ClCompile Include="..\PantherGUI\scheduler.cpp" />
     <ClCompile Include="..\PantherGUI\scrollbar.cpp" />
+    <ClCompile Include="..\PantherGUI\searchbox.cpp" />
+    <ClCompile Include="..\PantherGUI\settings.cpp" />
     <ClCompile Include="..\PantherGUI\simpletextfield.cpp" />
     <ClCompile Include="..\PantherGUI\statusbar.cpp" />
     <ClCompile Include="..\PantherGUI\style.cpp" />
@@ -202,6 +204,7 @@
     <ClCompile Include="..\PantherGUI\unicode.cpp" />
     <ClCompile Include="..\PantherGUI\utils.cpp" />
     <ClCompile Include="..\PantherGUI\windowfunctions.cpp" />
+    <ClCompile Include="..\PantherGUI\wrappedtextiterator.cpp" />
     <ClCompile Include="..\PantherGUI\xml.cpp" />
     <ClCompile Include="dummywindowfunctions.cpp" />
     <ClCompile Include="main.cpp" />

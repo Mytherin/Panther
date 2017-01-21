@@ -153,3 +153,44 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 void* GetWindowManager(PGWindowHandle window) {
 	return nullptr;
 }
+
+void PGCloseWindow(PGWindowHandle window) {
+
+}
+
+PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
+	return nullptr;
+}
+
+PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_files) {
+	return nullptr;
+}
+
+void PGStartDragDrop(PGWindowHandle window, PGBitmapHandle image, PGDropCallback, void* data, size_t data_length) {
+
+}
+
+void PGMessageBox(PGWindowHandle window, std::string title, std::string message) {
+
+}
+
+PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message) {
+	return PGResponseCancel;
+}
+
+std::string ShowSaveFileDialog() {
+	return "";
+}
+
+void RefreshWindow(PGWindowHandle window, bool redraw_now) {
+
+}
+
+std::string GetOSName() {
+	return "none";
+}
+
+std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directories, bool allow_multiple_selection) {
+	std::vector<std::string> files;
+	return files;
+}

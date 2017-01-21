@@ -391,6 +391,7 @@ PGScalar Cursor::GetXOffset(CursorPosition position) {
 	auto textfield_font = file->textfield->GetTextfieldFont();
 	if (file->GetWordWrap()) {
 		assert(0);
+		return -1;
 	} else {
 		return MeasureTextWidth(textfield_font, line.GetLine(), line_position);
 	}
