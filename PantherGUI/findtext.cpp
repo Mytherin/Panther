@@ -99,7 +99,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	});
 	auto update_highlight = [](Button* b, bool toggled) {
 		FindText* f = dynamic_cast<FindText*>(b->parent);
-		if (f->toggle_highlight) {
+		if (f->HighlightMatches()) {
 			f->FindAll(PGDirectionRight);
 		}};
 
@@ -259,7 +259,7 @@ void FindText::SelectAllMatches() {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 
-	if (this->toggle_highlight) {
+	if (HighlightMatches()) {
 		// toggle-highlight is turned on
 		// so we should already be searching
 		// wait for the search to finish
@@ -304,7 +304,7 @@ void FindText::Replace() {
 		TextFile& tf = manager->active_textfield->GetTextFile();
 		tf.InsertText(replacement);
 		SetTextfile(&tf);
-		if (this->toggle_highlight) {
+		if (HighlightMatches()) {
 			this->FindAll(PGDirectionRight);
 		}
 	}
@@ -320,7 +320,8 @@ void FindText::ReplaceAll() {
 	if (tf.GetCursors().size() > 0) {
 		// check if there are any matches
 		tf.InsertText(replacement);
-		if (this->toggle_highlight) {
+		this->SetTextfile(&tf);
+		if (HighlightMatches()) {
 			this->FindAll(PGDirectionRight);
 		}
 	}

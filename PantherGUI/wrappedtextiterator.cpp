@@ -36,7 +36,9 @@ void WrappedTextLineIterator::NextLine() {
 	if (end_wrap >= textline.length) {
 		// have to get the next line
 		TextLineIterator::NextLine();
-		start_wrap = 0;
+		if (textline.line != nullptr) {
+			start_wrap = 0;
+		}
 	} else {
 		start_wrap = end_wrap;
 	}

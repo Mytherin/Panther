@@ -1169,7 +1169,14 @@ void TextFile::VerifyTextfile() {
 	assert(cursors.size() > 0);
 	for (int i = 0; i < cursors.size(); i++) {
 		Cursor* c = cursors[i];
-		assert(i == cursors.size() - 1 || Cursor::CursorOccursFirst(c, cursors[i + 1]));
+		if (i < cursors.size() - 1) {
+			auto end_position = c->EndCursorPosition();
+			auto begin_position = cursors[i + 1]->BeginCursorPosition();
+			if (!(end_position.buffer == begin_position.buffer && end_position.position == begin_position.position)) {
+				assert(Cursor::CursorPositionOccursFirst(end_position.buffer, end_position.position, 
+						begin_position.buffer, begin_position.position));
+			}
+		}
 		assert(c->start_buffer_position >= 0 && c->start_buffer_position < c->start_buffer->current_size);
 		assert(c->end_buffer_position >= 0 && c->end_buffer_position < c->end_buffer->current_size);
 		assert(std::find(buffers.begin(), buffers.end(), c->start_buffer) != buffers.end());
@@ -1899,6 +1906,13 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 			break;
 		}
 	}
+#ifdef PANTHER_DEBUG
+	/*for (lng i = 0; i < textfile->matches.size() - 1; i++) {
+		if (textfile->matches[i].start_line == textfile->matches[i].start_line) {
+
+		}
+	}*/
+#endif
 	if (regex_handle) PGDeleteRegex(regex_handle);
 	if (textfile->textfield) textfile->textfield->Invalidate();
 }
@@ -2040,6 +2054,7 @@ void TextFile::SelectMatches() {
 		Cursor* c = new Cursor(this, (*it).end_line, (*it).end_character, (*it).start_line, (*it).start_character);
 		cursors.push_back(c);
 	}
+	VerifyTextfile();
 	if (textfield) textfield->SelectionChanged();
 }
 
@@ -2079,27 +2094,31 @@ std::vector<PGFindMatch> PGFindMatch::FromBufferMatches(PGTextBuffer* buffer, st
 	lng current_line = buffer->start_line;
 	lng current_character = 0;
 	lng current_pos = 0;
+	bool next_pos = false;
 	ulng i = 0;
 	for (; ; ) {
 		if (i == matches[current_pos].start_buffer_pos) {
 			current_match.start_line = current_line;
 			current_match.start_character = current_character;
 			if (matches[current_pos].start_buffer_pos > matches[current_pos].end_buffer_pos) {
-				resulting_matches.push_back(current_match);
-				current_pos++;
-				if (current_pos >= matches.size())
-					return resulting_matches;
+				next_pos = true;
 			}
 		}
 		if (i == matches[current_pos].end_buffer_pos) {
 			current_match.end_line = current_line;
 			current_match.end_character = current_character;
 			if (matches[current_pos].end_buffer_pos >= matches[current_pos].start_buffer_pos) {
-				resulting_matches.push_back(current_match);
-				current_pos++;
-				if (current_pos >= matches.size())
-					return resulting_matches;
+				next_pos = true;
 			}
+		}
+		if (next_pos) {
+			next_pos = false;
+			resulting_matches.push_back(current_match);
+			current_pos++;
+			if (current_pos >= matches.size()) {
+				return resulting_matches;
+			}
+			continue;
 		}
 		if (i >= buffer->current_size) break;
 		int offset = utf8_character_length(buffer->buffer[i]);
