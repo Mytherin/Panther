@@ -411,7 +411,7 @@ void TextLineIterator::PrevLine() {
 		end_position = start_position - 1;
 	}
 	// start at the current line and look for the previous newline character
-	for (lng i = start_position - 2; i >= 0; i--) {
+	for (lng i = end_position - 1; i >= 0; i--) {
 		if (buffer->buffer[i] == '\n') {
 			start_position = i + 1;
 			textline.line = buffer->buffer + start_position;
