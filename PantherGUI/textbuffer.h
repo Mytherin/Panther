@@ -47,6 +47,8 @@ public:
 
 	void Extend(ulng new_size);
 
+	std::string GetString() { return std::string(buffer, next ? current_size : current_size - 1); }
+
 	static lng GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line);
 
 	// insert text into the specified buffer, "text" should not contain newlines
@@ -99,7 +101,7 @@ public:
 	static bool WrapLine(char* line, lng length, PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap);
 	// returns the amount of lines this one line is rendered at with the given wrap width
 	static lng RenderedLines(char* line, lng length, PGFontHandle font, PGScalar wrap_width);
-
+	
 	bool WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap);
 
 	PGSyntax syntax;

@@ -1828,36 +1828,41 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 		std::vector<PGBufferFindMatch> prev_matches;
 		std::vector<PGBufferFindMatch> next_matches;
 		textfile->Lock(PGReadLock);
-		while (start_buffer) {
-			std::string line = std::string(start_buffer->buffer, start_buffer->current_size);
-			PGBufferFindMatch prev_match = regex ?
-				textfile->FindMatch(regex_handle, PGDirectionLeft, start_position, match_case, start_buffer, line) :
-				textfile->FindMatch(text, PGDirectionLeft, start_position, match_case, start_buffer, line);
-			if (prev_match.start_buffer_pos < 0) {
-				// no match found, move to previous buffer
-				start_position = 0;
-				start_buffer = start_buffer->prev;
-				break;
-			} else {
-				// match found
-				prev_matches.push_back(prev_match);
-				start_position = prev_match.start_buffer_pos;
+		if (start_buffer) {
+			std::string line = start_buffer->GetString();
+
+			while (start_buffer) {
+				PGBufferFindMatch prev_match = regex ?
+					textfile->FindMatch(regex_handle, PGDirectionLeft, start_position, match_case, start_buffer, line) :
+					textfile->FindMatch(text, PGDirectionLeft, start_position, match_case, start_buffer, line);
+				if (prev_match.start_buffer_pos < 0) {
+					// no match found, move to previous buffer
+					start_position = 0;
+					start_buffer = start_buffer->prev;
+					break;
+				} else {
+					// match found
+					prev_matches.push_back(prev_match);
+					start_position = prev_match.start_buffer_pos;
+				}
 			}
 		}
-		while (end_buffer) {
-			std::string line = std::string(end_buffer->buffer, end_buffer->current_size);
-			PGBufferFindMatch next_match = regex ?
-				textfile->FindMatch(regex_handle, PGDirectionRight, end_position, match_case, end_buffer, line) :
-				textfile->FindMatch(text, PGDirectionRight, end_position, match_case, end_buffer, line);
-			if (next_match.start_buffer_pos < 0) {
-				// no match found, move to next buffer
-				end_position = 0;
-				end_buffer = end_buffer->next;
-				break;
-			} else {
-				// match found
-				next_matches.push_back(next_match);
-				end_position = next_match.end_buffer_pos;
+		if (end_buffer) {
+			std::string line = end_buffer->GetString();
+			while (end_buffer) {
+				PGBufferFindMatch next_match = regex ?
+					textfile->FindMatch(regex_handle, PGDirectionRight, end_position, match_case, end_buffer, line) :
+					textfile->FindMatch(text, PGDirectionRight, end_position, match_case, end_buffer, line);
+				if (next_match.start_buffer_pos < 0) {
+					// no match found, move to next buffer
+					end_position = 0;
+					end_buffer = end_buffer->next;
+					break;
+				} else {
+					// match found
+					next_matches.push_back(next_match);
+					end_position = next_match.end_buffer_pos;
+				}
 			}
 		}
 		textfile->Unlock(PGReadLock);

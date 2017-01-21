@@ -76,6 +76,7 @@ void ControlManager::PeriodicRender(void) {
 bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 	EnterManager();
 	if (this->PressCharacter(ControlManager::keybindings, character, modifier)) {
+		LeaveManager();
 		return true;
 	}
 	bool retval = PGContainer::KeyboardCharacter(character, modifier);
