@@ -35,14 +35,16 @@ void WrappedTextLineIterator::PrevLine() {
 void WrappedTextLineIterator::NextLine() {
 	if (end_wrap >= textline.length) {
 		// have to get the next line
-		TextLineIterator::NextLine();
-		if (textline.line != nullptr) {
+		if (current_line + 1 >= textfile->GetLineCount()) {
+			wrapped_line.line = nullptr;
+		} else {
+			TextLineIterator::NextLine();
 			start_wrap = 0;
 		}
 	} else {
 		start_wrap = end_wrap;
 	}
-	if (textline.line != nullptr) {
+	if (wrapped_line.line != nullptr) {
 		DetermineEndWrap();
 	} else {
 		wrapped_line.line = nullptr;

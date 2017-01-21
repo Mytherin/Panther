@@ -1907,6 +1907,7 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 		}
 	}
 #ifdef PANTHER_DEBUG
+	// FIXME: check if matches overlap?
 	/*for (lng i = 0; i < textfile->matches.size() - 1; i++) {
 		if (textfile->matches[i].start_line == textfile->matches[i].start_line) {
 
