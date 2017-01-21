@@ -23,7 +23,7 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 }
 
 TextFile::TextFile(BasicTextField* textfield) :
-	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr), current_linenumber(-1) {
+	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr) {
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = CreateMutex();
@@ -38,7 +38,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 }
 
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load) :
-	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), current_linenumber(-1) {
+	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr) {
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
@@ -175,24 +175,11 @@ int TextFile::GetLineHeight() {
 	return textfield->GetLineHeight();
 }
 
-void TextFile::ClearCurrentLinenumber() {
-	if (current_linenumber >= 0) {
-		if (wordwrap && (panther::abs(textfield->GetTextfieldWidth() - this->wordwrap_width) > 0.1)) {
-			SetWordWrap(true, textfield->GetTextfieldWidth());
-		}
-		lng linenumber = current_linenumber;
-		current_linenumber = -1;
-		yoffset = GetScrollPositionFromLine(textfield->GetTextfieldFont(), textfield->GetTextfieldWidth(), linenumber);
-	}
-}
-
 void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
-	ClearCurrentLinenumber();
 	lng added_scrolls = 0;
 	lng prev_scroll = -1;
-	while (buffer && (!buffer->parsed || (wordwrap && buffer->start_scroll < 0))) {
+	while (buffer && !buffer->parsed) {
 		lng linenr = buffer->start_line;
-		lng scroll_lines = 0;
 		for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
 			TextLine line = it.GetLine();
 			if (!line.IsValid()) break;
@@ -206,42 +193,9 @@ void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 			} else if (max_line_length >= 0 && line_lengths[linenr] > line_lengths[max_line_length]) {
 				max_line_length = linenr;
 			}
-			if (wordwrap) {
-				scroll_lines += TextLine::RenderedLines(line.GetLine(), line.GetLength(), textfield->GetTextfieldFont(), wordwrap_width);
-			} else {
-				scroll_lines++;
-			}
 			linenr++;
 		}
-		if (wordwrap) {
-			if (buffer->start_scroll < 0) {
-				assert(prev_scroll >= 0);
-				added_scrolls += scroll_lines;
-			} else {
-				lng next_scroll = maxscroll;
-				PGTextBuffer* buf = buffer->next;
-				while (buf) {
-					if (buf->start_scroll >= 0) {
-						next_scroll = buf->start_scroll;
-						break;
-					}
-					buf = buf->next;
-				}
-				added_scrolls += scroll_lines - (next_scroll - buffer->start_scroll);
-			}
-			if (prev_scroll >= 0) {
-				buffer->start_scroll = prev_scroll;
-			}
-			prev_scroll = buffer->start_scroll + scroll_lines;
-		}
 		buffer = buffer->next;
-	}
-	if (added_scrolls != 0) {
-		while (buffer) {
-			buffer->start_scroll += added_scrolls;
-			buffer = buffer->next;
-		}
-		maxscroll += added_scrolls;
 	}
 	if (max_line_length < 0) {
 		lng max_index = 0;
@@ -305,7 +259,6 @@ void TextFile::OpenFile(char* base, lng size) {
 	loaded = 0;
 	LockMutex(text_lock);
 	lng linenr = 0;
-	lng scrolloffset = 0;
 	PGTextBuffer* current_buffer = nullptr;
 	PGScalar max_length = 0;
 	while (*ptr) {
@@ -345,7 +298,6 @@ void TextFile::OpenFile(char* base, lng size) {
 				(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 				// create a new buffer
 				PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
-				new_buffer->start_scroll = scrolloffset;
 				if (current_buffer) current_buffer->next = new_buffer;
 				new_buffer->prev = current_buffer;
 				current_buffer = new_buffer;
@@ -365,7 +317,6 @@ void TextFile::OpenFile(char* base, lng size) {
 			}
 			this->line_lengths.push_back(length);
 
-			scrolloffset++;
 			linenr++;
 			loaded = ((double)(ptr - base)) / size;
 
@@ -388,7 +339,6 @@ void TextFile::OpenFile(char* base, lng size) {
 			(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 			// create a new buffer
 			PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
-			new_buffer->start_scroll = scrolloffset;
 			if (current_buffer) current_buffer->next = new_buffer;
 			new_buffer->prev = current_buffer;
 			current_buffer = new_buffer;
@@ -407,7 +357,6 @@ void TextFile::OpenFile(char* base, lng size) {
 		}
 		this->line_lengths.push_back(length);
 
-		scrolloffset++;
 		linenr++;
 	}
 	if (linenr == 0) {
@@ -417,7 +366,6 @@ void TextFile::OpenFile(char* base, lng size) {
 		linenr++;
 	}
 	linecount = linenr;
-	maxscroll = scrolloffset;
 
 	cursors.push_back(new Cursor(this));
 
@@ -458,21 +406,6 @@ void TextFile::SetWordWrap(bool wordwrap, PGScalar wrap_width) {
 	this->wordwrap = wordwrap;
 	if (this->wordwrap && this->wordwrap_width != wrap_width) {
 		this->wordwrap_width = wrap_width;
-		lng scrolloffset = 0;
-		PGTextBuffer* current_buffer = buffers[0];
-		current_buffer->start_scroll = 0;
-		for (auto it = TextLineIterator(this, current_buffer); ; it++) {
-			TextLine line = it.GetLine();
-			if (!line.IsValid()) break;
-			if (current_buffer != it.CurrentBuffer()) {
-				current_buffer = it.CurrentBuffer();
-				current_buffer->start_scroll = scrolloffset;
-			}
-
-			PGScalar wordwrap_width = textfield->GetTextfieldWidth();
-			scrolloffset += TextLine::RenderedLines(line.GetLine(), line.GetLength(), textfield->GetTextfieldFont(), wordwrap_width);
-		}
-		maxscroll = scrolloffset;
 		VerifyTextfile();
 	} else if (!this->wordwrap) {
 		this->wordwrap_width = -1;
@@ -495,48 +428,6 @@ lng TextFile::GetLineCount() {
 PGScalar TextFile::GetMaxLineWidth(PGFontHandle font) {
 	if (!is_loaded) return 0;
 	return GetTextFontSize(font) / 10.0 * line_lengths[max_line_length];
-}
-
-lng TextFile::GetLineFromScrollPosition(PGFontHandle font, PGScalar wrap_width, lng scroll_offset) {
-	ClearCurrentLinenumber();
-	PGTextBuffer* buffer = buffers[PGTextBuffer::GetBufferFromScrollPosition(buffers, scroll_offset)];
-
-	if (buffer->next && buffer->next->start_scroll == buffer->start_scroll + 1) {
-		return buffer->start_line;
-	}
-	// now look into the buffer to find the scroll position
-	lng position = buffer->start_scroll;
-	lng linenr = buffer->start_line;
-	for (auto iterator = TextLineIterator(this, buffer); iterator.CurrentBuffer() == buffer; iterator++) {
-		auto line = iterator.GetLine();
-		position += TextLine::RenderedLines(line.GetLine(), line.GetLength(), font, wrap_width);
-		if (position > scroll_offset) {
-			return linenr;
-		}
-		linenr++;
-	}
-	return linenr - 1;
-}
-
-lng TextFile::GetScrollPositionFromLine(PGFontHandle font, PGScalar wrap_width, lng linenr) {
-	ClearCurrentLinenumber();
-	PGTextBuffer* buffer = buffers[PGTextBuffer::GetBuffer(buffers, linenr)];
-
-	if (buffer->next && buffer->next->start_scroll == buffer->start_scroll + 1) {
-		return buffer->start_scroll;
-	}
-	// now look into the buffer to find the scroll position
-	lng position = buffer->start_line;
-	lng scroll_offset = buffer->start_scroll;
-	for (auto iterator = TextLineIterator(this, buffer); iterator.CurrentBuffer() == buffer; iterator++) {
-		auto line = iterator.GetLine();
-		if (position >= linenr) {
-			return scroll_offset;
-		}
-		scroll_offset += TextLine::RenderedLines(line.GetLine(), line.GetLength(), font, wrap_width);
-		position++;
-	}
-	return linenr;
 }
 
 static bool
@@ -885,7 +776,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	// insert linecount into line_lengths
 	std::vector<PGScalar> lengths(added_lines);
 	line_lengths.insert(line_lengths.begin() + begin_position.line, lengths.begin(), lengths.end());
-	InvalidateBuffer(start_buffer->start_scroll < 0 && start_buffer->prev ? start_buffer->prev : start_buffer);
+	InvalidateBuffer(start_buffer);
 	VerifyTextfile();
 }
 
@@ -928,15 +819,58 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 	return lines;
 }
 
-void TextFile::SetLineOffset(double offset) { 
-	ClearCurrentLinenumber();
-	yoffset = offset;
+void TextFile::SetLineOffset(lng offset) {
+	yoffset.linenumber = offset;
+	yoffset.inner_line = 0;
 }
 
-void TextFile::OffsetLineOffset(double offset) {
-	ClearCurrentLinenumber();
-	yoffset = yoffset + offset;
-	yoffset = std::max(std::min(yoffset, (double)GetMaxYScroll()), 0.0);
+void TextFile::SetLineOffset(PGVerticalScroll scroll) {
+	yoffset.linenumber = scroll.linenumber;
+	yoffset.inner_line = scroll.inner_line;
+}
+
+void TextFile::SetScrollOffset(lng offset) {
+	SetLineOffset(offset);
+}
+
+PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng offset) {
+	lng lines_offset;
+	return OffsetVerticalScroll(scroll, offset, lines_offset);
+}
+
+PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng offset, lng& lines_offset) {
+	if (!wordwrap) {
+		lines_offset = std::abs(offset);
+		scroll.linenumber += offset;
+		scroll.linenumber = std::max(std::min(scroll.linenumber, GetMaxYScroll()), (lng)0);
+	} else {
+		lines_offset = 0;
+		lng lines = offset;
+		TextLineIterator* it = GetScrollIterator(textfield, scroll);
+		if (lines > 0) {
+			// move forward by <lines>
+			for (; lines != 0; lines--) {
+				it->NextLine();
+				if (!it->GetLine().IsValid())
+					break;
+				lines_offset++;
+			}
+		} else {
+			// move backward by <lines>
+			for (; lines != 0; lines++) {
+				it->PrevLine();
+				if (!it->GetLine().IsValid())
+					break;
+				lines_offset++;
+			}
+		}
+		scroll = it->GetCurrentScrollOffset();
+	}
+	return scroll;
+}
+
+void TextFile::OffsetLineOffset(lng offset) {
+	yoffset = OffsetVerticalScroll(yoffset, offset);
 }
 
 void TextFile::SetCursorLocation(lng line, lng character) {
@@ -1204,32 +1138,16 @@ void TextFile::VerifyTextfile() {
 #ifdef PANTHER_DEBUG
 	for (size_t i = 0; i < buffers.size(); i++) {
 		if (i < buffers.size() - 1) {
-			if (wordwrap) {
-				assert(buffers[i]->start_scroll < buffers[i + 1]->start_scroll);
-			}
 			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
 			assert(buffers[i]->next == buffers[i + 1]);
 			// only the final buffer can end with a non-newline character
 			assert(buffers[i]->buffer[buffers[i]->current_size - 1] == '\n');
-		}
-		if (wordwrap) {
-			assert(buffers[i]->start_scroll < 0 || buffers[i]->start_scroll >= buffers[i]->start_line);
 		}
 		if (i > 0) {
 			assert(buffers[i]->prev == buffers[i - 1]);
 		}
 		assert(buffers[i]->current_size < buffers[i]->buffer_size);
 	}
-	// very expensive check, disabled now
-	/*if (wordwrap) {
-		lng scroll_lines = 0;
-		for (size_t i = 0; i < buffers.size(); i++) {
-			assert(buffers[i]->start_scroll == scroll_lines);
-			scroll_lines += buffers[i]->GetRenderedLines(this, textfield->GetTextfieldFont(), wordwrap_width);
-		}
-		assert(scroll_lines == maxscroll);
-	}*/
-
 	assert(cursors.size() > 0);
 	for (int i = 0; i < cursors.size(); i++) {
 		Cursor* c = cursors[i];
@@ -1646,7 +1564,7 @@ void TextFile::SaveChanges() {
 				prev_position = i + 1;
 			}
 		}
-		if (prev_position != (*it)->current_size) {
+		if (prev_position < (*it)->current_size) {
 			assert((*it) == buffers.back());
 			panther::WriteToFile(handle, line + prev_position, i - prev_position);
 		}
@@ -2102,18 +2020,18 @@ void TextFile::SelectMatches() {
 }
 
 
-TextLineIterator* TextFile::GetScrollIterator(TextField* textfield, lng scroll_offset) {
+TextLineIterator* TextFile::GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll) {
 	if (wordwrap) {
 		return new WrappedTextLineIterator(textfield->GetTextfieldFont(), this,
-			scroll_offset, textfield->GetTextfieldWidth());
+			scroll, wordwrap_width);
 	}
-	return new TextLineIterator(this, scroll_offset);
+	return new TextLineIterator(this, scroll.linenumber);
 }
 
-TextLineIterator* TextFile::GetLineIterator(TextField* textfield, lng linenumber) {
+TextLineIterator* TextFile::GetLineIterator(BasicTextField* textfield, lng linenumber) {
 	if (wordwrap) {
 		return new WrappedTextLineIterator(textfield->GetTextfieldFont(), this,
-			linenumber, textfield->GetTextfieldWidth(), false);
+			PGVerticalScroll(linenumber, 0), wordwrap_width);
 	}
 	return new TextLineIterator(this, linenumber);
 }

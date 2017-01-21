@@ -7,7 +7,7 @@
 lng TEXT_BUFFER_SIZE = 4096;
 
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
-	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr), start_scroll(-1) {
+	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {
 		buffer_size = TEXT_BUFFER_SIZE;
 	} else {
@@ -282,27 +282,6 @@ lng PGTextBuffer::GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line) {
 	return 0;
 }
 
-lng PGTextBuffer::GetBufferFromScrollPosition(std::vector<PGTextBuffer*>& buffers, lng scrollposition) {
-	lng limit = buffers.size() - 1;
-	lng first = 0;
-	lng last = limit;
-	lng middle = (first + last) / 2;
-	// binary search to find the block that belongs to the buffer
-	while (first <= last) {
-		if (middle != limit && scrollposition >= buffers[middle + 1]->start_scroll) {
-			first = middle + 1;
-		} else if (scrollposition >= buffers[middle]->start_scroll &&
-			(middle == limit || scrollposition < buffers[middle + 1]->start_scroll)) {
-			return middle;
-		} else {
-			last = middle - 1;
-		}
-		middle = (first + last) / 2;
-	}
-	assert(0);
-	return 0;
-}
-
 void PGTextBuffer::InsertText(ulng position, std::string text) {
 	// this method can only be called if the text fits into the buffer
 	assert(current_size + (lng)text.size() < buffer_size);
@@ -418,6 +397,7 @@ TextLineIterator::TextLineIterator(TextFile* textfile, PGTextBuffer* buffer) :
 void TextLineIterator::PrevLine() {
 	current_line--;
 	if (current_line < 0) {
+		current_line = 0;
 		textline = TextLine();
 		return;
 	}
@@ -431,7 +411,7 @@ void TextLineIterator::PrevLine() {
 		end_position = start_position;
 	}
 	// start at the current line and look for the previous newline character
-	for (lng i = start_position; i >= 0; i--) {
+	for (lng i = start_position - 2; i >= 0; i--) {
 		if (buffer->buffer[i] == '\n') {
 			start_position = i + 1;
 			textline.line = buffer->buffer + start_position;
@@ -440,13 +420,19 @@ void TextLineIterator::PrevLine() {
 			return;
 		}
 	}
+	start_position = 0;
+
+	textline.line = buffer->buffer + start_position;
+	textline.length = end_position - start_position;
+	textline.syntax = buffer->parsed ? buffer->syntax[current_line - buffer->start_line] : PGSyntax();
 	// no newline in the buffer
-	assert(0);
+	//assert(0);
 }
 
 void TextLineIterator::NextLine() {
 	current_line++;
 	if (current_line >= textfile->GetLineCount()) {
+		current_line--;
 		textline = TextLine();
 		return;
 	}

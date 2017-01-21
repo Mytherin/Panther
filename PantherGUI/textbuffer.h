@@ -36,7 +36,6 @@ public:
 	ulng buffer_size = 0;
 	ulng current_size = 0;
 	ulng start_line = 0;
-	lng start_scroll = -1;
 
 	ulng syntax_count = 0;
 	PGSyntax* syntax = nullptr;
@@ -49,7 +48,6 @@ public:
 	void Extend(ulng new_size);
 
 	static lng GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line);
-	static lng GetBufferFromScrollPosition(std::vector<PGTextBuffer*>& buffers, lng scrollposition);
 
 	// insert text into the specified buffer, "text" should not contain newlines
 	// this function accounts for extending buffers and creating new buffers
@@ -131,6 +129,7 @@ public:
 
 	virtual lng GetCurrentLineNumber() { return current_line; }
 	virtual lng GetCurrentCharacterNumber() { return 0; }
+	virtual PGVerticalScroll GetCurrentScrollOffset() { return PGVerticalScroll(current_line, 0); }
 
 	PGTextBuffer* CurrentBuffer() { return buffer; }
 	TextLineIterator(TextFile* textfile, PGTextBuffer* buffer);
@@ -157,8 +156,9 @@ public:
 
 	lng GetCurrentLineNumber() { return current_line; }
 	lng GetCurrentCharacterNumber() { return start_wrap; }
+	PGVerticalScroll GetCurrentScrollOffset();
 
-	WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, lng scroll_offset, PGScalar wrap_width, bool is_scroll_offset = true);
+	WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width);
 protected:
 	void PrevLine();
 	void NextLine();
@@ -172,7 +172,12 @@ protected:
 private:
 	bool delete_syntax = false;
 
+	void SetCurrentScrollOffset(PGVerticalScroll scroll);
+
+	void DetermineStartWrap();
 	void DetermineEndWrap();
+
+	void SetLineFromOffsets();
 };
 
 void SetTextBufferSize(lng bufsiz);

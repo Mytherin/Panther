@@ -104,7 +104,8 @@ private:
 	PGScalar GetMinimapWidth();
 	PGScalar GetMinimapHeight();
 	PGScalar GetMinimapOffset();
-	lng GetMinimapStartLine();
+	void GetMinimapLinesRendered(lng& lines_rendered, double& percentage);
+	PGVerticalScroll GetMinimapStartLine();
 	void SetMinimapOffset(PGScalar offset);
 
 	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);

@@ -87,8 +87,8 @@ public:
 
 	static TextFile* OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load = false);
 
-	TextLineIterator* GetScrollIterator(TextField* textfield, lng scroll_offset);
-	TextLineIterator* GetLineIterator(TextField* textfield, lng linenumber);
+	TextLineIterator* GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll);
+	TextLineIterator* GetLineIterator(BasicTextField* textfield, lng linenumber);
 	TextLine GetLine(lng linenumber);
 	void InsertText(char character);
 	void InsertText(PGUTF8Character character);
@@ -126,7 +126,7 @@ public:
 	PGLanguage* GetLanguage() { return language; }
 
 	lng GetLineCount();
-	lng GetMaxYScroll() { return wordwrap ? maxscroll : GetLineCount() - 1; }
+	lng GetMaxYScroll() { return GetLineCount() - 1; }
 
 	void Lock(PGLockType type);
 	void Unlock(PGLockType type);
@@ -173,15 +173,16 @@ public:
 	// same as RestoreCursor, but selections are replaced by the LOWEST value
 	Cursor* RestoreCursorPartial(CursorData data);
 
-	lng GetLineFromScrollPosition(PGFontHandle font, PGScalar wrap_width, lng scroll_offset);
-	lng GetScrollPositionFromLine(PGFontHandle font, PGScalar wrap_width, lng linenr);
-
 	PGScalar GetMaxLineWidth(PGFontHandle font);
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
-	lng GetLineOffset() { return (lng) yoffset; }
-	void SetLineOffset(double offset);
-	void OffsetLineOffset(double offset);
+	PGVerticalScroll GetLineOffset() { return yoffset; }
+	void SetLineOffset(lng offset);
+	void SetLineOffset(PGVerticalScroll scroll);
+	void SetScrollOffset(lng offset);
+	void OffsetLineOffset(lng lines);
+	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset);
+	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset, lng& lines_offset);
 	Cursor*& GetActiveCursor();
 	std::vector<Cursor*>& GetCursors() { return cursors; }
 	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
@@ -232,10 +233,7 @@ private:
 
 	lng longest_line = 0;
 	lng xoffset = 0;
-	double yoffset = 0;
-	lng current_linenumber = -1;
-
-	void ClearCurrentLinenumber();
+	PGVerticalScroll yoffset;
 
 	bool wordwrap = false;
 	PGScalar wordwrap_width;
@@ -272,10 +270,10 @@ private:
 	PGTextBuffer* GetBuffer(lng line);
 
 	lng linecount = 0;
-	lng maxscroll = 0;
 	lng max_line_length = 0;
 
 	std::vector<PGScalar> line_lengths;
+
 	std::vector<PGTextBuffer*> buffers;
 	std::vector<TextDelta*> deltas;
 	std::vector<RedoStruct> redos;

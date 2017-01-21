@@ -374,3 +374,10 @@ void PGMessageBox(PGWindowHandle window, std::string title, std::string message)
 
 std::string GetOSName();
 
+struct PGVerticalScroll {
+	lng linenumber = 0;
+	lng inner_line = 0;
+
+	PGVerticalScroll() : linenumber(0), inner_line(0) { }
+	PGVerticalScroll(lng linenumber, lng inner_line) : linenumber(linenumber), inner_line(inner_line) { }
+};

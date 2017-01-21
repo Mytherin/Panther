@@ -525,6 +525,8 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 		}
 	}
 	if (scroll_textfield && textfile->textfield) {
+		// FIXME: cursor_line should now be double as well for scrolling purposes
+		/*
 		lng line_offset = textfile->GetLineOffset();
 		lng line_height = textfile->GetLineHeight();
 		lng line_start = line_offset;
@@ -541,10 +543,6 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 				cursor_min_character = std::min(cursor_min_character, cursor_position);
 				cursor_max_character = std::max(cursor_max_character, cursor_position);
 			}
-		}
-		if (textfile->GetWordWrap()) {
-			cursor_min = textfile->GetScrollPositionFromLine(textfile->textfield->GetTextfieldFont(), textfile->textfield->GetTextfieldWidth(), cursor_min);
-			cursor_max = textfile->GetScrollPositionFromLine(textfile->textfield->GetTextfieldFont(), textfile->textfield->GetTextfieldWidth(), cursor_max);
 		}
 
 		if (cursor_min >= line_end) {
@@ -565,7 +563,7 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 				xoffset = cursor_min_character - max_textwidth;
 			}
 			textfile->SetXOffset(std::max(0.0f, std::min(xoffset, textfile->textfield->GetMaxXOffset())));
-		}
+		}*/
 		if (textfile->textfield) {
 			textfile->textfield->SelectionChanged();
 		}
