@@ -1561,8 +1561,9 @@ void TextFile::SaveChanges() {
 		char* line = (*it)->buffer;
 		lng prev_position = 0;
 		lng i = 0;
-		for (i = 0; i <= (*it)->current_size; i++) {
-			if (line[i] == '\n') {
+		lng end = (*it) == buffers.back() ? (*it)->current_size - 1 : (*it)->current_size;
+		for (i = 0; i < end; i++) {
+			if ( line[i] == '\n') {
 				// new line
 				panther::WriteToFile(handle, line + prev_position, i - prev_position);
 				switch (line_ending) {
