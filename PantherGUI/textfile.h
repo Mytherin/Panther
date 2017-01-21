@@ -181,6 +181,7 @@ public:
 	void SetLineOffset(PGVerticalScroll scroll);
 	void SetScrollOffset(lng offset);
 	void OffsetLineOffset(lng lines);
+	PGVerticalScroll GetVerticalScroll(lng linenumber, lng characternr);
 	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset);
 	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset, lng& lines_offset);
 	Cursor*& GetActiveCursor();

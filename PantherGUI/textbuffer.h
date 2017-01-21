@@ -124,7 +124,7 @@ public:
 		return ++element;
 	}
 	friend TextLineIterator& operator--(TextLineIterator& element, int i) {
-		return ++element;
+		return --element;
 	}
 
 	virtual lng GetCurrentLineNumber() { return current_line; }

@@ -726,28 +726,72 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		}
 	} else if (buttons & PGMiddleMouseButton) {
 		if (drag_type == PGDragSelectionCursors) {
-			// FIXME: this should work with word wrap
-			assert(0);
-			/*
-			lng line;
-			GetLineFromPosition(mouse.y, line);
+			lng line, character;
+			mouse.x = mouse.x - text_offset + textfile->GetXOffset();
+			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
 			std::vector<Cursor*>& cursors = textfile->GetCursors();
 			Cursor* active_cursor = textfile->GetActiveCursor();
 			auto end_pos = active_cursor->UnselectedPosition();
-			lng increment = line > end_pos.line ? 1 : -1;
+			auto start_scroll = textfile->GetVerticalScroll(end_pos.line, end_pos.position);
 			textfile->ClearCursors();
-			// FIXME: word wrap
-			for (auto it = end_pos.line; ; it += increment) {
-				lng start_character, end_character;
-				TextLine current_line = textfile->GetLine(it);
-				GetCharacterFromPosition(drag_offset, current_line, start_character);
-				GetCharacterFromPosition(mouse.x, current_line, end_character);
-				Cursor* cursor = new Cursor(textfile, it, end_character, it, start_character);
-				cursors.push_back(cursor);
-				if (it == line)
-					break;
+			bool backwards = end_pos.line > line || (end_pos.line == line && end_pos.position > character);
+			bool first = true;
+			PGScalar start_x;
+			bool single_cursor = false;
+			auto iterator = textfile->GetScrollIterator(this, start_scroll);
+			while (true) {
+				TextLine textline = iterator->GetLine();
+				if (!textline.IsValid()) break;
+
+				lng iterator_line = iterator->GetCurrentLineNumber();
+				lng iterator_character = iterator->GetCurrentCharacterNumber();
+
+				if (!first) {
+					if (backwards) {
+						if (iterator_line < line || 
+							(iterator_line == line && iterator_character + textline.GetLength() < character))
+							break;
+					} else {
+						if (iterator_line > line || 
+							(iterator_line == line && iterator_character > character))
+							break;
+					}
+				}
+
+				lng end_position = GetPositionInLine(textfield_font, mouse.x, textline.GetLine(), textline.GetLength());
+				lng start_position;
+				if (first) {
+					start_position = end_pos.position - iterator_character;
+					single_cursor = start_position == end_position;
+					start_x = MeasureTextWidth(textfield_font, textline.GetLine(), start_position);
+					first = false;
+				} else {
+					start_position = GetPositionInLine(textfield_font, start_x, textline.GetLine(), textline.GetLength());
+				}
+
+				if (single_cursor || start_position != end_position) {
+					if (single_cursor) {
+						start_position = end_position;
+					}
+
+					Cursor* cursor = new Cursor(textfile, iterator_line, iterator_character + end_position, iterator_line, iterator_character + start_position);
+					if (backwards) {
+						cursors.insert(cursors.begin(), cursor);
+					} else {
+						cursors.push_back(cursor);
+					}
+				}
+
+				if (backwards) {
+					(*iterator)--;
+				} else {
+					(*iterator)++;
+				}
 			}
-			this->Invalidate();*/
+			if (backwards) {
+				textfile->active_cursor = cursors.back();
+			}
+			this->Invalidate();
 		}
 	} else {
 		ClearDragging();

@@ -833,6 +833,23 @@ void TextFile::SetScrollOffset(lng offset) {
 	SetLineOffset(offset);
 }
 
+PGVerticalScroll TextFile::GetVerticalScroll(lng linenumber, lng characternr) {
+	if (!wordwrap) {
+		return PGVerticalScroll(linenumber, 0);
+	} else {
+		PGVerticalScroll scroll = PGVerticalScroll(linenumber, 0);
+		auto it = GetLineIterator(textfield, linenumber);
+		for (;;) {
+			it->NextLine();
+			if (!it->GetLine().IsValid()) break;
+			if (it->GetCurrentLineNumber() != linenumber) break;
+			scroll.inner_line++;
+			if (it->GetCurrentCharacterNumber() >= characternr) break;
+		}
+		return scroll;
+	}
+}
+
 PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng offset) {
 	lng lines_offset;
 	return OffsetVerticalScroll(scroll, offset, lines_offset);

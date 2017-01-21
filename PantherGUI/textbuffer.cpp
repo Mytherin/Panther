@@ -408,7 +408,7 @@ void TextLineIterator::PrevLine() {
 		start_position = buffer->current_size - 1;
 		end_position = buffer->current_size - 1;
 	} else {
-		end_position = start_position;
+		end_position = start_position - 1;
 	}
 	// start at the current line and look for the previous newline character
 	for (lng i = start_position - 2; i >= 0; i--) {
@@ -417,6 +417,8 @@ void TextLineIterator::PrevLine() {
 			textline.line = buffer->buffer + start_position;
 			textline.length = end_position - start_position;
 			textline.syntax = buffer->parsed ? buffer->syntax[current_line - buffer->start_line] : PGSyntax();
+			assert(textfile->GetLine(current_line).GetLine() == textline.line);
+			assert(textfile->GetLine(current_line).GetLength() == textline.length);
 			return;
 		}
 	}
@@ -425,6 +427,9 @@ void TextLineIterator::PrevLine() {
 	textline.line = buffer->buffer + start_position;
 	textline.length = end_position - start_position;
 	textline.syntax = buffer->parsed ? buffer->syntax[current_line - buffer->start_line] : PGSyntax();
+
+	assert(textfile->GetLine(current_line).GetLine() == textline.line);
+	assert(textfile->GetLine(current_line).GetLength() == textline.length);
 	// no newline in the buffer
 	//assert(0);
 }
