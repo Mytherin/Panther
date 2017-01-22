@@ -154,13 +154,13 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			while (current_cursor < cursors.size()) {
 				auto begin_pos = cursors[current_cursor]->BeginPosition();
 				if (begin_pos.line > current_start_line ||
-					(begin_pos.line == current_start_line && begin_pos.character > current_start_position + length)) {
+					(begin_pos.line == current_start_line && begin_pos.position > current_start_position + length)) {
 					// this cursor is not rendered on this line yet
 					break;
 				}
 				auto end_pos = cursors[current_cursor]->EndPosition();
 				if (end_pos.line < current_start_line ||
-					(end_pos.line == current_start_line && end_pos.character < current_start_position)) {
+					(end_pos.line == current_start_line && end_pos.position < current_start_position)) {
 					// this cursor has already been rendered
 					current_cursor++;
 					continue;
