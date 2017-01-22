@@ -2050,11 +2050,13 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 }
 
 void TextFile::SelectMatches() {
-	cursors.clear();
+	assert(matches.size() > 0);
+	ClearCursors();
 	for (auto it = matches.begin(); it != matches.end(); it++) {
 		Cursor* c = new Cursor(this, (*it).end_line, (*it).end_character, (*it).start_line, (*it).start_character);
 		cursors.push_back(c);
 	}
+	active_cursor = cursors[0];
 	VerifyTextfile();
 	if (textfield) textfield->SelectionChanged();
 }
