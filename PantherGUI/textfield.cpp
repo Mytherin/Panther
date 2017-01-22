@@ -12,6 +12,7 @@
 #include "simpletextfield.h"
 #include "statusbar.h"
 
+#include "notification.h"
 #include "searchbox.h"
 #include "settings.h"
 
@@ -874,6 +875,18 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 
 	if (modifier == PGModifierCtrl) {
 		switch (character) {
+		case 'Q': {
+			PGNotification* notification = new PGNotification(window, PGNotificationTypeError, "Unknown error.");
+			notification->SetSize(PGSize(this->width * 0.6f, GetTextHeight(notification->GetFont()) + 10));
+			notification->SetPosition(PGPoint(this->x + this->width * 0.2f, this->y));
+
+			notification->AddButton([](Control* control, void* data) {
+				dynamic_cast<PGContainer*>(control->parent)->RemoveControl((Control*)data);
+			}, this, notification, "Cancel");
+			dynamic_cast<PGContainer*>(this->parent)->AddControl(notification);
+
+			return true;
+		}
 		case 'P': {
 			// Search project files
 			std::vector<SearchEntry> entries;

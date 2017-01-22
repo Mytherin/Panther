@@ -5,7 +5,7 @@
 ToggleButton::ToggleButton(PGWindowHandle window, Control* parent, bool toggled) : 
 	Button(window, parent), toggled(toggled), on_toggle(nullptr) {
 
-	this->OnPressed([](Button* button) {
+	this->OnPressed([](Button* button, void* data) {
 		ToggleButton* toggle = dynamic_cast<ToggleButton*>(button);
 		toggle->Toggle();
 	});

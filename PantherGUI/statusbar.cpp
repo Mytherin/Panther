@@ -33,7 +33,7 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		(*it)->SetAnchor(PGAnchorTop | PGAnchorBottom);
 	}
 
-	unicode_button->OnPressed([](Button* button) {
+	unicode_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
 		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
 		PGPopupMenuHandle reopen_menu = PGCreatePopupMenu(button->window, c);
@@ -52,9 +52,9 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
 			PGPoint(button->X() + button->width - 1, button->Y())),
 			PGTextAlignRight | PGTextAlignBottom);
-	});
+	}, this);
 
-	language_button->OnPressed([](Button* button) {
+	language_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
@@ -68,9 +68,9 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
 			PGPoint(button->X() + button->width - 1, button->Y())),
 			PGTextAlignRight | PGTextAlignBottom);
-	});
+	}, this);
 
-	lineending_button->OnPressed([](Button* button) {
+	lineending_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
@@ -90,8 +90,8 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
 			PGPoint(button->X() + button->width - 1, button->Y())),
 			PGTextAlignRight | PGTextAlignBottom);
-	});
-	tabwidth_button->OnPressed([](Button* button) {
+	}, this);
+	tabwidth_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
@@ -116,7 +116,7 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
 			PGPoint(button->X() + button->width - 1, button->Y())),
 			PGTextAlignRight | PGTextAlignBottom);
-	});
+	}, this);
 }
 
 StatusBar::~StatusBar() {

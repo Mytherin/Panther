@@ -107,21 +107,21 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	toggle_matchcase->OnToggle(update_highlight);
 	toggle_wholeword->OnToggle(update_highlight);
 	toggle_wrap->OnToggle(update_highlight);
-	find_prev->OnPressed([](Button* b) {
-		dynamic_cast<FindText*>(b->parent)->Find(PGDirectionLeft);
-	});
-	find_button->OnPressed([](Button* b) {
-		dynamic_cast<FindText*>(b->parent)->Find(PGDirectionRight);
-	});
-	find_all->OnPressed([](Button* b) {
-		FindText* ft = dynamic_cast<FindText*>(b->parent);
+	find_prev->OnPressed([](Button* b, void* data) {
+		((FindText*)data)->Find(PGDirectionLeft);
+	}, this);
+	find_button->OnPressed([](Button* b, void* data) {
+		((FindText*)data)->Find(PGDirectionRight);
+	}, this);
+	find_all->OnPressed([](Button* b, void* data) {
+		FindText* ft = ((FindText*)data);
 		ft->SelectAllMatches();
 		ft->Close();
-	});
-	find_expand->OnPressed([](Button* b) {
-		FindText* tf = dynamic_cast<FindText*>(b->parent);
+	}, this);
+	find_expand->OnPressed([](Button* b, void* data) {
+		FindText* tf = ((FindText*)data);
 		tf->ToggleReplace();
-	});
+	}, this);
 
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
@@ -167,14 +167,14 @@ void FindText::ToggleReplace() {
 		replace_button->SetText(std::string("Replace"), font);
 		replace_all_button->SetText(std::string("Replace All"), font);
 
-		replace_button->OnPressed([](Button* b) {
-			dynamic_cast<FindText*>(b->parent)->Replace();
-		});
-		replace_all_button->OnPressed([](Button* b) {
-			FindText* ft = dynamic_cast<FindText*>(b->parent);
+		replace_button->OnPressed([](Button* b, void* data) {
+			((FindText*)data)->Replace();
+		}, this);
+		replace_all_button->OnPressed([](Button* b, void* data) {
+			FindText* ft = ((FindText*)data);
 			ft->ReplaceAll();
 			ft->Close();
-		});
+		}, this);
 
 		find_expand->y = base_y;
 		find_expand->SetText(std::string("^"), font);

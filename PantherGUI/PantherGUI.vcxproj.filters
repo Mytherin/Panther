@@ -144,6 +144,9 @@
     <ClCompile Include="keybindings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="notification.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -276,6 +279,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="keybindings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="notification.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

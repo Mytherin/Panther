@@ -43,7 +43,9 @@ void Button::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 		if (clicking) {
 			clicking = false;
 			Invalidate();
-			if (on_pressed) on_pressed(this);
+			if (on_pressed) {
+				on_pressed(this, pressed_data);
+			}
 		}
 	}
 }

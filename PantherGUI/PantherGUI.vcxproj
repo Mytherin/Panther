@@ -151,6 +151,7 @@
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
+    <ClCompile Include="notification.cpp" />
     <ClCompile Include="regex.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
@@ -195,6 +196,7 @@
     <ClInclude Include="logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
+    <ClInclude Include="notification.h" />
     <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />

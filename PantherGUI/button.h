@@ -4,7 +4,7 @@
 
 class Button;
 
-typedef void(*PGButtonCallback)(Button*);
+typedef void(*PGButtonCallback)(Button*, void*);
 
 class Button : public Control {
 public:
@@ -26,9 +26,10 @@ public:
 
 	void Invalidate() { parent->Invalidate(); }
 
-	void OnPressed(PGButtonCallback callback) { on_pressed = callback; }
+	void OnPressed(PGButtonCallback callback, void* data = nullptr) { on_pressed = callback; pressed_data = data; }
 
 	void SetText(std::string text, PGFontHandle font);
+	std::string GetText() { return text; }
 
 	PGColor background_color;
 	PGColor background_color_hover;
@@ -40,4 +41,5 @@ private:
 	PGFontHandle font = nullptr;
 
 	PGButtonCallback on_pressed = nullptr;
+	void* pressed_data = nullptr;
 };

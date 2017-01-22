@@ -5,6 +5,11 @@
 #include <map>
 
 enum PGColorType {
+	PGColorNotificationBackground,
+	PGColorNotificationError,
+	PGColorNotificationWarning,
+	PGColorNotificationButton,
+	PGColorNotificationText,
 	PGColorTextFieldBackground,
 	PGColorTextFieldText,
 	PGColorTextFieldSelection,
