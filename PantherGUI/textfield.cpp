@@ -474,9 +474,10 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 		PGScalar width = this->width - offset * 2;
 		PGScalar height = 5;
 		PGScalar padding = 1;
+		double load_percentage = textfile->LoadPercentage();
 
 		RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGDrawStyleFill);
-		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * textfile->LoadPercentage(), height), PGColor(20, 60, 255), PGDrawStyleFill);
+		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * load_percentage, height), PGColor(20, 60, 255), PGDrawStyleFill);
 	}
 	// render the minimap
 	if (textfile->IsLoaded() && this->display_minimap) {

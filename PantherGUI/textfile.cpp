@@ -23,7 +23,7 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 }
 
 TextFile::TextFile(BasicTextField* textfield) :
-	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr) {
+	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1) {
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = CreateMutex();
@@ -38,7 +38,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 }
 
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load) :
-	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr) {
+	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1) {
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
@@ -46,7 +46,6 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 	this->text_lock = CreateMutex();
 	default_font = PGCreateFont();
 	SetTextFontSize(default_font, 10);
-	loaded = 0;
 
 	this->language = PGLanguageManager::GetLanguage(ext);
 	if (this->language) {
@@ -254,17 +253,19 @@ void TextFile::OpenFile(char* base, lng size) {
 	this->lineending = PGLineEndingUnknown;
 	this->indentation = PGIndentionTabs;
 	char* ptr = base;
-	char* prev = base;
+	size_t prev = 0;
 	int offset = 0;
-	loaded = 0;
 	LockMutex(text_lock);
 	lng linenr = 0;
 	PGTextBuffer* current_buffer = nullptr;
 	PGScalar max_length = 0;
-	while (*ptr) {
+
+	total_bytes = size;
+	bytes = 0;
+	while (ptr[bytes]) {
 		int character_offset = utf8_character_length(*ptr);
 		assert(character_offset >= 0); // invalid UTF8, FIXME: throw error message or something else
-		if (*ptr == '\n') {
+		if (ptr[bytes] == '\n') {
 			// Unix line ending: \n
 			if (this->lineending == PGLineEndingUnknown) {
 				this->lineending = PGLineEndingUnix;
@@ -272,10 +273,10 @@ void TextFile::OpenFile(char* base, lng size) {
 				this->lineending = PGLineEndingMixed;
 			}
 		}
-		if (*ptr == '\r') {
-			if (*(ptr + 1) == '\n') {
+		if (ptr[bytes] == '\r') {
+			if (ptr[bytes + 1] == '\n') {
 				offset = 1;
-				ptr++;
+				bytes++;
 				// Windows line ending: \r\n
 				if (this->lineending == PGLineEndingUnknown) {
 					this->lineending = PGLineEndingWindows;
@@ -291,9 +292,9 @@ void TextFile::OpenFile(char* base, lng size) {
 				}
 			}
 		}
-		if (*ptr == '\r' || *ptr == '\n') {
-			char* line_start = prev;
-			lng line_size = (lng)((ptr - prev) - offset);
+		if (ptr[bytes] == '\r' || ptr[bytes] == '\n') {
+			char* line_start = ptr + prev;
+			lng line_size = (lng)((bytes - prev) - offset);
 			if (current_buffer == nullptr ||
 				(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 				// create a new buffer
@@ -318,9 +319,8 @@ void TextFile::OpenFile(char* base, lng size) {
 			this->line_lengths.push_back(length);
 
 			linenr++;
-			loaded = ((double)(ptr - base)) / size;
 
-			prev = ptr + 1;
+			prev = bytes + 1;
 			offset = 0;
 
 			if (pending_delete) {
@@ -329,12 +329,12 @@ void TextFile::OpenFile(char* base, lng size) {
 				return;
 			}
 		}
-		ptr += character_offset;
+		bytes += character_offset;
 	}
 	{
 		// add the final line
-		char* line_start = prev;
-		lng line_size = (lng)(ptr - prev);
+		char* line_start = ptr + prev;
+		lng line_size = (lng)(bytes - prev);
 		if (current_buffer == nullptr ||
 			(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 			// create a new buffer
@@ -370,7 +370,6 @@ void TextFile::OpenFile(char* base, lng size) {
 	cursors.push_back(new Cursor(this));
 
 	panther::DestroyFileContents(base);
-	loaded = 1;
 	is_loaded = true;
 
 	if (highlighter) {
@@ -1173,8 +1172,8 @@ void TextFile::VerifyTextfile() {
 			auto end_position = c->EndCursorPosition();
 			auto begin_position = cursors[i + 1]->BeginCursorPosition();
 			if (!(end_position.buffer == begin_position.buffer && end_position.position == begin_position.position)) {
-				assert(Cursor::CursorPositionOccursFirst(end_position.buffer, end_position.position, 
-						begin_position.buffer, begin_position.position));
+				assert(Cursor::CursorPositionOccursFirst(end_position.buffer, end_position.position,
+					begin_position.buffer, begin_position.position));
 			}
 		}
 		assert(c->start_buffer_position >= 0 && c->start_buffer_position < c->start_buffer->current_size);
@@ -1570,7 +1569,7 @@ void TextFile::SaveChanges() {
 		lng i = 0;
 		lng end = (*it) == buffers.back() ? (*it)->current_size - 1 : (*it)->current_size;
 		for (i = 0; i < end; i++) {
-			if ( line[i] == '\n') {
+			if (line[i] == '\n') {
 				// new line
 				panther::WriteToFile(handle, line + prev_position, i - prev_position);
 				switch (line_ending) {
@@ -1916,7 +1915,7 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 #endif
 	if (regex_handle) PGDeleteRegex(regex_handle);
 	if (textfile->textfield) textfile->textfield->Invalidate();
-}
+	}
 
 void TextFile::ClearMatches() {
 	if (!is_loaded) return;

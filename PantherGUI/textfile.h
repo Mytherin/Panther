@@ -132,7 +132,7 @@ public:
 	void Unlock(PGLockType type);
 
 	bool IsLoaded() { return is_loaded; }
-	double LoadPercentage() { return loaded; }
+	double LoadPercentage() { return (double) bytes / (double) total_bytes; }
 
 	void ClearExtraCursors();
 	void ClearCursors();
@@ -266,7 +266,8 @@ private:
 	void InvalidateParsing();
 
 	bool is_loaded;
-	double loaded;
+	size_t bytes = 0;
+	size_t total_bytes = 1;
 
 	PGTextBuffer* GetBuffer(lng line);
 
