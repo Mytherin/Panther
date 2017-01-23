@@ -405,6 +405,7 @@ void TextFile::SetWordWrap(bool wordwrap, PGScalar wrap_width) {
 	this->wordwrap = wordwrap;
 	if (this->wordwrap && this->wordwrap_width != wrap_width) {
 		this->wordwrap_width = wrap_width;
+		this->xoffset = 0;
 		VerifyTextfile();
 	} else if (!this->wordwrap) {
 		this->wordwrap_width = -1;
