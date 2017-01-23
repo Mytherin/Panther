@@ -350,7 +350,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					} else if (syntax->type == PGSyntaxClass6) {
 						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
 					}
-					RenderText(line_renderer, font, line + position, syntax->end - position, bitmap_x, bitmap_y);
+					RenderText(line_renderer, font, line + position, syntax->end - position, bitmap_x, bitmap_y, this->width);
 					PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
 					bitmap_x += text_width;
 					position = syntax->end;
@@ -358,7 +358,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				}
 				if (length > position) {
 					SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-					RenderText(line_renderer, font, line + position, length - position, bitmap_x, bitmap_y);
+					RenderText(line_renderer, font, line + position, length - position, bitmap_x, bitmap_y, this->width);
 				}
 				/*if (minimap) {
 					// we rendered into a bitmap: delete the renderer and store the line
