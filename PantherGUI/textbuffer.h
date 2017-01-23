@@ -7,7 +7,6 @@
 
 #include "windowfunctions.h"
 
-
 extern lng TEXT_BUFFER_SIZE;
 
 class TextFile;
@@ -18,6 +17,13 @@ struct PGCursorPosition {
 	lng line;
 	lng position;
 	lng character;
+};
+
+struct PGLineWrap {
+	lng* lines = nullptr;
+
+	PGLineWrap() : lines(nullptr) { }
+	~PGLineWrap() { if (lines) delete lines; }
 };
 
 struct PGBufferUpdate {
@@ -44,6 +50,11 @@ public:
 
 	PGTextBuffer* prev = nullptr;
 	PGTextBuffer* next = nullptr;
+
+	PGScalar wrap_width;
+	std::vector<PGLineWrap> line_wraps;
+
+	void ClearWrappedLines();
 
 	void Extend(ulng new_size);
 
@@ -79,106 +90,6 @@ public:
 
 	PGCursorPosition GetCursorFromPosition(ulng position);
 	TextLine GetLineFromPosition(ulng position);
-
-	lng GetRenderedLines(TextFile* textfile, PGFontHandle font, PGScalar size);
-};
-
-struct TextLine {
-	friend class TextLineIterator;
-	friend class WrappedTextLineIterator;
-public:
-	TextLine() : line(nullptr), length(0) { syntax.end = -1; }
-	TextLine(char* line, lng length, PGSyntax syntax) : line(line), length(length), syntax(syntax) { }
-	TextLine(PGTextBuffer* buffer, lng line);
-
-	lng GetLength(void) { return length; }
-	char* GetLine(void) { return line; }
-	bool IsValid() { return line != nullptr; }
-
-	// computes how to wrap the line starting at start_wrap
-	// returns true if the line has to be wrapped, false if it fits entirely within wrap_width
-	// if the function returns true, end_wrap is set to a value < length
-	static bool WrapLine(char* line, lng length, PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap);
-	// returns the amount of lines this one line is rendered at with the given wrap width
-	static lng RenderedLines(char* line, lng length, PGFontHandle font, PGScalar wrap_width);
-	
-	bool WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap);
-
-	PGSyntax syntax;
-private:
-	char* line;
-	lng length;
-};
-
-class TextLineIterator {
-	friend class TextFile;
-public:
-	virtual TextLine GetLine();
-	friend TextLineIterator& operator++(TextLineIterator& element) {
-		element.NextLine();
-		return element;
-	}
-	friend TextLineIterator& operator--(TextLineIterator& element) {
-		element.PrevLine();
-		return element;
-	}
-	friend TextLineIterator& operator++(TextLineIterator& element, int i) {
-		return ++element;
-	}
-	friend TextLineIterator& operator--(TextLineIterator& element, int i) {
-		return --element;
-	}
-
-	virtual lng GetCurrentLineNumber() { return current_line; }
-	virtual lng GetCurrentCharacterNumber() { return 0; }
-	virtual PGVerticalScroll GetCurrentScrollOffset() { return PGVerticalScroll(current_line, 0); }
-
-	PGTextBuffer* CurrentBuffer() { return buffer; }
-	TextLineIterator(TextFile* textfile, PGTextBuffer* buffer);
-protected:
-	TextLineIterator(TextFile* textfile, lng current_line);
-	TextLineIterator();
-
-	void Initialize(TextFile* tf, lng current_line);
-
-	virtual void PrevLine();
-	virtual void NextLine();
-
-	PGTextBuffer* buffer;
-	lng start_position, end_position;
-	TextFile* textfile;
-	lng current_line;
-	TextLine textline;
-};
-
-class WrappedTextLineIterator : public TextLineIterator {
-public:
-	TextLine GetLine();
-
-	lng GetCurrentLineNumber() { return current_line; }
-	lng GetCurrentCharacterNumber() { return start_wrap; }
-	PGVerticalScroll GetCurrentScrollOffset();
-
-	WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width);
-protected:
-	void PrevLine();
-	void NextLine();
-
-	PGFontHandle font;
-	PGScalar wrap_width;
-	lng start_wrap;
-	lng end_wrap;
-	TextLine wrapped_line;
-
-private:
-	bool delete_syntax = false;
-
-	void SetCurrentScrollOffset(PGVerticalScroll scroll);
-
-	void DetermineStartWrap();
-	void DetermineEndWrap();
-
-	void SetLineFromOffsets();
 };
 
 void SetTextBufferSize(lng bufsiz);

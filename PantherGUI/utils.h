@@ -31,6 +31,8 @@ namespace panther {
 
 	std::string tolower(std::string str);
 	std::string toupper(std::string str);
+
+	bool epsilon_equals(double a, double b);
 }
 
 

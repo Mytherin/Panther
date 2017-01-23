@@ -16,6 +16,9 @@
 #include "searchbox.h"
 #include "settings.h"
 
+#include "textiterator.h"
+#include "wrappedtextiterator.h"
+
 #define SCROLLBAR_PADDING 4
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TextField);
@@ -120,6 +123,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		rendered_lines.clear();
 	}
 	while ((current_line = line_iterator->GetLine()).IsValid()) {
+		assert(current_line.GetLength() >= 0);
 		lng current_start_line = line_iterator->GetCurrentLineNumber();
 		lng current_start_position = line_iterator->GetCurrentCharacterNumber();
 
@@ -468,6 +472,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	if (textfile->IsLoaded()) {
 		textfield_region.width = textfield_width - text_offset - 5;
 		textfield_region.height = this->height;
+		textfile->SetWordWrap(textfile->GetWordWrap(), GetTextfieldWidth());
 		DrawTextField(renderer, textfield_font, rectangle, false, x, x + text_offset + margin_width * 2, y, textfield_width, false);
 	} else {
 		PGScalar offset = this->width / 10;
@@ -525,12 +530,13 @@ PGScalar TextField::GetMinimapHeight() {
 
 void TextField::GetMinimapLinesRendered(lng& lines_rendered, double& percentage) {
 	lines_rendered = this->height / (minimap_line_height == 0 ? 1 : minimap_line_height);
-	percentage = (double)textfile->GetLineOffset().linenumber / textfile->GetMaxYScroll();
+	lng max_y_scroll = textfile->GetMaxYScroll();
+	percentage = max_y_scroll == 0 ? 0 : (double)textfile->GetLineOffset().linenumber / max_y_scroll;
 }
 
 PGScalar TextField::GetMinimapOffset() {
 	lng total_lines_rendered;
-	double percentage;
+	double percentage = 0;
 	GetMinimapLinesRendered(total_lines_rendered, percentage);
 	lng line_offset;
 	textfile->OffsetVerticalScroll(textfile->GetLineOffset(), -(total_lines_rendered * percentage), line_offset);
@@ -539,7 +545,7 @@ PGScalar TextField::GetMinimapOffset() {
 
 PGVerticalScroll TextField::GetMinimapStartLine() {
 	lng lines_rendered;
-	double percentage;
+	double percentage = 0;
 	GetMinimapLinesRendered(lines_rendered, percentage);
 	return textfile->OffsetVerticalScroll(textfile->GetLineOffset(), -(lines_rendered * percentage));
 }

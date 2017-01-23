@@ -2,6 +2,8 @@
 
 #include "syntax.h"
 #include "textbuffer.h"
+#include "textline.h"
+
 #include <vector>
 
 enum SyntaxHighlighterType {

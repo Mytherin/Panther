@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "unicode.h"
 #include "regex.h"
+#include "wrappedtextiterator.h"
 
 struct OpenFileInformation {
 	TextFile* textfile;
@@ -178,6 +179,7 @@ void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 	lng added_scrolls = 0;
 	lng prev_scroll = -1;
 	while (buffer && !buffer->parsed) {
+		buffer->ClearWrappedLines();
 		lng linenr = buffer->start_line;
 		for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
 			TextLine line = it.GetLine();
@@ -403,7 +405,9 @@ void TextFile::OpenFile(char* base, lng size) {
 
 void TextFile::SetWordWrap(bool wordwrap, PGScalar wrap_width) {
 	this->wordwrap = wordwrap;
-	if (this->wordwrap && this->wordwrap_width != wrap_width) {
+	if (this->wordwrap && !panther::epsilon_equals(this->wordwrap_width, wrap_width)) {
+		// heuristic to determine new scroll position in current line after resize
+		this->yoffset.inner_line = (wordwrap_width / wrap_width) * this->yoffset.inner_line;
 		this->wordwrap_width = wrap_width;
 		this->xoffset = 0;
 		VerifyTextfile();

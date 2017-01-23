@@ -9,6 +9,7 @@
 #include "syntaxhighlighter.h"
 #include "language.h"
 #include "regex.h"
+#include "textline.h"
 
 #include <string>
 #include <vector>

@@ -54,4 +54,9 @@ namespace panther {
 		std::transform(str.begin(), str.end(), str.begin(), ::toupper);
 		return str;
 	}
+
+	bool epsilon_equals(double a, double b) {
+		return std::abs(a - b) < 0.00001;
+	}
 }
+

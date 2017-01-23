@@ -4,6 +4,7 @@
 #include "textfield.h"
 #include "text.h"
 #include "unicode.h"
+#include "textiterator.h"
 
 #include <algorithm>
 
@@ -72,8 +73,12 @@ void Cursor::OffsetSelectionLine(lng offset) {
 		lng end_wrap = -1;
 		bool wrap = false;
 		if (offset > 0) {
+			lng* lines = line.WrapLine(start_buffer, start_line, file->GetLineCount(), textfield_font, file->wordwrap_width);
+			start_wrap = 0;
+			lng index = 0;
 			// we have the cursor down
-			while (line.WrapLine(textfield_font, file->textfield->GetTextfieldWidth(), start_wrap, end_wrap)) {
+			while (lines[index] < line.GetLength()) {
+				end_wrap = lines[index];
 				if (end_wrap > start_character) {
 					// there is a wrap AFTER this cursor
 					wrap = true;
@@ -83,6 +88,7 @@ void Cursor::OffsetSelectionLine(lng offset) {
 					break;
 				}
 				start_wrap = end_wrap;
+				index++;
 			}
 			if (wrap) {
 				// if there is a wrap after this cursor
@@ -98,16 +104,21 @@ void Cursor::OffsetSelectionLine(lng offset) {
 				}
 			}
 		} else {
+			lng* lines = line.WrapLine(start_buffer, start_line, file->GetLineCount(), textfield_font, file->wordwrap_width);
+			start_wrap = 0;
+			lng index = 0;
 			lng prev_wrap = -1;
 			// we have to move the cursor up
 			while (true) {
-				bool found = line.WrapLine(textfield_font, file->textfield->GetTextfieldWidth(), start_wrap, end_wrap);
+				end_wrap = lines[index];
+				bool found = lines[index] < line.GetLength();
 				if (end_wrap >= start_character) {
 					wrap = true;
 					break;
 				}
 				prev_wrap = start_wrap;
 				start_wrap = end_wrap;
+				index++;
 				if (!found) break;
 			}
 			if (wrap && start_wrap > 0) {
@@ -131,10 +142,12 @@ void Cursor::OffsetSelectionLine(lng offset) {
 				if (new_line != start_line) {
 					start_line = new_line;
 					start_wrap = 0;
+					auto buffer = this->file->GetBuffer(start_line);
 					line = this->file->GetLine(start_line);
-					while (line.WrapLine(textfield_font, file->textfield->GetTextfieldWidth(), start_wrap, end_wrap)) {
-						start_wrap = end_wrap;
-					}
+					lng* lines = line.WrapLine(buffer, start_line, file->GetLineCount(), textfield_font, file->wordwrap_width);
+					lng rendered_lines = line.RenderedLines(buffer, start_line, file->GetLineCount(), textfield_font, file->wordwrap_width);
+					start_wrap = rendered_lines > 1 ? lines[rendered_lines - 2] : 0;
+					end_wrap = lines[rendered_lines - 1];
 					start_character = GetPositionInLine(textfield_font, x_position, line.GetLine() + start_wrap, end_wrap - start_wrap);
 					_SetCursorStartLocation(start_line, start_wrap + start_character);
 				}

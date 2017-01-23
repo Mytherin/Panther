@@ -3,160 +3,82 @@
 #include "textdelta.h"
 #include "textfile.h"
 #include "unicode.h"
+#include "wrappedtextiterator.h"
 
 WrappedTextLineIterator::WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width) :
 	font(font), wrap_width(wrap_width) {
 	lng current_line = scroll.linenumber;
 	this->Initialize(textfile, current_line);
 	delete_syntax = false;
-	if (scroll.inner_line > 0) {
-		SetCurrentScrollOffset(scroll);
-	} else {
-		start_wrap = 0;
-	}
-	DetermineEndWrap();
+
+	SetCurrentScrollOffset(scroll);
 }
 
 void WrappedTextLineIterator::PrevLine() {
-	if (start_wrap == 0) {
-		// have to get the previous line
-		TextLineIterator::PrevLine();
-		end_wrap = textline.length;
+	if (inner_line == 0) {
+		if (current_line == 0) {
+			wrapped_line.line = nullptr;
+			wrapped_line.length = 0;
+		} else {
+			// have to get the previous line
+			TextLineIterator::PrevLine();
+			max_inner_line = textline.RenderedLines(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+			inner_line = max_inner_line - 1;
+			this->wrap_positions = textline.WrapLine(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+			start_wrap = inner_line > 0 ? wrap_positions[inner_line - 1] : 0;
+			end_wrap = wrap_positions[inner_line];
+		}
 	} else {
-		end_wrap = start_wrap;
+		end_wrap = wrap_positions[inner_line];
+		start_wrap = wrap_positions[--inner_line];
 	}
-	if (textline.line != nullptr) {
-		DetermineStartWrap();
-	} else {
-		wrapped_line.line = nullptr;
-	}
+	this->SetLineFromOffsets();
 }
 
 void WrappedTextLineIterator::NextLine() {
-	if (end_wrap >= textline.length) {
+	if (inner_line < max_inner_line - 1) {
+		start_wrap = wrap_positions[inner_line];
+		end_wrap = wrap_positions[++inner_line];
+	} else {
 		// have to get the next line
-		if (current_line + 1 >= textfile->GetLineCount()) {
+		TextLineIterator::NextLine();
+		if (textline.line == nullptr) {
 			wrapped_line.line = nullptr;
+			wrapped_line.length = 0;
 		} else {
-			TextLineIterator::NextLine();
 			start_wrap = 0;
+			this->wrap_positions = textline.WrapLine(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+			end_wrap = wrap_positions[0];
+			inner_line = 0;
+			max_inner_line = textline.RenderedLines(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
 		}
-	} else {
-		start_wrap = end_wrap;
 	}
-	if (wrapped_line.line != nullptr) {
-		DetermineEndWrap();
-	} else {
-		wrapped_line.line = nullptr;
-	}
+	this->SetLineFromOffsets();
 }
 
 TextLine WrappedTextLineIterator::GetLine() {
 	return wrapped_line;
 }
 
-bool TextLine::WrapLine(char* line, lng length, PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap) {
-	PGScalar current_width = 0;
-	lng i = start_wrap;
-	lng last_space = -1;
-	end_wrap = length;
-	for (; i < length; ) {
-		int offset = utf8_character_length(line[i]);
-		current_width += MeasureTextWidth(font, line + i, offset);
-		if (current_width > wrap_width) {
-			// we have to wrap now
-			// try to wrap at the last space
-			if (last_space < 0 || last_space <= start_wrap) {
-				// there is no space
-				end_wrap = i;
-			} else {
-				end_wrap = last_space;
-			}
-			return true;
-		}
-		if (offset == 1) {
-			if (line[i] == '\t' || line[i] == ' ') {
-				last_space = i;
-			}
-		}
-		i += offset;
-	}
-	return false;
-}
-
-lng TextLine::RenderedLines(char* line, lng length, PGFontHandle font, PGScalar wrap_width) {
-	lng lines = 1;
-	lng start_wrap = 0;
-	lng end_wrap;
-	while (WrapLine(line, length, font, wrap_width, start_wrap, end_wrap)) {
-		lines++;
-		start_wrap = end_wrap;
-	}
-	return lines;
-}
-
-bool TextLine::WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap) {
-	return TextLine::WrapLine(line, length, font, wrap_width, start_wrap, end_wrap);
-}
-
-void WrappedTextLineIterator::DetermineStartWrap() {
-	lng start_wrap = 0, end_wrap;
-	while (textline.WrapLine(font, wrap_width, start_wrap, end_wrap)) {
-		if (end_wrap >= this->end_wrap) {
-			this->start_wrap = start_wrap;
-			SetLineFromOffsets();
-			return;
-		}
-		start_wrap = end_wrap;
-	}
-	this->start_wrap = start_wrap;
-	SetLineFromOffsets();
-	return;
-}
-
-void WrappedTextLineIterator::DetermineEndWrap() {
-	textline.WrapLine(font, wrap_width, start_wrap, end_wrap);
-	SetLineFromOffsets();
-}
-
 PGVerticalScroll WrappedTextLineIterator::GetCurrentScrollOffset() {
-	PGVerticalScroll scroll = PGVerticalScroll(current_line, 0);
-	lng lines = 0;
-	lng total_lines = 1;
-	lng start_wrap = 0;
-	lng end_wrap;
-	while (textline.WrapLine(font, wrap_width, start_wrap, end_wrap)) {
-		if (this->start_wrap >= end_wrap) {
-			lines = total_lines;
-		} else {
-			break;
-		}
-		total_lines++;
-		start_wrap = end_wrap;
-	}
-	scroll.inner_line = lines;
-	return scroll;
+	return PGVerticalScroll(current_line, inner_line);
 }
 
 void WrappedTextLineIterator::SetCurrentScrollOffset(PGVerticalScroll scroll) {
-	lng start_wrap = 0;
-	lng end_wrap;
-
-	lng total_lines = textline.RenderedLines(textline.GetLine(), textline.GetLength(), font, wrap_width);
-	lng line = scroll.inner_line;
-	this->start_wrap = 0;
-	if (line == 0) return;
-	while (textline.WrapLine(font, wrap_width, start_wrap, end_wrap)) {
-		line--;
-		this->start_wrap = end_wrap;
-		if (line == 0) {
-			return;
-		}
-		start_wrap = end_wrap;
+	max_inner_line = textline.RenderedLines(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+	if (scroll.inner_line >= max_inner_line) {
+		scroll.inner_line = max_inner_line - 1;
 	}
+	inner_line = scroll.inner_line;
+	assert(scroll.inner_line >= 0 && scroll.inner_line < max_inner_line);
+	this->wrap_positions = textline.WrapLine(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+	start_wrap = inner_line > 1 ? wrap_positions[inner_line - 1] : 0;
+	end_wrap = wrap_positions[inner_line];
+	SetLineFromOffsets();
 }
 
 void WrappedTextLineIterator::SetLineFromOffsets() {
+	if (textline.line == nullptr) return;
 	if (delete_syntax) {
 		wrapped_line.syntax.Delete();
 		wrapped_line.syntax.next = nullptr;
@@ -164,6 +86,7 @@ void WrappedTextLineIterator::SetLineFromOffsets() {
 	}
 	wrapped_line.line = textline.line + start_wrap;
 	wrapped_line.length = end_wrap - start_wrap;
+	assert(end_wrap >= start_wrap);
 	wrapped_line.syntax.end = -1;
 	if (start_wrap == 0 && end_wrap == textline.length) {
 		// the wrapped line is the entire line, we can directly use the textline syntax

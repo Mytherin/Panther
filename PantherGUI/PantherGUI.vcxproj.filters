@@ -147,6 +147,12 @@
     <ClCompile Include="notification.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="textiterator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="textline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -282,6 +288,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="notification.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="wrappedtextiterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textiterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

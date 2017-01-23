@@ -168,6 +168,8 @@
     <ClCompile Include="textfield.cpp" />
     <ClCompile Include="textfile.cpp" />
     <ClCompile Include="textbuffer.cpp" />
+    <ClCompile Include="textiterator.cpp" />
+    <ClCompile Include="textline.cpp" />
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="togglebutton.cpp" />
     <ClCompile Include="unicode.cpp" />
@@ -215,12 +217,15 @@
     <ClInclude Include="textfile.h" />
     <ClInclude Include="textdelta.h" />
     <ClInclude Include="textbuffer.h" />
+    <ClInclude Include="textiterator.h" />
+    <ClInclude Include="textline.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="togglebutton.h" />
     <ClInclude Include="unicode.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />
     <ClInclude Include="windows_structs.h" />
+    <ClInclude Include="wrappedtextiterator.h" />
     <ClInclude Include="xml.h" />
   </ItemGroup>
   <ItemGroup>
