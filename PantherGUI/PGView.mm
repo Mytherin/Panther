@@ -643,3 +643,14 @@ std::string GetOSName() {
 	return "macos";
 }
 
+
+PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message) {
+	return PGResponseCancel;
+}
+
+void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data) {
+	callback(window, control, data, PGResponseCancel);
+}
+
+
+

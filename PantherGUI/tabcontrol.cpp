@@ -460,17 +460,22 @@ void TabControl::ActuallyCloseTab(int tab) {
 
 void TabControl::CloseTab(int tab) {
 	if (tabs[tab].file->HasUnsavedChanges()) {
+		int* tabnumbers = new int[1];
+		tabnumbers[0] = tab;
 		PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG, 
 			[](PGWindowHandle window, Control* control, void* data, PGResponse response) {
 			TabControl* tabs = (TabControl*)control;
-			int tabnr = (int)data;
+			int* tabnumbers = (int*)data;
+			int tabnr = tabnumbers[0];
+
 			if (response == PGResponseCancel)
 				return;
 			if (response == PGResponseYes) {
 				tabs->tabs[tabnr].file->SaveChanges();
 			}
 			tabs->ActuallyCloseTab(tabnr);
-		}, this, (void*)tab);
+			delete tabnumbers;
+		}, this, (void*)tabnumbers);
 	} else {
 		ActuallyCloseTab(tab);
 	}
