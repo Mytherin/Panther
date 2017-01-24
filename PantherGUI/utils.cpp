@@ -56,7 +56,7 @@ namespace panther {
 	}
 
 	bool epsilon_equals(double a, double b) {
-		return std::abs(a - b) < 0.00001;
+		return abs(a - b) < 0.00001;
 	}
 }
 

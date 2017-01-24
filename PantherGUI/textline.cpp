@@ -48,7 +48,7 @@ lng* TextLine::WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, PGFon
 
 lng* TextLine::WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, char* line, lng length, PGFontHandle font, PGScalar wrap_width) {
 	lng buffer_lines = buffer->GetLineCount(total_lines);
-	if (std::abs(buffer->wrap_width - wrap_width) > 0.01) {
+	if (!panther::epsilon_equals(buffer->wrap_width, wrap_width)) {
 		// cache is invalidated: wrap width is different
 		buffer->line_wraps.clear();
 		buffer->wrap_width = wrap_width;

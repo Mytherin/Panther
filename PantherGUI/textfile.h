@@ -10,6 +10,7 @@
 #include "language.h"
 #include "regex.h"
 #include "textline.h"
+#include "textiterator.h"
 
 #include <string>
 #include <vector>
