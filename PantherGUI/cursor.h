@@ -88,6 +88,7 @@ public:
 	PGCursorPosition BeginPosition();
 	PGCursorPosition EndPosition();
 
+
 	PGCharacterPosition SelectedCharacterPosition();
 	PGCharacterPosition BeginCharacterPosition();
 	PGCharacterPosition EndCharacterPosition();

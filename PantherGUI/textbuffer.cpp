@@ -141,7 +141,25 @@ PGCharacterPosition PGTextBuffer::GetCharacterFromPosition(ulng position) {
 	pos.line = start_line;
 	pos.position = 0;
 	pos.character = 0;
-	for (ulng i = 0; i < position; ) {
+	ulng i = 0;
+
+	lng cache_entry = (position / TEXT_BUFFER_SIZE) - 1;
+	if (cache_entry >= 0) {
+		if (cache_entry < cached_positions.size()) {
+			// cache entry exists
+			pos = cached_positions[cache_entry];
+			i = pos.position;
+		} else if (cached_positions.size() > 0) {
+			// no exact entry exists, but we can use the closest one
+			cache_entry = cached_positions.size() - 1;
+			pos = cached_positions.back();
+			i = pos.position;
+		} else {
+			cache_entry = 0;
+		}
+	}
+
+	for (; i < position; ) {
 		int offset = utf8_character_length(buffer[i]);
 		if (offset == 1 && buffer[i] == '\n') {
 			pos.line++;
@@ -152,6 +170,12 @@ PGCharacterPosition PGTextBuffer::GetCharacterFromPosition(ulng position) {
 			pos.position += offset;
 		}
 		i += offset;
+		if (i / TEXT_BUFFER_SIZE > cache_entry) {
+			cache_entry++;
+			if (cached_positions.size() <= cache_entry) {
+				cached_positions.push_back(pos);	
+			}
+		}
 	}
 	return pos;
 }
@@ -373,6 +397,7 @@ lng PGTextBuffer::DeleteLines(ulng position) {
 
 void PGTextBuffer::ClearWrappedLines() {
 	line_wraps.clear();
+	cached_positions.clear();
 }
 
 void SetTextBufferSize(lng bufsiz) {

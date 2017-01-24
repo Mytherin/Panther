@@ -60,6 +60,9 @@ public:
 	PGScalar wrap_width;
 	std::vector<PGLineWrap> line_wraps;
 
+	std::vector<PGCharacterPosition> cached_positions;
+
+
 	void ClearWrappedLines();
 
 	void Extend(ulng new_size);
