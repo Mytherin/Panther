@@ -178,7 +178,9 @@ int TextFile::GetLineHeight() {
 void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 	lng added_scrolls = 0;
 	lng prev_scroll = -1;
-	while (buffer && !buffer->parsed) {
+	double added_width = 0;
+	while (buffer && (!buffer->parsed || (wordwrap && buffer->cumulative_width < 0))) {
+		buffer->cumulative_width += added_width;
 		buffer->ClearWrappedLines();
 		lng linenr = buffer->start_line;
 		for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
@@ -187,16 +189,25 @@ void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 
 			PGScalar current_length = this->line_lengths[linenr];
 			this->line_lengths[linenr] = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
+			added_width += this->line_lengths[linenr] - current_length;
 			if (linenr == max_line_length && current_length > this->line_lengths[linenr]) {
 				// the maximum line was reduced in length
 				// we have to find the current maximum line
 				max_line_length = -1;
 			} else if (max_line_length >= 0 && line_lengths[linenr] > line_lengths[max_line_length]) {
+				// the current line is bigger than the previous maximum line
 				max_line_length = linenr;
 			}
 			linenr++;
 		}
 		buffer = buffer->next;
+	}
+	if (added_width != 0) {
+		while (buffer) {
+			buffer->cumulative_width += added_width;
+			buffer = buffer->next;
+		}
+		total_width += added_width;
 	}
 	if (max_line_length < 0) {
 		lng max_index = 0;
@@ -264,6 +275,7 @@ void TextFile::OpenFile(char* base, lng size) {
 
 	total_bytes = size;
 	bytes = 0;
+	double current_width = 0;
 	while (ptr[bytes]) {
 		int character_offset = utf8_character_length(*ptr);
 		assert(character_offset >= 0); // invalid UTF8, FIXME: throw error message or something else
@@ -304,6 +316,7 @@ void TextFile::OpenFile(char* base, lng size) {
 				if (current_buffer) current_buffer->next = new_buffer;
 				new_buffer->prev = current_buffer;
 				current_buffer = new_buffer;
+				current_buffer->cumulative_width = current_width;
 				current_buffer->buffer[current_buffer->current_size++] = '\n';
 				buffers.push_back(current_buffer);
 			} else {
@@ -319,6 +332,7 @@ void TextFile::OpenFile(char* base, lng size) {
 				max_length = length;
 			}
 			this->line_lengths.push_back(length);
+			current_width += length;
 
 			linenr++;
 
@@ -344,6 +358,7 @@ void TextFile::OpenFile(char* base, lng size) {
 			if (current_buffer) current_buffer->next = new_buffer;
 			new_buffer->prev = current_buffer;
 			current_buffer = new_buffer;
+			current_buffer->cumulative_width = current_width;
 			current_buffer->buffer[current_buffer->current_size++] = '\n';
 			buffers.push_back(current_buffer);
 		} else {
@@ -358,6 +373,7 @@ void TextFile::OpenFile(char* base, lng size) {
 			max_length = length;
 		}
 		this->line_lengths.push_back(length);
+		current_width += length;
 
 		linenr++;
 	}
@@ -368,6 +384,7 @@ void TextFile::OpenFile(char* base, lng size) {
 		linenr++;
 	}
 	linecount = linenr;
+	total_width = current_width;
 
 	cursors.push_back(new Cursor(this));
 
@@ -823,6 +840,16 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 	return lines;
 }
 
+double TextFile::GetScrollPercentage() {
+	if (wordwrap) {
+		PGVerticalScroll scroll = GetLineOffset();
+		double width = GetBuffer(scroll.linenumber)->cumulative_width + scroll.inner_line * (wordwrap_width / 2.0);
+		return width / total_width;
+	} else {
+		return linecount == 0 ? 0 : (double)yoffset.linenumber / linecount;
+	}
+}
+
 void TextFile::SetLineOffset(lng offset) {
 	yoffset.linenumber = offset;
 	yoffset.inner_line = 0;
@@ -834,7 +861,39 @@ void TextFile::SetLineOffset(PGVerticalScroll scroll) {
 }
 
 void TextFile::SetScrollOffset(lng offset) {
-	SetLineOffset(offset);
+	if (!wordwrap) {
+		SetLineOffset(offset);
+	} else {
+		double percentage = (double)offset / (double)GetMaxYScroll();
+		double width = percentage * total_width;
+		auto buffer = buffers[PGTextBuffer::GetBufferFromWidth(buffers, width)];
+		double start_width = buffer->cumulative_width;
+		lng line = buffer->start_line;
+		lng max_line = buffer->GetLineCount(GetLineCount());
+		while (line < max_line) {
+			double next_width = start_width + line_lengths[line];
+			if (next_width >= width) {
+				break;
+			}
+			start_width = next_width;
+			line++;
+		}
+		// find position within buffer
+		lng inner_lines = (lng)(line_lengths[line] / (wordwrap_width / 2.0));
+		percentage = (width - start_width) / line_lengths[line];
+		PGVerticalScroll scroll;
+		scroll.linenumber = line;
+		scroll.inner_line = (lng)(percentage * inner_lines);
+		SetLineOffset(scroll);
+	}
+}
+
+lng TextFile::GetMaxYScroll() {
+	if (!wordwrap) {
+		return GetLineCount() - 1;
+	} else {
+		return std::max((lng)(total_width / wordwrap_width), GetLineCount() - 1);
+	}
 }
 
 PGVerticalScroll TextFile::GetVerticalScroll(lng linenumber, lng characternr) {
@@ -934,7 +993,7 @@ void TextFile::OffsetCharacter(PGDirection direction) {
 		if ((*it)->SelectionIsEmpty()) {
 			(*it)->OffsetCharacter(direction);
 		} else {
-			PGCursorPosition pos = direction == PGDirectionLeft ? (*it)->BeginPosition() : (*it)->EndPosition();
+			auto pos = direction == PGDirectionLeft ? (*it)->BeginCharacterPosition() : (*it)->EndCharacterPosition();
 			(*it)->SetCursorLocation(pos.line, pos.character);
 		}
 	}

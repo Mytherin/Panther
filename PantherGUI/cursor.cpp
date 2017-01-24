@@ -386,11 +386,35 @@ bool Cursor::SelectionIsEmpty() {
 }
 
 PGCursorPosition Cursor::SelectedPosition() {
-	return start_buffer->GetCursorFromPosition(start_buffer_position);
+	return start_buffer->GetCursorFromPosition(start_buffer_position, file->GetLineCount());
 }
 
 PGCursorPosition Cursor::UnselectedPosition() {
-	return end_buffer->GetCursorFromPosition(end_buffer_position);
+	return end_buffer->GetCursorFromPosition(end_buffer_position, file->GetLineCount());
+}
+
+PGCursorPosition Cursor::BeginPosition() {
+	CursorPosition begin = BeginCursorPosition();
+	return begin.buffer->GetCursorFromPosition(begin.position, file->GetLineCount());
+}
+
+PGCursorPosition Cursor::EndPosition() {
+	CursorPosition end = EndCursorPosition();
+	return end.buffer->GetCursorFromPosition(end.position, file->GetLineCount());
+}
+
+PGCharacterPosition Cursor::SelectedCharacterPosition() {
+	return start_buffer->GetCharacterFromPosition(start_buffer_position);
+}
+
+PGCharacterPosition Cursor::BeginCharacterPosition() {
+	CursorPosition begin = BeginCursorPosition();
+	return begin.buffer->GetCharacterFromPosition(begin.position);
+}
+
+PGCharacterPosition Cursor::EndCharacterPosition() {
+	CursorPosition end = EndCursorPosition();
+	return end.buffer->GetCharacterFromPosition(end.position);
 }
 
 bool Cursor::CursorOccursFirst(Cursor* a, Cursor* b) {
@@ -408,16 +432,6 @@ PGScalar Cursor::GetXOffset(CursorPosition position) {
 	} else {
 		return MeasureTextWidth(textfield_font, line.GetLine(), line_position);
 	}
-}
-
-PGCursorPosition Cursor::BeginPosition() {
-	CursorPosition begin = BeginCursorPosition();
-	return begin.buffer->GetCursorFromPosition(begin.position);
-}
-
-PGCursorPosition Cursor::EndPosition() {
-	CursorPosition end = EndCursorPosition();
-	return end.buffer->GetCursorFromPosition(end.position);
 }
 
 PGScalar Cursor::SelectedXPosition() {

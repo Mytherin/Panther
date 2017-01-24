@@ -399,4 +399,6 @@ struct PGVerticalScroll {
 	friend bool operator> (const PGVerticalScroll& lhs, const PGVerticalScroll& rhs){ return rhs < lhs; }
 	friend bool operator<=(const PGVerticalScroll& lhs, const PGVerticalScroll& rhs){ return !(lhs > rhs); }
 	friend bool operator>=(const PGVerticalScroll& lhs, const PGVerticalScroll& rhs){ return !(lhs < rhs); }
+	friend bool operator==(const PGVerticalScroll& lhs, const PGVerticalScroll& rhs){ return lhs.linenumber == rhs.linenumber && lhs.inner_line == rhs.inner_line; }
+	friend bool operator!=(const PGVerticalScroll& lhs, const PGVerticalScroll& rhs){ return !(lhs == rhs); }
 };

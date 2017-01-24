@@ -16,6 +16,11 @@ struct PGTextBuffer;
 struct PGCursorPosition {
 	lng line;
 	lng position;
+};
+
+struct PGCharacterPosition {
+	lng line;
+	lng position;
 	lng character;
 };
 
@@ -51,6 +56,7 @@ public:
 	PGTextBuffer* prev = nullptr;
 	PGTextBuffer* next = nullptr;
 
+	double cumulative_width = -1;
 	PGScalar wrap_width;
 	std::vector<PGLineWrap> line_wraps;
 
@@ -60,6 +66,7 @@ public:
 
 	std::string GetString() { return std::string(buffer, next ? current_size : current_size - 1); }
 
+	static lng GetBufferFromWidth(std::vector<PGTextBuffer*>& buffers, double percentage);
 	static lng GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line);
 
 	// insert text into the specified buffer, "text" should not contain newlines
@@ -88,7 +95,8 @@ public:
 	ulng GetBufferLocationFromCursor(lng line, lng character);
 	void GetCursorFromBufferLocation(lng position, lng& line, lng& character);
 
-	PGCursorPosition GetCursorFromPosition(ulng position);
+	PGCharacterPosition GetCharacterFromPosition(ulng position);
+	PGCursorPosition GetCursorFromPosition(ulng position, lng total_lines);
 	TextLine GetLineFromPosition(ulng position);
 };
 

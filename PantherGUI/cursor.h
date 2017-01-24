@@ -88,6 +88,10 @@ public:
 	PGCursorPosition BeginPosition();
 	PGCursorPosition EndPosition();
 
+	PGCharacterPosition SelectedCharacterPosition();
+	PGCharacterPosition BeginCharacterPosition();
+	PGCharacterPosition EndCharacterPosition();
+
 	PGScalar GetXOffset(CursorPosition position);
 	PGScalar BeginXPosition();
 	PGScalar EndXPosition();

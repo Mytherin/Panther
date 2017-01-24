@@ -127,7 +127,7 @@ public:
 	PGLanguage* GetLanguage() { return language; }
 
 	lng GetLineCount();
-	lng GetMaxYScroll() { return GetLineCount() - 1; }
+	lng GetMaxYScroll();
 
 	void Lock(PGLockType type);
 	void Unlock(PGLockType type);
@@ -178,6 +178,7 @@ public:
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
 	PGVerticalScroll GetLineOffset() { return yoffset; }
+	double GetScrollPercentage();
 	void SetLineOffset(lng offset);
 	void SetLineOffset(PGVerticalScroll scroll);
 	void SetScrollOffset(lng offset);
@@ -233,6 +234,7 @@ private:
 	
 	BasicTextField* textfield;
 
+	double total_width = 0;
 	lng longest_line = 0;
 	lng xoffset = 0;
 	PGVerticalScroll yoffset;

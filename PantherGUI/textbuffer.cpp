@@ -7,7 +7,7 @@
 lng TEXT_BUFFER_SIZE = 4096;
 
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
-	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr) {
+	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr), cumulative_width(-1) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {
 		buffer_size = TEXT_BUFFER_SIZE;
 	} else {
@@ -105,9 +105,39 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 	return 0;
 }
 
-PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position) {
+PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position, lng total_lines) {
 	assert(position <= current_size);
 	PGCursorPosition pos;
+	pos.line = start_line;
+	pos.position = 0;
+
+	lng next_line = next ? next->start_line : total_lines;
+
+	if (pos.line + 1 == next_line) {
+		pos.position = position;
+		return pos;
+	}
+
+	for (ulng i = 0; i < position; ) {
+		int offset = utf8_character_length(buffer[i]);
+		if (buffer[i] == '\n') {
+			pos.line++;
+			pos.position = 0;
+			if (pos.line + 1 == next_line) {
+				pos.position = position - i;
+				return pos;
+			}
+		} else {
+			pos.position += offset;
+		}
+		i += offset;
+	}
+	return pos;
+}
+
+PGCharacterPosition PGTextBuffer::GetCharacterFromPosition(ulng position) {
+	assert(position <= current_size);
+	PGCharacterPosition pos;
 	pos.line = start_line;
 	pos.position = 0;
 	pos.character = 0;
@@ -259,6 +289,28 @@ PGBufferUpdate PGTextBuffer::DeleteText(std::vector<PGTextBuffer*>& buffers, PGT
 		// no merges
 		return PGBufferUpdate(size);
 	}
+}
+
+lng PGTextBuffer::GetBufferFromWidth(std::vector<PGTextBuffer*>& buffers, double width) {
+	lng limit = buffers.size() - 1;
+	lng first = 0;
+	lng last = limit;
+	lng middle = (first + last) / 2;
+
+	// binary search to find the block that belongs to the buffer
+	while (first <= last) {
+		if (middle != limit && width >= buffers[middle + 1]->cumulative_width) {
+			first = middle + 1;
+		} else if (width >= buffers[middle]->cumulative_width &&
+			(middle == limit || width < buffers[middle + 1]->cumulative_width)) {
+			return middle;
+		} else {
+			last = middle - 1;
+		}
+		middle = (first + last) / 2;
+	}
+	assert(0);
+	return limit;
 }
 
 lng PGTextBuffer::GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line) {

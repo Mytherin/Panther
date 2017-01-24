@@ -121,7 +121,7 @@ void SimpleTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			lng character;
 			_GetCharacterFromPosition(mouse.x, textfile->GetLine(0), character);
 			Cursor* active_cursor = textfile->GetActiveCursor();
-			if (active_cursor->SelectedPosition().character != character) {
+			if (active_cursor->SelectedCharacterPosition().character != character) {
 				active_cursor->SetCursorStartLocation(0, character);
 				Cursor::NormalizeCursors(textfile, textfile->GetCursors());
 				this->Invalidate();
