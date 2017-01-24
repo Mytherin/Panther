@@ -122,9 +122,13 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	if (!minimap) {
 		rendered_lines.clear();
 	}
+	std::map<Cursor*, PGCursorPosition> begin_positions;
+	std::map<Cursor*, PGCursorPosition> end_positions;
 	std::map<Cursor*, PGCursorPosition> selected_positions;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		selected_positions[*it] = (*it)->SelectedPosition();
+		begin_positions[*it] = (*it)->BeginPosition();
+		end_positions[*it] = (*it)->EndPosition();
 	}
 
 	while ((current_line = line_iterator->GetLine()).IsValid()) {
@@ -162,13 +166,13 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			lng length = current_line.GetLength();
 			// render the selections and cursors, if there are any on this line
 			while (current_cursor < cursors.size()) {
-				auto begin_pos = cursors[current_cursor]->BeginPosition();
+				auto begin_pos = begin_positions[cursors[current_cursor]];
 				if (begin_pos.line > current_start_line ||
 					(begin_pos.line == current_start_line && begin_pos.position > current_start_position + length)) {
 					// this cursor is not rendered on this line yet
 					break;
 				}
-				auto end_pos = cursors[current_cursor]->EndPosition();
+				auto end_pos = end_positions[cursors[current_cursor]];
 				if (end_pos.line < current_start_line ||
 					(end_pos.line == current_start_line && end_pos.position < current_start_position)) {
 					// this cursor has already been rendered

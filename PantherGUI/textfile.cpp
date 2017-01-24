@@ -310,7 +310,8 @@ void TextFile::OpenFile(char* base, lng size) {
 			char* line_start = ptr + prev;
 			lng line_size = (lng)((bytes - prev) - offset);
 			if (current_buffer == nullptr ||
-				(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
+				 (current_buffer->current_size > TEXT_BUFFER_SIZE) || 
+				 (current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 				// create a new buffer
 				PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
 				if (current_buffer) current_buffer->next = new_buffer;
@@ -438,7 +439,7 @@ TextLine TextFile::GetLine(lng linenumber) {
 	if (!is_loaded) return TextLine();
 	if (linenumber < 0 || linenumber >= linecount)
 		return TextLine();
-	return TextLine(GetBuffer(linenumber), linenumber);
+	return TextLine(GetBuffer(linenumber), linenumber, linecount);
 }
 
 lng TextFile::GetLineCount() {
@@ -879,7 +880,7 @@ void TextFile::SetScrollOffset(lng offset) {
 		auto buffer = buffers[PGTextBuffer::GetBufferFromWidth(buffers, width)];
 		double start_width = buffer->cumulative_width;
 		lng line = buffer->start_line;
-		lng max_line = buffer->GetLineCount(GetLineCount());
+		lng max_line = buffer->start_line + buffer->GetLineCount(GetLineCount());
 		while (line < max_line) {
 			double next_width = start_width + line_lengths[line];
 			if (next_width >= width) {
@@ -891,7 +892,8 @@ void TextFile::SetScrollOffset(lng offset) {
 		// find position within buffer
 		TextLine textline = GetLine(line);
 		lng inner_lines = textline.RenderedLines(buffer, line, GetLineCount(), textfield->GetTextfieldFont(), wordwrap_width);
-		percentage = (width - start_width) / line_lengths[line];
+		percentage = line_lengths[line] == 0 ? 0 : (width - start_width) / line_lengths[line];
+		percentage = std::max(0.0, std::min(1.0, percentage));
 		PGVerticalScroll scroll;
 		scroll.linenumber = line;
 		scroll.inner_line = (lng)(percentage * inner_lines);

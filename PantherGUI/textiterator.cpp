@@ -18,23 +18,33 @@ void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 	buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, line)];
 
 	lng current_line = buffer->start_line;
+	lng last_line = current_line + buffer->GetLineCount(textfile->GetLineCount());
 	assert(line >= current_line);
 	textline.line = buffer->buffer;
 	textline.length = buffer->current_size;
-	for (lng i = 0; i < buffer->current_size; ) {
-		int offset = utf8_character_length(buffer->buffer[i]);
-		if (offset == 1 && buffer->buffer[i] == '\n') {
-			current_line++;
-			if (current_line == line) {
-				start_position = i + 1;
-				textline.line = buffer->buffer + i + 1;
-			} else if (current_line == line + 1) {
-				end_position = i;
-				textline.length = (buffer->buffer + i) - textline.line;
-				break;
+	// check if the buffer holds more than one line
+	if (!(line == current_line && current_line + 1 == last_line)) {
+		for (lng i = 0; i < buffer->current_size; ) {
+			int offset = utf8_character_length(buffer->buffer[i]);
+			if (offset == 1 && buffer->buffer[i] == '\n') {
+				current_line++;
+				if (current_line == line) {
+					start_position = i + 1;
+					textline.line = buffer->buffer + i + 1;
+					if (current_line + 1 == last_line) {
+						end_position = buffer->current_size - 1;
+						textline.length = (buffer->buffer + end_position) - textline.line;
+						// this is the last line in the buffer
+						break;
+					}
+				} else if (current_line == line + 1) {
+					end_position = i;
+					textline.length = (buffer->buffer + i) - textline.line;
+					break;
+				}
 			}
+			i += offset;
 		}
-		i += offset;
 	}
 	if (buffer->syntax && buffer->parsed) {
 		textline.syntax = PGSyntax(buffer->syntax[line - buffer->start_line]);

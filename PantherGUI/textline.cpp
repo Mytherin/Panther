@@ -2,23 +2,31 @@
 #include "textline.h"
 #include "unicode.h"
 
-TextLine::TextLine(PGTextBuffer* buffer, lng line) {
+TextLine::TextLine(PGTextBuffer* buffer, lng line, lng max_line) {
 	assert(line >= buffer->start_line);
 	lng current_line = buffer->start_line;
+	lng maximum_line = current_line + buffer->GetLineCount(max_line);
 	this->line = buffer->buffer;
-	this->length = buffer->current_size;
-	for (lng i = 0; i < buffer->current_size; ) {
-		int offset = utf8_character_length(buffer->buffer[i]);
-		if (offset == 1 && buffer->buffer[i] == '\n') {
-			current_line++;
-			if (current_line == line) {
-				this->line = buffer->buffer + i + 1;
-			} else if (current_line == line + 1) {
-				this->length = (buffer->buffer + i) - this->line;
-				break;
+	this->length = buffer->current_size - 1;
+	// check if there is more than one line in the buffer
+	if (!(current_line + 1 == maximum_line)) {
+		for (lng i = 0; i < buffer->current_size; ) {
+			int offset = utf8_character_length(buffer->buffer[i]);
+			if (offset == 1 && buffer->buffer[i] == '\n') {
+				current_line++;
+				if (current_line == line) {
+					this->line = buffer->buffer + i + 1;
+					if (current_line + 1 == maximum_line) {
+						this->length = (buffer->current_size - 1) - (i + 1);
+						break;
+					}
+				} else if (current_line == line + 1) {
+					this->length = (buffer->buffer + i) - this->line;
+					break;
+				}
 			}
+			i += offset;
 		}
-		i += offset;
 	}
 	if (buffer->syntax && buffer->parsed) {
 		this->syntax = PGSyntax(buffer->syntax[line - buffer->start_line]);
@@ -32,10 +40,7 @@ lng TextLine::RenderedLines(PGTextBuffer* buffer, lng linenr, lng total_lines, c
 	WrapLine(buffer, linenr, total_lines, line, length, font, wrap_width);
 
 	// then search until we find the end of the line
-	lng* wraps = buffer->line_wraps[linenr - buffer->start_line].lines;
-	lng index = 0;
-	while (wraps[index++] < length);
-	return index;
+	return buffer->line_wraps[linenr - buffer->start_line].lines.size();
 }
 
 lng TextLine::RenderedLines(PGTextBuffer* buffer, lng linenr, lng total_lines, PGFontHandle font, PGScalar wrap_width) {
@@ -54,9 +59,9 @@ lng* TextLine::WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, char*
 		buffer->wrap_width = wrap_width;
 	} else if (buffer->line_wraps.size() == buffer_lines) {
 		// check if the cache exists
-		if (buffer->line_wraps[linenr - buffer->start_line].lines != nullptr) {
+		if (buffer->line_wraps[linenr - buffer->start_line].lines.size() != 0) {
 			// line wrap already cached
-			return buffer->line_wraps[linenr - buffer->start_line].lines;
+			return (lng*) (&buffer->line_wraps[linenr - buffer->start_line].lines[0]);
 		}
 	}
 	assert(linenr >= buffer->start_line);
@@ -73,11 +78,9 @@ lng* TextLine::WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, char*
 		wrap_positions.push_back(end_wrap);
 		start_wrap = end_wrap;
 	}
-	wrap_positions.push_back(end_wrap);
-
-	buffer->line_wraps[index].lines = new lng[wrap_positions.size()];
-	memcpy(buffer->line_wraps[index].lines, &wrap_positions[0], sizeof(lng) * wrap_positions.size());
-	return buffer->line_wraps[linenr - buffer->start_line].lines;
+	wrap_positions.push_back(length);
+	buffer->line_wraps[index].lines = wrap_positions;
+	return (lng*) (&buffer->line_wraps[linenr - buffer->start_line].lines[0]);
 }
 
 

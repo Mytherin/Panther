@@ -70,7 +70,11 @@ bool PGSettingsManager::GetSetting(std::string name, double& value, PGSettings* 
 }
 
 PGSettingsManager::PGSettingsManager() {
+#ifdef WIN32
 	default_settings.LoadSettings("default-settings.json");
+#else
+	default_settings.LoadSettings("/Users/myth/Programs/Panther/PantherGUI/default-settings.json");
+#endif
 }
 
 bool PGSettingsManager::_GetSetting(std::string name, std::string& value, PGSettings* extra_setting) {

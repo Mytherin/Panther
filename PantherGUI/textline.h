@@ -8,7 +8,7 @@ struct TextLine {
 public:
 	TextLine() : line(nullptr), length(0) { syntax.end = -1; }
 	TextLine(char* line, lng length, PGSyntax syntax) : line(line), length(length), syntax(syntax) { }
-	TextLine(PGTextBuffer* buffer, lng line);
+	TextLine(PGTextBuffer* buffer, lng line, lng max_line);
 
 	lng GetLength(void) { return length; }
 	char* GetLine(void) { return line; }

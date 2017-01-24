@@ -25,10 +25,10 @@ struct PGCharacterPosition {
 };
 
 struct PGLineWrap {
-	lng* lines = nullptr;
+	std::vector<lng> lines;
 
-	PGLineWrap() : lines(nullptr) { }
-	~PGLineWrap() { if (lines) delete lines; }
+	PGLineWrap() { }
+	~PGLineWrap() { }
 };
 
 struct PGBufferUpdate {

@@ -18,7 +18,11 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	TabControl::InitializeKeybindings();
 	TextField::InitializeKeybindings();
 
+#ifdef WIN32
 	LoadSettings("default-keybindings." + GetOSName() + ".json");
+#else
+	LoadSettings("/Users/myth/Programs/Panther/PantherGUI/default-keybindings." + GetOSName() + ".json");
+#endif
 }
 
 

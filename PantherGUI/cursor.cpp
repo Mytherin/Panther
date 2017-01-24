@@ -68,7 +68,7 @@ void Cursor::OffsetSelectionLine(lng offset) {
 		// the file has word wrapping enabled
 		// when we press up/down, we might not go to the next line
 		// but stay on the same line
-		TextLine line = TextLine(start_buffer, start_line);
+		TextLine line = TextLine(start_buffer, start_line, file->GetLineCount());
 		lng start_wrap = 0;
 		lng end_wrap = -1;
 		bool wrap = false;
@@ -135,7 +135,7 @@ void Cursor::OffsetSelectionLine(lng offset) {
 				// however, the line ABOVE us might be wrapped as well
 				// we want to move the cursor to the LAST part of that line
 				if (x_position < 0) {
-					x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line).GetLine(), start_character);
+					x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line, file->GetLineCount()).GetLine(), start_character);
 				}
 
 				lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
@@ -157,7 +157,7 @@ void Cursor::OffsetSelectionLine(lng offset) {
 	}
 
 	if (x_position < 0) {
-		x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line).GetLine(), start_character);
+		x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line, file->GetLineCount()).GetLine(), start_character);
 	}
 
 	lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
