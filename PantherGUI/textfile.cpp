@@ -843,7 +843,17 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 double TextFile::GetScrollPercentage() {
 	if (wordwrap) {
 		PGVerticalScroll scroll = GetLineOffset();
-		double width = GetBuffer(scroll.linenumber)->cumulative_width + scroll.inner_line * (wordwrap_width / 2.0);
+		auto buffer = GetBuffer(scroll.linenumber);
+
+		double width = buffer->cumulative_width;
+		for (lng i = buffer->start_line; i < scroll.linenumber; i++)
+			width += line_lengths[i];
+
+		double percentage = width / total_width;
+
+		TextLine textline = GetLine(scroll.linenumber);
+		lng inner_lines = textline.RenderedLines(buffer, scroll.linenumber, GetLineCount(), textfield->GetTextfieldFont(), wordwrap_width);
+		width += ((double)scroll.inner_line / (double)inner_lines) * line_lengths[scroll.linenumber];
 		return width / total_width;
 	} else {
 		return linecount == 0 ? 0 : (double)yoffset.linenumber / linecount;
@@ -879,7 +889,8 @@ void TextFile::SetScrollOffset(lng offset) {
 			line++;
 		}
 		// find position within buffer
-		lng inner_lines = (lng)(line_lengths[line] / (wordwrap_width / 2.0));
+		TextLine textline = GetLine(line);
+		lng inner_lines = textline.RenderedLines(buffer, line, GetLineCount(), textfield->GetTextfieldFont(), wordwrap_width);
 		percentage = (width - start_width) / line_lengths[line];
 		PGVerticalScroll scroll;
 		scroll.linenumber = line;
