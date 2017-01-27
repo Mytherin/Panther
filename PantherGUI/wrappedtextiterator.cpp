@@ -19,6 +19,8 @@ void WrappedTextLineIterator::PrevLine() {
 		if (current_line == 0) {
 			wrapped_line.line = nullptr;
 			wrapped_line.length = 0;
+			textline.line = nullptr;
+			textline.length = 0;
 		} else {
 			// have to get the previous line
 			TextLineIterator::PrevLine();

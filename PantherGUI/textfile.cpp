@@ -958,7 +958,7 @@ PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng off
 			// move backward by <lines>
 			for (; lines != 0; lines++) {
 				it->PrevLine();
-				if (!it->GetLine().IsValid())
+				if (!(it->GetLine().IsValid()))
 					break;
 				lines_offset++;
 			}
