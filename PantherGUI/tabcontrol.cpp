@@ -277,6 +277,9 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 					this->tabs.push_back(OpenTab(textfile));
 				}
 			}
+			if (textfield) {
+				textfield->SetTextFile(tabs[active_tab].file);
+			}
 		}
 	}
 }

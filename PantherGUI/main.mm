@@ -34,7 +34,6 @@ int main(int argc, const char *argv[])
     files.push_back(textfile);
 
     PGWindowHandle window = PGCreateWindow(files);
-    PGGetWorkspace(window)->LoadWorkspace("workspace.json");
 
     
     [NSApp activateIgnoringOtherApps:YES];

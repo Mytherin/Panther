@@ -135,6 +135,8 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		manager->SetPosition(PGPoint(0, 0));
 		manager->SetSize(PGSize(rect.size.width, rect.size.height));
 		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+
+	    handle->workspace.LoadWorkspace("workspace.json");
 	}
 	return self;
 }

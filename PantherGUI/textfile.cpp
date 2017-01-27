@@ -40,7 +40,8 @@ TextFile::TextFile(BasicTextField* textfield) :
 }
 
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
-	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1) {
+	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1), is_loaded(false) {
+
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
@@ -54,7 +55,6 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 		highlighter = this->language->CreateHighlighter();
 	}
 	unsaved_changes = false;
-	is_loaded = false;
 	// FIXME: switch to immediate_load for small files
 	if (!immediate_load) {
 		OpenFileInformation* info = new OpenFileInformation(this, base, size, delete_file);
