@@ -44,6 +44,9 @@ public:
 	virtual void Invalidate(PGIRect, bool redraw_now = false);
 	virtual void Invalidate(PGRect, bool redraw_now = false);
 
+	virtual void LoadWorkspace(nlohmann::json& j);
+	virtual void WriteWorkspace(nlohmann::json& j);
+
 	virtual Control* GetActiveControl() { return nullptr; }
 	virtual bool ControlTakesFocus() { return false; }
 	virtual bool ControlHasFocus() { return !parent ? true : (parent->ControlHasFocus() && parent->GetActiveControl() == this); }

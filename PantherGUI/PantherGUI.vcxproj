@@ -165,6 +165,7 @@
     <ClCompile Include="container.cpp" />
     <ClCompile Include="tabcontrol.cpp" />
     <ClCompile Include="text.cpp" />
+    <ClCompile Include="textdelta.cpp" />
     <ClCompile Include="textfield.cpp" />
     <ClCompile Include="textfile.cpp" />
     <ClCompile Include="textbuffer.cpp" />
@@ -175,6 +176,7 @@
     <ClCompile Include="unicode.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="windowfunctions.cpp" />
+    <ClCompile Include="workspace.cpp" />
     <ClCompile Include="wrappedtextiterator.cpp" />
     <ClCompile Include="xml.cpp" />
   </ItemGroup>
@@ -199,6 +201,7 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
     <ClInclude Include="notification.h" />
+    <ClInclude Include="projectmanager.h" />
     <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />
@@ -225,6 +228,7 @@
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />
     <ClInclude Include="windows_structs.h" />
+    <ClInclude Include="workspace.h" />
     <ClInclude Include="wrappedtextiterator.h" />
     <ClInclude Include="xml.h" />
   </ItemGroup>

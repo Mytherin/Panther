@@ -35,6 +35,9 @@ public:
 
 	virtual void OnResize(PGSize old_size, PGSize new_size);
 
+	virtual void LoadWorkspace(nlohmann::json& j);
+	virtual void WriteWorkspace(nlohmann::json& j);
+
 	virtual bool ControlTakesFocus() { return true; }
 
 	Control* GetMouseOverControl(int x, int y);

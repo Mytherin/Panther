@@ -153,6 +153,12 @@
     <ClCompile Include="textline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="textdelta.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="workspace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -297,6 +303,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="textiterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="projectmanager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="workspace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

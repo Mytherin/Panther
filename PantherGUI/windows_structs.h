@@ -2,6 +2,8 @@
 #pragma once
 
 #include "controlmanager.h"
+#include "workspace.h"
+
 #include <map>
 #include <windows.h>
 
@@ -16,6 +18,7 @@ public:
 	IDropTarget* drop_target;
 	PGTimerHandle timer;
 	HCURSOR cursor;
+	PGWorkspace workspace;
 	
 	bool pending_popup_menu = false;
 	bool pending_drag_drop = false;
@@ -44,7 +47,7 @@ public:
 		void* data;
 	} confirmation_box_data;
 
-	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), pending_popup_menu(false) {}
+	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), pending_popup_menu(false), workspace(this) {}
 };
 
 struct PGTimerParameter {

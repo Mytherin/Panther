@@ -13,13 +13,14 @@ struct OpenFileInformation {
 	TextFile* textfile;
 	char* base;
 	lng size;
+	bool delete_file;
 
-	OpenFileInformation(TextFile* file, char* base, lng size) : textfile(file), base(base), size(size) {}
+	OpenFileInformation(TextFile* file, char* base, lng size, bool delete_file) : textfile(file), base(base), size(size), delete_file(delete_file) {}
 };
 
 void TextFile::OpenFileAsync(Task* task, void* inp) {
 	OpenFileInformation* info = (OpenFileInformation*)inp;
-	info->textfile->OpenFile(info->base, info->size);
+	info->textfile->OpenFile(info->base, info->size, info->delete_file);
 	delete info;
 }
 
@@ -38,7 +39,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 	unsaved_changes = true;
 }
 
-TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load) :
+TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
 	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1) {
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
@@ -56,11 +57,11 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 	is_loaded = false;
 	// FIXME: switch to immediate_load for small files
 	if (!immediate_load) {
-		OpenFileInformation* info = new OpenFileInformation(this, base, size);
+		OpenFileInformation* info = new OpenFileInformation(this, base, size, delete_file);
 		this->current_task = new Task((PGThreadFunctionParams)OpenFileAsync, info);
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
-		OpenFile(base, size);
+		OpenFile(base, size, delete_file);
 		is_loaded = true;
 	}
 }
@@ -262,7 +263,7 @@ void TextFile::Unlock(PGLockType type) {
 	}
 }
 
-void TextFile::OpenFile(char* base, lng size) {
+void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	this->lineending = PGLineEndingUnknown;
 	this->indentation = PGIndentionTabs;
 	char* ptr = base;
@@ -310,8 +311,8 @@ void TextFile::OpenFile(char* base, lng size) {
 			char* line_start = ptr + prev;
 			lng line_size = (lng)((bytes - prev) - offset);
 			if (current_buffer == nullptr ||
-				 (current_buffer->current_size > TEXT_BUFFER_SIZE) || 
-				 (current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
+				(current_buffer->current_size > TEXT_BUFFER_SIZE) ||
+				(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 				// create a new buffer
 				PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
 				if (current_buffer) current_buffer->next = new_buffer;
@@ -341,7 +342,9 @@ void TextFile::OpenFile(char* base, lng size) {
 			offset = 0;
 
 			if (pending_delete) {
-				panther::DestroyFileContents(base);
+				if (delete_file) {
+					panther::DestroyFileContents(base);
+				}
 				UnlockMutex(text_lock);
 				return;
 			}
@@ -389,7 +392,9 @@ void TextFile::OpenFile(char* base, lng size) {
 
 	cursors.push_back(new Cursor(this));
 
-	panther::DestroyFileContents(base);
+	if (delete_file) {
+		panther::DestroyFileContents(base);
+	}
 	is_loaded = true;
 
 	if (highlighter) {
@@ -1685,6 +1690,17 @@ void TextFile::SaveAs(std::string path) {
 	this->SaveChanges();
 }
 
+std::string TextFile::GetText() {
+	std::string text = "";
+	for (auto it = buffers.begin(); it != buffers.end(); it++) {
+		text += std::string((*it)->buffer, (*it)->current_size - 1);
+		if (*it != buffers.back()) {
+			text += "\n";
+		}
+	}
+	return text;
+}
+
 void TextFile::ChangeLineEnding(PGLineEnding lineending) {
 	if (!is_loaded) return;
 	this->lineending = lineending;
@@ -1992,7 +2008,7 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, 
 #endif
 	if (regex_handle) PGDeleteRegex(regex_handle);
 	if (textfile->textfield) textfile->textfield->Invalidate();
-	}
+}
 
 void TextFile::ClearMatches() {
 	if (!is_loaded) return;

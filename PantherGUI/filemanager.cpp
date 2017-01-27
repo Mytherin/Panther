@@ -32,6 +32,15 @@ void FileManager::CloseFile(TextFile* textfile) {
 	}
 }
 
+void FileManager::ClearFiles() {
+	for (auto it = open_files.begin(); it != open_files.end(); it++) {
+		if ((*it)->DecRef()) {
+			delete *it;
+		}
+	}
+	open_files.clear();
+}
+
 TextFile* FileManager::OpenFile(TextFile* textfile) {
 	if (!textfile) return nullptr;
 	textfile->AddRef();

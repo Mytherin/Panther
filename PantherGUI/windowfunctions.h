@@ -3,7 +3,9 @@
 /// The actual GUI library is implemented on top of these simple wrappers
 #pragma once
 
+#include "json.h"
 #include "utils.h"
+
 #include <string>
 #include <vector>
 
@@ -56,6 +58,7 @@ struct PGSize {
 	friend PGSize operator-(PGSize lhs, const PGSize& rhs) {
 		return PGSize(lhs.width - rhs.width, lhs.height - rhs.height);
 	}
+	PGSize() : width(0), height(0) { }
 	PGSize(PGScalar width, PGScalar height) : width(width), height(height) { }
 };
 
@@ -233,6 +236,7 @@ void RefreshWindow(PGWindowHandle window, PGIRect, bool redraw_now = false);
 void RedrawWindow(PGWindowHandle window);
 void RedrawWindow(PGWindowHandle window, PGIRect);
 PGSize GetWindowSize(PGWindowHandle window);
+PGPoint PGGetWindowPosition(PGWindowHandle window);
 
 typedef enum {
 	PGCursorNone,
@@ -325,6 +329,12 @@ PGPoint GetMousePosition(PGWindowHandle window);
 PGPoint GetMousePosition(PGWindowHandle window, Control* c);
 void SetWindowTitle(PGWindowHandle window, char* title);
 void RegisterControl(PGWindowHandle window, Control *control);
+
+class PGWorkspace;
+PGWorkspace* PGGetWorkspace(PGWindowHandle window);
+void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j);
+void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j);
+
 
 void* GetWindowManager(PGWindowHandle window);
 

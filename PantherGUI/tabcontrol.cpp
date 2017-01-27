@@ -253,6 +253,65 @@ void TabControl::ClearDragDrop(PGDragDropType type) {
 }
 
 
+void TabControl::LoadWorkspace(nlohmann::json& j) {
+	if (j.count("files") > 0) {
+		nlohmann::json& f = j["files"];
+		if (f.is_array() && f.size() > 0) {
+			file_manager.ClearFiles();
+			tabs.clear();
+			for (auto it = f.begin(); it != f.end(); ++it) {
+				TextFile* textfile = nullptr;
+				if (it->count("buffer") > 0) {
+					std::string buffer = (*it)["buffer"];
+					textfile = new TextFile(textfield, "", (char*) buffer.c_str(), buffer.size(), true, false);
+					textfile->name = "untitled";
+					textfile->SetUnsavedChanges(true);
+					file_manager.OpenFile(textfile);
+				} else if (it->count("file") > 0) {
+					textfile = file_manager.OpenFile((*it)["file"]);
+					textfile->textfield = textfield;
+				}
+				if (textfile != nullptr) {
+					this->tabs.push_back(OpenTab(textfile));
+				}
+			}
+		}
+	}
+}
+
+void TabControl::WriteWorkspace(nlohmann::json& j) {
+	nlohmann::json& f = j["files"];
+	int index = 0;
+	for (auto it = tabs.begin(); it != tabs.end(); it++) {
+		TextFile* file = it->file;
+
+		std::string path = file->GetFullPath();
+		if (path.size() == 0) {
+			f[index]["buffer"] = file->GetText();
+		} else {
+			f[index]["file"] = path;
+		}
+		auto line_ending = file->GetLineEnding();
+		if (line_ending == PGLineEndingMixed || line_ending == PGLineEndingUnknown) {
+			line_ending = GetSystemLineEnding();
+		}
+		std::string endings;
+		switch (line_ending) {
+		case PGLineEndingWindows:
+			endings = "Windows";
+			break;
+		case PGLineEndingUnix:
+			endings = "Unix";
+			break;
+		case PGLineEndingMacOS:
+			endings = "MacOS";
+			break;
+		}
+		f[index]["lineending"] = endings;
+		index++;
+	}
+}
+
 bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
 	if (this->PressCharacter(TabControl::keybindings, character, modifier)) {
 		return true;

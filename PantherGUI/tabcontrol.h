@@ -46,6 +46,8 @@ public:
 	void ClearDragDrop(PGDragDropType type);
 	void PerformDragDrop(PGDragDropType type, int x, int y, void* data);
 
+	void LoadWorkspace(nlohmann::json& j);
+	void WriteWorkspace(nlohmann::json& j);
 
 	void Draw(PGRendererHandle, PGIRect*);
 	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, bool selected_tab);

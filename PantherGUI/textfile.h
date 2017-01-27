@@ -107,6 +107,7 @@ public:
 	void AddEmptyLine(PGDirection direction);
 	void MoveLines(int offset);
 
+	std::string GetText();
 	std::string CutText();
 	std::string CopyText();
 	void PasteText(std::string& text);
@@ -207,7 +208,7 @@ public:
 	bool GetWordWrap() { return wordwrap; }
 private:
 	// load textfile from a file
-	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false);
+	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);
 
 	// insert text at the specified cursor number, text must not include newlines
 	void InsertText(std::string text, size_t cursornr);
@@ -246,7 +247,7 @@ private:
 	std::vector<Cursor*> cursors;
 	Cursor* active_cursor;
 
-	void OpenFile(char* base_data, lng size);
+	void OpenFile(char* base_data, lng size, bool delete_file);
 
 	void AddDelta(TextDelta* delta);
 	void Undo(TextDelta* delta);

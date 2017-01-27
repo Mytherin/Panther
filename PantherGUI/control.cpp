@@ -94,6 +94,14 @@ void Control::OnResize(PGSize old_size, PGSize new_size) {
 
 }
 
+void Control::LoadWorkspace(nlohmann::json& j) {
+
+}
+
+void Control::WriteWorkspace(nlohmann::json& j) {
+
+}
+
 void Control::SetSize(PGSize size) {
 	PGSize oldsize(this->width, this->height);
 	this->width = size.width; 

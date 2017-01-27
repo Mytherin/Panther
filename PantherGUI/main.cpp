@@ -104,18 +104,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextFile* textfile = TextFile::OpenTextFile(nullptr, "C:\\Users\\wieis\\Desktop\\syntaxtest.c", false);
-	TextFile* textfile2 = TextFile::OpenTextFile(nullptr, "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml", false);
-	TextFile* textfile3 = TextFile::OpenTextFile(nullptr, "C:\\Users\\wieis\\Desktop\\blns.txt", false);
-	TextFile* textfile4 = TextFile::OpenTextFile(nullptr, "C:\\Users\\wieis\\Desktop\\singleline", false);
-
+	TextFile* textfile = new TextFile(nullptr);
 	std::vector<TextFile*> files;
-	files.push_back(textfile4);
 	files.push_back(textfile);
-	files.push_back(textfile2);
-	files.push_back(textfile3);
 
 	PGWindowHandle handle = PGCreateWindow(files);
+	handle->workspace.LoadWorkspace("workspace.json");
 
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
@@ -624,6 +618,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 }
 
 void DestroyWindow(PGWindowHandle window) {
+	window->workspace.WriteWorkspace();
 	delete window->manager;
 	DeleteRenderer(window->renderer);
 	DeleteTimer(window->timer);
@@ -672,6 +667,13 @@ PGSize GetWindowSize(PGWindowHandle window) {
 	RECT rect;
 	GetWindowRect(window->hwnd, &rect);
 	return PGSize(rect.right - rect.left, rect.bottom - rect.top);
+}
+
+PGPoint PGGetWindowPosition(PGWindowHandle window) {
+	RECT rect;
+	GetWindowRect(window->hwnd, &rect);
+	return PGPoint(rect.left, rect.top);
+
 }
 
 Control* GetFocusedControl(PGWindowHandle window) {
@@ -1073,3 +1075,37 @@ std::string GetOSName() {
 	return "windows";
 }
 
+PGWorkspace* PGGetWorkspace(PGWindowHandle window) {
+	return &window->workspace;
+}
+
+void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
+	if (j.count("window") > 0) {
+		nlohmann::json w = j["window"];
+		if (w.count("dimensions") > 0) {
+			nlohmann::json dim = w["dimensions"];
+			if (dim.count("width") > 0 && dim["width"].is_number() && 
+				dim.count("height") > 0 && dim["height"].is_number() && 
+				dim.count("x") > 0 && dim["x"].is_number() && 
+				dim.count("y") > 0 && dim["y"].is_number()) {
+				int x = dim["x"];
+				int y = dim["y"];
+				int width = dim["width"];
+				int height = dim["height"];
+
+				SetWindowPos(window->hwnd, 0, x, y, width, height, SWP_NOZORDER);
+			}
+		}
+	}
+	window->manager->LoadWorkspace(j);
+}
+
+void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j) {
+	PGSize window_size = GetWindowSize(window);
+	j["window"]["dimensions"]["width"] = window_size.width;
+	j["window"]["dimensions"]["height"] = window_size.height;
+	PGPoint window_position = PGGetWindowPosition(window);
+	j["window"]["dimensions"]["x"] = window_position.x;
+	j["window"]["dimensions"]["y"] = window_position.y;
+	window->manager->WriteWorkspace(j);
+}

@@ -30,6 +30,8 @@ public:
 	TextDelta(PGTextType type) : 
 		type(type), next(nullptr) { }
 	PGTextType TextDeltaType() { return type; }
+	virtual std::string ToString() { assert(0); return ""; }
+	static TextDelta* FromString(std::string);
 };
 
 class AddText : public TextDelta {
@@ -42,6 +44,7 @@ public:
 		}
 	AddText(std::vector<std::string> lines) : 
 		TextDelta(PGDeltaAddText), lines(lines) { }
+	std::string ToString();
 };
 
 class RemoveText : public TextDelta {
@@ -50,6 +53,7 @@ public:
 
 	RemoveText() : 
 		TextDelta(PGDeltaRemoveText) { }
+	std::string ToString();
 };
 
 class RemoveSelection : public TextDelta {
@@ -57,6 +61,7 @@ public:
 	PGDirection direction;
 	RemoveSelection(PGDirection direction, PGTextType type) : 
 		TextDelta(type), direction(direction) { }
+	std::string ToString();
 };
 
 class InsertLineBefore : public TextDelta {
@@ -64,4 +69,5 @@ public:
 	PGDirection direction;
 	InsertLineBefore(PGDirection direction) : 
 		TextDelta(PGDeltaAddEmptyLine), direction(direction) { }
+	std::string ToString();
 };

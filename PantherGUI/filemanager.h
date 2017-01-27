@@ -13,6 +13,7 @@ public:
 	TextFile* OpenFile(std::string path);
 	TextFile* OpenFile(TextFile* textfile);
 	void CloseFile(TextFile*);
+	void ClearFiles();
 
 	std::vector<TextFile*>& GetFiles() { return open_files; }
 private:
