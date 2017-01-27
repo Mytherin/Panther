@@ -7,7 +7,7 @@ TextLine::TextLine(PGTextBuffer* buffer, lng line, lng max_line) {
 	lng current_line = buffer->start_line;
 	lng maximum_line = current_line + buffer->GetLineCount(max_line);
 	this->line = buffer->buffer;
-	this->length = buffer->current_size - 1;
+	this->length = std::max((lng) buffer->current_size - 1, (lng) 0);
 	// check if there is more than one line in the buffer
 	if (!(current_line + 1 == maximum_line)) {
 		for (lng i = 0; i < buffer->current_size; ) {

@@ -21,7 +21,7 @@ void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 	lng last_line = current_line + buffer->GetLineCount(textfile->GetLineCount());
 	assert(line >= current_line);
 	textline.line = buffer->buffer;
-	textline.length = buffer->current_size;
+	textline.length = buffer->current_size - 1;
 	// check if the buffer holds more than one line
 	if (!(line == current_line && current_line + 1 == last_line)) {
 		for (lng i = 0; i < buffer->current_size; ) {
