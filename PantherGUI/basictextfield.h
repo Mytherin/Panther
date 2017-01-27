@@ -70,6 +70,7 @@ protected:
 	int display_carets_count = 0;
 	bool display_carets = true;
 
+	bool prev_loaded = false;
 	bool current_focus = true;
 
 	PGScalar text_offset = 0;

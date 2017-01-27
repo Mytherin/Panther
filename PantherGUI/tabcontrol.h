@@ -108,9 +108,9 @@ protected:
 	PGScalar drag_offset;
 	bool drag_tab;
 
-	PGScalar tab_padding;
-	PGScalar file_icon_height;
-	PGScalar file_icon_width;
+	PGScalar tab_padding = 0;
+	PGScalar file_icon_height = 0;
+	PGScalar file_icon_width = 0;
 
 	lng current_id = 0;
 };

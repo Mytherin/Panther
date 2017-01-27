@@ -20,6 +20,8 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	}
 	this->font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(this->font, 12);
+	file_icon_width = 0;
+	file_icon_height = 0;
 
 	tab_padding = 5;
 }
@@ -112,7 +114,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 				position_x += MeasureTabWidth(dragging_tab);
 			}
 			it->target_x = position_x;
-			if (it->x == -1) {
+			if (panther::epsilon_equals(it->x, -1)) {
 				it->x = position_x;
 			}
 			RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && index == active_tab);

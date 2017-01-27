@@ -7,7 +7,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(BasicTextField);
 
 BasicTextField::BasicTextField(PGWindowHandle window, TextFile* textfile) :
-	Control(window), textfile(textfile) {
+	Control(window), textfile(textfile), prev_loaded(false) {
 	if (textfile)
 		textfile->SetTextField(this);
 
@@ -21,6 +21,11 @@ BasicTextField::~BasicTextField() {
 }
 
 void BasicTextField::PeriodicRender(void) {
+	bool loaded = textfile->IsLoaded();
+	if (loaded != prev_loaded || !loaded) {
+		this->Invalidate();
+		prev_loaded = loaded;
+	}
 	if (!WindowHasFocus(window) || !ControlHasFocus()) {
 		display_carets = false;
 		display_carets_count = 0;
@@ -40,10 +45,6 @@ void BasicTextField::PeriodicRender(void) {
 	if (display_carets_count % FLICKER_CARET_INTERVAL == 0) {
 		display_carets_count = 0;
 		display_carets = !display_carets;
-		this->Invalidate();
-	}
-
-	if (!textfile->IsLoaded()) {
 		this->Invalidate();
 	}
 }
