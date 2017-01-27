@@ -8,6 +8,7 @@
 #include "filemanager.h"
 #include "container.h"
 #include "statusbar.h"
+#include "workspace.h"
 
 #include <sys/time.h>
 #include <cctype>
@@ -34,6 +35,9 @@ struct PGWindow {
 	bool pending_destroy = false;
 	ControlManager* manager;
 	PGRendererHandle renderer;
+	PGWorkspace workspace;
+
+	PGWindow() : workspace(this) { }
 };
 
 struct PGMouseFlags {
@@ -158,6 +162,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 -(void)performClose {
+	handle->workspace.WriteWorkspace();
 	DeleteTimer(timer);
 	delete handle->manager;
 	DeleteRenderer(handle->renderer);
@@ -528,6 +533,16 @@ void PGCloseWindow(PGWindowHandle handle) {
 	handle->pending_destroy = true;
 }
 
+PGSize GetWindowSize(PGWindowHandle window) {
+	auto size = [window->view frame].size;
+	return PGSize(size.width, size.height);
+}
+
+PGPoint PGGetWindowPosition(PGWindowHandle window) {
+	auto pos = [window->view frame].origin;
+	return PGPoint(pos.x, pos.y);
+}
+
 PGTimerHandle CreateTimer(PGWindowHandle handle, int ms, PGTimerCallback callback, PGTimerFlags flags) {
 	return [handle->view scheduleTimer:handle:ms:callback:flags];
 }
@@ -652,5 +667,45 @@ void PGConfirmationBox(PGWindowHandle window, std::string title, std::string mes
 	callback(window, control, data, PGResponseCancel);
 }
 
+
+PGWorkspace* PGGetWorkspace(PGWindowHandle window) {
+	return &window->workspace;
+}
+
+void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
+	if (j.count("window") > 0) {
+		nlohmann::json w = j["window"];
+		if (w.count("dimensions") > 0) {
+			nlohmann::json dim = w["dimensions"];
+			if (dim.count("width") > 0 && dim["width"].is_number() && 
+				dim.count("height") > 0 && dim["height"].is_number() && 
+				dim.count("x") > 0 && dim["x"].is_number() && 
+				dim.count("y") > 0 && dim["y"].is_number()) {
+				int x = dim["x"];
+				int y = dim["y"];
+				int width = dim["width"];
+				int height = dim["height"];
+
+				NSRect rect;
+				rect.origin.x = x;
+				rect.origin.y = y;
+				rect.size.width = width;
+				rect.size.height = height;
+				[window->window setFrame:rect display:false];
+			}
+		}
+	}
+	window->manager->LoadWorkspace(j);
+}
+
+void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j) {
+	PGSize window_size = GetWindowSize(window);
+	j["window"]["dimensions"]["width"] = window_size.width;
+	j["window"]["dimensions"]["height"] = window_size.height;
+	PGPoint window_position = PGGetWindowPosition(window);
+	j["window"]["dimensions"]["x"] = window_position.x;
+	j["window"]["dimensions"]["y"] = window_position.y;
+	window->manager->WriteWorkspace(j);
+}
 
 

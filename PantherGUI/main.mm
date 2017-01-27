@@ -8,6 +8,7 @@
 
 #include "settings.h"
 #include "keybindings.h"
+#include "workspace.h"
 
 // Compilation: clang++ -framework Cocoa -fobjc-arc -lobjc test.mm AppDelegate.mm -o test
 
@@ -28,13 +29,12 @@ int main(int argc, const char *argv[])
     Scheduler::Initialize();
     Scheduler::SetThreadCount(8);
 
-    TextFile* textfile = TextFile::OpenTextFile(nullptr, "/Users/myth/pyconversion.c", false);
-    TextFile* textfile2 = TextFile::OpenTextFile(nullptr, "/Users/myth/Data/tibiawiki_pages_current.xml", false);
-    std::vector<TextFile*> textfiles;
-    textfiles.push_back(textfile);
-    textfiles.push_back(textfile2);
+    TextFile* textfile = new TextFile(nullptr);
+    std::vector<TextFile*> files;
+    files.push_back(textfile);
 
-    PGCreateWindow(textfiles);
+    PGWindowHandle window = PGCreateWindow(files);
+    PGGetWorkspace(window)->LoadWorkspace("workspace.json");
 
     
     [NSApp activateIgnoringOtherApps:YES];

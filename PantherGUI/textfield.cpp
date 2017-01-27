@@ -93,7 +93,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		start_line = GetMinimapStartLine();
 	}
 
-	textfile->Lock(PGReadLock);
 	std::string selected_word = std::string();
 	if (!minimap) {
 		selected_word = cursors[0]->GetSelectedWord();
@@ -411,7 +410,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		(*line_iterator)++;
 		position_y += line_height;
 	}
-	textfile->Unlock(PGReadLock);
 	ClearRenderBounds(renderer);
 	if (!minimap) {
 		this->line_height = line_height;
@@ -447,42 +445,68 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	PGIRect rect = PGIRect(r->x, r->y, std::min(r->width, (int)(X() + this->width - r->x)), std::min(r->height, (int)(Y() + this->height - r->y)));
 	PGIRect* rectangle = &rect;
 
-	// determine the width of the line numbers
-	std::vector<Cursor*> cursors = textfile->GetCursors();
-	lng line_count = textfile->GetMaxYScroll();
-	text_offset = 0;
-	if (this->display_linenumbers) {
-		auto line_number = std::to_string(std::max((lng)10, textfile->GetMaxYScroll() + 1));
-		text_offset = 10 + MeasureTextWidth(textfield_font, line_number.c_str(), line_number.size());
-	}
-	PGPoint position = Position();
-	PGScalar x = position.x - rectangle->x, y = position.y - rectangle->y;
-	// get the mouse position (for rendering hovers)
-	PGPoint mouse = GetMousePosition(window, this);
-	PGScalar position_x = x;
-	PGScalar position_y = y;
-	// textfield/minimap dimensions
-	PGScalar minimap_width = this->display_minimap ? GetMinimapWidth() : 0;
-	PGScalar textfield_width = this->width - minimap_width;
-	// determine x-offset and clamp it
-	PGScalar max_textsize = textfile->GetMaxLineWidth(textfield_font);
-	PGScalar xoffset = 0;
-	if (textfile->GetWordWrap()) {
-		max_xoffset = 0;
-	} else {
-		max_xoffset = std::max(max_textsize - textfield_width + text_offset + 2 * margin_width + 10, 0.0f);
-		xoffset = this->textfile->GetXOffset();
-		if (xoffset > max_xoffset) {
-			xoffset = max_xoffset;
-			this->textfile->SetXOffset(max_xoffset);
-		}
-	}
-	// render the actual text field
 	if (textfile->IsLoaded()) {
+		textfile->Lock(PGReadLock);
+		// determine the width of the line numbers
+		lng line_count = textfile->GetMaxYScroll();
+		text_offset = 0;
+		if (this->display_linenumbers) {
+			auto line_number = std::to_string(std::max((lng)10, textfile->GetMaxYScroll() + 1));
+			text_offset = 10 + MeasureTextWidth(textfield_font, line_number.c_str(), line_number.size());
+		}
+		PGPoint position = Position();
+		PGScalar x = position.x - rectangle->x, y = position.y - rectangle->y;
+		// get the mouse position (for rendering hovers)
+		PGPoint mouse = GetMousePosition(window, this);
+		PGScalar position_x = x;
+		PGScalar position_y = y;
+		// textfield/minimap dimensions
+		PGScalar minimap_width = this->display_minimap ? GetMinimapWidth() : 0;
+		PGScalar textfield_width = this->width - minimap_width;
+		// determine x-offset and clamp it
+		PGScalar max_textsize = textfile->GetMaxLineWidth(textfield_font);
+		PGScalar xoffset = 0;
+		if (textfile->GetWordWrap()) {
+			max_xoffset = 0;
+		} else {
+			max_xoffset = std::max(max_textsize - textfield_width + text_offset + 2 * margin_width + 10, 0.0f);
+			xoffset = this->textfile->GetXOffset();
+			if (xoffset > max_xoffset) {
+				xoffset = max_xoffset;
+				this->textfile->SetXOffset(max_xoffset);
+			}
+		}
+		// render the actual text field
 		textfield_region.width = textfield_width - text_offset - 5;
 		textfield_region.height = this->height;
 		textfile->SetWordWrap(textfile->GetWordWrap(), GetTextfieldWidth());
 		DrawTextField(renderer, textfield_font, rectangle, false, x, x + text_offset + margin_width * 2, y, textfield_width, false);
+
+		// render the minimap
+		if (this->display_minimap) {
+			bool mouse_in_minimap = window_has_focus && this->mouse_in_minimap;
+			PGIRect minimap_rect = PGIRect(x + textfield_width, rectangle->y, minimap_width, rectangle->height);
+			PGIRect shadow_rect = PGIRect(minimap_rect.x - 5, y, 5, minimap_rect.height);
+
+			RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
+			DrawTextField(renderer, minimap_font, &minimap_rect, true, x + textfield_width, x + textfield_width, y, minimap_width, mouse_in_minimap);
+		}
+
+		// render the scrollbar
+		if (this->display_scrollbar) {
+			scrollbar->UpdateValues(0, 
+				textfile->GetMaxYScroll(), 
+				GetLineHeight(), 
+				textfile->GetWordWrap() ? textfile->GetScrollPercentage() *  textfile->GetMaxYScroll(): textfile->GetLineOffset().linenumber);
+			scrollbar->Draw(renderer, rectangle);
+			// horizontal scrollbar
+			display_horizontal_scrollbar = max_xoffset > 0;
+			if (display_horizontal_scrollbar) {
+				horizontal_scrollbar->UpdateValues(0, max_xoffset, GetTextfieldWidth(), textfile->GetXOffset());
+				horizontal_scrollbar->Draw(renderer, rectangle);
+			}
+		}
+		textfile->Unlock(PGReadLock);	
 	} else {
 		PGScalar offset = this->width / 10;
 		PGScalar width = this->width - offset * 2;
@@ -492,30 +516,6 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 
 		RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGDrawStyleFill);
 		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * load_percentage, height), PGColor(20, 60, 255), PGDrawStyleFill);
-	}
-	// render the minimap
-	if (textfile->IsLoaded() && this->display_minimap) {
-		bool mouse_in_minimap = window_has_focus && this->mouse_in_minimap;
-		PGIRect minimap_rect = PGIRect(x + textfield_width, rectangle->y, minimap_width, rectangle->height);
-		PGIRect shadow_rect = PGIRect(minimap_rect.x - 5, y, 5, minimap_rect.height);
-
-		RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
-		DrawTextField(renderer, minimap_font, &minimap_rect, true, x + textfield_width, x + textfield_width, y, minimap_width, mouse_in_minimap);
-	}
-
-	// render the scrollbar
-	if (this->display_scrollbar) {
-		scrollbar->UpdateValues(0, 
-			textfile->GetMaxYScroll(), 
-			GetLineHeight(), 
-			textfile->GetWordWrap() ? textfile->GetScrollPercentage() *  textfile->GetMaxYScroll(): textfile->GetLineOffset().linenumber);
-		scrollbar->Draw(renderer, rectangle);
-		// horizontal scrollbar
-		display_horizontal_scrollbar = max_xoffset > 0;
-		if (display_horizontal_scrollbar) {
-			horizontal_scrollbar->UpdateValues(0, max_xoffset, GetTextfieldWidth(), textfile->GetXOffset());
-			horizontal_scrollbar->Draw(renderer, rectangle);
-		}
 	}
 }
 
