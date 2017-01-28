@@ -258,50 +258,95 @@ void TabControl::ClearDragDrop(PGDragDropType type) {
 
 
 void TabControl::LoadWorkspace(nlohmann::json& j) {
-	if (j.count("files") > 0) {
-		nlohmann::json& f = j["files"];
-		if (f.is_array() && f.size() > 0) {
-			file_manager.ClearFiles();
-			tabs.clear();
-			for (auto it = f.begin(); it != f.end(); ++it) {
-				TextFile* textfile = nullptr;
-				std::string path = "";
-				if (it->count("file") > 0) {
-					path = (*it)["file"].get<std::string>();
-				}
-				if (it->count("buffer") > 0) {
-					std::string buffer = (*it)["buffer"];
-					textfile = new TextFile(textfield, path.c_str(), (char*) buffer.c_str(), buffer.size(), true, false);
-					if (path.size() == 0) {
-						textfile->name = "untitled";
+	if (j.count("tabs") > 0) {
+		nlohmann::json& tb = j["tabs"];
+		if (tb.count("files") > 0) {
+			nlohmann::json& f = tb["files"];
+			if (f.is_array() && f.size() > 0) {
+				file_manager.ClearFiles();
+				tabs.clear();
+				for (auto it = f.begin(); it != f.end(); ++it) {
+					TextFile* textfile = nullptr;
+					std::string path = "";
+					if (it->count("file") > 0) {
+						path = (*it)["file"].get<std::string>();
 					}
-					textfile->SetUnsavedChanges(true);
-					file_manager.OpenFile(textfile);
-				} else if (path.size() > 0) {
-					textfile = file_manager.OpenFile(path);
-				} else {
-					continue;
-				}
+					if (it->count("buffer") > 0) {
+						std::string buffer = (*it)["buffer"];
+						textfile = new TextFile(textfield, path.c_str(), (char*) buffer.c_str(), buffer.size(), true, false);
+						if (path.size() == 0) {
+							textfile->name = "untitled";
+						}
+						textfile->SetUnsavedChanges(true);
+						file_manager.OpenFile(textfile);
+					} else if (path.size() > 0) {
+						textfile = file_manager.OpenFile(path);
+					} else {
+						continue;
+					}
 
-				if (textfile != nullptr) {
-					textfile->textfield = textfield;
-					this->tabs.push_back(OpenTab(textfile));
+					PGTextFileSettings settings;
+					
+					Cursor::LoadCursors(*it, settings.cursor_data);
+
+					if (it->count("lineending") > 0) {
+						std::string ending = (*it)["lineending"];
+						if (ending == "windows") {
+							settings.line_ending = PGLineEndingWindows;
+						} else if (ending == "unix") {
+							settings.line_ending = PGLineEndingUnix;
+						} else if (ending == "macos") {
+							settings.line_ending = PGLineEndingMacOS;
+						}
+					}
+					if (it->count("xoffset") > 0) {
+						auto xoffset = (*it)["xoffset"];
+						if (xoffset.is_number_float()) {
+							settings.xoffset = xoffset;
+						}
+					} else {
+						settings.wordwrap = true;
+					}
+					if (it->count("yoffset") > 0) {
+						auto yoffset = (*it)["yoffset"];
+						if (yoffset.is_array()) {
+							if (yoffset[0].is_number()) {
+								settings.yoffset.linenumber = yoffset[0];
+							}
+							if (yoffset.size() > 1 && yoffset[1].is_number()) {
+								settings.yoffset.inner_line = yoffset[1];
+							}
+						} else if (yoffset.is_number()) {
+							settings.yoffset.linenumber = yoffset;
+							settings.yoffset.inner_line = 0;
+						}
+					}
+					textfile->SetSettings(settings);
+					if (textfile != nullptr) {
+						textfile->textfield = textfield;
+						this->tabs.push_back(OpenTab(textfile));
+					}
+				}
+				if (textfield) {
+					textfield->SetTextFile(tabs[active_tab].file);
 				}
 			}
-			if (textfield) {
-				textfield->SetTextFile(tabs[active_tab].file);
-			}
+		}
+		if (tb.count("selected_tab") > 0 && tb["selected_tab"].is_number()) {
+			lng selected_tab = tb["selected_tab"];
+			selected_tab = std::max((lng) 0, std::min((lng) tabs.size() - 1, selected_tab));
+			SwitchToTab(tabs[selected_tab].file);
 		}
 	}
 }
 
 void TabControl::WriteWorkspace(nlohmann::json& j) {
-	nlohmann::json& f = j["files"];
+	nlohmann::json& tb = j["tabs"];
+	nlohmann::json& f = tb["files"];
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		TextFile* file = it->file;
 		nlohmann::json& cur = f[index];
-
 
 		if (file->HasUnsavedChanges()) {
 			// the file has unsaved changes
@@ -326,6 +371,9 @@ void TabControl::WriteWorkspace(nlohmann::json& j) {
 			cur["file"] = path;
 		}
 
+		auto cursor_data = Cursor::GetCursorData(file->GetCursors());
+		Cursor::StoreCursors(cur, cursor_data);
+
 		auto line_ending = file->GetLineEnding();
 		if (line_ending == PGLineEndingMixed || line_ending == PGLineEndingUnknown) {
 			line_ending = GetSystemLineEnding();
@@ -343,8 +391,15 @@ void TabControl::WriteWorkspace(nlohmann::json& j) {
 			break;
 		}
 		cur["lineending"] = endings;
+		if (file->wordwrap) {
+			cur["yoffset"] = { file->yoffset.linenumber, file->yoffset.inner_line };
+		} else {
+			cur["xoffset"] = file->xoffset;
+			cur["yoffset"] = file->yoffset.linenumber ;
+		}
 		index++;
 	}
+	tb["selected_tab"] = active_tab;
 }
 
 bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
@@ -507,9 +562,6 @@ void TabControl::NextTab() {
 
 bool TabControl::CloseAllTabs() {
 	for (size_t i = 0; i < tabs.size(); i++) {
-		active_tab = i;
-		SwitchToFile(tabs[active_tab].file);
-		this->Invalidate();
 		if (!CloseTabConfirmation(i)) {
 			return false;
 		}
@@ -522,6 +574,11 @@ bool TabControl::CloseTabConfirmation(int tab) {
 	PGSettingsManager::GetSetting("hot_exit", hot_exit);
 	if (tabs[tab].file->HasUnsavedChanges() && 
 		(!hot_exit || (hot_exit && tabs[tab].file->WorkspaceFileStorage() == TextFile::PGFileTooLarge))) {
+
+		active_tab = tab;
+		SwitchToFile(tabs[active_tab].file);
+		this->Invalidate();
+
 		PGResponse response = PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG);
 		if (response == PGResponseCancel) {
 			return false;
@@ -556,10 +613,7 @@ void TabControl::ActuallyCloseTab(int tab) {
 }
 
 void TabControl::CloseTab(int tab) {
-	bool hot_exit;
-	PGSettingsManager::GetSetting("hot_exit", hot_exit);
-	if (tabs[tab].file->HasUnsavedChanges() && 
-		(!hot_exit || (hot_exit && tabs[tab].file->WorkspaceFileStorage() == TextFile::PGFileTooLarge))) {
+	if (tabs[tab].file->HasUnsavedChanges()) {
 		int* tabnumbers = new int[1];
 		tabnumbers[0] = tab;
 		PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG, 

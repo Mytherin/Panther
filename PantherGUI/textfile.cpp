@@ -395,7 +395,6 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	if (delete_file) {
 		panther::DestroyFileContents(base);
 	}
-	is_loaded = true;
 
 	if (highlighter) {
 		// we parse the first 10 blocks before opening the textfield for viewing
@@ -423,6 +422,9 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 		}
 	}
+
+	is_loaded = true;
+	ApplySettings(this->settings);
 	UnlockMutex(text_lock);
 }
 
@@ -2271,4 +2273,40 @@ TextFile::PGStoreFileType TextFile::WorkspaceFileStorage() {
 	}
 	// both deltas and buffer are too big; can't store file
 	return PGFileTooLarge;
+}
+
+void TextFile::SetSettings(PGTextFileSettings settings) {
+	this->settings = settings;
+	if (is_loaded) {
+		Lock(PGWriteLock);
+		ApplySettings(settings);
+		Unlock(PGWriteLock);
+	}
+}
+
+void TextFile::ApplySettings(PGTextFileSettings& settings) {
+	if (settings.line_ending != PGLineEndingUnknown) {
+		this->lineending = settings.line_ending;
+		settings.line_ending = PGLineEndingUnknown;
+	}
+	if (settings.xoffset >= 0) {
+		this->xoffset = settings.xoffset;
+		settings.xoffset = -1;
+	}
+	if (settings.yoffset.linenumber >= 0) {
+		this->yoffset = settings.yoffset;
+		settings.yoffset.linenumber = -1;
+	}
+	if (settings.wordwrap) {
+		this->wordwrap = settings.wordwrap;
+		this->wordwrap_width = -1;
+		settings.wordwrap = false;
+	}
+	if (settings.cursor_data.size() > 0) {
+		this->ClearCursors();
+		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
+			this->cursors.push_back(new Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
+		}
+		settings.cursor_data.clear();
+	}
 }

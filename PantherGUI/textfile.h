@@ -76,6 +76,16 @@ enum PGLockType {
 	PGWriteLock
 };
 
+struct PGTextFileSettings {
+	PGLineEnding line_ending = PGLineEndingUnknown;
+	double xoffset = -1;
+	PGVerticalScroll yoffset = PGVerticalScroll(-1, -1);
+	bool wordwrap;
+	std::vector<CursorData> cursor_data;
+
+	PGTextFileSettings() : line_ending(PGLineEndingUnknown), xoffset(-1), yoffset(-1, -1), wordwrap(false), cursor_data() { }
+};
+
 class TextFile {
 	friend class Cursor;
 	friend class TextLineIterator;
@@ -215,6 +225,8 @@ public:
 
 	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }
+
+	void SetSettings(PGTextFileSettings settings);
 private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);
@@ -304,6 +316,9 @@ private:
 
 	PGMutexHandle text_lock;
 	int shared_counter = 0;
+
+	void ApplySettings(PGTextFileSettings& settings);
+	PGTextFileSettings settings;
 
 	lng refcount = 0;
 };

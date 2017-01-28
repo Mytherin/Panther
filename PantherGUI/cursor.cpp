@@ -8,6 +8,42 @@
 
 #include <algorithm>
 
+void Cursor::StoreCursors(nlohmann::json& j, std::vector<CursorData>& cursors) {
+	j["cursors"] = nlohmann::json::array();
+	nlohmann::json& cursor = j["cursors"];
+	lng index = 0;
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		cursor[index] = nlohmann::json::array();
+		nlohmann::json& current_cursor = cursor[index];
+		current_cursor[0] = it->start_line;
+		current_cursor[1] = it->start_position;
+		current_cursor[2] = it->end_line;
+		current_cursor[3] = it->end_position;
+		index++;
+	}
+}
+
+void Cursor::LoadCursors(nlohmann::json& j, std::vector<CursorData>& stored_cursors) {
+	if (j.count("cursors") > 0) {
+		nlohmann::json& cursors = j["cursors"];
+		if (cursors.is_array()) {
+			for (auto it = cursors.begin(); it != cursors.end(); it++) {
+				int size = it->size();
+				if (it->is_array() && it->size() == 4 &&
+					(*it)[0].is_number() && (*it)[1].is_number() && (*it)[2].is_number() && (*it)[3].is_number()) {
+
+					int start_line = (*it)[0];
+					int start_pos = (*it)[1];
+					int end_line = (*it)[2];
+					int end_pos = (*it)[3];
+
+					stored_cursors.push_back(CursorData(start_line, start_pos, end_line, end_pos));
+				}
+			}
+		}
+	}
+}
+
 Cursor::Cursor(TextFile* file) :
 	file(file), x_position(-1) {
 	start_buffer = file->GetBuffer(0);
@@ -43,6 +79,14 @@ CursorData Cursor::GetCursorData() {
 	PGCursorPosition start = this->SelectedPosition();
 	PGCursorPosition end = this->UnselectedPosition();
 	return CursorData(start.line, start.position, end.line, end.position);
+}
+
+std::vector<CursorData> Cursor::GetCursorData(std::vector<Cursor*> cursors) {
+	std::vector<CursorData> data;
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		data.push_back((*it)->GetCursorData());
+	}
+	return data;
 }
 
 void Cursor::OffsetLine(lng offset) {

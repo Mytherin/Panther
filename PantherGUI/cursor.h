@@ -60,6 +60,8 @@ public:
 	Cursor(TextFile* file, lng start_line, lng start_character, lng end_line, lng end_character);
 	Cursor(TextFile* file, CursorData data);
 
+	static std::vector<CursorData> GetCursorData(std::vector<Cursor*> cursors);
+
 	CursorData GetCursorData();
 	CursorSelection GetCursorSelection();
 
@@ -88,7 +90,6 @@ public:
 	PGCursorPosition BeginPosition();
 	PGCursorPosition EndPosition();
 
-
 	PGCharacterPosition SelectedCharacterPosition();
 	PGCharacterPosition BeginCharacterPosition();
 	PGCharacterPosition EndCharacterPosition();
@@ -108,6 +109,9 @@ public:
 
 	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield = true);
 	static bool CursorOccursFirst(Cursor* a, Cursor* b);
+
+	static void LoadCursors(nlohmann::json& j, std::vector<CursorData>& stored_cursors);
+	static void StoreCursors(nlohmann::json& j, std::vector<CursorData>& cursors);
 
 	void SetCursorStartLocation(lng linenr, lng characternr);
 	void SetCursorLocation(lng linenr, lng characternr);
