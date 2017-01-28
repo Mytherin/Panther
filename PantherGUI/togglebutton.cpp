@@ -21,6 +21,6 @@ void ToggleButton::Draw(PGRendererHandle renderer, PGIRect* rect) {
 
 void ToggleButton::Toggle() {
 	toggled = !toggled;
-	if (on_toggle) on_toggle(this, toggled);
+	if (on_toggle) on_toggle(this, toggled, toggle_data);
 	this->Invalidate();
 }

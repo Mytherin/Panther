@@ -2,6 +2,7 @@
 #include "controlmanager.h"
 #include "findtext.h"
 #include "style.h"
+#include "workspace.h"
 
 #define HPADDING 10
 #define HPADDING_SMALL 5
@@ -54,10 +55,30 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 		buttons[i]->y = VPADDING;
 		this->AddControl(buttons[i]);
 	}
+
+	auto workspace = PGGetWorkspace(window);
+	if (workspace->settings.count("find_text") == 0) {
+		workspace->settings["find_text"] = nlohmann::json::object();
+	}
+	nlohmann::json& find_text = workspace->settings["find_text"];
+	assert(find_text.is_object());
+
+	static char* toggle_regex_text = "toggle_regex";
+	static char* toggle_matchcase_text = "toggle_matchcase";
+	static char* toggle_wholeword_text = "toggle_wholeword";
+	static char* toggle_wrap_text = "toggle_wrap";
+
+	bool initial_values[5];
+	initial_values[0] = find_text.get_if_exists(toggle_regex_text, false);
+	initial_values[1] = find_text.get_if_exists(toggle_matchcase_text, false);
+	initial_values[2] = find_text.get_if_exists(toggle_wholeword_text, false);
+	initial_values[3] = find_text.get_if_exists(toggle_wrap_text, true);
+	initial_values[4] = find_text.get_if_exists("toggle_highlight", true);
+	
 	// FIXME: remember toggled buttons from settings and save toggles in settings after being made
 	ToggleButton* toggles[5];
 	for (int i = 0; i < 5; i++) {
-		toggles[i] = new ToggleButton(window, this, false);
+		toggles[i] = new ToggleButton(window, this, initial_values[i]);
 		toggles[i]->SetSize(PGSize(button_height, button_height));
 		toggles[i]->y = VPADDING;
 		this->AddControl(toggles[i]);
@@ -72,10 +93,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	toggle_wholeword = toggles[2];
 	toggle_wrap = toggles[3];
 	toggle_highlight = toggles[4];
-
-	toggle_wrap->Toggle();
-	toggle_highlight->Toggle();
-
+	
 	find_button->SetText(std::string("Find"), font);
 	find_prev->SetText(std::string("Find Prev"), font);
 	find_all->SetText(std::string("Find All"), font);
@@ -86,7 +104,8 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	toggle_wrap->SetText(std::string("W"), font);
 	toggle_highlight->SetText(std::string("H"), font);
 
-	toggle_highlight->OnToggle([](Button* b, bool toggled) {
+	toggle_highlight->OnToggle([](Button* b, bool toggled, void* unused) {
+		PGGetWorkspace(b->window)->settings["find_text"]["toggle_highlight"] = toggled;
 		FindText* f = dynamic_cast<FindText*>(b->parent);
 		if (toggled) {
 			f->FindAll(PGDirectionRight);
@@ -97,16 +116,17 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 			tf.SetSelectedMatch(-1);
 		}
 	});
-	auto update_highlight = [](Button* b, bool toggled) {
+	auto update_highlight = [](Button* b, bool toggled, void* setting_name) {
+		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
 		FindText* f = dynamic_cast<FindText*>(b->parent);
 		if (f->HighlightMatches()) {
 			f->FindAll(PGDirectionRight);
 		}};
 
-	toggle_regex->OnToggle(update_highlight);
-	toggle_matchcase->OnToggle(update_highlight);
-	toggle_wholeword->OnToggle(update_highlight);
-	toggle_wrap->OnToggle(update_highlight);
+	toggle_regex->OnToggle(update_highlight, toggle_regex_text);
+	toggle_matchcase->OnToggle(update_highlight, toggle_matchcase_text);
+	toggle_wholeword->OnToggle(update_highlight, toggle_wholeword_text);
+	toggle_wrap->OnToggle(update_highlight, toggle_wrap_text);
 	find_prev->OnPressed([](Button* b, void* data) {
 		((FindText*)data)->Find(PGDirectionLeft);
 	}, this);

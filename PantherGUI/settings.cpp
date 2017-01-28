@@ -39,6 +39,38 @@ bool PGSettings::GetSetting(std::string name, std::string& value) {
 	return true;
 }
 
+bool PGSettings::GetSetting(std::string name, std::vector<std::string>& value) {
+	if (multiple_settings.count(name) > 0) {
+		value = multiple_settings[name];
+		return true;
+	}
+	return false;
+}
+
+void PGSettings::SetSetting(std::string name, std::string setting) {
+	settings[name] = setting;
+}
+
+void PGSettings::SetSetting(std::string name, std::vector<std::string> setting) {
+	multiple_settings[name] = setting;
+}
+
+void PGSettings::SetSetting(std::string name, bool value) {
+	SetSetting(name, value ? std::string("true") : std::string("false"));
+}
+
+void PGSettings::SetSetting(std::string name, int value) {
+	SetSetting(name, std::to_string(value));
+}
+
+void PGSettings::SetSetting(std::string name, double value) {
+	SetSetting(name, std::to_string(value));
+}
+
+void PGSettings::SetSetting(std::string name, const char* setting) {
+	SetSetting(name, std::string(setting));
+}
+
 bool PGSettingsManager::GetSetting(std::string name, bool& value, PGSettings* extra_setting) {
 	std::string val;
 	if (!GetSetting(name, val, extra_setting)) {

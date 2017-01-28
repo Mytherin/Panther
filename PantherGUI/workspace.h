@@ -11,6 +11,8 @@ public:
 	PGWorkspace(PGWindowHandle window);
 	void LoadWorkspace(std::string filename);
 	void WriteWorkspace();
+
+	nlohmann::json settings;
 private:
 	std::string filename;
 	PGWindowHandle window;

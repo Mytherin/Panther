@@ -23,12 +23,13 @@ void PGWorkspace::LoadWorkspace(std::string filename) {
 		return;
 	}
 	PGLoadWorkspace(window, j);
+	this->settings = j;
 }
 
 void PGWorkspace::WriteWorkspace() {
 	if (filename.size() == 0) return;
 
-	json j;
+	json j = settings;
 
 	PGWriteWorkspace(window, j);
 

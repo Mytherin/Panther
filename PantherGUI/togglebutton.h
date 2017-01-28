@@ -2,7 +2,7 @@
 
 #include "button.h"
 
-typedef void(*PGToggleCallback)(Button*, bool toggled);
+typedef void(*PGToggleCallback)(Button*, bool toggled, void* data);
 
 class ToggleButton : public Button {
 public:
@@ -10,7 +10,7 @@ public:
 
 	void Draw(PGRendererHandle renderer, PGIRect* rect);
 
-	void OnToggle(PGToggleCallback callback) { on_toggle = callback; }
+	void OnToggle(PGToggleCallback callback, void* data = nullptr) { on_toggle = callback; toggle_data = data; }
 	void Toggle();
 	bool IsToggled() { return toggled; }
 private:
@@ -18,6 +18,7 @@ private:
 	PGColor toggled_color;
 
 	PGToggleCallback on_toggle = nullptr;
+	void* toggle_data = nullptr;
 
 	bool toggled;
 };

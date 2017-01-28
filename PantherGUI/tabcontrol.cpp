@@ -349,6 +349,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 			selected_tab = std::max((lng) 0, std::min((lng) tabs.size() - 1, selected_tab));
 			SwitchToTab(tabs[selected_tab].file);
 		}
+		j.erase(j.find("tabs"));
 	}
 }
 
@@ -584,13 +585,17 @@ bool TabControl::CloseAllTabs() {
 bool TabControl::CloseTabConfirmation(int tab) {
 	bool hot_exit;
 	PGSettingsManager::GetSetting("hot_exit", hot_exit);
+	// we only show a confirmation on exit if hot_exit is disabled
+	// or if hot_exit is enabled, but the file cannot be saved in the workspace because it is too large
 	if (tabs[tab].file->HasUnsavedChanges() && 
 		(!hot_exit || (hot_exit && tabs[tab].file->WorkspaceFileStorage() == TextFile::PGFileTooLarge))) {
 
+		// switch to the tab
 		active_tab = tab;
 		SwitchToFile(tabs[active_tab].file);
 		this->Invalidate();
 
+		// then show the confirmation box
 		PGResponse response = PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG);
 		if (response == PGResponseCancel) {
 			return false;
@@ -626,8 +631,12 @@ void TabControl::ActuallyCloseTab(int tab) {
 
 void TabControl::CloseTab(int tab) {
 	if (tabs[tab].file->HasUnsavedChanges()) {
+		// if there are unsaved changes, we show a confirmation box
 		int* tabnumbers = new int[1];
 		tabnumbers[0] = tab;
+		// we use a callback here rather than a blocking confirmation box
+		// because a blocking confirmation box can launch a sub-event queue on windows
+		// which could lead to concurrency issues
 		PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG, 
 			[](PGWindowHandle window, Control* control, void* data, PGResponse response) {
 			TabControl* tabs = (TabControl*)control;

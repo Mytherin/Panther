@@ -36,6 +36,7 @@ namespace panther {
 	void strcpy(char* destination, char* source) {
 		while (*source) {
 			*destination = *source;
+			destination++;
 			source++;
 		}
 	}

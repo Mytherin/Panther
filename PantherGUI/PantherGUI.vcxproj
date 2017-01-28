@@ -194,6 +194,7 @@
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
     <ClInclude Include="findtext.h" />
+    <ClInclude Include="json.h" />
     <ClInclude Include="keybindings.h" />
     <ClInclude Include="keywords.h" />
     <ClInclude Include="language.h" />

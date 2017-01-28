@@ -1094,6 +1094,7 @@ void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
 				SetWindowPos(window->hwnd, 0, x, y, width, height, SWP_NOZORDER);
 			}
 		}
+		j.erase(j.find("window"));
 	}
 	window->manager->LoadWorkspace(j);
 }

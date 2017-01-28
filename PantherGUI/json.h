@@ -3635,6 +3635,14 @@ namespace nlohmann
 			throw std::domain_error("cannot use operator[] with " + type_name());
 		}
 
+		template<typename T>
+		T get_if_exists(std::string name, T initial_value) {
+			if (this->count(name) == 0) {
+				(*this)[name] = initial_value;
+			}
+			return (*this)[name];
+		}
+
 		/*!
 		@brief read-only access specified object element
 

@@ -2,14 +2,25 @@
 
 #include "utils.h"
 #include <map>
+#include <vector>
 
 class PGSettings {
 public:
 	void LoadSettings(std::string filename);
 
+
+	void SetSetting(std::string name, bool setting);
+	void SetSetting(std::string name, int setting);
+	void SetSetting(std::string name, double setting);
+	void SetSetting(std::string name, const char* setting);
+	void SetSetting(std::string name, std::string setting);
+	void SetSetting(std::string name, std::vector<std::string> setting);
+
 	bool GetSetting(std::string name, std::string& value);
+	bool GetSetting(std::string name, std::vector<std::string>& value);
 private:
 	std::map<std::string, std::string> settings;
+	std::map<std::string, std::vector<std::string>> multiple_settings;
 };
 
 class PGSettingsManager {

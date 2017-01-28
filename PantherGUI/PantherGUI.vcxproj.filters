@@ -311,6 +311,9 @@
     <ClInclude Include="workspace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="json.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="logo.ico">
