@@ -256,7 +256,6 @@ void TabControl::ClearDragDrop(PGDragDropType type) {
 	this->Invalidate();
 }
 
-
 void TabControl::LoadWorkspace(nlohmann::json& j) {
 	if (j.count("tabs") > 0) {
 		nlohmann::json& tb = j["tabs"];
@@ -272,6 +271,8 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 						path = (*it)["file"].get<std::string>();
 					}
 					if (it->count("buffer") > 0) {
+						// if we have the text stored in a buffer
+						// we load the text from the buffer, rather than from the file
 						std::string buffer = (*it)["buffer"];
 						textfile = new TextFile(textfield, path.c_str(), (char*) buffer.c_str(), buffer.size(), true, false);
 						if (path.size() == 0) {
@@ -280,11 +281,15 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 						textfile->SetUnsavedChanges(true);
 						file_manager.OpenFile(textfile);
 					} else if (path.size() > 0) {
+						// otherwise, if there is a file speciifed
+						// we load the text from the file instead
 						textfile = file_manager.OpenFile(path);
 					} else {
 						continue;
 					}
 
+					// load additional text file settings from the workspace
+					// note that we do not apply them to the textfile immediately because of concurrency concerns
 					PGTextFileSettings settings;
 					
 					Cursor::LoadCursors(*it, settings.cursor_data);
@@ -300,15 +305,19 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 						}
 					}
 					if (it->count("xoffset") > 0) {
+						// if xoffset is specified, set the xoffset of the file
 						auto xoffset = (*it)["xoffset"];
 						if (xoffset.is_number_float()) {
 							settings.xoffset = xoffset;
 						}
 					} else {
+						// if xoffset is not specified, word wrap is enabled
 						settings.wordwrap = true;
 					}
 					if (it->count("yoffset") > 0) {
 						auto yoffset = (*it)["yoffset"];
+						// yoffset can be either a single number (linenumber)
+						// or an array of two numbers ([linenumber, inner_line])
 						if (yoffset.is_array()) {
 							if (yoffset[0].is_number()) {
 								settings.yoffset.linenumber = yoffset[0];
@@ -321,6 +330,8 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 							settings.yoffset.inner_line = 0;
 						}
 					}
+					// apply the settings, either immediately if the file has been loaded
+					// or wait until after it has been loaded otherwise
 					textfile->SetSettings(settings);
 					if (textfile != nullptr) {
 						textfile->textfield = textfield;
@@ -333,6 +344,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 			}
 		}
 		if (tb.count("selected_tab") > 0 && tb["selected_tab"].is_number()) {
+			// if the selected tab is specified, switch to the selected tab
 			lng selected_tab = tb["selected_tab"];
 			selected_tab = std::max((lng) 0, std::min((lng) tabs.size() - 1, selected_tab));
 			SwitchToTab(tabs[selected_tab].file);
