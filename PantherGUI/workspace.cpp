@@ -26,7 +26,7 @@ void PGWorkspace::LoadWorkspace(std::string filename) {
 }
 
 void PGWorkspace::WriteWorkspace() {
-	assert(filename.size() > 0);
+	if (filename.size() == 0) return;
 
 	json j;
 

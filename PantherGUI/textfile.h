@@ -194,6 +194,15 @@ public:
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
 	std::string GetExtension() { return ext; }
+
+	enum PGStoreFileType {
+		PGStoreFileBuffer,
+		PGStoreFileDeltas,
+		PGFileTooLarge
+	};
+
+	PGStoreFileType WorkspaceFileStorage();
+
 	bool HasUnsavedChanges() { return unsaved_changes; }
 	bool FileInMemory() { return path.size() == 0; }
 

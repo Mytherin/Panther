@@ -110,6 +110,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	PGWindowHandle handle = PGCreateWindow(files);
 	handle->workspace.LoadWorkspace("workspace.json");
+	ShowWindow(handle->hwnd, cmdshow);
+	UpdateWindow(handle->hwnd);
 
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
@@ -609,11 +611,6 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 	manager->statusbar = bar;
 	manager->active_textfield = textfield;
 	manager->active_tabcontrol = tabs;
-	// The parameters to ShowWindow explained:
-	// hWnd: the value returned from CreateWindow
-	// nCmdShow: the fourth parameter from WinMain
-	ShowWindow(hWnd, cmdshow);
-	UpdateWindow(hWnd);
 	return res;
 }
 
@@ -635,7 +632,8 @@ void PGCloseWindow(PGWindowHandle window) {
 
 void ShowWindow(PGWindowHandle window) {
 	if (!window) return;
-	ShowWindow(window->hwnd, SW_SHOWDEFAULT);
+	ShowWindow(window->hwnd, cmdshow);
+	UpdateWindow(window->hwnd);
 }
 
 void HideWindow(PGWindowHandle window) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cursor.h"
+#include "json.h"
 #include "textbuffer.h"
 #include "utils.h"
 
@@ -30,8 +31,9 @@ public:
 	TextDelta(PGTextType type) : 
 		type(type), next(nullptr) { }
 	PGTextType TextDeltaType() { return type; }
-	virtual std::string ToString() { assert(0); return ""; }
-	static TextDelta* FromString(std::string);
+	static std::vector<TextDelta*> LoadWorkspace(nlohmann::json& j);
+	virtual void WriteWorkspace(nlohmann::json& j) {};
+	virtual size_t SerializedSize() { return 0; }
 };
 
 class AddText : public TextDelta {
@@ -44,7 +46,8 @@ public:
 		}
 	AddText(std::vector<std::string> lines) : 
 		TextDelta(PGDeltaAddText), lines(lines) { }
-	std::string ToString();
+	void WriteWorkspace(nlohmann::json& j);
+	size_t SerializedSize();
 };
 
 class RemoveText : public TextDelta {
@@ -53,7 +56,8 @@ public:
 
 	RemoveText() : 
 		TextDelta(PGDeltaRemoveText) { }
-	std::string ToString();
+	void WriteWorkspace(nlohmann::json& j);
+	size_t SerializedSize();
 };
 
 class RemoveSelection : public TextDelta {
@@ -61,7 +65,8 @@ public:
 	PGDirection direction;
 	RemoveSelection(PGDirection direction, PGTextType type) : 
 		TextDelta(type), direction(direction) { }
-	std::string ToString();
+	void WriteWorkspace(nlohmann::json& j);
+	size_t SerializedSize();
 };
 
 class InsertLineBefore : public TextDelta {
@@ -69,5 +74,6 @@ public:
 	PGDirection direction;
 	InsertLineBefore(PGDirection direction) : 
 		TextDelta(PGDeltaAddEmptyLine), direction(direction) { }
-	std::string ToString();
+	void WriteWorkspace(nlohmann::json& j);
+	size_t SerializedSize();
 };

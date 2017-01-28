@@ -2235,3 +2235,40 @@ bool PGBufferFindMatch::MatchOccursFirst(PGBufferFindMatch a, PGBufferFindMatch 
 		(a.start_buffer_pos >= b.start_buffer_pos && a.end_buffer_pos >= b.end_buffer_pos));
 	return (a.start_buffer_pos < b.start_buffer_pos);
 }
+
+#define TEXTFILE_BUFFER_THRESHOLD 1000000
+TextFile::PGStoreFileType TextFile::WorkspaceFileStorage() {
+	lng buffer_size = 0;
+	for (auto it = buffers.begin(); it != buffers.end(); it++) {
+		buffer_size += (*it)->current_size;
+	}
+
+	if (buffer_size < TEXTFILE_BUFFER_THRESHOLD) {
+		// the entire buffer fits within the threshold we have set
+		return PGStoreFileBuffer;
+	}
+
+	if (path.size() == 0) {
+		// this file has no file associated with it
+		// thus we have to save the buffer
+		// but the buffer is too big
+		return PGFileTooLarge;
+	}
+	return PGFileTooLarge;
+
+	// FIXME: writing deltas not supported yet
+
+	// if we have a file associated with it we can just save the deltas
+	// check the size of the deltas
+	size_t delta_size = 0;
+	for (auto it = deltas.begin(); it != deltas.end(); it++) {
+		delta_size += (*it)->SerializedSize();
+	}
+
+	if (delta_size < TEXTFILE_BUFFER_THRESHOLD) {
+		// deltas fit within the threshold, store the deltas
+		return PGStoreFileDeltas;
+	}
+	// both deltas and buffer are too big; can't store file
+	return PGFileTooLarge;
+}

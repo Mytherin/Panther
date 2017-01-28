@@ -5,5 +5,6 @@
 	"display_minimap": true,
 	"margin": 4,
 	"always_show_minimap_viewport": false,
-	"word_wrap": "auto"
+	"word_wrap": "auto",
+	"hot_exit": true
 }

@@ -20,7 +20,7 @@ public:
 	}
 
 	static void Initialize() { (void) GetInstance(); }
-
+	
 	static bool GetSetting(std::string name, bool& value, PGSettings* extra_setting = nullptr);
 	static bool GetSetting(std::string name, int& value, PGSettings* extra_setting = nullptr);
 	static bool GetSetting(std::string name, double& value, PGSettings* extra_setting = nullptr);

@@ -168,7 +168,8 @@ void ControlManager::ShowFindReplace(bool replace) {
 void ControlManager::CreateNewWindow() {
 	std::vector<TextFile*> files;
 	files.push_back(new TextFile(nullptr));
-	PGCreateWindow(files);
+	PGWindowHandle new_window = PGCreateWindow(files);
+	ShowWindow(new_window);
 }
 
 bool ControlManager::CloseControlManager() {

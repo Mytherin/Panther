@@ -2,6 +2,7 @@
 #include "tabcontrol.h"
 #include "filemanager.h"
 #include "style.h"
+#include "settings.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
@@ -171,7 +172,8 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 			if (data->accepted == nullptr) {
 				std::vector<TextFile*> textfiles;
 				textfiles.push_back(data->file);
-				PGCreateWindow(mouse, textfiles);
+				PGWindowHandle new_window = PGCreateWindow(mouse, textfiles);
+				ShowWindow(new_window);
 				data->tabs->ActuallyCloseTab(data->file);
 			} else if (data->accepted != data->tabs) {
 				data->tabs->ActuallyCloseTab(data->file);
@@ -263,17 +265,26 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 			tabs.clear();
 			for (auto it = f.begin(); it != f.end(); ++it) {
 				TextFile* textfile = nullptr;
+				std::string path = "";
+				if (it->count("file") > 0) {
+					path = (*it)["file"].get<std::string>();
+				}
 				if (it->count("buffer") > 0) {
 					std::string buffer = (*it)["buffer"];
-					textfile = new TextFile(textfield, "", (char*) buffer.c_str(), buffer.size(), true, false);
-					textfile->name = "untitled";
+					textfile = new TextFile(textfield, path.c_str(), (char*) buffer.c_str(), buffer.size(), true, false);
+					if (path.size() == 0) {
+						textfile->name = "untitled";
+					}
 					textfile->SetUnsavedChanges(true);
 					file_manager.OpenFile(textfile);
-				} else if (it->count("file") > 0) {
-					textfile = file_manager.OpenFile((*it)["file"]);
-					textfile->textfield = textfield;
+				} else if (path.size() > 0) {
+					textfile = file_manager.OpenFile(path);
+				} else {
+					continue;
 				}
+
 				if (textfile != nullptr) {
+					textfile->textfield = textfield;
 					this->tabs.push_back(OpenTab(textfile));
 				}
 			}
@@ -289,13 +300,32 @@ void TabControl::WriteWorkspace(nlohmann::json& j) {
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		TextFile* file = it->file;
+		nlohmann::json& cur = f[index];
+
+
+		if (file->HasUnsavedChanges()) {
+			// the file has unsaved changes
+			// so we have to write the file
+			auto store_file_type = file->WorkspaceFileStorage();
+			if (store_file_type == TextFile::PGStoreFileBuffer) {
+				// write the buffer
+				cur["buffer"] = file->GetText();
+			} else if (store_file_type == TextFile::PGStoreFileDeltas) {
+				// write the deltas
+				cur["deltas"] = nlohmann::json::array();
+				nlohmann::json& deltas = cur["deltas"];
+				lng index2 = 0;
+				for (auto it = file->deltas.begin(); it != file->deltas.end(); it++) {
+					(*it)->WriteWorkspace(deltas[index2++]);
+				}
+			}
+		}
 
 		std::string path = file->GetFullPath();
-		if (path.size() == 0) {
-			f[index]["buffer"] = file->GetText();
-		} else {
-			f[index]["file"] = path;
+		if (path.size() != 0) {
+			cur["file"] = path;
 		}
+
 		auto line_ending = file->GetLineEnding();
 		if (line_ending == PGLineEndingMixed || line_ending == PGLineEndingUnknown) {
 			line_ending = GetSystemLineEnding();
@@ -312,7 +342,7 @@ void TabControl::WriteWorkspace(nlohmann::json& j) {
 			endings = "MacOS";
 			break;
 		}
-		f[index]["lineending"] = endings;
+		cur["lineending"] = endings;
 		index++;
 	}
 }
@@ -488,7 +518,10 @@ bool TabControl::CloseAllTabs() {
 }
 
 bool TabControl::CloseTabConfirmation(int tab) {
-	if (tabs[tab].file->HasUnsavedChanges()) {
+	bool hot_exit;
+	PGSettingsManager::GetSetting("hot_exit", hot_exit);
+	if (tabs[tab].file->HasUnsavedChanges() && 
+		(!hot_exit || (hot_exit && tabs[tab].file->WorkspaceFileStorage() == TextFile::PGFileTooLarge))) {
 		PGResponse response = PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG);
 		if (response == PGResponseCancel) {
 			return false;
@@ -523,7 +556,10 @@ void TabControl::ActuallyCloseTab(int tab) {
 }
 
 void TabControl::CloseTab(int tab) {
-	if (tabs[tab].file->HasUnsavedChanges()) {
+	bool hot_exit;
+	PGSettingsManager::GetSetting("hot_exit", hot_exit);
+	if (tabs[tab].file->HasUnsavedChanges() && 
+		(!hot_exit || (hot_exit && tabs[tab].file->WorkspaceFileStorage() == TextFile::PGFileTooLarge))) {
 		int* tabnumbers = new int[1];
 		tabnumbers[0] = tab;
 		PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG, 
