@@ -64,6 +64,8 @@ struct PGPopupMenu {
 	PGWindowHandle window;
 	HMENU menu;
 	int index = 1000;
+	std::vector<PGPopupInformation*> data;
 	std::map<int, PGControlCallback> callbacks;
 	Control* control;
+	PGFontHandle font;
 };

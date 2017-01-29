@@ -12,6 +12,7 @@
 #include "unicode.h"
 #include "language.h"
 #include "logger.h"
+#include "style.h"
 
 #include "statusbar.h"
 #include "textfield.h"
@@ -200,6 +201,60 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		(void)ret; // we're ignoring potential failures for now.
 		bitmap.unlockPixels();
 		EndPaint(hWnd, &ps);
+		break;
+	}
+	case WM_MEASUREITEM: {
+		auto measure_item = (LPMEASUREITEMSTRUCT)lParam;
+		PGPopupInformation* text = (PGPopupInformation*)measure_item->itemData;
+		PGSize size = PGMeasurePopupItem(handle->popup->font, text);
+		measure_item->itemWidth = size.width;
+		measure_item->itemHeight = size.height;
+		break;
+	}
+	case WM_DRAWITEM: {
+		auto render_item = (LPDRAWITEMSTRUCT)lParam;
+		PGPopupInformation* text = (PGPopupInformation*)render_item->itemData;
+		PGIRect rect(
+			render_item->rcItem.left,
+			render_item->rcItem.top,
+			render_item->rcItem.right - render_item->rcItem.left,
+			render_item->rcItem.bottom - render_item->rcItem.top);
+		PGBitmapHandle bmp = CreateBitmapFromSize(rect.width, rect.height);
+		PGRendererHandle renderer = CreateRendererForBitmap(bmp);
+
+		PGPopupMenuFlags flags = 0;
+		if (render_item->itemState & ODS_DISABLED || render_item->itemState & ODS_GRAYED) {
+			flags |= PGPopupMenuGrayed;
+		}
+		if (render_item->itemState & ODS_SELECTED) {
+			flags |= PGPopupMenuSelected;
+		}
+
+		PGRenderPopupItem(renderer, handle->popup->font, text, PGSize(rect.width, rect.height), flags);
+
+		SkBitmap& bitmap = *(bmp->bitmap);
+		BITMAPINFO bmi;
+		memset(&bmi, 0, sizeof(bmi));
+		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bmi.bmiHeader.biWidth = bitmap.width();
+		bmi.bmiHeader.biHeight = -bitmap.height(); // top-down image
+		bmi.bmiHeader.biPlanes = 1;
+		bmi.bmiHeader.biBitCount = 32;
+		bmi.bmiHeader.biCompression = BI_RGB;
+		bmi.bmiHeader.biSizeImage = 0;
+
+		assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
+		bitmap.lockPixels();
+		int ret = SetDIBitsToDevice(render_item->hDC,
+			rect.x, rect.y,
+			bitmap.width(), bitmap.height(),
+			0, 0,
+			0, bitmap.height(),
+			bitmap.getPixels(),
+			&bmi,
+			DIB_RGB_COLORS);
+		(void)ret; // we're ignoring potential failures for now.
+		bitmap.unlockPixels();
 		break;
 	}
 	case WM_KEYDOWN: {
@@ -459,6 +514,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				handle->popup = handle->popup_data.menu;
 				SetCursor(cursor_standard);
 				TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
+				for (auto it = handle->popup->data.begin(); it != handle->popup->data.end(); it++) {
+					delete *it;
+				}
 				DestroyMenu(handle->popup_data.menu->menu);
 			}
 			while (handle->pending_confirmation_box) {
@@ -821,15 +879,38 @@ PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
 	handle->menu = CreatePopupMenu();
 	handle->window = window;
 	handle->control = control;
+	handle->font = PGCreateFont("sans serif", false, false);
+	SetTextFontSize(handle->font, 13);
+
+	PGColor background_color = PGStyleManager::GetColor(PGColorMenuBackground);
+
+	MENUINFO mi = { 0 }; 
+	mi.cbSize = sizeof(mi); 
+	mi.fMask = MIM_BACKGROUND | MIM_APPLYTOSUBMENUS; 
+	mi.hbrBack = CreateSolidBrush(RGB(background_color.r, background_color.g, background_color.b));
+
+	SetMenuInfo(handle->menu, &mi); 
+
 	return handle;
 }
 
+
 void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags) {
-	int append_flags = MF_STRING;
+	PGPopupInformation info;
+	info.text = text;
+	info.hotkey = "";
+	PGPopupMenuInsertEntry(handle, info, callback, flags);
+}
+
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation information, PGControlCallback callback, PGPopupMenuFlags flags) {
+	int append_flags = MF_OWNERDRAW;
 	if (flags & PGPopupMenuChecked) append_flags |= MF_CHECKED;
 	if (flags & PGPopupMenuGrayed) append_flags |= MF_GRAYED;
 	int index = handle->index;
-	AppendMenu(handle->menu, append_flags, index, text.c_str());
+
+	PGPopupInformation* info = new PGPopupInformation(information);
+	AppendMenu(handle->menu, append_flags, index, (LPCSTR)info);
+	handle->data.push_back(info);
 	handle->callbacks[index] = callback;
 	handle->index++;
 }

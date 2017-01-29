@@ -6,31 +6,6 @@
 
 #include <SkGradientShader.h>
 
-struct PGRenderer {
-	SkCanvas* canvas;
-	SkPaint* paint;
-
-	PGRenderer() : canvas(nullptr), paint(nullptr) {}
-};
-
-struct PGFont {
-	SkPaint* textpaint = nullptr;
-	SkPaint* normaltext = nullptr;
-	SkPaint* boldtext = nullptr;
-	SkPaint* italictext = nullptr;
-	PGScalar character_width;
-	PGScalar text_offset;
-	int tabwidth = 4;
-	std::vector<SkPaint*> fallback_paints;
-
-	PGFont() : normaltext(nullptr), boldtext(nullptr), italictext(nullptr) {}
-};
-
-struct PGBitmap {
-	SkBitmap* bitmap;
-};
-
-
 SkBitmap* PGGetBitmap(PGBitmapHandle handle) {
 	return handle->bitmap;
 }
@@ -640,4 +615,28 @@ void SetRenderBounds(PGRendererHandle handle, PGRect rectangle) {
 
 void ClearRenderBounds(PGRendererHandle handle) {
 	handle->canvas->restore();
+}
+
+PGSize PGMeasurePopupItem(PGFontHandle font, PGPopupInformation* information) {
+	PGSize result;
+	result.height = GetTextHeight(font) * 1.3;
+	result.width = MeasureTextWidth(font, information->text.c_str()) + MeasureTextWidth(font, information->hotkey.c_str()) + 20;
+	return result;
+}
+
+#include "style.h"
+
+void PGRenderPopupItem(PGRendererHandle renderer, PGFontHandle font, PGPopupInformation* info, PGSize size, PGPopupMenuFlags flags) {
+	PGColor background_color = PGStyleManager::GetColor(PGColorMenuBackground);
+	if (flags & PGPopupMenuSelected) {
+		background_color = PGStyleManager::GetColor(PGColorMenuHover);
+	}
+	PGColor text_color = PGStyleManager::GetColor(PGColorMenuText);
+	if (flags & PGPopupMenuGrayed) {
+		text_color = PGStyleManager::GetColor(PGColorMenuDisabled);
+	}
+	RenderRectangle(renderer, PGRect(0, 0, size.width, size.height), background_color, PGDrawStyleFill);
+	SetTextColor(font, text_color);
+	RenderText(renderer, font, info->text.c_str(), info->text.size(), 5, 0);
+	RenderText(renderer, font, info->hotkey.c_str(), info->hotkey.size(), size.width - 5, 0, PGTextAlignRight);
 }

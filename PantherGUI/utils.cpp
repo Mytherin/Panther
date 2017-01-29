@@ -39,6 +39,7 @@ namespace panther {
 			destination++;
 			source++;
 		}
+		*destination = '\0';
 	}
 
 	char* strdup(const char* source) {

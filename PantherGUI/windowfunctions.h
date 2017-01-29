@@ -346,18 +346,32 @@ typedef byte PGPopupMenuFlags;
 extern const PGPopupMenuFlags PGPopupMenuFlagsNone;
 extern const PGPopupMenuFlags PGPopupMenuChecked;
 extern const PGPopupMenuFlags PGPopupMenuGrayed;
+extern const PGPopupMenuFlags PGPopupMenuSelected;
+extern const PGPopupMenuFlags PGPopupMenuSubmenu;
 
 typedef void(*PGControlCallback)(Control* control);
 typedef void(*PGControlDataCallback)(Control* control, void* data);
 
+
+struct PGPopupInformation {
+	std::string text;
+	std::string hotkey;
+
+	PGPopupInformation() { }
+	PGPopupInformation(std::string text, std::string hotkey) : text(text), hotkey(hotkey) { }
+};
+
 PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control);
 void PGPopupMenuInsertSubmenu(PGPopupMenuHandle, PGPopupMenuHandle submenu, std::string submenu_name);
-void PGPopupMenuInsertEntry(PGPopupMenuHandle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
+void PGPopupMenuInsertEntry(PGPopupMenuHandle, PGPopupInformation info, PGControlCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
 void PGPopupMenuInsertSeparator(PGPopupMenuHandle);
 // Displays the menu next to the mouse
 void PGDisplayPopupMenu(PGPopupMenuHandle, PGTextAlign align);
 // Displays the menu at the specified point
 void PGDisplayPopupMenu(PGPopupMenuHandle, PGPoint, PGTextAlign align);
+PGSize PGMeasurePopupItem(PGFontHandle font, PGPopupInformation* information);
+void PGRenderPopupItem(PGRendererHandle renderer, PGFontHandle font, PGPopupInformation* information, PGSize size, PGPopupMenuFlags flags);
 
 void OpenFolderInExplorer(std::string path);
 void OpenFolderInTerminal(std::string path);

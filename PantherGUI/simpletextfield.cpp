@@ -96,7 +96,7 @@ void SimpleTextField::MouseUp(int x, int y, PGMouseButton button, PGModifier mod
 	} else if (button & PGRightMouseButton) {
 		if (!(mouse.x <= this->width && mouse.y <= this->height)) return;
 		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
-		PGPopupMenuInsertEntry(menu, "Copy", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, PGPopupInformation("Copy", "Ctrl+C"), [](Control* control) {
 			SetClipboardText(control->window, dynamic_cast<SimpleTextField*>(control)->textfile->CopyText());
 		});
 		PGPopupMenuInsertEntry(menu, "Cut", nullptr, PGPopupMenuGrayed);
