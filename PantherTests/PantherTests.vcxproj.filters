@@ -143,9 +143,6 @@
     <ClCompile Include="tester.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\PantherGUI\basictextfield.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\PantherGUI\button.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -252,6 +249,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\PantherGUI\keybindings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\textline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\textiterator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\workspace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\textdelta.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\notification.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\PantherGUI\basictextfield.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

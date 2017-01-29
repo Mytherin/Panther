@@ -99,6 +99,7 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 		if (offset == 1 && buffer[i] == '\n') {
 			current_character = 0;
 			current_line++;
+			assert(current_line <= line);
 		} else {
 			current_character += offset;
 		}
@@ -127,7 +128,7 @@ PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position, lng total_li
 			pos.line++;
 			pos.position = 0;
 			if (pos.line + 1 == next_line) {
-				pos.position = position - i;
+				pos.position = position - i - 1;
 				return pos;
 			}
 		} else {
@@ -146,7 +147,7 @@ PGCharacterPosition PGTextBuffer::GetCharacterFromPosition(ulng position) {
 	pos.character = 0;
 	ulng i = 0;
 
-	lng cache_entry = (position / TEXT_BUFFER_SIZE) - 1;
+	lng cache_entry = TEXT_BUFFER_SIZE == 0 ? 0 : (position / TEXT_BUFFER_SIZE) - 1;
 	if (cache_entry >= 0) {
 		if (cache_entry < cached_positions.size()) {
 			// cache entry exists
@@ -173,7 +174,7 @@ PGCharacterPosition PGTextBuffer::GetCharacterFromPosition(ulng position) {
 			pos.position += offset;
 		}
 		i += offset;
-		if (i / TEXT_BUFFER_SIZE > cache_entry) {
+		if (TEXT_BUFFER_SIZE > 0 && i / TEXT_BUFFER_SIZE > cache_entry) {
 			cache_entry++;
 			if (cached_positions.size() <= cache_entry) {
 				cached_positions.push_back(pos);	

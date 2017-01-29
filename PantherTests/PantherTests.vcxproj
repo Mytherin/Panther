@@ -184,6 +184,7 @@
     <ClCompile Include="..\PantherGUI\keywords.cpp" />
     <ClCompile Include="..\PantherGUI\language.cpp" />
     <ClCompile Include="..\PantherGUI\logger.cpp" />
+    <ClCompile Include="..\PantherGUI\notification.cpp" />
     <ClCompile Include="..\PantherGUI\regex.cpp" />
     <ClCompile Include="..\PantherGUI\renderer.cpp" />
     <ClCompile Include="..\PantherGUI\scheduler.cpp" />
@@ -197,13 +198,17 @@
     <ClCompile Include="..\PantherGUI\tabcontrol.cpp" />
     <ClCompile Include="..\PantherGUI\text.cpp" />
     <ClCompile Include="..\PantherGUI\textbuffer.cpp" />
+    <ClCompile Include="..\PantherGUI\textdelta.cpp" />
     <ClCompile Include="..\PantherGUI\textfield.cpp" />
     <ClCompile Include="..\PantherGUI\textfile.cpp" />
+    <ClCompile Include="..\PantherGUI\textiterator.cpp" />
+    <ClCompile Include="..\PantherGUI\textline.cpp" />
     <ClCompile Include="..\PantherGUI\thread.cpp" />
     <ClCompile Include="..\PantherGUI\togglebutton.cpp" />
     <ClCompile Include="..\PantherGUI\unicode.cpp" />
     <ClCompile Include="..\PantherGUI\utils.cpp" />
     <ClCompile Include="..\PantherGUI\windowfunctions.cpp" />
+    <ClCompile Include="..\PantherGUI\workspace.cpp" />
     <ClCompile Include="..\PantherGUI\wrappedtextiterator.cpp" />
     <ClCompile Include="..\PantherGUI\xml.cpp" />
     <ClCompile Include="dummywindowfunctions.cpp" />

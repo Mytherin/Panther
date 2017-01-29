@@ -194,3 +194,19 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 	std::vector<std::string> files;
 	return files;
 }
+
+PGWorkspace* PGGetWorkspace(PGWindowHandle window) {
+	return nullptr;
+}
+
+void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
+
+}
+
+void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j) {
+
+}
+
+void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data) {
+
+}
