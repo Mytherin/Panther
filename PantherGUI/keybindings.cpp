@@ -5,6 +5,7 @@
 #include "textfield.h"
 #include "tabcontrol.h"
 #include "simpletextfield.h"
+#include "findtext.h"
 
 #include "json.h"
 
@@ -17,6 +18,7 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	SimpleTextField::InitializeKeybindings();
 	TabControl::InitializeKeybindings();
 	TextField::InitializeKeybindings();
+	FindText::InitializeKeybindings();
 
 #ifdef WIN32
 	LoadSettings("default-keybindings." + GetOSName() + ".json");
@@ -197,6 +199,8 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 				INITIALIZE_CONTROL(BasicTextField);
 			} else if (control == "tabcontrol") {
 				INITIALIZE_CONTROL(TabControl);
+			} else if (control == "findtext") {
+				INITIALIZE_CONTROL(FindText);
 			}
 
 			if (functions && keybindings_noargs && keybindings_varargs) {

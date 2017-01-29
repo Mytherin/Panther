@@ -81,6 +81,13 @@
 		{ "key": "ctrl+pageup", "command": "prev_tab" },
 		{ "key": "ctrl+tab", "command": "next_tab" },
 		{ "key": "ctrl+shift+tab", "command": "prev_tab" }
+	],
+	"findtext": [
+		{"key": "enter", "command": "find_next"},
+		{"key": "shift+enter", "command": "find_prev"},
+		{"key": "tab", "command": "shift_focus_forward"},
+		{"key": "shift+tab", "command": "shift_focus_backward"},
+		{"key": "escape", "command": "close"}
 	]
 }
 

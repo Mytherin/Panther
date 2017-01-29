@@ -10,16 +10,7 @@
 
 #define MAXIMUM_FIND_HISTORY 5
 
-static void CancelOperation(Control* c, void* data) {
-	// user pressed escape, cancelling the find operation
-	((FindText*)data)->Close();
-}
-
-static void ExecuteFind(Control* c, void* data) {
-	// perform the find operation
-	// if we hold shift, we perform Find Prev instead of Find Next
-	((FindText*)data)->Find(PGDirectionRight);
-}
+PG_CONTROL_INITIALIZE_KEYBINDINGS(FindText);
 
 FindText::FindText(PGWindowHandle window, bool replace) :
 	PGContainer(window), find_history(nullptr), history_entry(0) {
@@ -31,8 +22,6 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	field->width = this->width - 400;
 	field->x = 150;
 	field->y = VPADDING;
-	field->OnCancel(CancelOperation, (void*) this);
-	field->OnConfirm(ExecuteFind, (void*) this);
 	field->OnPrevEntry([](Control* c, void* data) {
 		FindText* f = (FindText*)data;
 		if (f->find_history) {
@@ -210,8 +199,6 @@ void FindText::ToggleReplace() {
 		replace_field->width = this->width - 400;
 		replace_field->x = 150;
 		replace_field->y = base_y;
-		replace_field->OnCancel(CancelOperation, (void*) this);
-		replace_field->OnConfirm(ExecuteFind, (void*) this);
 		this->AddControl(replace_field);
 		Button* buttons[2];
 		for (int i = 0; i < 2; i++) {
@@ -402,22 +389,8 @@ void FindText::ReplaceAll() {
 
 
 bool FindText::KeyboardButton(PGButton button, PGModifier modifier) {
-	if (button == PGButtonTab) {
-		if (!(modifier & PGModifierCtrl)) {
-			if (replace) {
-				// (shift+)tab switches between the two text fields
-				if (focused_control == field) {
-					focused_control = replace_field;
-					replace_field->RefreshCursors();
-					replace_field->Invalidate();
-				} else {
-					focused_control = field;
-					field->RefreshCursors();
-					field->Invalidate();
-				}
-				return true;
-			}
-		}
+	if (this->PressKey(FindText::keybindings, button, modifier)) {
+		return true;
 	}
 	return PGContainer::KeyboardButton(button, modifier);
 }
@@ -429,3 +402,36 @@ void FindText::Close() {
 	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
 }
 
+void FindText::ShiftTextfieldFocus(PGDirection direction) {
+	if (replace) {
+		// (shift+)tab switches between the two text fields
+		if (focused_control == field) {
+			focused_control = replace_field;
+			replace_field->RefreshCursors();
+			replace_field->Invalidate();
+		} else {
+			focused_control = field;
+			field->RefreshCursors();
+			field->Invalidate();
+		}
+	}
+}
+
+void FindText::InitializeKeybindings() {
+	std::map<std::string, PGKeyFunction>& noargs = FindText::keybindings_noargs;
+	noargs["find_next"] = [](Control* c) {
+		((FindText*)c)->Find(PGDirectionRight);
+	};
+	noargs["find_prev"] = [](Control* c) {
+		((FindText*)c)->Find(PGDirectionLeft);
+	};
+	noargs["close"] = [](Control* c) {
+		((FindText*)c)->Close();
+	};
+	noargs["shift_focus_forward"] = [](Control* c) {
+		((FindText*)c)->ShiftTextfieldFocus(PGDirectionRight);
+	};
+	noargs["shift_focus_backward"] = [](Control* c) {
+		((FindText*)c)->ShiftTextfieldFocus(PGDirectionLeft);
+	};
+}

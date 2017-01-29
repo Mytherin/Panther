@@ -11,13 +11,15 @@ public:
 	~FindText();
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
-
+	
 	void Draw(PGRendererHandle renderer, PGIRect* rect);
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
 	bool HighlightMatches() { return toggle_highlight && toggle_highlight->IsToggled(); }
 	
+	void ShiftTextfieldFocus(PGDirection direction);
+
 	void SelectAllMatches();
 	bool Find(PGDirection direction, bool include_selection = false);
 	void FindAll(PGDirection direction);
@@ -27,6 +29,8 @@ public:
 	void ToggleReplace();
 
 	void Close();
+
+	PG_CONTROL_KEYBINDINGS;
 private:
 	bool replace = false;
 

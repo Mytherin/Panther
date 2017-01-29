@@ -7,7 +7,8 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(SimpleTextField);
 
 SimpleTextField::SimpleTextField(PGWindowHandle window) :
-	BasicTextField(window, new TextFile(nullptr)), valid_input(true) {
+	BasicTextField(window, new TextFile(nullptr)), valid_input(true), 
+	on_user_cancel(), on_user_confirm(), on_prev_entry(), on_next_entry() {
 	this->height = GetTextHeight(textfield_font) + 6;
 }
 
@@ -151,7 +152,7 @@ void SimpleTextField::SetText(std::string text) {
 	} else {
 		textfile->DeleteCharacter(PGDirectionLeft);
 	}
-	textfile->SetCursorLocation(0, 0);
+	textfile->SelectEverything();
 	textfile->SetXOffset(0);
 }
 
