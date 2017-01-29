@@ -1007,7 +1007,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 					}
 				}
 			}, (void*) this);
-			field->OnUserCancel([](Control* c, void* data) {
+			field->OnCancel([](Control* c, void* data) {
 				// user pressed escape, cancelling the line
 				// restore cursors and position
 				ScrollData* d = (ScrollData*)data;
@@ -1016,7 +1016,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				delete d;
 				dynamic_cast<PGContainer*>(c->parent)->RemoveControl(c);
 			}, (void*)data);
-			field->OnSuccessfulExit([](Control* c, void* data) {
+			field->OnConfirm([](Control* c, void* data) {
 				ScrollData* d = (ScrollData*)data;
 				delete d;
 				dynamic_cast<PGContainer*>(c->parent)->RemoveControl(c);

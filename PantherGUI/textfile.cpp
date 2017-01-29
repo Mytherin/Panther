@@ -40,7 +40,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 }
 
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
-	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1), is_loaded(false) {
+	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0,0) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');

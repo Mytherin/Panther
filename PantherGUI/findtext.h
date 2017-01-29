@@ -16,7 +16,7 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
-	bool HighlightMatches() { return toggle_highlight->IsToggled(); }
+	bool HighlightMatches() { return toggle_highlight && toggle_highlight->IsToggled(); }
 	
 	void SelectAllMatches();
 	bool Find(PGDirection direction, bool include_selection = false);
@@ -53,4 +53,7 @@ private:
 	SimpleTextField* replace_field = nullptr;
 	Button* replace_button = nullptr;
 	Button* replace_all_button = nullptr;
+
+	nlohmann::json* find_history = nullptr;
+	lng history_entry = 0;
 };

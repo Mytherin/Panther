@@ -20,10 +20,10 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 	field->width = this->width;
 	field->x = 0;
 	field->y = 0;
-	field->OnUserCancel([](Control* c, void* data) {
+	field->OnCancel([](Control* c, void* data) {
 		((SearchBox*)data)->Close();
 	}, (void*) this);
-	field->OnSuccessfulExit([](Control* c, void* data) {
+	field->OnConfirm([](Control* c, void* data) {
 		((SearchBox*)data)->Close(true);
 	}, (void*) this);
 	field->OnTextChanged([](Control* c, void* data) {

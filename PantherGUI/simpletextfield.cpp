@@ -136,23 +136,23 @@ bool SimpleTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	if (this->PressKey(SimpleTextField::keybindings, button, modifier)) {
 		return true;
 	}
-	switch (button) {
-	case PGButtonUp:
-	case PGButtonDown:
-	case PGButtonPageUp:
-	case PGButtonPageDown:
-		// we don't use these currently
-		// but we override them so they don't get passed to other controls
-		return true;
-	default:
-		break;
-	}
 	return BasicTextField::KeyboardButton(button, modifier);
 }
 
 std::string SimpleTextField::GetText() {
 	TextLine line = textfile->GetLine(0);
 	return std::string(line.GetLine(), line.GetLength());
+}
+
+void SimpleTextField::SetText(std::string text) {
+	textfile->SelectEverything();
+	if (text.size() > 0) {
+		textfile->PasteText(text);
+	} else {
+		textfile->DeleteCharacter(PGDirectionLeft);
+	}
+	textfile->SetCursorLocation(0, 0);
+	textfile->SetXOffset(0);
 }
 
 void SimpleTextField::SetValidInput(bool valid) {
@@ -163,14 +163,26 @@ void SimpleTextField::InitializeKeybindings() {
 	std::map<std::string, PGKeyFunction>& noargs = SimpleTextField::keybindings_noargs;
 	noargs["cancel"] = [](Control* c) {
 		SimpleTextField* t = (SimpleTextField*)c;
-		if (t->on_user_cancel) {
-			t->on_user_cancel(t, t->on_user_cancel_data);
+		if (t->on_user_cancel.function) {
+			t->on_user_cancel.function(t, t->on_user_cancel.data);
 		}
 	};
 	noargs["confirm"] = [](Control* c) {
 		SimpleTextField* t = (SimpleTextField*)c;
-		if (t->on_successful_exit) {
-			t->on_successful_exit(t, t->on_successful_exit_data);
+		if (t->on_user_confirm.function) {
+			t->on_user_confirm.function(t, t->on_user_confirm.data);
+		}
+	};
+	noargs["prev_entry"] = [](Control* c) {
+		SimpleTextField* t = (SimpleTextField*)c;
+		if (t->on_prev_entry.function) {
+			t->on_prev_entry.function(t, t->on_prev_entry.data);
+		}
+	};
+	noargs["next_entry"] = [](Control* c) {
+		SimpleTextField* t = (SimpleTextField*)c;
+		if (t->on_next_entry.function) {
+			t->on_next_entry.function(t, t->on_next_entry.data);
 		}
 	};
 }

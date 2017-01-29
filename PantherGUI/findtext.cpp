@@ -8,6 +8,8 @@
 #define HPADDING_SMALL 5
 #define VPADDING 4
 
+#define MAXIMUM_FIND_HISTORY 5
+
 static void CancelOperation(Control* c, void* data) {
 	// user pressed escape, cancelling the find operation
 	((FindText*)data)->Close();
@@ -20,7 +22,7 @@ static void ExecuteFind(Control* c, void* data) {
 }
 
 FindText::FindText(PGWindowHandle window, bool replace) :
-	PGContainer(window) {
+	PGContainer(window), find_history(nullptr), history_entry(0) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -29,8 +31,32 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	field->width = this->width - 400;
 	field->x = 150;
 	field->y = VPADDING;
-	field->OnUserCancel(CancelOperation, (void*) this);
-	field->OnSuccessfulExit(ExecuteFind, (void*) this);
+	field->OnCancel(CancelOperation, (void*) this);
+	field->OnConfirm(ExecuteFind, (void*) this);
+	field->OnPrevEntry([](Control* c, void* data) {
+		FindText* f = (FindText*)data;
+		if (f->find_history) {
+			if (f->find_history->size() > f->history_entry + 1) {
+				f->history_entry++;
+				((SimpleTextField*)c)->SetText((*f->find_history)[f->history_entry]);
+			}
+		}
+	}, this);
+	field->OnNextEntry([](Control* c, void* data) {
+		FindText* f = (FindText*)data;
+		if (f->find_history) {
+			if (f->history_entry > 0) {
+				f->history_entry--;
+				((SimpleTextField*)c)->SetText((*f->find_history)[f->history_entry]);
+			} else {
+				if ((*f->find_history)[f->history_entry].size() > 0) {
+					f->history_entry = 0;
+					f->find_history->insert(f->find_history->begin(), std::string(""));
+					((SimpleTextField*)c)->SetText((*f->find_history)[f->history_entry]);
+				}
+			}
+		}
+	}, this);
 	field->OnTextChanged([](Control* c, void* data) {
 		// if HighlightMatches is turned on, we search as soon as text is entered
 		FindText* f = (FindText*)data;
@@ -57,25 +83,37 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	}
 
 	auto workspace = PGGetWorkspace(window);
-	if (workspace->settings.count("find_text") == 0) {
+	assert(workspace);
+	if (workspace->settings.count("find_text") == 0 || !workspace->settings["find_text"].is_object()) {
 		workspace->settings["find_text"] = nlohmann::json::object();
 	}
 	nlohmann::json& find_text = workspace->settings["find_text"];
+
 	assert(find_text.is_object());
+	if (find_text.count("find_history") == 0 || !find_text["find_history"].is_array()) {
+		find_text["find_history"] = nlohmann::json::array();
+	}
+	nlohmann::json& find_history = find_text["find_history"];
+	assert(find_history.is_array());
+	this->find_history = &find_history;
+	if (find_history.size() > 0) {
+		field->SetText(find_history[0]);
+		field->Invalidate();
+	}
 
 	static char* toggle_regex_text = "toggle_regex";
 	static char* toggle_matchcase_text = "toggle_matchcase";
 	static char* toggle_wholeword_text = "toggle_wholeword";
 	static char* toggle_wrap_text = "toggle_wrap";
+	static char* toggle_highlight_text = "toggle_highlight";
 
 	bool initial_values[5];
 	initial_values[0] = find_text.get_if_exists(toggle_regex_text, false);
 	initial_values[1] = find_text.get_if_exists(toggle_matchcase_text, false);
 	initial_values[2] = find_text.get_if_exists(toggle_wholeword_text, false);
 	initial_values[3] = find_text.get_if_exists(toggle_wrap_text, true);
-	initial_values[4] = find_text.get_if_exists("toggle_highlight", true);
+	initial_values[4] = find_text.get_if_exists(toggle_highlight_text, true);
 	
-	// FIXME: remember toggled buttons from settings and save toggles in settings after being made
 	ToggleButton* toggles[5];
 	for (int i = 0; i < 5; i++) {
 		toggles[i] = new ToggleButton(window, this, initial_values[i]);
@@ -104,8 +142,8 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	toggle_wrap->SetText(std::string("W"), font);
 	toggle_highlight->SetText(std::string("H"), font);
 
-	toggle_highlight->OnToggle([](Button* b, bool toggled, void* unused) {
-		PGGetWorkspace(b->window)->settings["find_text"]["toggle_highlight"] = toggled;
+	toggle_highlight->OnToggle([](Button* b, bool toggled, void* setting_name) {
+		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
 		FindText* f = dynamic_cast<FindText*>(b->parent);
 		if (toggled) {
 			f->FindAll(PGDirectionRight);
@@ -115,7 +153,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 			tf.ClearMatches();
 			tf.SetSelectedMatch(-1);
 		}
-	});
+	}, toggle_highlight_text);
 	auto update_highlight = [](Button* b, bool toggled, void* setting_name) {
 		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
 		FindText* f = dynamic_cast<FindText*>(b->parent);
@@ -172,8 +210,8 @@ void FindText::ToggleReplace() {
 		replace_field->width = this->width - 400;
 		replace_field->x = 150;
 		replace_field->y = base_y;
-		replace_field->OnUserCancel(CancelOperation, (void*) this);
-		replace_field->OnSuccessfulExit(ExecuteFind, (void*) this);
+		replace_field->OnCancel(CancelOperation, (void*) this);
+		replace_field->OnConfirm(ExecuteFind, (void*) this);
 		this->AddControl(replace_field);
 		Button* buttons[2];
 		for (int i = 0; i < 2; i++) {
@@ -259,10 +297,25 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	char* error_message = nullptr;
 	SetTextfile(&tf);
 
-	bool found_result = tf.FindMatch(field->GetText(), direction,
+	std::string search_text = field->GetText();
+	bool found_result = tf.FindMatch(search_text, direction,
 		&error_message,
 		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled(), 
 		include_selection);
+
+	if (find_history->size() == 0 || (*find_history)[0] != search_text) {
+		std::string first_entry = (*find_history)[0];
+		if (first_entry.size() == 0) {
+			(*find_history)[0] = search_text;
+		} else {
+			(*find_history).insert(find_history->begin(), search_text);
+			if ((*find_history).size() > MAXIMUM_FIND_HISTORY) {
+				find_history->erase(find_history->begin() + find_history->size() - 1);
+			}
+		}
+		history_entry = 0;
+	}
+
 	if (!error_message) {
 		// successful search
 		this->field->SetValidInput(true);
@@ -375,3 +428,4 @@ void FindText::Close() {
 	tf.ClearMatches();
 	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
 }
+

@@ -38,7 +38,9 @@
 	],
 	"simpletextfield": [
 		{ "key": "enter", "command": "confirm" },
-		{ "key": "escape", "command": "cancel" }
+		{ "key": "escape", "command": "cancel" },
+		{ "key": "up", "command": "prev_entry"},
+		{ "key": "down", "command": "next_entry"}
 	],
 	"textfield": [
 		{ "key": "cmd+s", "command": "save" },

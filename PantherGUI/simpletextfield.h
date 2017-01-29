@@ -26,17 +26,27 @@ public:
 
 	void SetValidInput(bool valid);
 
-	void OnUserCancel(PGControlDataCallback callback, void* data) { on_user_cancel = callback; on_user_cancel_data = data; }
-	void OnSuccessfulExit(PGControlDataCallback callback, void* data) { on_successful_exit = callback; on_successful_exit_data = data; }
+	void OnCancel(PGControlDataCallback callback, void* data) { on_user_cancel.function = callback; on_user_cancel.data = data; }
+	void OnConfirm(PGControlDataCallback callback, void* data) { on_user_confirm.function = callback; on_user_confirm.data = data; }
+	void OnPrevEntry(PGControlDataCallback callback, void* data) { on_prev_entry.function = callback; on_prev_entry.data = data; }
+	void OnNextEntry(PGControlDataCallback callback, void* data) { on_next_entry.function = callback; on_next_entry.data = data; }
 
 	std::string GetText();
+	void SetText(std::string text);
 
 	PG_CONTROL_KEYBINDINGS;
 protected:
 	bool valid_input = true;
 
-	PGControlDataCallback on_user_cancel = nullptr;
-	void* on_user_cancel_data = nullptr;
-	PGControlDataCallback on_successful_exit = nullptr;
-	void* on_successful_exit_data = nullptr;
+	struct PGFunctionData {
+		PGControlDataCallback function = nullptr;
+		void* data = nullptr;
+
+		PGFunctionData() : function(nullptr), data(nullptr) { }
+	};
+
+	PGFunctionData on_user_cancel;
+	PGFunctionData on_user_confirm;
+	PGFunctionData on_prev_entry;
+	PGFunctionData on_next_entry;
 };
