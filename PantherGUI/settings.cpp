@@ -96,6 +96,21 @@ bool PGSettingsManager::GetSetting(std::string name, int& value, PGSettings* ext
 	return true;
 }
 
+bool PGSettingsManager::GetSetting(std::string name, lng& value, PGSettings* extra_setting) {
+	std::string val;
+	if (!GetSetting(name, val, extra_setting)) {
+		return false;
+	}
+	errno = 0;
+	lng intval = std::strtol(val.c_str(), nullptr, 10);
+	if (errno != 0) {
+		errno = 0;
+		return false;
+	}
+	value = intval;
+	return true;
+}
+
 bool PGSettingsManager::GetSetting(std::string name, double& value, PGSettings* extra_setting) {
 	assert(0);
 	return false;

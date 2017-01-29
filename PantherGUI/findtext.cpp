@@ -387,7 +387,6 @@ void FindText::ReplaceAll() {
 	}
 }
 
-
 bool FindText::KeyboardButton(PGButton button, PGModifier modifier) {
 	if (this->PressKey(FindText::keybindings, button, modifier)) {
 		return true;

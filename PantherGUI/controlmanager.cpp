@@ -2,8 +2,9 @@
 #include "controlmanager.h"
 #include "findtext.h"
 #include "statusbar.h"
-#include "textfield.h"
 #include "filemanager.h"
+#include "tabcontrol.h"
+#include "textfield.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 

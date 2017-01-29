@@ -1082,9 +1082,9 @@ void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
 		nlohmann::json w = j["window"];
 		if (w.count("dimensions") > 0) {
 			nlohmann::json dim = w["dimensions"];
-			if (dim.count("width") > 0 && dim["width"].is_number() && 
-				dim.count("height") > 0 && dim["height"].is_number() && 
-				dim.count("x") > 0 && dim["x"].is_number() && 
+			if (dim.count("width") > 0 && dim["width"].is_number() &&
+				dim.count("height") > 0 && dim["height"].is_number() &&
+				dim.count("x") > 0 && dim["x"].is_number() &&
 				dim.count("y") > 0 && dim["y"].is_number()) {
 				int x = dim["x"];
 				int y = dim["y"];
@@ -1107,4 +1107,42 @@ void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j) {
 	j["window"]["dimensions"]["x"] = window_position.x;
 	j["window"]["dimensions"]["y"] = window_position.y;
 	window->manager->WriteWorkspace(j);
+}
+
+static lng filetime_to_lng(FILETIME filetime) {
+	ULARGE_INTEGER i;
+	i.LowPart = filetime.dwLowDateTime;
+	i.HighPart = filetime.dwHighDateTime;
+	return (lng)(i.QuadPart);
+}
+
+PGFileInformation PGGetFileFlags(std::string path) {
+	PGFileInformation info;
+	std::string ucs2_path = UTF8toUCS2(path);
+	HANDLE handle = CreateFile2((LPCWSTR) ucs2_path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, NULL);
+	if (handle == INVALID_HANDLE_VALUE) {
+		DWORD error = GetLastError();
+		if (error == ERROR_FILE_NOT_FOUND) {
+			info.flags = PGFileFlagsFileNotFound;
+		} else {
+			info.flags = PGFileFlagsErrorOpeningFile;
+		}
+		return info;
+	} else {
+		info.flags = PGFileFlagsEmpty;
+	}
+	FILETIME creation_time;
+	FILETIME last_write_time;
+	GetFileTime(handle, &creation_time, NULL, &last_write_time);
+
+	info.creation_time = filetime_to_lng(creation_time);
+	info.modification_time = filetime_to_lng(last_write_time);
+
+
+	ULARGE_INTEGER i;
+	i.LowPart = GetFileSize(handle, &i.HighPart);
+	info.file_size = (lng)(i.QuadPart);
+
+	CloseHandle(handle);
+	return info;
 }

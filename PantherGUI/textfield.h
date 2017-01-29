@@ -6,6 +6,7 @@
 #include "textfile.h"
 #include "time.h"
 
+#include "notification.h"
 #include "scrollbar.h"
 
 #include <map>
@@ -17,7 +18,6 @@ struct TextSelection {
 	int character_end;
 };
 
-#define FLICKER_CARET_INTERVAL 15
 #define MAX_MINIMAP_LINE_CACHE 10000
 
 struct RenderedLine {
@@ -49,6 +49,8 @@ public:
 	void InvalidateAfterLine(lng line);
 	void InvalidateBetweenLines(lng start, lng end);
 	void InvalidateMinimap();
+
+	void SelectionChanged();
 
 	bool IsDragging();
 
@@ -111,4 +113,11 @@ private:
 	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
 	std::map<lng, PGBitmapHandle> minimap_line_cache;
+
+	void CreateNotification(PGNotificationType type, std::string text);
+	void ShowNotification();
+
+	void ClearNotification();
+
+	PGNotification* notification = nullptr;
 };

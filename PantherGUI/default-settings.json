@@ -6,5 +6,6 @@
 	"margin": 4,
 	"always_show_minimap_viewport": false,
 	"word_wrap": "auto",
-	"hot_exit": true
+	"hot_exit": true,
+	"automatic_reload_threshold": 1000
 }

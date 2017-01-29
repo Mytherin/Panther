@@ -5,8 +5,6 @@
 // the same time using keys (e.g. Ctrl+Tab to move tabs while typing in a textfield)
 
 #include "control.h"
-#include "textfield.h"
-#include "tabcontrol.h"
 #include "windowfunctions.h"
 
 #define TEXT_TAB_HEIGHT 30

@@ -3,6 +3,8 @@
 #include "control.h"
 #include "textfile.h"
 
+#define FLICKER_CARET_INTERVAL 15
+
 // The basic textfield class is the base class for all textfields
 // it implements some base functionality of textfields, including
 // caret flicker, mouse clicking functionality and font handling.

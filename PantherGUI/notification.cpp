@@ -41,15 +41,15 @@ void PGNotification::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	PGScalar current_x = x;
 	if (text.size() > 0) {
 		PGScalar size = MeasureTextWidth(font, text.c_str());
-		RenderRectangle(renderer, PGRect(x + 5, y + 5, size + 10, GetTextHeight(font) + 4),
+		RenderRectangle(renderer, PGRect(x + 5, y + 5, size + 10, GetTextHeight(font)),
 			color, PGDrawStyleFill);
-		RenderText(renderer, font, text.c_str(), text.size(), x + 10, y + 7);
+		RenderText(renderer, font, text.c_str(), text.size(), x + 10, y + 3, PGTextAlignVerticalCenter);
 		current_x += size + 20;
 	}
 
 	// render the text of the notification
 	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height));
-	RenderText(renderer, font, this->text.c_str(), this->text.size(), current_x, y + 3);
+	RenderText(renderer, font, this->text.c_str(), this->text.size(), current_x, y + 3, PGTextAlignVerticalCenter);
 	ClearRenderBounds(renderer);
 
 	// render the buttons (controls)
@@ -61,11 +61,12 @@ void PGNotification::AddButton(PGControlDataCallback callback, Control* c, void*
 	b->callback = callback;
 	b->data = data;
 	b->control = c;
-	Button* button = new Button(window, this);;
+	Button* button = new Button(window, this);
+	button->SetText(button_text, font);
 	b->button = button;
 	this->buttons.push_back(b);
 
-	PGPoint point = PGPoint(this->width, 0);
+	PGPoint point = PGPoint(this->width, 2);
 	for (auto it = buttons.begin(); it != buttons.end(); it++) {
 		Button* button = (*it)->button;
 		std::string text = button->GetText();
@@ -73,13 +74,12 @@ void PGNotification::AddButton(PGControlDataCallback callback, Control* c, void*
 	}
 
 	button->SetPosition(point);
-	button->SetSize(PGSize(MeasureTextWidth(font, button_text) + 10, this->height));
+	button->SetSize(PGSize(MeasureTextWidth(font, button_text) + 10, this->height - 4));
 	button->background_color = PGStyleManager::GetColor(PGColorNotificationButton);
 	button->background_stroke_color = PGColor(0, 0, 0);
 	button->OnPressed([](Button* b, void* data) {
 		ButtonData* bd = ((ButtonData*)data);
 		bd->callback(bd->control, bd->data);
 	}, b);
-	button->SetText(button_text, font);
 	this->AddControl(button);
 }

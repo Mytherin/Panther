@@ -11,6 +11,7 @@
 #include "container.h"
 #include "simpletextfield.h"
 #include "statusbar.h"
+#include "tabcontrol.h"
 
 #include "notification.h"
 #include "searchbox.h"
@@ -30,7 +31,7 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 }
 
 TextField::TextField(PGWindowHandle window, TextFile* file) :
-	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), display_linenumbers(true) {
+	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), display_linenumbers(true), notification(nullptr) {
 	textfile->SetTextField(this);
 
 	ControlManager* manager = GetControlManager(this);
@@ -1069,10 +1070,69 @@ void TextField::InvalidateMinimap() {
 }
 
 void TextField::SetTextFile(TextFile* textfile) {
+	if (this->textfile != textfile) {
+		this->textfile->last_modified_deletion = false;
+		this->textfile->last_modified_notification = this->textfile->last_modified_time;
+		ClearNotification();
+	}
 	this->textfile = textfile;
 	textfile->SetTextField(this);
 	this->SelectionChanged();
 	this->TextChanged();
+}
+
+void TextField::SelectionChanged() {
+	if (textfile->path.size() > 0) {
+		if (!notification) {
+			auto stats = PGGetFileFlags(textfile->path);
+			if (stats.flags == PGFileFlagsFileNotFound) {
+				// the current file has been deleted
+				// notify the user if they have not been notified before
+				if (!textfile->last_modified_deletion) {
+					textfile->last_modified_deletion = true;
+					CreateNotification(PGNotificationTypeWarning, std::string("File \"") + textfile->path + std::string("\" appears to have been moved or deleted."));
+					assert(notification);
+					notification->AddButton([](Control* control, void* data) {
+						((TextField*)control)->ClearNotification();
+					}, this, notification, "OK");
+					ShowNotification();
+				}
+			} else if (stats.flags == PGFileFlagsEmpty) {
+				// the current file exists
+				textfile->last_modified_deletion = false;
+
+				if (textfile->last_modified_notification < 0) {
+					textfile->last_modified_notification = stats.modification_time;
+				} else if (textfile->last_modified_notification < stats.modification_time) {
+					// however, it has been modified by an external program since we last touched it
+					// notify the user and prompt to reload the file
+					lng threshold = 0;
+					assert(stats.file_size >= 0);
+					PGSettingsManager::GetSetting("automatic_reload_threshold", threshold);
+					if (stats.file_size < threshold) {
+						// file is below automatic threshold: reload without prompting the user
+						textfile->last_modified_time = stats.modification_time;
+						textfile->last_modified_notification = stats.modification_time;
+						textfile->Reload();
+					} else {
+						// file is too large for automatic reload: prompt the user
+						textfile->last_modified_notification = stats.modification_time;
+						CreateNotification(PGNotificationTypeWarning, std::string("File \"") + textfile->path + std::string("\" has been modified."));
+						assert(notification);
+						notification->AddButton([](Control* control, void* data) {
+							((TextField*)control)->ClearNotification();
+						}, this, notification, "Cancel");
+						notification->AddButton([](Control* control, void* data) {
+							((TextFile*)data)->Reload();
+							((TextField*)control)->ClearNotification();
+						}, this, textfile, "Reload");
+						ShowNotification();
+					}
+				}
+			}
+		}
+	}
+	BasicTextField::SelectionChanged();
 }
 
 void TextField::OnResize(PGSize old_size, PGSize new_size) {
@@ -1200,4 +1260,25 @@ void TextField::InitializeKeybindings() {
 			tf->Invalidate();
 		}
 	};
+}
+
+void TextField::CreateNotification(PGNotificationType type, std::string text) {
+	if (this->notification) {
+		this->ClearNotification();
+	}
+	this->notification = new PGNotification(window, type, text.c_str());
+	this->notification->SetSize(PGSize(this->width * 0.6f, GetTextHeight(this->notification->GetFont()) + 10));
+	this->notification->SetPosition(PGPoint(this->x + this->width * 0.2f, this->y));
+}
+
+void TextField::ShowNotification() {
+	assert(notification);
+	dynamic_cast<PGContainer*>(this->parent)->AddControl(notification);
+}
+
+void TextField::ClearNotification() {
+	if (this->notification) {
+		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this->notification);
+		this->notification = nullptr;
+	}
 }

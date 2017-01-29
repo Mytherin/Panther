@@ -25,7 +25,9 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 }
 
 TextFile::TextFile(BasicTextField* textfield) :
-	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1) {
+	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr), 
+	bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
+	last_modified_deletion(false) {
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = CreateMutex();
@@ -40,7 +42,9 @@ TextFile::TextFile(BasicTextField* textfield) :
 }
 
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
-	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0,0) {
+	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), 
+	bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0, 0), last_modified_time(-1), 
+	last_modified_notification(-1), last_modified_deletion(false) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
@@ -67,6 +71,22 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 }
 
 
+void TextFile::Reload() {
+	if (!is_loaded) return;
+
+	lng size = 0;
+	char* base = (char*)panther::ReadFile(path, size);
+	if (!base || size < 0) {
+		// FIXME: proper error message
+		return;
+	}
+	std::string text = std::string(base);
+	panther::DestroyFileContents(base);
+	this->SelectEverything();
+	this->PasteText(text);
+	this->SetUnsavedChanges(false);
+}
+
 TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load) {
 	lng size = 0;
 	char* base = (char*)panther::ReadFile(filename, size);
@@ -74,7 +94,13 @@ TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename
 		// FIXME: proper error message
 		return nullptr;
 	}
-	return new TextFile(textfield, filename, base, size, immediate_load);
+	auto stats = PGGetFileFlags(filename);
+	TextFile* file = new TextFile(textfield, filename, base, size, immediate_load);
+	if (stats.flags == PGFileFlagsEmpty) {
+		file->last_modified_time = stats.modification_time;
+		file->last_modified_notification = stats.modification_time;
+	}
+	return file;
 }
 
 TextFile::~TextFile() {
@@ -1680,6 +1706,12 @@ void TextFile::SaveChanges() {
 	}
 	this->Unlock(PGReadLock);
 	panther::CloseFile(handle);
+	auto stats = PGGetFileFlags(path);
+	if (stats.flags == PGFileFlagsEmpty) {
+		last_modified_time = stats.modification_time;
+		last_modified_notification = stats.modification_time;
+	}
+	if (textfield) textfield->SelectionChanged();
 }
 
 

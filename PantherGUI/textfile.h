@@ -122,6 +122,8 @@ public:
 	std::string CopyText();
 	void PasteText(std::string& text);
 
+	void Reload();
+
 	void ChangeLineEnding(PGLineEnding lineending);
 	void ChangeFileEncoding(PGFileEncoding encoding);
 	void ChangeIndentation(PGLineIndentation indentation);
@@ -250,6 +252,10 @@ private:
 
 	bool unsaved_changes = false;
 	bool pending_delete = false;
+
+	lng last_modified_time = -1;
+	lng last_modified_notification = -1;
+	bool last_modified_deletion = false;
 
 	std::string path;
 	std::string name;

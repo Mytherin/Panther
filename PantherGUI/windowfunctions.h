@@ -412,3 +412,19 @@ struct PGVerticalScroll {
 	friend bool operator==(const PGVerticalScroll& lhs, const PGVerticalScroll& rhs){ return lhs.linenumber == rhs.linenumber && lhs.inner_line == rhs.inner_line; }
 	friend bool operator!=(const PGVerticalScroll& lhs, const PGVerticalScroll& rhs){ return !(lhs == rhs); }
 };
+
+
+enum PGFileFlags {
+	PGFileFlagsEmpty,
+	PGFileFlagsFileNotFound,
+	PGFileFlagsErrorOpeningFile
+};
+
+struct PGFileInformation {
+	PGFileFlags flags;
+	lng creation_time;
+	lng modification_time;
+	lng file_size;
+};
+
+PGFileInformation PGGetFileFlags(std::string path);

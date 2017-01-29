@@ -34,6 +34,7 @@ public:
 	
 	static bool GetSetting(std::string name, bool& value, PGSettings* extra_setting = nullptr);
 	static bool GetSetting(std::string name, int& value, PGSettings* extra_setting = nullptr);
+	static bool GetSetting(std::string name, lng& value, PGSettings* extra_setting = nullptr);
 	static bool GetSetting(std::string name, double& value, PGSettings* extra_setting = nullptr);
 	static bool GetSetting(std::string name, std::string& value, PGSettings* extra_setting = nullptr) { return GetInstance()->_GetSetting(name, value, extra_setting); }
 private:
