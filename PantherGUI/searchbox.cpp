@@ -71,7 +71,7 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::string text, lng start_bold, lng bold_size, PGScalar x, PGScalar y) {
 	PGScalar current_position = 0;
 	lng current_character = 0;
-	assert(start_bold < (lng) text.size());
+	assert(start_bold == 0 || start_bold < (lng) text.size());
 	if (start_bold > 0) {
 		SetTextStyle(font, PGTextStyleNormal);
 		RenderText(renderer, font, text.c_str(), start_bold, x + current_position, y);
