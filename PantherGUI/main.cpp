@@ -692,6 +692,7 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 }
 
 void SetClipboardText(PGWindowHandle window, std::string text) {
+	if (text.size() == 0) return;
 	if (OpenClipboard(window->hwnd)) {
 		char* result = nullptr;
 		size_t length = PGConvertText(text, &result, PGEncodingUTF8, PGEncodingUTF16Platform);
@@ -717,9 +718,12 @@ std::string GetClipboardText(PGWindowHandle window) {
 
 		// get the text from the clipboard
 		HANDLE data = GetClipboardData(CF_UNICODETEXT);
-		std::string text = std::string(((char*)data), UCS2Length((char*)data));
-
+		std::string text = "";
+		if (data) {
+			text = std::string(((char*)data), UCS2Length((char*)data));
+		}
 		CloseClipboard();
+		if (text.size() == 0) return nullptr;
 		// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
 		size_t length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
 		assert(length > 0);
