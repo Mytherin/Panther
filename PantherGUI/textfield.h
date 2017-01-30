@@ -75,6 +75,9 @@ public:
 protected:
 	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
 	void GetLineFromPosition(PGScalar y, lng& line);
+
+	void GetPositionFromLineCharacter(lng line, lng character, PGScalar& x, PGScalar& y);
+	void GetPositionFromLine(lng line, PGScalar& y);
 private:
 	Scrollbar* scrollbar;
 	Scrollbar* horizontal_scrollbar;

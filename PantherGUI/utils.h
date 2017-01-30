@@ -32,6 +32,8 @@ namespace panther {
 	std::string tolower(std::string str);
 	std::string toupper(std::string str);
 
+	void replace(std::string& source, std::string from, std::string to);
+
 	bool epsilon_equals(double a, double b);
 }
 

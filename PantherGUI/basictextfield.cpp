@@ -161,6 +161,26 @@ void BasicTextField::GetLineFromPosition(PGScalar y, lng& line) {
 	line = lineoffset_y + line_offset;
 }
 
+void BasicTextField::GetPositionFromLineCharacter(lng line, lng pos, PGScalar& x, PGScalar& y) {
+	GetPositionFromLine(line, y);
+	_GetPositionFromCharacter(pos, textfile->GetLine(line), x);
+}
+
+void BasicTextField::GetPositionFromLine(lng line, PGScalar& y) {
+	lng lineoffset_y = textfile->GetLineOffset().linenumber;
+	y =  (line - lineoffset_y) * GetTextHeight(textfield_font);
+}
+
+void BasicTextField::_GetPositionFromCharacter(lng pos, TextLine line, PGScalar& x) {
+	if (!line.IsValid()) {
+		x = 0;
+		return;
+	}
+	x = MeasureTextWidth(textfield_font, line.GetLine(), pos);
+	x += text_offset;
+	x -= textfile->GetXOffset();
+}
+
 void BasicTextField::RefreshCursors() {
 	display_carets_count = 0;
 	display_carets = true;
@@ -218,6 +238,34 @@ void BasicTextField::OnTextChanged(PGControlDataCallback callback, void* data) {
 	this->text_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
 }
 
+void BasicTextField::PasteHistory() {
+	std::vector<std::string> history = GetClipboardTextHistory();
+	PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
+	for (auto it = history.begin(); it != history.end(); it ++) {
+		PGPopupInformation info;
+		info.text = *it;
+		if (info.text.size() > 20) {
+			info.text.substr(0, 20);
+		}
+		panther::replace(info.text, "\n", "\\n");
+		info.data = *it;
+		PGPopupMenuInsertEntry(menu, info, [](Control* c, PGPopupInformation* info) {
+			dynamic_cast<BasicTextField*>(c)->textfile->PasteText(info->data);
+		});
+	}
+	Cursor* c = textfile->GetActiveCursor();
+	if (c) {
+		PGScalar x, y;
+		auto position = c->BeginPosition();
+		GetPositionFromLineCharacter(position.line, position.position + 1, x, y);
+		PGDisplayPopupMenu(menu, ConvertWindowToScreen(window, 
+			PGPoint(this->X() + x, this->Y() + y + GetTextHeight(textfield_font))), 
+			PGTextAlignLeft | PGTextAlignTop);
+	} else {
+		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
+	}
+}
+
 void BasicTextField::InitializeKeybindings() {
 	std::map<std::string, PGKeyFunction>& noargs = BasicTextField::keybindings_noargs;
 	noargs["undo"] = [](Control* c) {
@@ -241,6 +289,10 @@ void BasicTextField::InitializeKeybindings() {
 		BasicTextField* t = (BasicTextField*)c;
 		std::string text = GetClipboardText(t->window);
 		t->textfile->PasteText(text);
+	};
+	noargs["paste_from_history"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->PasteHistory();
 	};
 	noargs["cut"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;

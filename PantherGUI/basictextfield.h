@@ -40,7 +40,7 @@ public:
 	virtual bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 
 	virtual bool ControlTakesFocus() { return true; }
-
+	
 	virtual PGCursorType GetCursor(PGPoint mouse);
 
 	TextFile& GetTextFile() { return *textfile; }
@@ -60,6 +60,8 @@ public:
 	virtual void SelectionChanged();
 	virtual void TextChanged();
 	virtual void TextChanged(std::vector<lng> lines);
+
+	void PasteHistory();
 
 	void OnSelectionChanged(PGControlDataCallback callback, void* data);
 	void OnTextChanged(PGControlDataCallback callback, void* data);
@@ -83,6 +85,10 @@ protected:
 	virtual void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
 	virtual void GetLineFromPosition(PGScalar y, lng& line);
 	virtual void _GetCharacterFromPosition(PGScalar x, TextLine line, lng& character);
+
+	virtual void GetPositionFromLineCharacter(lng line, lng character, PGScalar& x, PGScalar& y);
+	virtual void GetPositionFromLine(lng line, PGScalar& y);
+	virtual void _GetPositionFromCharacter(lng pos, TextLine line, PGScalar& x);
 
 	void PerformMouseClick(PGPoint mouse);
 

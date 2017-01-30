@@ -338,8 +338,11 @@ void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j);
 
 void* GetWindowManager(PGWindowHandle window);
 
+void SetClipboardTextOS(PGWindowHandle window, std::string);
 void SetClipboardText(PGWindowHandle window, std::string);
 std::string GetClipboardText(PGWindowHandle window);
+std::vector<std::string> GetClipboardTextHistory();
+
 
 typedef byte PGPopupMenuFlags;
 
@@ -356,15 +359,18 @@ typedef void(*PGControlDataCallback)(Control* control, void* data);
 struct PGPopupInformation {
 	std::string text;
 	std::string hotkey;
+	std::string data;
 
 	PGPopupInformation() { }
-	PGPopupInformation(std::string text, std::string hotkey) : text(text), hotkey(hotkey) { }
+	PGPopupInformation(std::string text, std::string hotkey) : text(text), hotkey(hotkey), data() { }
 };
+
+typedef void(*PGPopupCallback)(Control* control, PGPopupInformation* popup);
 
 PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control);
 void PGPopupMenuInsertSubmenu(PGPopupMenuHandle, PGPopupMenuHandle submenu, std::string submenu_name);
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
-void PGPopupMenuInsertEntry(PGPopupMenuHandle, PGPopupInformation info, PGControlCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
+void PGPopupMenuInsertEntry(PGPopupMenuHandle, PGPopupInformation info, PGPopupCallback callback, PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
 void PGPopupMenuInsertSeparator(PGPopupMenuHandle);
 // Displays the menu next to the mouse
 void PGDisplayPopupMenu(PGPopupMenuHandle, PGTextAlign align);

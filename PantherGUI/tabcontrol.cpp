@@ -536,22 +536,22 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
 			this->currently_selected_tab = selected_tab;
-			PGPopupMenuInsertEntry(menu, "Close", [](Control* control) {
+			PGPopupMenuInsertEntry(menu, "Close", [](Control* control, PGPopupInformation* info) {
 				TabControl* tb = dynamic_cast<TabControl*>(control);
 				tb->CloseTab(tb->currently_selected_tab);
 				tb->Invalidate();
 			});
-			PGPopupMenuInsertEntry(menu, "Close Other Tabs", [](Control* control) {
+			PGPopupMenuInsertEntry(menu, "Close Other Tabs", [](Control* control, PGPopupInformation* info) {
 			}, PGPopupMenuGrayed);
-			PGPopupMenuInsertEntry(menu, "Close Tabs to the Right", [](Control* control) {
+			PGPopupMenuInsertEntry(menu, "Close Tabs to the Right", [](Control* control, PGPopupInformation* info) {
 			}, PGPopupMenuGrayed);
 			PGPopupMenuInsertSeparator(menu);
 		}
-		PGPopupMenuInsertEntry(menu, "New File", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "New File", [](Control* control, PGPopupInformation* info) {
 			dynamic_cast<TabControl*>(control)->NewTab();
 			control->Invalidate();
 		});
-		PGPopupMenuInsertEntry(menu, "Open File", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Open File", [](Control* control, PGPopupInformation* info) {
 		}, PGPopupMenuGrayed);
 		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
 	}

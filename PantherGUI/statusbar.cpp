@@ -39,10 +39,10 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		PGPopupMenuHandle reopen_menu = PGCreatePopupMenu(button->window, c);
 		PGPopupMenuHandle savewith_menu = PGCreatePopupMenu(button->window, c);
 		{
-			PGPopupMenuInsertEntry(reopen_menu, "UTF-8", [](Control* control) {
+			PGPopupMenuInsertEntry(reopen_menu, "UTF-8", [](Control* control, PGPopupInformation* info) {
 				// FIXME: reopen with encoding
 			}, PGPopupMenuGrayed);
-			PGPopupMenuInsertEntry(savewith_menu, "UTF-8", [](Control* control) {
+			PGPopupMenuInsertEntry(savewith_menu, "UTF-8", [](Control* control, PGPopupInformation* info) {
 				// FIXME: save with encoding and change active encoding
 			}, PGPopupMenuGrayed);
 		}
@@ -61,7 +61,7 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		auto languages = PGLanguageManager::GetLanguages();
 		auto active_language = file.GetLanguage();
 		for (auto it = languages.begin(); it != languages.end(); it++) {
-			PGPopupMenuInsertEntry(menu, (*it)->GetName().c_str(), [](Control* control) {
+			PGPopupMenuInsertEntry(menu, (*it)->GetName().c_str(), [](Control* control, PGPopupInformation* info) {
 				// FIXME: switch highlighter language
 			}, active_language == *it ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		}
@@ -74,15 +74,15 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		Control* c = button->parent;
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
-		PGPopupMenuInsertEntry(menu, "Windows (\\r\\n)", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Windows (\\r\\n)", [](Control* control, PGPopupInformation* info) {
 			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
 			file.ChangeLineEnding(PGLineEndingWindows);
 		}, file.GetLineEnding() == PGLineEndingWindows ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
-		PGPopupMenuInsertEntry(menu, "Unix (\\n)", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Unix (\\n)", [](Control* control, PGPopupInformation* info) {
 			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
 			file.ChangeLineEnding(PGLineEndingUnix);
 		}, file.GetLineEnding() == PGLineEndingUnix ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
-		PGPopupMenuInsertEntry(menu, "Mac OS 9 (\\r)", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Mac OS 9 (\\r)", [](Control* control, PGPopupInformation* info) {
 			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
 			file.ChangeLineEnding(PGLineEndingMacOS);
 		}, file.GetLineEnding() == PGLineEndingMacOS ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
@@ -96,21 +96,21 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
 
-		PGPopupMenuInsertEntry(menu, "Indent Using Spaces", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Indent Using Spaces", [](Control* control, PGPopupInformation* info) {
 			// FIXME: change indentation of file and convert
 		}, file.GetLineIndentation() == PGIndentionSpaces ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		PGPopupMenuInsertSeparator(menu);
 		for (int i = 1; i <= 8; i++) {
 			std::string header = "Tab Width: " + std::to_string(i);
-			PGPopupMenuInsertEntry(menu, header, [](Control* control) {
+			PGPopupMenuInsertEntry(menu, header, [](Control* control, PGPopupInformation* info) {
 				// FIXME: change tab width
 			});
 		}
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control, PGPopupInformation* info) {
 			// FIXME: change indentation of file
 		});
-		PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control, PGPopupInformation* info) {
 			// FIXME: change indentation of file
 		});
 		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,

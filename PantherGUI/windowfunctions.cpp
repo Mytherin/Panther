@@ -119,3 +119,20 @@ PGPoint GetMousePosition(PGWindowHandle window, Control* c) {
 void DropFile(PGWindowHandle handle, std::string filename) {
 	((ControlManager*)GetWindowManager(handle))->DropFile(filename);
 }
+
+#define CLIPBOARD_HISTORY_MAX 5
+static std::vector<std::string> clipboard_history;
+
+void SetClipboardText(PGWindowHandle window, std::string text) {
+	if (text.size() == 0) return;
+	SetClipboardTextOS(window, text);
+	if (clipboard_history.size() > CLIPBOARD_HISTORY_MAX) {
+		clipboard_history.erase(clipboard_history.begin());
+	}
+	clipboard_history.push_back(text);
+}
+
+std::vector<std::string> GetClipboardTextHistory() {
+	return clipboard_history;
+}
+

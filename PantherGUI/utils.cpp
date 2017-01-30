@@ -43,8 +43,8 @@ namespace panther {
 	}
 
 	char* strdup(const char* source) {
-		char* result = (char*) malloc(strlen(source));
-		strcpy(result, (char*) source);
+		char* result = (char*)malloc(strlen(source));
+		strcpy(result, (char*)source);
 		return result;
 	}
 
@@ -55,6 +55,16 @@ namespace panther {
 	std::string toupper(std::string str) {
 		std::transform(str.begin(), str.end(), str.begin(), ::toupper);
 		return str;
+	}
+
+	void replace(std::string& str, std::string from, std::string to) {
+		if (from.empty())
+			return;
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length();
+		}
 	}
 
 	bool epsilon_equals(double a, double b) {

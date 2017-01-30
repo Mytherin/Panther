@@ -96,16 +96,16 @@ void SimpleTextField::MouseUp(int x, int y, PGMouseButton button, PGModifier mod
 	} else if (button & PGRightMouseButton) {
 		if (!(mouse.x <= this->width && mouse.y <= this->height)) return;
 		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation("Copy", "Ctrl+C"), [](Control* control) {
+		PGPopupMenuInsertEntry(menu, PGPopupInformation("Copy", "Ctrl+C"), [](Control* control, PGPopupInformation* info) {
 			SetClipboardText(control->window, dynamic_cast<SimpleTextField*>(control)->textfile->CopyText());
 		});
 		PGPopupMenuInsertEntry(menu, "Cut", nullptr, PGPopupMenuGrayed);
-		PGPopupMenuInsertEntry(menu, "Paste", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Paste", [](Control* control, PGPopupInformation* info) {
 			std::string clipboard_text = GetClipboardText(control->window);
 			dynamic_cast<SimpleTextField*>(control)->textfile->PasteText(clipboard_text);
 		});
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, "Select All", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Select All", [](Control* control, PGPopupInformation* info) {
 			dynamic_cast<SimpleTextField*>(control)->textfile->SelectEverything();
 			control->Invalidate();
 		});

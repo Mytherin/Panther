@@ -60,12 +60,19 @@ struct PGTimer {
 	PGTimerParameter *parameter;
 };
 
+#define BASE_INDEX 1000
 struct PGPopupMenu {
 	PGWindowHandle window;
 	HMENU menu;
-	int index = 1000;
+	int index = BASE_INDEX;
 	std::vector<PGPopupInformation*> data;
-	std::map<int, PGControlCallback> callbacks;
+	std::map<int, PGPopupCallback> callbacks;
 	Control* control;
 	PGFontHandle font;
+
+	~PGPopupMenu() {
+		for (auto it = data.begin(); it != data.end(); it++) {
+			delete *it;
+		}
+	}
 };

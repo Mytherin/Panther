@@ -510,14 +510,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				PGPerformDragDrop(handle);
 			}
 			if (handle->pending_popup_menu) {
+				int index;
 				handle->pending_popup_menu = false;
 				handle->popup = handle->popup_data.menu;
 				SetCursor(cursor_standard);
-				TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
-				for (auto it = handle->popup->data.begin(); it != handle->popup->data.end(); it++) {
-					delete *it;
-				}
+				index = TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment | TPM_RETURNCMD, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
 				DestroyMenu(handle->popup_data.menu->menu);
+				if (index != 0) {
+					PGPopupCallback callback = handle->popup->callbacks[index];
+					if (callback) {
+						assert(handle->popup->data.size() > (index - BASE_INDEX));
+						callback(handle->popup->control, handle->popup->data[index - BASE_INDEX]);
+					}
+				}
+				delete handle->popup;
+				handle->popup = nullptr;
 			}
 			while (handle->pending_confirmation_box) {
 				handle->pending_confirmation_box = false;
@@ -531,15 +538,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				handle->confirmation_box_data.callback(handle, handle->confirmation_box_data.control, handle->confirmation_box_data.data, response);
 			}
 			break;
-		}
-		int index = LOWORD(wParam);
-		if (handle->popup) {
-			PGControlCallback callback = handle->popup->callbacks[index];
-			if (callback) {
-				callback(handle->popup->control);
-			}
-			delete handle->popup;
-			handle->popup = nullptr;
 		}
 		break;
 	}
@@ -749,7 +747,7 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 	SetWindowText(window->hwnd, title);
 }
 
-void SetClipboardText(PGWindowHandle window, std::string text) {
+void SetClipboardTextOS(PGWindowHandle window, std::string text) {
 	if (text.size() == 0) return;
 	if (OpenClipboard(window->hwnd)) {
 		char* result = nullptr;
@@ -895,14 +893,14 @@ PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
 }
 
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags) {
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupCallback callback, PGPopupMenuFlags flags) {
 	PGPopupInformation info;
 	info.text = text;
 	info.hotkey = "";
 	PGPopupMenuInsertEntry(handle, info, callback, flags);
 }
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation information, PGControlCallback callback, PGPopupMenuFlags flags) {
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation information, PGPopupCallback callback, PGPopupMenuFlags flags) {
 	int append_flags = MF_OWNERDRAW;
 	if (flags & PGPopupMenuChecked) append_flags |= MF_CHECKED;
 	if (flags & PGPopupMenuGrayed) append_flags |= MF_GRAYED;

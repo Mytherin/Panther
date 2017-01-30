@@ -686,27 +686,27 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
 		PGPopupMenuInsertEntry(menu, "Show Unsaved Changes...", nullptr, PGPopupMenuGrayed);
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation("Copy", "Ctrl+C"), [](Control* control) {
+		PGPopupMenuInsertEntry(menu, PGPopupInformation("Copy", "Ctrl+C"), [](Control* control, PGPopupInformation* info) {
 			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->CopyText());
 		});
 		PGPopupMenuInsertEntry(menu, PGPopupInformation("Cut", "Ctrl+X"), nullptr, PGPopupMenuGrayed);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation("Paste", "Ctrl+V"), [](Control* control) {
+		PGPopupMenuInsertEntry(menu, PGPopupInformation("Paste", "Ctrl+V"), [](Control* control, PGPopupInformation* info) {
 			std::string clipboard_text = GetClipboardText(control->window);
 			dynamic_cast<TextField*>(control)->textfile->PasteText(clipboard_text);
 		});
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation("Select Everything", "Ctrl+A"), [](Control* control) {
+		PGPopupMenuInsertEntry(menu, PGPopupInformation("Select Everything", "Ctrl+A"), [](Control* control, PGPopupInformation* info) {
 			dynamic_cast<TextField*>(control)->textfile->SelectEverything();
 		});
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuFlags flags = this->textfile->FileInMemory() ? PGPopupMenuGrayed : PGPopupMenuFlagsNone;
-		PGPopupMenuInsertEntry(menu, "View File In Explorer", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "View File In Explorer", [](Control* control, PGPopupInformation* info) {
 			OpenFolderInExplorer(dynamic_cast<TextField*>(control)->textfile->GetFullPath());
 		}, flags);
-		PGPopupMenuInsertEntry(menu, "Open Directory in Terminal", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Open Directory in Terminal", [](Control* control, PGPopupInformation* info) {
 			OpenFolderInTerminal(dynamic_cast<TextField*>(control)->textfile->GetFullPath());
 		}, flags);
-		PGPopupMenuInsertEntry(menu, "Copy File Path", [](Control* control) {
+		PGPopupMenuInsertEntry(menu, "Copy File Path", [](Control* control, PGPopupInformation* info) {
 			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->GetFullPath());
 		}, flags);
 		PGPopupMenuInsertEntry(menu, "Reveal in Side Bar", nullptr, flags);
@@ -1209,6 +1209,39 @@ void TextField::GetLineFromPosition(PGScalar y, lng& line) {
 	}
 	lng line_offset = std::max(std::min((lng)(y / GetTextHeight(textfield_font)), (lng)(rendered_lines.size() - 1)), (lng)0);
 	line = rendered_lines[line_offset].line;
+}
+
+void TextField::GetPositionFromLineCharacter(lng line, lng character, PGScalar& x, PGScalar& y) {
+	if (!textfile->GetWordWrap()) {
+		return BasicTextField::GetPositionFromLineCharacter(line, character, x, y);
+	}
+	x = 0;
+	y = 0;
+	if (rendered_lines.size() == 0) return;
+	if (rendered_lines.front().line > line || rendered_lines.back().line < line) return;
+	lng index = 0;
+	for (index = 1; index < rendered_lines.size(); index++) {
+		if (rendered_lines[index].line > line || 
+			rendered_lines[index].line == line && rendered_lines[index].position > character) {
+			index = index - 1;
+			break;
+		} else if (index == rendered_lines.size() - 1) {
+			return;
+		}
+	}
+	if (rendered_lines[index].line != line) return;
+
+	y = index * GetTextHeight(textfield_font);
+	_GetPositionFromCharacter(character - rendered_lines[index].position, rendered_lines[index].tline, x);
+}
+
+void TextField::GetPositionFromLine(lng line, PGScalar& y) {
+	if (!textfile->GetWordWrap()) {
+		return BasicTextField::GetPositionFromLine(line, y);
+	}
+	PGScalar x;
+	lng character = 0;
+	this->GetPositionFromLineCharacter(line, character, x, y);
 }
 
 void TextField::InitializeKeybindings() {
