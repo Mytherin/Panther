@@ -82,9 +82,17 @@ void TextFile::Reload() {
 	}
 	std::string text = std::string(base);
 	panther::DestroyFileContents(base);
+
+	// first backup the cursors
+	PGTextFileSettings settings;
+	settings.xoffset = xoffset;
+	settings.yoffset = yoffset;
+	settings.cursor_data = BackupCursors();
+
 	this->SelectEverything();
 	this->PasteText(text);
 	this->SetUnsavedChanges(false);
+	this->ApplySettings(settings);
 }
 
 TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load) {
@@ -2327,6 +2335,7 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 	}
 	if (settings.yoffset.linenumber >= 0) {
 		this->yoffset = settings.yoffset;
+		this->yoffset.linenumber = std::min(linecount - 1, std::max((lng) 0, this->yoffset.linenumber));
 		settings.yoffset.linenumber = -1;
 	}
 	if (settings.wordwrap) {

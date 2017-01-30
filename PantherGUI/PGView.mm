@@ -671,9 +671,9 @@ std::string GetOSName() {
 
 PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message) {
 	NSAlert *alert = [[NSAlert alloc] init];
-	[alert addButtonWithTitle:@"Yes"];
-	[alert addButtonWithTitle:@"No"];
+	[alert addButtonWithTitle:@"Save"];
 	[alert addButtonWithTitle:@"Cancel"];
+	[alert addButtonWithTitle:@"Don't Save"];
 	[alert setMessageText:[NSString stringWithUTF8String:title.c_str()]];
 	[alert setInformativeText:[NSString stringWithUTF8String:message.c_str()]];
 	[alert setAlertStyle:NSWarningAlertStyle];
@@ -682,9 +682,9 @@ PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::stri
 	if (alert_response == NSAlertFirstButtonReturn) {
 		response = PGResponseYes;
 	} else if (alert_response == NSAlertSecondButtonReturn) {
-		response = PGResponseNo;
-	} else {
 		response = PGResponseCancel;
+	} else {
+		response = PGResponseNo;
 	}
 	return response;
 }
