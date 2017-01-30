@@ -34,6 +34,7 @@ int main(int argc, const char *argv[])
     files.push_back(textfile);
 
     PGWindowHandle window = PGCreateWindow(files);
+    ShowWindow(window);
 
     
     [NSApp activateIgnoringOtherApps:YES];

@@ -2,6 +2,7 @@
 
 #include "container.h"
 #include "control.h"
+#include "tabcontrol.h"
 #include "textfield.h"
 
 typedef void(*PGMouseCallback)(Control* control, bool, void*);

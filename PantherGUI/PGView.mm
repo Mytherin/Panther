@@ -444,10 +444,8 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> textfiles
     [window makeFirstResponder:view];
     [window registerPGView:(PGView*)view];
 
-
     [window cascadeTopLeftFromPoint:NSMakePoint(position.x, position.y)];
     [window setTitle:@"PantherGUI"];
-    [window makeKeyAndOrderFront:nil];
 	return [(PGView*)view getHandle];
 }
 
@@ -455,6 +453,9 @@ PGWindowHandle PGCreateWindow(std::vector<TextFile*> textfiles) {
 	return PGCreateWindow(PGPoint(20, 20), textfiles);
 }
 
+void ShowWindow(PGWindowHandle handle) {
+    [handle->window makeKeyAndOrderFront:nil];
+}
 
 void RefreshWindow(PGWindowHandle window, bool redraw_now) {
 	RedrawWindow(window);
@@ -573,7 +574,14 @@ void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submen
 }
 
 void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags) {
-	NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:text.c_str()] action:@selector(popupMenuPress:) keyEquivalent:@""];
+	PGPopupInformation info;
+	info.text = text;
+	info.hotkey = "";
+	PGPopupMenuInsertEntry(handle, info, callback, flags);
+}
+
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation info, PGControlCallback callback, PGPopupMenuFlags flags) {
+	NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:info.text.c_str()] action:@selector(popupMenuPress:) keyEquivalent:@""];
 	NSValue* _callback = [NSValue valueWithPointer:(void*)callback];
 	NSValue* _handle = [NSValue valueWithPointer:(void*)handle->control];
 	NSArray* array = @[_callback, _handle];
@@ -616,7 +624,7 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 	NSInteger result = [panel runModal];
 	if (result == NSFileHandlingPanelOKButton) {
 		for (NSURL *fileURL in [panel URLs]) {
-			// we remove the file:// prefix, we are not dealing with URLs
+			// we remove the "file://" prefix, we are not dealing with URLs
 			// but with local files (hopefully)
 			std::string str = std::string([[fileURL absoluteString] UTF8String]);
 			assert(str.substr(0, 7) == std::string("file://"));
@@ -662,11 +670,28 @@ std::string GetOSName() {
 
 
 PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message) {
-	return PGResponseCancel;
+	NSAlert *alert = [[NSAlert alloc] init];
+	[alert addButtonWithTitle:@"Yes"];
+	[alert addButtonWithTitle:@"No"];
+	[alert addButtonWithTitle:@"Cancel"];
+	[alert setMessageText:[NSString stringWithUTF8String:title.c_str()]];
+	[alert setInformativeText:[NSString stringWithUTF8String:message.c_str()]];
+	[alert setAlertStyle:NSWarningAlertStyle];
+	auto alert_response = [alert runModal];
+	PGResponse response;
+	if (alert_response == NSAlertFirstButtonReturn) {
+		response = PGResponseYes;
+	} else if (alert_response == NSAlertSecondButtonReturn) {
+		response = PGResponseNo;
+	} else {
+		response = PGResponseCancel;
+	}
+	return response;
 }
 
 void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data) {
-	callback(window, control, data, PGResponseCancel);
+	PGResponse response = PGConfirmationBox(window, title, message);
+	callback(window, control, data, response);
 }
 
 
@@ -710,4 +735,28 @@ void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j) {
 	window->manager->WriteWorkspace(j);
 }
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+PGFileInformation PGGetFileFlags(std::string path) {
+	PGFileInformation info;
+	struct stat stat_info;
+	info.flags = PGFileFlagsEmpty;
+
+	int ret = stat(path.c_str(), &stat_info);
+	if (ret != 0) {
+		if (errno == ENOTDIR || errno == ENOENT) {
+			info.flags = PGFileFlagsFileNotFound;
+		} else {
+			info.flags = PGFileFlagsErrorOpeningFile;
+		}
+		errno = 0;
+		return info;
+	}
+	info.file_size = (lng) stat_info.st_size;
+	info.modification_time = (lng) stat_info.st_mtime;
+
+	return info;
+}
 
