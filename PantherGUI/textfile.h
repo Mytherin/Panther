@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 
-
 #include "assert.h"
 
 typedef enum {
@@ -256,6 +255,8 @@ private:
 	lng last_modified_time = -1;
 	lng last_modified_notification = -1;
 	bool last_modified_deletion = false;
+
+	lng saved_undo_count = 0;
 
 	std::string path;
 	std::string name;

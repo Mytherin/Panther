@@ -27,7 +27,7 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 TextFile::TextFile(BasicTextField* textfield) :
 	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr), 
 	bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
-	last_modified_deletion(false) {
+	last_modified_deletion(false), saved_undo_count(0) {
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = CreateMutex();
@@ -44,7 +44,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
 	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), 
 	bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0, 0), last_modified_time(-1), 
-	last_modified_notification(-1), last_modified_deletion(false) {
+	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
@@ -1388,7 +1388,7 @@ void TextFile::SetUnsavedChanges(bool changes) {
 
 void TextFile::Undo() {
 	if (!is_loaded) return;
-	SetUnsavedChanges(true);
+
 	if (this->deltas.size() == 0) return;
 	TextDelta* delta = this->deltas.back();
 	Lock(PGWriteLock);
@@ -1401,6 +1401,7 @@ void TextFile::Undo() {
 	if (this->textfield) {
 		this->textfield->TextChanged();
 	}
+	SetUnsavedChanges(saved_undo_count != deltas.size());
 	InvalidateParsing();
 }
 
@@ -1409,7 +1410,6 @@ void TextFile::Redo() {
 	if (this->redos.size() == 0) return;
 	RedoStruct redo = this->redos.back();
 	TextDelta* delta = redo.delta;
-	SetUnsavedChanges(true);
 	current_task = nullptr;
 	// lock the blocks
 	Lock(PGWriteLock);
@@ -1422,6 +1422,7 @@ void TextFile::Redo() {
 	Unlock(PGWriteLock);
 	this->redos.pop_back();
 	this->deltas.push_back(delta);
+	SetUnsavedChanges(saved_undo_count != deltas.size());
 	if (this->textfield) {
 		this->textfield->TextChanged();
 	}
@@ -1454,8 +1455,11 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	VerifyTextfile();
 	Unlock(PGWriteLock);
 	if (!success) return;
-	SetUnsavedChanges(true);
 	AddDelta(delta);
+	if (deltas.size() == saved_undo_count) {
+		saved_undo_count = -1;
+	}
+	SetUnsavedChanges(true);
 	Cursor::NormalizeCursors(this, cursors);
 	if (this->textfield) {
 		this->textfield->TextChanged();
@@ -1667,6 +1671,8 @@ void TextFile::Undo(TextDelta* delta) {
 void TextFile::SaveChanges() {
 	if (!is_loaded) return;
 	if (this->path == "") return;
+
+	saved_undo_count = deltas.size();
 	SetUnsavedChanges(false);
 	this->Lock(PGReadLock);
 	PGLineEnding line_ending = lineending;

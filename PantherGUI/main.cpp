@@ -879,7 +879,7 @@ PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
 	handle->menu = CreatePopupMenu();
 	handle->window = window;
 	handle->control = control;
-	handle->font = PGCreateFont("sans serif", false, false);
+	handle->font = PGCreateFont("arial black", false, false);
 	SetTextFontSize(handle->font, 13);
 
 	PGColor background_color = PGStyleManager::GetColor(PGColorMenuBackground);
