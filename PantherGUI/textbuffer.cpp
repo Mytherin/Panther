@@ -97,9 +97,11 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 		}
 		int offset = utf8_character_length(buffer[i]);
 		if (offset == 1 && buffer[i] == '\n') {
+			if (current_line == line) {
+				return i;
+			}
 			current_character = 0;
 			current_line++;
-			assert(current_line <= line);
 		} else {
 			current_character += offset;
 		}

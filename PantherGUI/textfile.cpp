@@ -2337,6 +2337,8 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 	if (settings.cursor_data.size() > 0) {
 		this->ClearCursors();
 		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
+			it->start_line = std::min(linecount - 1, std::max((lng) 0, it->start_line));
+			it->end_line = std::min(linecount - 1, std::max((lng) 0, it->end_line));
 			this->cursors.push_back(new Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
 		}
 		settings.cursor_data.clear();
