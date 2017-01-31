@@ -227,11 +227,25 @@ lng PGConvertText(std::string input, char** output, PGFileEncoding source_encodi
 	return return_size;
 }
 
+#define MAXIMUM_TEXT_SAMPLE 1024
+
 bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text, lng* output_size, PGFileEncoding* result_encoding) {
 	UCharsetDetector* csd = nullptr;
 	const UCharsetMatch *ucm = nullptr;
 	UErrorCode status = U_ZERO_ERROR;
-	
+
+	lng sample_size = std::min((size_t)MAXIMUM_TEXT_SAMPLE, input_size);
+
+	if (((unsigned char*)input_text)[0] == 0xEF &&
+		((unsigned char*)input_text)[1] == 0xBB &&
+		((unsigned char*)input_text)[2] == 0xBF) {
+		// UTF8 BOM, use UTF8
+		*result_encoding = PGEncodingUTF8;
+		*output_text = input_text;
+		*output_size = input_size;
+		return true;
+	}
+
 	*output_text = nullptr;
 	*output_size = 0;
 
@@ -239,7 +253,7 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	if (U_FAILURE(status)) {
 		return false;
 	}
-	ucsdet_setText(csd, input_text, std::min((size_t) 1024, input_size), &status);
+	ucsdet_setText(csd, input_text, sample_size, &status);
 	if (U_FAILURE(status)) {
 		return false;
 	}
@@ -257,6 +271,25 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	if (!encoder) {
 		return false;
 	}
+	if (source_encoding == PGEncodingWesternISO8859_1) {
+		// ICU likes to assign ascii text to ISO-8859-1
+		// we prefer UTF-8 for ASCII encoding
+		// thus if we encounter ISO-8859-1 encoding, check if the sample contains only ASCII text
+		// if it does, we use UTF-8 instead of ISO-8859-1
+		bool utf8 = true;
+		for (lng i = 0; i < sample_size;) {
+			int character_offset = utf8_character_length(input_text[i]);
+			if (character_offset != 1) {
+				utf8 = false;
+				break;
+			}
+			i += character_offset;
+		}
+		if (utf8) {
+			source_encoding = PGEncodingUTF8;
+		}
+	}
+
 	*result_encoding = source_encoding;
 	if (source_encoding == PGEncodingUTF8) {
 		*output_text = input_text;
