@@ -73,6 +73,22 @@ TextField::~TextField() {
 
 }
 
+void TextField::PeriodicRender() {
+	if (textfile && !textfile->IsLoaded() && textfile->bytes < 0) {
+		// error loading file
+		if (!notification) {
+			CreateNotification(PGNotificationTypeError, std::string("Error loading file."));
+			assert(notification);
+			notification->AddButton([](Control* control, void* data) {
+				// FIXME: close tab
+				((TextField*)control)->ClearNotification();
+			}, this, notification, "Close");
+			ShowNotification();
+		}
+	}
+	BasicTextField::PeriodicRender();
+}
+
 void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIRect* rectangle, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
 	PGScalar xoffset = 0;
 	PGScalar max_x = position_x_text + width;
@@ -509,14 +525,19 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 		}
 		textfile->Unlock(PGReadLock);	
 	} else {
-		PGScalar offset = this->width / 10;
-		PGScalar width = this->width - offset * 2;
-		PGScalar height = 5;
-		PGScalar padding = 1;
-		double load_percentage = textfile->LoadPercentage();
+		if (textfile->bytes >= 0) {
+			// file is currently being loaded, display the progress bar
+			PGScalar offset = this->width / 10;
+			PGScalar width = this->width - offset * 2;
+			PGScalar height = 5;
+			PGScalar padding = 1;
+			double load_percentage = textfile->LoadPercentage();
 
-		RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGDrawStyleFill);
-		RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * load_percentage, height), PGColor(20, 60, 255), PGDrawStyleFill);
+			RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGDrawStyleFill);
+			RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * load_percentage, height), PGColor(20, 60, 255), PGDrawStyleFill);
+		} else {
+			// error loading file: display nothing
+		}
 	}
 }
 
@@ -1155,6 +1176,9 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 	mouse.x -= this->x;
 	mouse.y -= this->y;
 	if (!textfile->IsLoaded()) {
+		if (textfile->bytes < 0) {
+			return PGCursorStandard;
+		}
 		return PGCursorWait;
 	}
 

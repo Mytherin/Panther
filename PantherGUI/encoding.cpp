@@ -4,9 +4,11 @@
 #include "logger.h"
 
 #include <malloc.h>
+#include <algorithm>
 
 #include "unicode.h"
 #include <unicode/ucnv.h>
+#include <unicode/ucsdet.h>
 
 struct PGEncoder {
 	PGFileEncoding source_encoding;
@@ -84,6 +86,34 @@ static const char* GetEncodingName(PGFileEncoding encoding) {
 	return nullptr;
 }
 
+static PGFileEncoding GetEncodingFromName(std::string encoding) {
+	if (encoding == "UTF-8") {
+		return PGEncodingUTF8;
+	} else if (encoding == "UTF-16") {
+		return PGEncodingUTF16;
+	} else if (encoding == "UTF16_PlatformEndian") {
+		return PGEncodingUTF16Platform;
+	} else if (encoding == "UTF-32") {
+		return PGEncodingUTF32;
+	} else if (encoding == "UTF-16BE") {
+		return PGEncodingUTF16BE;
+	} else if (encoding == "UTF-16LE") {
+		return PGEncodingUTF16LE;
+	} else if (encoding == "UTF-32BE") {
+		return PGEncodingUTF32BE;
+	} else if (encoding == "UTF-32LE") {
+		return PGEncodingUTF32LE;
+	} else if (encoding == "ISO-8859-1") {
+		return PGEncodingWesternISO8859_1;
+	} else if (encoding == "iso-8859_10-1998") {
+		return PGEncodingNordicISO8859_10;
+	} else if (encoding == "iso-8859_14-1998") {
+		return PGEncodingCelticISO8859_14;
+	}
+	assert(0);
+	return PGEncodingUTF8;
+}
+
 void LogAvailableEncodings() {
 	/* Returns count of the number of available names */
 	int count = ucnv_countAvailable();
@@ -123,6 +153,10 @@ PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding t
 }
 
 lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
+	return PGConvertText(encoder, input.c_str(), input.size(), output, output_size, intermediate_buffer, intermediate_size);
+}
+
+lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_size, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
 	lng return_size = -1;
 	char* result_buffer = nullptr;
 	UChar* buffer = nullptr;
@@ -131,7 +165,7 @@ lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng
 	// first we convert the source encoding to the internal ICU representation (UChars)
 	size_t targetsize = *intermediate_size;
 	buffer = *((UChar**)intermediate_buffer);
-	targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input.c_str(), input.size(), &error);
+	targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input_text, input_size, &error);
 	if (error == U_BUFFER_OVERFLOW_ERROR) {
 		error = U_ZERO_ERROR;
 		if (buffer)
@@ -139,7 +173,7 @@ lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng
 		buffer = (UChar*)malloc(targetsize * sizeof(UChar));
 		*intermediate_buffer = (char*)buffer;
 		*intermediate_size = targetsize;
-		targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input.c_str(), input.size(), &error);
+		targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input_text, input_size, &error);
 	}
 	if (U_FAILURE(error)) {
 		// failed source conversion
@@ -191,6 +225,50 @@ lng PGConvertText(std::string input, char** output, PGFileEncoding source_encodi
 	lng return_size = PGConvertText(encoder, input, output);
 	PGDestroyEncoder(encoder);
 	return return_size;
+}
+
+bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text, lng* output_size, PGFileEncoding* result_encoding) {
+	UCharsetDetector* csd = nullptr;
+	const UCharsetMatch *ucm = nullptr;
+	UErrorCode status = U_ZERO_ERROR;
+	
+	*output_text = nullptr;
+	*output_size = 0;
+
+	csd = ucsdet_open(&status);
+	if (U_FAILURE(status)) {
+		return false;
+	}
+	ucsdet_setText(csd, input_text, std::min((size_t) 1024, input_size), &status);
+	if (U_FAILURE(status)) {
+		return false;
+	}
+	ucm = ucsdet_detect(csd, &status);
+	if (U_FAILURE(status)) {
+		return false;
+	}
+	const char* encoding = ucsdet_getName(ucm, &status);
+	if (U_FAILURE(status) || encoding == nullptr) {
+		return false;
+	}
+	ucsdet_close(csd);
+	PGFileEncoding source_encoding = GetEncodingFromName(encoding);
+	auto encoder = PGCreateEncoder(source_encoding, PGEncodingUTF8);
+	if (!encoder) {
+		return false;
+	}
+	*result_encoding = source_encoding;
+	if (source_encoding == PGEncodingUTF8) {
+		*output_text = input_text;
+		*output_size = input_size;
+		return true;
+	}
+	char* intermediate_buffer = nullptr;
+	lng intermediate_size = 0;
+	if (PGConvertText(encoder, input_text, input_size, output_text, output_size, &intermediate_buffer, &intermediate_size) > 0) {
+		return true;
+	}
+	return false;
 }
 
 std::string utf8_tolower(std::string str) {

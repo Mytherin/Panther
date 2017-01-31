@@ -80,8 +80,17 @@ void TextFile::Reload() {
 		// FIXME: proper error message
 		return;
 	}
-	std::string text = std::string(base);
+	std::string text = std::string(base, size);
 	panther::DestroyFileContents(base);
+	if (encoding != PGEncodingUTF8) {
+		char* output = nullptr;
+		lng output_size = PGConvertText(text, &output, encoding, PGEncodingUTF8);
+		if (!output || output_size < 0) {
+			return;
+		}
+		text = std::string(output, output_size);
+		free(output);
+	}
 
 	// first backup the cursors
 	PGTextFileSettings settings;
@@ -102,8 +111,21 @@ TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename
 		// FIXME: proper error message
 		return nullptr;
 	}
+	// FIXME: guess encoding
+	char* output_text = nullptr;
+	lng output_size = 0;
+	PGFileEncoding result_encoding;
+	if (!PGTryConvertToUTF8(base, size, &output_text, &output_size, &result_encoding) || !output_text) {
+		return nullptr;
+	}
+	if (output_text != base) {
+		panther::DestroyFileContents(base);
+		base = output_text;
+		size = output_size;
+	}
 	auto stats = PGGetFileFlags(filename);
 	TextFile* file = new TextFile(textfield, filename, base, size, immediate_load);
+	file->encoding = result_encoding;
 	if (stats.flags == PGFileFlagsEmpty) {
 		file->last_modified_time = stats.modification_time;
 		file->last_modified_notification = stats.modification_time;
@@ -311,8 +333,24 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	total_bytes = size;
 	bytes = 0;
 	double current_width = 0;
+	if (((unsigned char*)ptr)[0] == 0xEF && 
+		((unsigned char*)ptr)[1] == 0xBB && 
+		((unsigned char*)ptr)[2] == 0xBF) {
+		// skip byte order mark
+		prev = 3;
+		bytes = 3;
+	}
+
 	while (ptr[bytes]) {
-		int character_offset = utf8_character_length(*ptr);
+		int character_offset = utf8_character_length(ptr[bytes]);
+		if (character_offset <= 0) {
+			if (delete_file) {
+				panther::DestroyFileContents(base);
+			}
+			bytes = -1;
+			UnlockMutex(text_lock);
+			return;
+		}
 		assert(character_offset >= 0); // invalid UTF8, FIXME: throw error message or something else
 		if (ptr[bytes] == '\n') {
 			// Unix line ending: \n
@@ -380,6 +418,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 					panther::DestroyFileContents(base);
 				}
 				UnlockMutex(text_lock);
+				bytes = -1;
 				return;
 			}
 		}

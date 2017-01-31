@@ -330,10 +330,10 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 							settings.yoffset.inner_line = 0;
 						}
 					}
-					// apply the settings, either immediately if the file has been loaded
-					// or wait until after it has been loaded otherwise
-					textfile->SetSettings(settings);
 					if (textfile != nullptr) {
+						// apply the settings, either immediately if the file has been loaded
+						// or wait until after it has been loaded otherwise
+						textfile->SetSettings(settings);
 						textfile->textfield = textfield;
 						this->tabs.push_back(OpenTab(textfile));
 					}

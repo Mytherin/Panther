@@ -299,8 +299,8 @@ private:
 	void InvalidateParsing();
 
 	bool is_loaded;
-	size_t bytes = 0;
-	size_t total_bytes = 1;
+	lng bytes = 0;
+	lng total_bytes = 1;
 
 	PGTextBuffer* GetBuffer(lng line);
 

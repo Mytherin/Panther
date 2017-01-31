@@ -54,11 +54,14 @@ std::string PGEncodingToString(PGFileEncoding);
 struct PGEncoder;
 typedef PGEncoder* PGEncoderHandle;
 
+bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text, lng* output_size, PGFileEncoding* result_encoding);
+
 // Tools for incremental conversion, can be used if you want to repeatedly encode chunks of text
 PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding target_encoding);
 lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output);
 void PGDestroyEncoder(PGEncoderHandle);
 
+lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_size, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 // Performs a single conversion, useful if you just want to convert some text
 lng PGConvertText(std::string input, char** output, PGFileEncoding source_encoding, PGFileEncoding target_encoding);
