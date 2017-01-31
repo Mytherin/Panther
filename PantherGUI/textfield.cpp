@@ -1157,7 +1157,8 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 	if (!textfile->IsLoaded()) {
 		return PGCursorWait;
 	}
-	if (mouse.x <= this->width - minimap_region.width &&
+
+	if (mouse.x >= text_offset && mouse.x <= this->width - minimap_region.width &&
 		(!display_horizontal_scrollbar || mouse.y <= this->height - SCROLLBAR_SIZE)) {
 		return PGCursorIBeam;
 	}

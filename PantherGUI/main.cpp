@@ -481,8 +481,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 	}
 	case WM_SETCURSOR:
-		SetCursor(handle->popup ? cursor_standard : handle->cursor);
-		return true;
+		if (handle->cursor) {
+			SetCursor(handle->cursor);
+			return true;
+		}
+		return DefWindowProc(hWnd, message, wParam, lParam);
 	case WM_ERASEBKGND:
 		return 1;
 	case WM_DESTROY:
@@ -513,7 +516,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				int index;
 				handle->pending_popup_menu = false;
 				handle->popup = handle->popup_data.menu;
-				SetCursor(cursor_standard);
 				index = TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment | TPM_RETURNCMD, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
 				DestroyMenu(handle->popup_data.menu->menu);
 				if (index != 0) {
@@ -546,7 +548,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			return 0;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
-		break;
 	}
 
 	return 0;
@@ -859,7 +860,7 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 		cursor = cursor_wait;
 		break;
 	default:
-		return;
+		break;
 	}
 	window->cursor = cursor;
 }
