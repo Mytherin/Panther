@@ -45,6 +45,8 @@ std::string PGEncodingToString(PGFileEncoding encoding) {
 		return "UTF-32 LE";
 	case PGEncodingUTF32LEBOM:
 		return "UTF-32 LE with BOM";
+	case PGEncodingWesternISO8859_1:
+		return "ISO-8859-1";
 	default:
 		return "Unknown";
 	}
@@ -234,8 +236,6 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	const UCharsetMatch *ucm = nullptr;
 	UErrorCode status = U_ZERO_ERROR;
 
-	lng sample_size = std::min((size_t)MAXIMUM_TEXT_SAMPLE, input_size);
-
 	if (((unsigned char*)input_text)[0] == 0xEF &&
 		((unsigned char*)input_text)[1] == 0xBB &&
 		((unsigned char*)input_text)[2] == 0xBF) {
@@ -249,6 +249,8 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	*output_text = nullptr;
 	*output_size = 0;
 
+	// try to determine the encoding from a sample of the text
+	lng sample_size = std::min((size_t)MAXIMUM_TEXT_SAMPLE, input_size);
 	csd = ucsdet_open(&status);
 	if (U_FAILURE(status)) {
 		return false;
@@ -266,6 +268,7 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 		return false;
 	}
 	ucsdet_close(csd);
+	// convert the predicted encoding
 	PGFileEncoding source_encoding = GetEncodingFromName(encoding);
 	auto encoder = PGCreateEncoder(source_encoding, PGEncodingUTF8);
 	if (!encoder) {
@@ -292,10 +295,12 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 
 	*result_encoding = source_encoding;
 	if (source_encoding == PGEncodingUTF8) {
+		// source encoding is UTF8: just directly return the input text
 		*output_text = input_text;
 		*output_size = input_size;
 		return true;
 	}
+	// if we do not have UTF8 we first convert from the (predicted) source encoding to UTF8
 	char* intermediate_buffer = nullptr;
 	lng intermediate_size = 0;
 	if (PGConvertText(encoder, input_text, input_size, output_text, output_size, &intermediate_buffer, &intermediate_size) > 0) {
