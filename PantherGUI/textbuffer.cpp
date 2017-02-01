@@ -91,7 +91,8 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 	if (current_line == line && current_character == position) {
 		return 0;
 	}
-	for (ulng i = 0; i < current_size; ) {
+	ulng i = 0;
+	for (i = 0; i < current_size; ) {
 		if (current_line == line && current_character == position) {
 			return i;
 		}
@@ -106,6 +107,9 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 			current_character += offset;
 		}
 		i += offset;
+	}
+	if (current_line == line) {
+		return i;
 	}
 	assert(0);
 	return 0;

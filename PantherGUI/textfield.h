@@ -72,6 +72,8 @@ public:
 
 	void IncreaseFontSize(int modifier);
 
+	void DisplayNotification(PGFileError error);
+
 	PG_CONTROL_KEYBINDINGS;
 protected:
 	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);

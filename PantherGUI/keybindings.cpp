@@ -168,7 +168,8 @@ std::string ParseEscapeCharacters(std::string str) {
 
 void PGKeyBindingsManager::LoadSettings(std::string filename) {
 	lng result_size;
-	char* ptr = (char*)panther::ReadFile(filename, result_size);
+	PGFileError error;
+	char* ptr = (char*)panther::ReadFile(filename, result_size, error);
 	if (!ptr) {
 		// FIXME:
 		assert(0);

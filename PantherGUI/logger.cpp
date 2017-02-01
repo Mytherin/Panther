@@ -4,7 +4,8 @@
 static Logger* logger = nullptr;
 
 Logger::Logger() {
-	file = panther::OpenFile(std::string(LOG_FILE), PGFileReadWrite);
+	PGFileError error;
+	file = panther::OpenFile(std::string(LOG_FILE), PGFileReadWrite, error);
 }
 
 Logger::~Logger() {

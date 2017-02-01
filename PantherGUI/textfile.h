@@ -96,7 +96,7 @@ public:
 	TextFile(BasicTextField* textfield);
 	~TextFile();
 
-	static TextFile* OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load = false);
+	static TextFile* OpenTextFile(BasicTextField* textfield, std::string filename, PGFileError& error, bool immediate_load = false);
 
 	TextLineIterator* GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll);
 	TextLineIterator* GetLineIterator(BasicTextField* textfield, lng linenumber);
@@ -106,6 +106,7 @@ public:
 	void InsertText(std::string text);
 	void InsertLines(const std::vector<std::string>& lines);
 	void InsertLines(std::vector<std::string> lines, size_t cursor);
+	bool SplitLines(const std::string& text, std::vector<std::string>&);
 	std::vector<std::string> SplitLines(const std::string& text);
 	void DeleteCharacter(PGDirection direction);
 	void DeleteWord(PGDirection direction);
@@ -121,7 +122,7 @@ public:
 	std::string CopyText();
 	void PasteText(std::string& text);
 
-	void Reload();
+	bool Reload(PGFileError& error);
 
 	void ChangeLineEnding(PGLineEnding lineending);
 	void ChangeFileEncoding(PGFileEncoding encoding);

@@ -17,8 +17,8 @@ TextFile* FileManager::OpenFile() {
 	return OpenFile(textfile);
 }
 
-TextFile* FileManager::OpenFile(std::string path) {
-	TextFile* textfile = TextFile::OpenTextFile(nullptr, path, false);
+TextFile* FileManager::OpenFile(std::string path, PGFileError& error) {
+	TextFile* textfile = TextFile::OpenTextFile(nullptr, path, error, false);
 	return OpenFile(textfile);
 }
 

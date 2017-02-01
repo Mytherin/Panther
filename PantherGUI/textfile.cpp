@@ -71,14 +71,14 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 }
 
 
-void TextFile::Reload() {
-	if (!is_loaded) return;
+bool TextFile::Reload(PGFileError& error) {
+	if (!is_loaded) return true;
 
 	lng size = 0;
-	char* base = (char*)panther::ReadFile(path, size);
+	char* base = (char*)panther::ReadFile(path, size, error);
 	if (!base || size < 0) {
 		// FIXME: proper error message
-		return;
+		return false;
 	}
 	std::string text = std::string(base, size);
 	panther::DestroyFileContents(base);
@@ -86,10 +86,17 @@ void TextFile::Reload() {
 		char* output = nullptr;
 		lng output_size = PGConvertText(text, &output, encoding, PGEncodingUTF8);
 		if (!output || output_size < 0) {
-			return;
+			error = PGFileEncodingFailure;
+			return false;
 		}
 		text = std::string(output, output_size);
 		free(output);
+	}
+
+	std::vector<std::string> lines;
+	if (!SplitLines(text, lines)) {
+		error = PGFileEncodingFailure;
+		return false;
 	}
 
 	// first backup the cursors
@@ -99,14 +106,21 @@ void TextFile::Reload() {
 	settings.cursor_data = BackupCursors();
 
 	this->SelectEverything();
-	this->PasteText(text);
+	if (lines.size() == 0 || lines.size() == 1 && lines[0].size() == 0) {
+		this->DeleteCharacter(PGDirectionLeft);
+	} else if (lines.size() == 1) {
+		this->InsertText(lines[0]);
+	} else {
+		this->InsertLines(lines);
+	}
 	this->SetUnsavedChanges(false);
 	this->ApplySettings(settings);
+	return true;
 }
 
-TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load) {
+TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, PGFileError& error, bool immediate_load) {
 	lng size = 0;
-	char* base = (char*)panther::ReadFile(filename, size);
+	char* base = (char*)panther::ReadFile(filename, size, error);
 	if (!base || size < 0) {
 		// FIXME: proper error message
 		return nullptr;
@@ -891,16 +905,18 @@ void TextFile::InsertLines(const std::vector<std::string>& lines) {
 	PerformOperation(delta);
 }
 
-std::vector<std::string> TextFile::SplitLines(const std::string& text) {
-	std::vector<std::string> lines;
+bool TextFile::SplitLines(const std::string& text, std::vector<std::string>& lines) {
 	lng start = 0;
 	lng current = 0;
 	lng offset = 0;
-	for (auto it = text.begin(); it != text.end(); it++) {
-		if (*it == '\r') {
-			if (*(it + 1) == '\n') {
+	int utf_offset = 0;
+	for (const char* ptr = text.c_str(); *ptr; ptr += utf_offset) {
+		utf_offset = utf8_character_length(*ptr);
+		if (utf_offset <= 0) return false;
+		if (*ptr == '\r') {
+			if (*(ptr + 1) == '\n') {
 				offset = 1;
-				it++;
+				ptr++;
 			} else {
 				lines.push_back(text.substr(start, current - start));
 				start = current + 1;
@@ -908,16 +924,22 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 				continue;
 			}
 		}
-		if (*it == '\n') {
+		if (*ptr == '\n') {
 			lines.push_back(text.substr(start, current - start));
 			start = current + 1 + offset;
 			current = start;
 			offset = 0;
 			continue;
 		}
-		current++;
+		current += utf_offset;
 	}
 	lines.push_back(text.substr(start, current - start));
+	return true;
+}
+
+std::vector<std::string> TextFile::SplitLines(const std::string& text) {
+	std::vector<std::string> lines;
+	SplitLines(text, lines);
 	return lines;
 }
 
@@ -1720,9 +1742,10 @@ void TextFile::SaveChanges() {
 	}
 	// FIXME: respect file encoding
 	// FIXME: handle errors properly
-	PGFileHandle handle = panther::OpenFile(this->path, PGFileReadWrite);
+	PGFileError error;
+	PGFileHandle handle = panther::OpenFile(this->path, PGFileReadWrite, error);
 	if (!handle) {
-		assert(0);
+		this->Unlock(PGReadLock);
 		return;
 	}
 	lng position = 0;

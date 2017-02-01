@@ -10,7 +10,7 @@ public:
 	~FileManager();
 
 	TextFile* OpenFile();
-	TextFile* OpenFile(std::string path);
+	TextFile* OpenFile(std::string path, PGFileError& error);
 	TextFile* OpenFile(TextFile* textfile);
 	void CloseFile(TextFile*);
 	void ClearFiles();
