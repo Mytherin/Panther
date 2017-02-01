@@ -233,6 +233,8 @@ private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);
 
+	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
+
 	// insert text at the specified cursor number, text must not include newlines
 	void InsertText(std::string text, size_t cursornr);
 	void DeleteCharacter(PGDirection direction, size_t i);

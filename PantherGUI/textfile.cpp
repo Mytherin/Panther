@@ -1729,6 +1729,21 @@ void TextFile::Undo(TextDelta* delta) {
 	}
 }
 
+bool TextFile::WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
+	if (size <= 0) return true;
+	if (encoding != PGEncodingUTF8) {
+		// first convert the text
+		lng result_size = PGConvertText(encoder, text, size, output_text, output_size, intermediate_buffer, intermediate_size);
+		if (result_size < 0) {
+			return false;
+		}
+		text = *output_text;
+		size = result_size;
+	}
+	panther::WriteToFile(file, text, size);
+	return true;
+}
+
 void TextFile::SaveChanges() {
 	if (!is_loaded) return;
 	if (this->path == "") return;
@@ -1740,14 +1755,28 @@ void TextFile::SaveChanges() {
 	if (line_ending != PGLineEndingWindows && line_ending != PGLineEndingMacOS && line_ending != PGLineEndingUnix) {
 		line_ending = GetSystemLineEnding();
 	}
-	// FIXME: respect file encoding
-	// FIXME: handle errors properly
+
 	PGFileError error;
 	PGFileHandle handle = panther::OpenFile(this->path, PGFileReadWrite, error);
 	if (!handle) {
 		this->Unlock(PGReadLock);
 		return;
 	}
+
+	if (encoding == PGEncodingUTF8BOM) {
+		// first write the BOM
+		unsigned char bom[3] = { 0xEF, 0xBB, 0xBF };
+		panther::WriteToFile(handle, (const char*)bom, 3);
+	}
+	PGEncoderHandle encoder = nullptr;
+	if (encoding != PGEncodingUTF8) {
+		encoder = PGCreateEncoder(PGEncodingUTF8, encoding);
+	}
+	char* intermediate_buffer = nullptr;
+	lng intermediate_size = 0;
+	char* output_buffer = nullptr;
+	lng output_size = 0;
+
 	lng position = 0;
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		char* line = (*it)->buffer;
@@ -1757,16 +1786,16 @@ void TextFile::SaveChanges() {
 		for (i = 0; i < end; i++) {
 			if (line[i] == '\n') {
 				// new line
-				panther::WriteToFile(handle, line + prev_position, i - prev_position);
+				this->WriteToFile(handle, encoder, line + prev_position, i - prev_position, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 				switch (line_ending) {
 				case PGLineEndingWindows:
-					panther::WriteToFile(handle, "\r\n", 2);
+					this->WriteToFile(handle, encoder, "\r\n", 2, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 					break;
 				case PGLineEndingMacOS:
-					panther::WriteToFile(handle, "\r", 1);
+					this->WriteToFile(handle, encoder, "\r", 1, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 					break;
 				case PGLineEndingUnix:
-					panther::WriteToFile(handle, "\n", 1);
+					this->WriteToFile(handle, encoder, "\n", 1, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 					break;
 				default:
 					assert(0);
@@ -1777,8 +1806,19 @@ void TextFile::SaveChanges() {
 		}
 		if (prev_position < (*it)->current_size) {
 			assert((*it) == buffers.back());
-			panther::WriteToFile(handle, line + prev_position, i - prev_position);
+			this->WriteToFile(handle, encoder, line + prev_position, i - prev_position, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 		}
+	}
+	if (intermediate_buffer) {
+		free(intermediate_buffer);
+		intermediate_buffer = nullptr;
+	}
+	if (output_buffer) {
+		free(output_buffer);
+		output_buffer = nullptr;
+	}
+	if (encoder) {
+		PGDestroyEncoder(encoder);
 	}
 	this->Unlock(PGReadLock);
 	panther::CloseFile(handle);
