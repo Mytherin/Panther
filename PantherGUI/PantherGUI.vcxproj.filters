@@ -185,9 +185,6 @@
     <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="textdelta.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="encoding.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -278,9 +275,6 @@
     <ClInclude Include="regex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="textbuffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="assert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -319,6 +313,12 @@
     </ClInclude>
     <ClInclude Include="dirent.h">
       <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="textdelta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textbuffer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

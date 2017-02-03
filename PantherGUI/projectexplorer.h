@@ -18,6 +18,8 @@ struct PGDirectory {
 	bool loaded_files;
 	bool expanded;
 
+	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
+
 	PGDirectory(std::string path);
 	~PGDirectory();
 	// Returns the number of files displayed by this directory
@@ -52,9 +54,21 @@ private:
 
 	Scrollbar* scrollbar;
 
+	std::vector<lng> selected_files;
+	
+	enum PGSelectFileType {
+		PGSelectSingleFile,
+		PGSelectAddSingleFile,
+		PGSelectAddRangeFile
+	};
+
+	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
+	void SelectFile(lng selected_file, PGSelectFileType type);
+
+	lng TotalFiles();
 	lng MaximumScrollOffset();
 	lng RenderedFiles();
 
-	void DrawFile(PGRendererHandle renderer, PGFile file, PGScalar x, PGScalar& y);
-	void DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset);
+	void DrawFile(PGRendererHandle renderer, PGFile file, PGScalar x, PGScalar& y, bool selected);
+	void DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset, lng& selection);
 };

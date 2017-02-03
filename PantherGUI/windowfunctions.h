@@ -454,6 +454,7 @@ struct PGFile {
 
 	std::string Filename();
 	std::string Extension();
+	PGFile() { }
 	PGFile(std::string path) : path(path) { }
 };
 
