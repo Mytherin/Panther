@@ -279,6 +279,7 @@ PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *te
 
 void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y, PGScalar max_position) {
 	renderer->canvas->drawBitmap(*image->bitmap, x, y);
+
 }
 
 PGBitmapHandle CreateBitmapFromSize(PGScalar width, PGScalar height) {
@@ -639,4 +640,21 @@ void PGRenderPopupItem(PGRendererHandle renderer, PGFontHandle font, PGPopupInfo
 	SetTextColor(font, text_color);
 	RenderText(renderer, font, info->text.c_str(), info->text.size(), 5, 0);
 	RenderText(renderer, font, info->hotkey.c_str(), info->hotkey.size(), size.width - 5, 0, PGTextAlignRight);
+}
+
+#include <SkCodec.h>
+
+PGBitmapHandle PGLoadImage(std::string path) {
+	SkCodec* codec = SkCodec::NewFromStream(new SkFILEStream(path.c_str()), nullptr);
+	if (!codec) return nullptr;
+
+	PGBitmapHandle handle = new PGBitmap();
+	handle->bitmap = new SkBitmap();
+	auto info = codec->getInfo();
+	handle->bitmap->allocPixels(info);
+	handle->bitmap->lockPixels();
+	codec->getPixels(info, handle->bitmap->getPixels(), handle->bitmap->rowBytes());
+	handle->bitmap->unlockPixels();
+	delete codec;
+	return handle;
 }

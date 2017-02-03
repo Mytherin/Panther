@@ -291,6 +291,7 @@ void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *te
 PGBitmapHandle CreateBitmapFromSize(PGScalar width, PGScalar height);
 PGBitmapHandle CreateBitmapForText(PGFontHandle font, const char* text, size_t length);
 PGRendererHandle CreateRendererForBitmap(PGBitmapHandle handle);
+PGBitmapHandle PGLoadImage(std::string path);
 void DeleteRenderer(PGRendererHandle renderer);
 void DeleteImage(PGBitmapHandle handle);
 
@@ -301,7 +302,6 @@ PGScalar GetTextHeight(PGFontHandle font);
 void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color);
 void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar max_position = INT_MAX);
 
-void DeleteImage(PGBitmapHandle bitmap);
 
 enum PGTextStyle {
 	PGTextStyleNormal,

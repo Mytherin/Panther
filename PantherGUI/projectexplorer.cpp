@@ -19,6 +19,11 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 		((ProjectExplorer*)scroll->parent)->scrollbar_offset = value;
 	});
 	this->AddControl(scrollbar);
+
+
+	bitmap = PGLoadImage("folder_closed.png");
+	//RenderImage(renderer, bitmap, x, y);
+	//DeleteImage(bitmap);
 }
 
 ProjectExplorer::~ProjectExplorer() {
@@ -37,8 +42,10 @@ void ProjectExplorer::PeriodicRender(void) {
 
 void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGFile file, PGScalar x, PGScalar& y, bool selected) {
 	if (selected) {
-		RenderRectangle(renderer, PGRect(0, y, this->width, GetTextHeight(font)), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
+		RenderRectangle(renderer, PGRect(x, y, this->width, GetTextHeight(font)), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 	}
+	RenderImage(renderer, bitmap, x, y);
+	x += 20;
 	RenderText(renderer, font, file.path.c_str(), file.path.size(), x, y);
 	y += GetTextHeight(font);
 }

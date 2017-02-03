@@ -45,6 +45,9 @@ public:
 	
 	PG_CONTROL_KEYBINDINGS;
 private:
+
+	PGBitmapHandle bitmap; // FIXME
+
 	PGFontHandle font;
 
 	std::vector<PGDirectory*> directories;
