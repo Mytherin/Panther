@@ -17,6 +17,7 @@
 #include "statusbar.h"
 #include "textfield.h"
 #include "tabcontrol.h"
+#include "projectexplorer.h"
 
 #include "c.h"
 #include "xml.h"
@@ -33,6 +34,8 @@
 
 #include "keybindings.h"
 #include "settings.h"
+
+#include "dirent.h"
 
 void DestroyWindow(PGWindowHandle window);
 
@@ -70,7 +73,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		LR_LOADFROMFILE |  // we want to load a file (as opposed to a resource)
 		LR_DEFAULTSIZE |   // default metrics based on the type (IMAGE_ICON, 32x32)
 		LR_SHARED         // let the system release the handle when it's no longer used
-		);
+	);
 	wcex.hCursor = NULL;
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = nullptr;
@@ -166,388 +169,402 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	switch (message) {
-	case WM_PAINT: {
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hWnd, &ps);
-		SkBitmap bitmap;
-		PGIRect rect(
-			ps.rcPaint.left,
-			ps.rcPaint.top,
-			ps.rcPaint.right - ps.rcPaint.left,
-			ps.rcPaint.bottom - ps.rcPaint.top);
+		case WM_PAINT:
+		{
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(hWnd, &ps);
+			SkBitmap bitmap;
+			PGIRect rect(
+				ps.rcPaint.left,
+				ps.rcPaint.top,
+				ps.rcPaint.right - ps.rcPaint.left,
+				ps.rcPaint.bottom - ps.rcPaint.top);
 
-		RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager);
+			RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager);
 
-		BITMAPINFO bmi;
-		memset(&bmi, 0, sizeof(bmi));
-		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-		bmi.bmiHeader.biWidth = bitmap.width();
-		bmi.bmiHeader.biHeight = -bitmap.height(); // top-down image
-		bmi.bmiHeader.biPlanes = 1;
-		bmi.bmiHeader.biBitCount = 32;
-		bmi.bmiHeader.biCompression = BI_RGB;
-		bmi.bmiHeader.biSizeImage = 0;
+			BITMAPINFO bmi;
+			memset(&bmi, 0, sizeof(bmi));
+			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+			bmi.bmiHeader.biWidth = bitmap.width();
+			bmi.bmiHeader.biHeight = -bitmap.height(); // top-down image
+			bmi.bmiHeader.biPlanes = 1;
+			bmi.bmiHeader.biBitCount = 32;
+			bmi.bmiHeader.biCompression = BI_RGB;
+			bmi.bmiHeader.biSizeImage = 0;
 
-		assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
-		bitmap.lockPixels();
-		int ret = SetDIBitsToDevice(hdc,
-			rect.x, rect.y,
-			bitmap.width(), bitmap.height(),
-			0, 0,
-			0, bitmap.height(),
-			bitmap.getPixels(),
-			&bmi,
-			DIB_RGB_COLORS);
-		(void)ret; // we're ignoring potential failures for now.
-		bitmap.unlockPixels();
-		EndPaint(hWnd, &ps);
-		break;
-	}
-	case WM_MEASUREITEM: {
-		auto measure_item = (LPMEASUREITEMSTRUCT)lParam;
-		PGPopupInformation* text = (PGPopupInformation*)measure_item->itemData;
-		PGSize size = PGMeasurePopupItem(handle->popup->font, text);
-		measure_item->itemWidth = size.width;
-		measure_item->itemHeight = size.height;
-		break;
-	}
-	case WM_DRAWITEM: {
-		auto render_item = (LPDRAWITEMSTRUCT)lParam;
-		PGPopupInformation* text = (PGPopupInformation*)render_item->itemData;
-		PGIRect rect(
-			render_item->rcItem.left,
-			render_item->rcItem.top,
-			render_item->rcItem.right - render_item->rcItem.left,
-			render_item->rcItem.bottom - render_item->rcItem.top);
-		PGBitmapHandle bmp = CreateBitmapFromSize(rect.width, rect.height);
-		PGRendererHandle renderer = CreateRendererForBitmap(bmp);
-
-		PGPopupMenuFlags flags = 0;
-		if (render_item->itemState & ODS_DISABLED || render_item->itemState & ODS_GRAYED) {
-			flags |= PGPopupMenuGrayed;
-		}
-		if (render_item->itemState & ODS_SELECTED) {
-			flags |= PGPopupMenuSelected;
-		}
-
-		PGRenderPopupItem(renderer, handle->popup->font, text, PGSize(rect.width, rect.height), flags);
-
-		SkBitmap& bitmap = *(bmp->bitmap);
-		BITMAPINFO bmi;
-		memset(&bmi, 0, sizeof(bmi));
-		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-		bmi.bmiHeader.biWidth = bitmap.width();
-		bmi.bmiHeader.biHeight = -bitmap.height(); // top-down image
-		bmi.bmiHeader.biPlanes = 1;
-		bmi.bmiHeader.biBitCount = 32;
-		bmi.bmiHeader.biCompression = BI_RGB;
-		bmi.bmiHeader.biSizeImage = 0;
-
-		assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
-		bitmap.lockPixels();
-		int ret = SetDIBitsToDevice(render_item->hDC,
-			rect.x, rect.y,
-			bitmap.width(), bitmap.height(),
-			0, 0,
-			0, bitmap.height(),
-			bitmap.getPixels(),
-			&bmi,
-			DIB_RGB_COLORS);
-		(void)ret; // we're ignoring potential failures for now.
-		bitmap.unlockPixels();
-		break;
-	}
-	case WM_KEYDOWN: {
-		char character = '\0';
-		PGButton button = PGButtonNone;
-		switch (wParam) {
-		case VK_SHIFT:
-			handle->modifier |= PGModifierShift;
-			break;
-		case VK_CONTROL:
-			handle->modifier |= PGModifierCtrl;
-			break;
-		case VK_MENU:
-			handle->modifier |= PGModifierAlt;
-			break;
-		case VK_TAB:
-			button = PGButtonTab;
-			break;
-		case VK_LEFT:
-			button = PGButtonLeft;
-			break;
-		case VK_RIGHT:
-			button = PGButtonRight;
-			break;
-		case VK_UP:
-			button = PGButtonUp;
-			break;
-		case VK_DOWN:
-			button = PGButtonDown;
-			break;
-		case VK_HOME:
-			button = PGButtonHome;
-			break;
-		case VK_END:
-			button = PGButtonEnd;
-			break;
-		case VK_INSERT:
-			button = PGButtonInsert;
-			break;
-		case VK_DELETE:
-			button = PGButtonDelete;
-			break;
-		case VK_F1:
-			button = PGButtonF1;
-			break;
-		case VK_F2:
-			button = PGButtonF2;
-			break;
-		case VK_F3:
-			button = PGButtonF3;
-			break;
-		case VK_F4:
-			button = PGButtonF4;
-			break;
-		case VK_F5:
-			button = PGButtonF5;
-			break;
-		case VK_F6:
-			button = PGButtonF6;
-			break;
-		case VK_F7:
-			button = PGButtonF7;
-			break;
-		case VK_F8:
-			button = PGButtonF8;
-			break;
-		case VK_F9:
-			button = PGButtonF9;
-			break;
-		case VK_F10:
-			button = PGButtonF10;
-			break;
-		case VK_F11:
-			button = PGButtonF11;
-			break;
-		case VK_F12:
-			button = PGButtonF12;
-			break;
-		case VK_BACK:
-			button = PGButtonBackspace;
-			break;
-		case VK_RETURN:
-			button = PGButtonEnter;
-			break;
-		case VK_PRIOR:
-			button = PGButtonPageUp;
-			break;
-		case VK_NEXT:
-			button = PGButtonPageDown;
-			break;
-		case VK_OEM_PLUS:
-			character = '+';
-			break;
-		case VK_OEM_COMMA:
-			character = ',';
-			break;
-		case VK_OEM_MINUS:
-			character = '-';
-			break;
-		case VK_OEM_PERIOD:
-			character = '.';
-			break;
-		case VK_ESCAPE:
-			button = PGButtonEscape;
-			break;
-		default:
+			assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
+			bitmap.lockPixels();
+			int ret = SetDIBitsToDevice(hdc,
+				rect.x, rect.y,
+				bitmap.width(), bitmap.height(),
+				0, 0,
+				0, bitmap.height(),
+				bitmap.getPixels(),
+				&bmi,
+				DIB_RGB_COLORS);
+			(void)ret; // we're ignoring potential failures for now.
+			bitmap.unlockPixels();
+			EndPaint(hWnd, &ps);
 			break;
 		}
-		if (button != PGButtonNone) {
-			handle->manager->KeyboardButton(button, handle->modifier);
-			return 0;
-		} else if ((wParam >= 0x41 && wParam <= 0x5A) || character != '\0') {
-			if (character == '\0')
-				character = (char)wParam;
-			if (handle->modifier != PGModifierNone) {
-				handle->manager->KeyboardCharacter(character, handle->modifier);
+		case WM_MEASUREITEM:
+		{
+			auto measure_item = (LPMEASUREITEMSTRUCT)lParam;
+			PGPopupInformation* text = (PGPopupInformation*)measure_item->itemData;
+			PGSize size = PGMeasurePopupItem(handle->popup->font, text);
+			measure_item->itemWidth = size.width;
+			measure_item->itemHeight = size.height;
+			break;
+		}
+		case WM_DRAWITEM:
+		{
+			auto render_item = (LPDRAWITEMSTRUCT)lParam;
+			PGPopupInformation* text = (PGPopupInformation*)render_item->itemData;
+			PGIRect rect(
+				render_item->rcItem.left,
+				render_item->rcItem.top,
+				render_item->rcItem.right - render_item->rcItem.left,
+				render_item->rcItem.bottom - render_item->rcItem.top);
+			PGBitmapHandle bmp = CreateBitmapFromSize(rect.width, rect.height);
+			PGRendererHandle renderer = CreateRendererForBitmap(bmp);
+
+			PGPopupMenuFlags flags = 0;
+			if (render_item->itemState & ODS_DISABLED || render_item->itemState & ODS_GRAYED) {
+				flags |= PGPopupMenuGrayed;
+			}
+			if (render_item->itemState & ODS_SELECTED) {
+				flags |= PGPopupMenuSelected;
+			}
+
+			PGRenderPopupItem(renderer, handle->popup->font, text, PGSize(rect.width, rect.height), flags);
+
+			SkBitmap& bitmap = *(bmp->bitmap);
+			BITMAPINFO bmi;
+			memset(&bmi, 0, sizeof(bmi));
+			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+			bmi.bmiHeader.biWidth = bitmap.width();
+			bmi.bmiHeader.biHeight = -bitmap.height(); // top-down image
+			bmi.bmiHeader.biPlanes = 1;
+			bmi.bmiHeader.biBitCount = 32;
+			bmi.bmiHeader.biCompression = BI_RGB;
+			bmi.bmiHeader.biSizeImage = 0;
+
+			assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
+			bitmap.lockPixels();
+			int ret = SetDIBitsToDevice(render_item->hDC,
+				rect.x, rect.y,
+				bitmap.width(), bitmap.height(),
+				0, 0,
+				0, bitmap.height(),
+				bitmap.getPixels(),
+				&bmi,
+				DIB_RGB_COLORS);
+			(void)ret; // we're ignoring potential failures for now.
+			bitmap.unlockPixels();
+			break;
+		}
+		case WM_KEYDOWN:
+		{
+			char character = '\0';
+			PGButton button = PGButtonNone;
+			switch (wParam) {
+				case VK_SHIFT:
+					handle->modifier |= PGModifierShift;
+					break;
+				case VK_CONTROL:
+					handle->modifier |= PGModifierCtrl;
+					break;
+				case VK_MENU:
+					handle->modifier |= PGModifierAlt;
+					break;
+				case VK_TAB:
+					button = PGButtonTab;
+					break;
+				case VK_LEFT:
+					button = PGButtonLeft;
+					break;
+				case VK_RIGHT:
+					button = PGButtonRight;
+					break;
+				case VK_UP:
+					button = PGButtonUp;
+					break;
+				case VK_DOWN:
+					button = PGButtonDown;
+					break;
+				case VK_HOME:
+					button = PGButtonHome;
+					break;
+				case VK_END:
+					button = PGButtonEnd;
+					break;
+				case VK_INSERT:
+					button = PGButtonInsert;
+					break;
+				case VK_DELETE:
+					button = PGButtonDelete;
+					break;
+				case VK_F1:
+					button = PGButtonF1;
+					break;
+				case VK_F2:
+					button = PGButtonF2;
+					break;
+				case VK_F3:
+					button = PGButtonF3;
+					break;
+				case VK_F4:
+					button = PGButtonF4;
+					break;
+				case VK_F5:
+					button = PGButtonF5;
+					break;
+				case VK_F6:
+					button = PGButtonF6;
+					break;
+				case VK_F7:
+					button = PGButtonF7;
+					break;
+				case VK_F8:
+					button = PGButtonF8;
+					break;
+				case VK_F9:
+					button = PGButtonF9;
+					break;
+				case VK_F10:
+					button = PGButtonF10;
+					break;
+				case VK_F11:
+					button = PGButtonF11;
+					break;
+				case VK_F12:
+					button = PGButtonF12;
+					break;
+				case VK_BACK:
+					button = PGButtonBackspace;
+					break;
+				case VK_RETURN:
+					button = PGButtonEnter;
+					break;
+				case VK_PRIOR:
+					button = PGButtonPageUp;
+					break;
+				case VK_NEXT:
+					button = PGButtonPageDown;
+					break;
+				case VK_OEM_PLUS:
+					character = '+';
+					break;
+				case VK_OEM_COMMA:
+					character = ',';
+					break;
+				case VK_OEM_MINUS:
+					character = '-';
+					break;
+				case VK_OEM_PERIOD:
+					character = '.';
+					break;
+				case VK_ESCAPE:
+					button = PGButtonEscape;
+					break;
+				default:
+					break;
+			}
+			if (button != PGButtonNone) {
+				handle->manager->KeyboardButton(button, handle->modifier);
 				return 0;
+			} else if ((wParam >= 0x41 && wParam <= 0x5A) || character != '\0') {
+				if (character == '\0')
+					character = (char)wParam;
+				if (handle->modifier != PGModifierNone) {
+					handle->manager->KeyboardCharacter(character, handle->modifier);
+					return 0;
+				}
 			}
-		}
-		break;
-	}
-	case WM_KEYUP:
-		switch (wParam) {
-		case VK_SHIFT:
-			handle->modifier &= ~PGModifierShift;
-			break;
-		case VK_CONTROL:
-			handle->modifier &= ~PGModifierCtrl;
-			break;
-		case VK_MENU:
-			handle->modifier &= ~PGModifierAlt;
 			break;
 		}
-		break;
-	case WM_CHAR: {
-		// FIXME: more efficient UTF16 -> UTF8 conversion
-		wchar_t w = (wchar_t)wParam;
-		std::string str = std::string((char*)&w, 2);
-		char* output;
-		lng size = PGConvertText(str, &output, PGEncodingUTF16Platform, PGEncodingUTF8);
-
-		if (size == 1) {
-			if (wParam < 0x20 || wParam >= 0x7F)
-				break;
-			handle->manager->KeyboardCharacter(output[0], PGModifierNone);
-		} else {
-			PGUTF8Character u;
-			u.length = size;
-			memcpy(u.character, output, size);
-
-			handle->manager->KeyboardUnicode(u, PGModifierNone);
-		}
-		free(output);
-		break;
-	}
-	case WM_UNICHAR:
-		// we handle WM_CHAR (UTF16), not WM_UNICHAR (UTF32)
-		return false;
-	case WM_MOUSEWHEEL: {
-		POINT point;
-		point.x = GET_X_LPARAM(lParam);
-		point.y = GET_Y_LPARAM(lParam);
-		ScreenToClient(handle->hwnd, &point);
-		PGModifier modifier = 0;
-		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
-		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-		handle->manager->MouseWheel(point.x, point.y, zDelta / 30.0, modifier);
-		break;
-	}
-	case WM_LBUTTONDOWN: {
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-		PGModifier modifier = 0;
-		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
-		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		handle->manager->MouseDown(x, y, PGLeftMouseButton, modifier);
-		break;
-	}
-	case WM_LBUTTONUP: {
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-		PGModifier modifier = 0;
-		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
-		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		handle->manager->MouseUp(x, y, PGLeftMouseButton, modifier);
-		break;
-	}
-	case WM_MBUTTONDOWN: {
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-		PGModifier modifier = 0;
-		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
-		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		handle->manager->MouseDown(x, y, PGMiddleMouseButton, modifier);
-		break;
-	}
-	case WM_MBUTTONUP: {
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-		PGModifier modifier = 0;
-		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
-		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		handle->manager->MouseUp(x, y, PGMiddleMouseButton, modifier);
-		break;
-	}
-
-	case WM_RBUTTONDOWN: {
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-		PGModifier modifier = 0;
-		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
-		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		handle->manager->MouseDown(x, y, PGRightMouseButton, modifier);
-		break;
-	}
-	case WM_RBUTTONUP: {
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-		PGModifier modifier = 0;
-		if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
-		if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-		handle->manager->MouseUp(x, y, PGRightMouseButton, modifier);
-		break;
-	}
-	case WM_SETCURSOR:
-		if (handle->cursor) {
-			SetCursor(handle->cursor);
-			return true;
-		}
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	case WM_ERASEBKGND:
-		return 1;
-	case WM_DESTROY:
-		DestroyWindow(handle);
-		if (handle_map.size() == 0) {
-			// no windows left, exit the program
-			PostQuitMessage(0);
-		}
-		break;
-	case WM_SIZE: {
-		if (wParam != SIZE_MINIMIZED) {
-			int width = LOWORD(lParam);
-			int height = HIWORD(lParam);
-			PGSize old_size = GetWindowSize(handle);
-			handle->manager->SetSize(PGSize(width, height));
-			RedrawWindow(handle);
-		}
-		break;
-	}
-	case WM_COMMAND: {
-		if (wParam == 0 && lParam == 0) {
-			handle->manager->PeriodicRender();
-			if (handle->pending_drag_drop) {
-				handle->pending_drag_drop = false;
-				PGPerformDragDrop(handle);
+		case WM_KEYUP:
+			switch (wParam) {
+				case VK_SHIFT:
+					handle->modifier &= ~PGModifierShift;
+					break;
+				case VK_CONTROL:
+					handle->modifier &= ~PGModifierCtrl;
+					break;
+				case VK_MENU:
+					handle->modifier &= ~PGModifierAlt;
+					break;
 			}
-			if (handle->pending_popup_menu) {
-				int index;
-				handle->pending_popup_menu = false;
-				handle->popup = handle->popup_data.menu;
-				index = TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment | TPM_RETURNCMD, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
-				DestroyMenu(handle->popup_data.menu->menu);
-				if (index != 0) {
-					PGPopupCallback callback = handle->popup->callbacks[index];
-					if (callback) {
-						assert(handle->popup->data.size() > (index - BASE_INDEX));
-						callback(handle->popup->control, handle->popup->data[index - BASE_INDEX]);
+			break;
+		case WM_CHAR:
+		{
+			// FIXME: more efficient UTF16 -> UTF8 conversion
+			wchar_t w = (wchar_t)wParam;
+			std::string str = std::string((char*)&w, 2);
+			char* output;
+			lng size = PGConvertText(str, &output, PGEncodingUTF16Platform, PGEncodingUTF8);
+
+			if (size == 1) {
+				if (wParam < 0x20 || wParam >= 0x7F)
+					break;
+				handle->manager->KeyboardCharacter(output[0], PGModifierNone);
+			} else {
+				PGUTF8Character u;
+				u.length = size;
+				memcpy(u.character, output, size);
+
+				handle->manager->KeyboardUnicode(u, PGModifierNone);
+			}
+			free(output);
+			break;
+		}
+		case WM_UNICHAR:
+			// we handle WM_CHAR (UTF16), not WM_UNICHAR (UTF32)
+			return false;
+		case WM_MOUSEWHEEL:
+		{
+			POINT point;
+			point.x = GET_X_LPARAM(lParam);
+			point.y = GET_Y_LPARAM(lParam);
+			ScreenToClient(handle->hwnd, &point);
+			PGModifier modifier = 0;
+			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+			int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+			handle->manager->MouseWheel(point.x, point.y, zDelta / 30.0, modifier);
+			break;
+		}
+		case WM_LBUTTONDOWN:
+		{
+			int x = GET_X_LPARAM(lParam);
+			int y = GET_Y_LPARAM(lParam);
+			PGModifier modifier = 0;
+			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+			handle->manager->MouseDown(x, y, PGLeftMouseButton, modifier);
+			break;
+		}
+		case WM_LBUTTONUP:
+		{
+			int x = GET_X_LPARAM(lParam);
+			int y = GET_Y_LPARAM(lParam);
+			PGModifier modifier = 0;
+			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+			handle->manager->MouseUp(x, y, PGLeftMouseButton, modifier);
+			break;
+		}
+		case WM_MBUTTONDOWN:
+		{
+			int x = GET_X_LPARAM(lParam);
+			int y = GET_Y_LPARAM(lParam);
+			PGModifier modifier = 0;
+			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+			handle->manager->MouseDown(x, y, PGMiddleMouseButton, modifier);
+			break;
+		}
+		case WM_MBUTTONUP:
+		{
+			int x = GET_X_LPARAM(lParam);
+			int y = GET_Y_LPARAM(lParam);
+			PGModifier modifier = 0;
+			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+			handle->manager->MouseUp(x, y, PGMiddleMouseButton, modifier);
+			break;
+		}
+
+		case WM_RBUTTONDOWN:
+		{
+			int x = GET_X_LPARAM(lParam);
+			int y = GET_Y_LPARAM(lParam);
+			PGModifier modifier = 0;
+			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+			handle->manager->MouseDown(x, y, PGRightMouseButton, modifier);
+			break;
+		}
+		case WM_RBUTTONUP:
+		{
+			int x = GET_X_LPARAM(lParam);
+			int y = GET_Y_LPARAM(lParam);
+			PGModifier modifier = 0;
+			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
+			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
+			handle->manager->MouseUp(x, y, PGRightMouseButton, modifier);
+			break;
+		}
+		case WM_SETCURSOR:
+			if (handle->cursor) {
+				SetCursor(handle->cursor);
+				return true;
+			}
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		case WM_ERASEBKGND:
+			return 1;
+		case WM_DESTROY:
+			DestroyWindow(handle);
+			if (handle_map.size() == 0) {
+				// no windows left, exit the program
+				PostQuitMessage(0);
+			}
+			break;
+		case WM_SIZE:
+		{
+			if (wParam != SIZE_MINIMIZED) {
+				int width = LOWORD(lParam);
+				int height = HIWORD(lParam);
+				PGSize old_size = GetWindowSize(handle);
+				handle->manager->SetSize(PGSize(width, height));
+				RedrawWindow(handle);
+			}
+			break;
+		}
+		case WM_COMMAND:
+		{
+			if (wParam == 0 && lParam == 0) {
+				handle->manager->PeriodicRender();
+				if (handle->pending_drag_drop) {
+					handle->pending_drag_drop = false;
+					PGPerformDragDrop(handle);
+				}
+				if (handle->pending_popup_menu) {
+					int index;
+					handle->pending_popup_menu = false;
+					handle->popup = handle->popup_data.menu;
+					index = TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment | TPM_RETURNCMD, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
+					DestroyMenu(handle->popup_data.menu->menu);
+					if (index != 0) {
+						PGPopupCallback callback = handle->popup->callbacks[index];
+						if (callback) {
+							assert(handle->popup->data.size() > (index - BASE_INDEX));
+							callback(handle->popup->control, handle->popup->data[index - BASE_INDEX]);
+						}
 					}
+					delete handle->popup;
+					handle->popup = nullptr;
 				}
-				delete handle->popup;
-				handle->popup = nullptr;
-			}
-			while (handle->pending_confirmation_box) {
-				handle->pending_confirmation_box = false;
-				PGResponse response = PGResponseCancel;
-				int retval = MessageBox(handle->hwnd, handle->confirmation_box_data.message.c_str(), handle->confirmation_box_data.title.c_str(), MB_YESNOCANCEL | MB_ICONWARNING);
-				if (retval == IDNO) {
-					response = PGResponseNo;
-				} else if (retval == IDYES) {
-					response = PGResponseYes;
+				while (handle->pending_confirmation_box) {
+					handle->pending_confirmation_box = false;
+					PGResponse response = PGResponseCancel;
+					int retval = MessageBox(handle->hwnd, handle->confirmation_box_data.message.c_str(), handle->confirmation_box_data.title.c_str(), MB_YESNOCANCEL | MB_ICONWARNING);
+					if (retval == IDNO) {
+						response = PGResponseNo;
+					} else if (retval == IDYES) {
+						response = PGResponseYes;
+					}
+					handle->confirmation_box_data.callback(handle, handle->confirmation_box_data.control, handle->confirmation_box_data.data, response);
 				}
-				handle->confirmation_box_data.callback(handle, handle->confirmation_box_data.control, handle->confirmation_box_data.data, response);
+				break;
 			}
 			break;
 		}
-		break;
-	}
-	case WM_CLOSE:
-		if (!handle->manager->CloseControlManager())
-			return 0;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		case WM_CLOSE:
+			if (!handle->manager->CloseControlManager())
+				return 0;
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 
 	return 0;
@@ -605,7 +622,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 		nullptr,
 		hInstance,
 		nullptr
-		);
+	);
 
 	if (!hWnd) {
 		return nullptr;
@@ -639,7 +656,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 	tabbed->width = 0;
 	tabbed->height = TEXT_TAB_HEIGHT;
 	TextField* textfield = new TextField(res, initial_files[0]);
-	textfield->SetAnchor(PGAnchorTop);
+	textfield->SetAnchor(PGAnchorTop | PGAnchorRight);
 	textfield->percentage_height = 1;
 	textfield->percentage_width = 1;
 	TabControl* tabs = new TabControl(res, textfield, initial_files);
@@ -649,6 +666,15 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 	tabbed->AddControl(tabs);
 	tabbed->AddControl(textfield);
 	textfield->vertical_anchor = tabs;
+
+	ProjectExplorer* explorer = new ProjectExplorer(res);
+	explorer->SetAnchor(PGAnchorTop | PGAnchorRight);
+	explorer->vertical_anchor = tabs;
+	explorer->fixed_width = 200;
+	explorer->percentage_height = 1;
+	tabbed->AddControl(explorer);
+	textfield->horizontal_anchor = explorer;
+
 
 	StatusBar* bar = new StatusBar(res, textfield);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
@@ -844,23 +870,23 @@ bool WindowHasFocus(PGWindowHandle window) {
 void SetCursor(PGWindowHandle window, PGCursorType type) {
 	HCURSOR cursor = nullptr;
 	switch (type) {
-	case PGCursorStandard:
-		cursor = cursor_standard;
-		break;
-	case PGCursorCrosshair:
-		cursor = cursor_crosshair;
-		break;
-	case PGCursorHand:
-		cursor = cursor_hand;
-		break;
-	case PGCursorIBeam:
-		cursor = cursor_ibeam;
-		break;
-	case PGCursorWait:
-		cursor = cursor_wait;
-		break;
-	default:
-		break;
+		case PGCursorStandard:
+			cursor = cursor_standard;
+			break;
+		case PGCursorCrosshair:
+			cursor = cursor_crosshair;
+			break;
+		case PGCursorHand:
+			cursor = cursor_hand;
+			break;
+		case PGCursorIBeam:
+			cursor = cursor_ibeam;
+			break;
+		case PGCursorWait:
+			cursor = cursor_wait;
+			break;
+		default:
+			break;
 	}
 	window->cursor = cursor;
 }
@@ -883,12 +909,12 @@ PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
 
 	PGColor background_color = PGStyleManager::GetColor(PGColorMenuBackground);
 
-	MENUINFO mi = { 0 }; 
-	mi.cbSize = sizeof(mi); 
-	mi.fMask = MIM_BACKGROUND | MIM_APPLYTOSUBMENUS; 
+	MENUINFO mi = { 0 };
+	mi.cbSize = sizeof(mi);
+	mi.fMask = MIM_BACKGROUND | MIM_APPLYTOSUBMENUS;
 	mi.hbrBack = CreateSolidBrush(RGB(background_color.r, background_color.g, background_color.b));
 
-	SetMenuInfo(handle->menu, &mi); 
+	SetMenuInfo(handle->menu, &mi);
 
 	return handle;
 }
@@ -1203,7 +1229,7 @@ static lng filetime_to_lng(FILETIME filetime) {
 PGFileInformation PGGetFileFlags(std::string path) {
 	PGFileInformation info;
 	std::string ucs2_path = UTF8toUCS2(path);
-	HANDLE handle = CreateFile2((LPCWSTR) ucs2_path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, NULL);
+	HANDLE handle = CreateFile2((LPCWSTR)ucs2_path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, NULL);
 	if (handle == INVALID_HANDLE_VALUE) {
 		DWORD error = GetLastError();
 		if (error == ERROR_FILE_NOT_FOUND) {
@@ -1229,4 +1255,28 @@ PGFileInformation PGGetFileFlags(std::string path) {
 
 	CloseHandle(handle);
 	return info;
+}
+
+PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files) {
+	DIR *dp;
+	struct dirent *ep;
+	dp = opendir(directory.c_str());
+	if (dp == NULL) {
+		return PGDirectoryNotFound;
+	}
+
+	while (ep = readdir(dp)) {
+		std::string filename = ep->d_name;
+		if (filename[0] == '.') continue;
+
+		if (ep->d_type == DT_DIR) {
+			directories.push_back(PGFile(filename));
+		} else if (ep->d_type == DT_REG) {
+			files.push_back(PGFile(filename));
+		}
+	}
+
+	(void)closedir(dp);
+
+	return PGDirectorySuccess;
 }

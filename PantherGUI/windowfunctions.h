@@ -448,3 +448,21 @@ struct PGFileInformation {
 };
 
 PGFileInformation PGGetFileFlags(std::string path);
+
+struct PGFile {
+	std::string path;
+
+	std::string Filename();
+	std::string Extension();
+	PGFile(std::string path) : path(path) { }
+};
+
+enum PGDirectoryFlags {
+	PGDirectorySuccess,
+	PGDirectoryNotFound,
+	PGDirectoryUnknown
+};
+
+PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files);
+
+std::string PGPathJoin(std::string path_one, std::string path_two);

@@ -152,6 +152,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmap.cpp" />
     <ClCompile Include="notification.cpp" />
+    <ClCompile Include="projectexplorer.cpp" />
     <ClCompile Include="regex.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="scheduler.cpp" />
@@ -190,6 +191,7 @@
     <ClInclude Include="control.h" />
     <ClInclude Include="controlmanager.h" />
     <ClInclude Include="cursor.h" />
+    <ClInclude Include="dirent.h" />
     <ClInclude Include="droptarget.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
@@ -202,7 +204,7 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="mmap.h" />
     <ClInclude Include="notification.h" />
-    <ClInclude Include="projectmanager.h" />
+    <ClInclude Include="projectexplorer.h" />
     <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="scheduler.h" />

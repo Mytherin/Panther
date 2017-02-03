@@ -159,6 +159,9 @@
     <ClCompile Include="workspace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="projectexplorer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -305,13 +308,16 @@
     <ClInclude Include="textiterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="projectmanager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="workspace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="json.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="projectexplorer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dirent.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
   </ItemGroup>

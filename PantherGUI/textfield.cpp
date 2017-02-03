@@ -20,8 +20,6 @@
 #include "textiterator.h"
 #include "wrappedtextiterator.h"
 
-#define SCROLLBAR_PADDING 4
-
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TextField);
 
 
