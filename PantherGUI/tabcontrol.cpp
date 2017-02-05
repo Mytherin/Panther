@@ -81,6 +81,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	file_icon_width = file_icon_height * 0.8f;
 
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+
 	RenderFileIcon(renderer, font, ext.c_str(), current_x, y + (height - file_icon_height) / 2, file_icon_width, file_icon_height,
 		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGStyleManager::GetColor(PGColorTabControlBackground), PGStyleManager::GetColor(PGColorTabControlBorder));
 		

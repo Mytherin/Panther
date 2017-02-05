@@ -45,9 +45,6 @@ public:
 	
 	PG_CONTROL_KEYBINDINGS;
 private:
-
-	PGBitmapHandle bitmap; // FIXME
-
 	PGFontHandle font;
 
 	std::vector<PGDirectory*> directories;
@@ -72,6 +69,6 @@ private:
 	lng MaximumScrollOffset();
 	lng RenderedFiles();
 
-	void DrawFile(PGRendererHandle renderer, PGFile file, PGScalar x, PGScalar& y, bool selected);
+	void DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected);
 	void DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset, lng& selection);
 };

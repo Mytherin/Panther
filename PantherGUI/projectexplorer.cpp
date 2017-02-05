@@ -8,7 +8,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	PGContainer(window), dragging_scrollbar(false) {
 	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI"));
 	this->directories.back()->expanded = true;
-	font = PGCreateFont("myriad", false, false);
+	font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(font, 12);
 
 	scrollbar = new Scrollbar(this, window, false, false);
@@ -20,8 +20,6 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	});
 	this->AddControl(scrollbar);
 
-
-	bitmap = PGLoadImage("folder_closed.png");
 	//RenderImage(renderer, bitmap, x, y);
 	//DeleteImage(bitmap);
 }
@@ -40,11 +38,23 @@ void ProjectExplorer::PeriodicRender(void) {
 	this->Invalidate();
 }
 
-void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGFile file, PGScalar x, PGScalar& y, bool selected) {
+void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected) {
 	if (selected) {
 		RenderRectangle(renderer, PGRect(x, y, this->width, GetTextHeight(font)), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 	}
-	RenderImage(renderer, bitmap, x, y);
+	if (file_image) {
+		RenderImage(renderer, file_image, x, y);
+	} else {
+		std::string extension = file.Extension();
+		auto language = PGLanguageManager::GetLanguage(extension);
+		
+		RenderFileIcon(renderer, font, extension.c_str(), x, y, 12, 16, 
+			language ? language->GetColor() : PGColor(255, 255, 255), 
+			PGStyleManager::GetColor(PGColorTabControlBackground), 
+			PGStyleManager::GetColor(PGColorTabControlBorder));
+
+		SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+	}
 	x += 20;
 	RenderText(renderer, font, file.path.c_str(), file.path.size(), x, y);
 	y += GetTextHeight(font);
@@ -54,7 +64,10 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 	if (current_offset >= offset) {
 		bool selected = selected_files.size() > selection ? selected_files[selection] == current_offset : false;
 		if (selected) selection++;
-		DrawFile(renderer, PGFile(directory.path).Filename(), x, y, selected);
+		SetTextStyle(font, PGTextStyleBold);
+		PGBitmapHandle image = directory.expanded ? PGStyleManager::GetImage("folder_open.png") : PGStyleManager::GetImage("folder_closed.png");
+		DrawFile(renderer, image, PGFile(directory.path).Filename(), x, y, selected);
+		SetTextStyle(font, PGTextStyleNormal);
 	}
 	current_offset++;
 	if (directory.expanded) {
@@ -66,7 +79,7 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 			if (current_offset >= offset) {
 				bool selected = selected_files.size() > selection ? selected_files[selection] == current_offset : false;
 				if (selected) selection++;
-				DrawFile(renderer, *it, x, y, selected);
+				DrawFile(renderer, nullptr, *it, x, y, selected);
 			}
 			current_offset++;
 		}

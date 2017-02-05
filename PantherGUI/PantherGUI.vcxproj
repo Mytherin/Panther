@@ -74,7 +74,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;D:\icu\x64\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\codec;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Debug-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;D:\icu\x64\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\codec;$(IncludePath)</IncludePath>
@@ -172,6 +172,26 @@
     <ClCompile Include="textbuffer.cpp" />
     <ClCompile Include="textiterator.cpp" />
     <ClCompile Include="textline.cpp" />
+    <ClCompile Include="third_party\re2\re2\bitstate.cc" />
+    <ClCompile Include="third_party\re2\re2\compile.cc" />
+    <ClCompile Include="third_party\re2\re2\dfa.cc" />
+    <ClCompile Include="third_party\re2\re2\filtered_re2.cc" />
+    <ClCompile Include="third_party\re2\re2\mimics_pcre.cc" />
+    <ClCompile Include="third_party\re2\re2\nfa.cc" />
+    <ClCompile Include="third_party\re2\re2\onepass.cc" />
+    <ClCompile Include="third_party\re2\re2\parse.cc" />
+    <ClCompile Include="third_party\re2\re2\perl_groups.cc" />
+    <ClCompile Include="third_party\re2\re2\prefilter.cc" />
+    <ClCompile Include="third_party\re2\re2\prefilter_tree.cc" />
+    <ClCompile Include="third_party\re2\re2\prog.cc" />
+    <ClCompile Include="third_party\re2\re2\re2.cc" />
+    <ClCompile Include="third_party\re2\re2\regexp.cc" />
+    <ClCompile Include="third_party\re2\re2\set.cc" />
+    <ClCompile Include="third_party\re2\re2\simplify.cc" />
+    <ClCompile Include="third_party\re2\re2\stringpiece.cc" />
+    <ClCompile Include="third_party\re2\re2\tostring.cc" />
+    <ClCompile Include="third_party\re2\re2\unicode_casefold.cc" />
+    <ClCompile Include="third_party\re2\re2\unicode_groups.cc" />
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="togglebutton.cpp" />
     <ClCompile Include="unicode.cpp" />
@@ -195,6 +215,7 @@
     <ClInclude Include="droptarget.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
+    <ClInclude Include="filepattern.h" />
     <ClInclude Include="findtext.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="keybindings.h" />
@@ -225,6 +246,18 @@
     <ClInclude Include="textbuffer.h" />
     <ClInclude Include="textiterator.h" />
     <ClInclude Include="textline.h" />
+    <ClInclude Include="third_party\re2\re2\bitmap256.h" />
+    <ClInclude Include="third_party\re2\re2\filtered_re2.h" />
+    <ClInclude Include="third_party\re2\re2\prefilter.h" />
+    <ClInclude Include="third_party\re2\re2\prefilter_tree.h" />
+    <ClInclude Include="third_party\re2\re2\prog.h" />
+    <ClInclude Include="third_party\re2\re2\re2.h" />
+    <ClInclude Include="third_party\re2\re2\regexp.h" />
+    <ClInclude Include="third_party\re2\re2\set.h" />
+    <ClInclude Include="third_party\re2\re2\stringpiece.h" />
+    <ClInclude Include="third_party\re2\re2\unicode_casefold.h" />
+    <ClInclude Include="third_party\re2\re2\unicode_groups.h" />
+    <ClInclude Include="third_party\re2\re2\walker-inl.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="togglebutton.h" />
     <ClInclude Include="unicode.h" />

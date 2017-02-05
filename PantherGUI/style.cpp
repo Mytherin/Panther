@@ -78,3 +78,16 @@ PGColor PGStyleManager::_GetColor(PGColorType type, PGStyle* extra_style) {
 
 	return PGColor(255, 255, 255);
 }
+
+PGBitmapHandle PGStyleManager::_GetImage(std::string path) {
+	auto entry = images.find(path);
+	if (entry != images.end()) {
+		return images[path];
+	}
+	auto handle = PGLoadImage(path);
+	if (!handle) {
+		return nullptr;
+	}
+	images[path] = handle;
+	return handle;
+}

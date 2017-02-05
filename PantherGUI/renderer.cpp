@@ -573,6 +573,7 @@ void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *te
 	PGScalar text_width = MeasureTextWidth(font, text);
 	PGScalar text_height = GetTextHeight(font);
 	int state = -1;
+	
 	while (true) {
 		if (text_height > 0.5f * height || text_width > 0.8f * width) {
 			if (state == 0)

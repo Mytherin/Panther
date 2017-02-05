@@ -63,15 +63,18 @@ public:
 		return &style;
 	}
 
+	static PGBitmapHandle GetImage(std::string path) { return GetInstance()->_GetImage(path); }
 	static PGColor GetColor(PGColorType type, PGStyle* extra_style = nullptr) { return GetInstance()->_GetColor(type, extra_style); }
 private:
 	PGStyleManager();
 
+	PGBitmapHandle _GetImage(std::string path);
 	PGColor _GetColor(PGColorType type, PGStyle* extra_style);
 
 	PGStyle default_style;
 	PGStyle user_style;
 
+	std::map<std::string, PGBitmapHandle> images;
 	std::map<std::string, PGStyle> styles;
 };
 
