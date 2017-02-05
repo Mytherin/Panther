@@ -6,10 +6,24 @@
 struct PGRegex;
 typedef PGRegex* PGRegexHandle;
 
+struct PGRegexBounds {
+	PGTextBuffer* start_buffer;
+	lng start_position;
+	PGTextBuffer* end_buffer;
+	lng end_position;
+
+	PGRegexBounds() { }
+	PGRegexBounds(PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position) :
+		start_buffer(start_buffer), start_position(start_position), end_buffer(end_buffer), end_position(end_position) {
+
+	}
+};
+
+#define PGREGEX_MAXIMUM_MATCHES 16
+
 struct PGRegexMatch {
 	bool matched;
-	int start;
-	int end;
+	PGRegexBounds groups[PGREGEX_MAXIMUM_MATCHES];
 };
 
 enum PGRegexFlags {
@@ -18,8 +32,6 @@ enum PGRegexFlags {
 };
 
 PGRegexHandle PGCompileRegex(std::string& pattern, PGRegexFlags);
-PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& string, PGDirection direction);
-PGRegexMatch PGMatchRegex(std::string& pattern, std::string& string, PGDirection direction, PGRegexFlags);
-char* PGGetRegexGroup(PGRegexHandle handle, int groupnr);
+PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGRegexBounds context, PGDirection direction);
 void PGDeleteRegex(PGRegexHandle handle);
 

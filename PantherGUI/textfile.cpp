@@ -25,7 +25,7 @@ void TextFile::OpenFileAsync(Task* task, void* inp) {
 }
 
 TextFile::TextFile(BasicTextField* textfield) :
-	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr), 
+	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr),
 	bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
 	last_modified_deletion(false), saved_undo_count(0) {
 	this->path = "";
@@ -42,8 +42,8 @@ TextFile::TextFile(BasicTextField* textfield) :
 }
 
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
-	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr), 
-	bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0, 0), last_modified_time(-1), 
+	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr),
+	bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0, 0), last_modified_time(-1),
 	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
@@ -347,8 +347,8 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	total_bytes = size;
 	bytes = 0;
 	double current_width = 0;
-	if (((unsigned char*)ptr)[0] == 0xEF && 
-		((unsigned char*)ptr)[1] == 0xBB && 
+	if (((unsigned char*)ptr)[0] == 0xEF &&
+		((unsigned char*)ptr)[1] == 0xBB &&
 		((unsigned char*)ptr)[2] == 0xBF) {
 		// skip byte order mark
 		prev = 3;
@@ -1531,129 +1531,135 @@ void TextFile::PerformOperation(TextDelta* delta) {
 
 bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	switch (delta->type) {
-	case PGDeltaAddText: {
-		AddText* add = (AddText*)delta;
-		bool selection = CursorsContainSelection(cursors);
-		if (selection) {
-			if (!redo) {
-				add->next = new RemoveText();
-			}
-			PerformOperation(add->next, redo);
-		}
-		for (size_t i = 0; i < cursors.size(); i++) {
-			assert(cursors[i]->SelectionIsEmpty());
-			if (add->lines.size() == 1) {
-				InsertText(add->lines[0], i);
-			} else {
-				InsertLines(add->lines, i);
-			}
-			if (!redo) {
-				add->stored_cursors.push_back(BackupCursor(i));
-			}
-		}
-		break;
-	}
-	case PGDeltaRemoveText: {
-		RemoveText* remove = (RemoveText*)delta;
-		assert(CursorsContainSelection(cursors));
-		for (size_t i = 0; i < cursors.size(); i++) {
-			if (!cursors[i]->SelectionIsEmpty()) {
+		case PGDeltaAddText:
+		{
+			AddText* add = (AddText*)delta;
+			bool selection = CursorsContainSelection(cursors);
+			if (selection) {
 				if (!redo) {
-					remove->removed_text.push_back(cursors[i]->GetText());
+					add->next = new RemoveText();
+				}
+				PerformOperation(add->next, redo);
+			}
+			for (size_t i = 0; i < cursors.size(); i++) {
+				assert(cursors[i]->SelectionIsEmpty());
+				if (add->lines.size() == 1) {
+					InsertText(add->lines[0], i);
+				} else {
+					InsertLines(add->lines, i);
+				}
+				if (!redo) {
+					add->stored_cursors.push_back(BackupCursor(i));
+				}
+			}
+			break;
+		}
+		case PGDeltaRemoveText:
+		{
+			RemoveText* remove = (RemoveText*)delta;
+			assert(CursorsContainSelection(cursors));
+			for (size_t i = 0; i < cursors.size(); i++) {
+				if (!cursors[i]->SelectionIsEmpty()) {
+					if (!redo) {
+						remove->removed_text.push_back(cursors[i]->GetText());
+						remove->stored_cursors.push_back(BackupCursor(i));
+					}
+					DeleteSelection(i);
+				} else if (!redo) {
+					remove->removed_text.push_back("");
 					remove->stored_cursors.push_back(BackupCursor(i));
 				}
-				DeleteSelection(i);
-			} else if (!redo) {
-				remove->removed_text.push_back("");
-				remove->stored_cursors.push_back(BackupCursor(i));
 			}
+			Cursor::NormalizeCursors(this, cursors, true);
+			break;
 		}
-		Cursor::NormalizeCursors(this, cursors, true);
-		break;
-	}
-	case PGDeltaRemoveLine: {
-		RemoveSelection* remove = (RemoveSelection*)delta;
-		if (!redo) {
-			remove->stored_cursors = BackupCursors();
-		}
-		for (int i = 0; i < cursors.size(); i++) {
-			if (remove->direction == PGDirectionLeft) {
-				cursors[i]->SelectStartOfLine();
-			} else {
-				cursors[i]->SelectEndOfLine();
+		case PGDeltaRemoveLine:
+		{
+			RemoveSelection* remove = (RemoveSelection*)delta;
+			if (!redo) {
+				remove->stored_cursors = BackupCursors();
 			}
+			for (int i = 0; i < cursors.size(); i++) {
+				if (remove->direction == PGDirectionLeft) {
+					cursors[i]->SelectStartOfLine();
+				} else {
+					cursors[i]->SelectEndOfLine();
+				}
+			}
+			if (!CursorsContainSelection(cursors)) {
+				return false;
+			}
+			Cursor::NormalizeCursors(this, cursors, false);
+			if (!redo) {
+				remove->next = new RemoveText();
+			}
+			return PerformOperation(remove->next, redo);
 		}
-		if (!CursorsContainSelection(cursors)) {
-			return false;
+		case PGDeltaRemoveWord:
+		{
+			RemoveSelection* remove = (RemoveSelection*)delta;
+			if (!redo) {
+				remove->stored_cursors = BackupCursors();
+			}
+			if (!CursorsContainSelection(cursors)) {
+				for (auto it = cursors.begin(); it != cursors.end(); it++) {
+					(*it)->OffsetSelectionWord(remove->direction);
+				}
+			}
+			if (!CursorsContainSelection(cursors)) {
+				return false;
+			}
+			Cursor::NormalizeCursors(this, cursors, false);
+			if (!redo) {
+				remove->next = new RemoveText();
+			}
+			return PerformOperation(remove->next, redo);
 		}
-		Cursor::NormalizeCursors(this, cursors, false);
-		if (!redo) {
-			remove->next = new RemoveText();
+		case PGDeltaRemoveCharacter:
+		{
+			RemoveSelection* remove = (RemoveSelection*)delta;
+			if (!redo) {
+				remove->stored_cursors = BackupCursors();
+			}
+			if (!CursorsContainSelection(cursors)) {
+				for (auto it = cursors.begin(); it != cursors.end(); it++) {
+					(*it)->OffsetSelectionCharacter(remove->direction);
+				}
+			}
+			if (!CursorsContainSelection(cursors)) {
+				return false;
+			}
+			Cursor::NormalizeCursors(this, cursors, false);
+			if (!redo) {
+				remove->next = new RemoveText();
+			}
+			return PerformOperation(remove->next, redo);
 		}
-		return PerformOperation(remove->next, redo);
-	}
-	case PGDeltaRemoveWord: {
-		RemoveSelection* remove = (RemoveSelection*)delta;
-		if (!redo) {
-			remove->stored_cursors = BackupCursors();
-		}
-		if (!CursorsContainSelection(cursors)) {
+		case PGDeltaAddEmptyLine:
+		{
+			InsertLineBefore* ins = (InsertLineBefore*)delta;
+			if (!redo) {
+				ins->stored_cursors = BackupCursors();
+			}
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
-				(*it)->OffsetSelectionWord(remove->direction);
+				if (ins->direction == PGDirectionLeft) {
+					(*it)->OffsetStartOfLine();
+				} else {
+					(*it)->OffsetEndOfLine();
+				}
 			}
+			Cursor::NormalizeCursors(this, cursors, false);
+			if (!redo) {
+				std::vector <std::string> lines;
+				lines.push_back("");
+				lines.push_back("");
+				ins->next = new AddText(lines);
+			}
+			return PerformOperation(ins->next, redo);
 		}
-		if (!CursorsContainSelection(cursors)) {
+		default:
+			assert(0);
 			return false;
-		}
-		Cursor::NormalizeCursors(this, cursors, false);
-		if (!redo) {
-			remove->next = new RemoveText();
-		}
-		return PerformOperation(remove->next, redo);
-	}
-	case PGDeltaRemoveCharacter: {
-		RemoveSelection* remove = (RemoveSelection*)delta;
-		if (!redo) {
-			remove->stored_cursors = BackupCursors();
-		}
-		if (!CursorsContainSelection(cursors)) {
-			for (auto it = cursors.begin(); it != cursors.end(); it++) {
-				(*it)->OffsetSelectionCharacter(remove->direction);
-			}
-		}
-		if (!CursorsContainSelection(cursors)) {
-			return false;
-		}
-		Cursor::NormalizeCursors(this, cursors, false);
-		if (!redo) {
-			remove->next = new RemoveText();
-		}
-		return PerformOperation(remove->next, redo);
-	}
-	case PGDeltaAddEmptyLine: {
-		InsertLineBefore* ins = (InsertLineBefore*)delta;
-		if (!redo) {
-			ins->stored_cursors = BackupCursors();
-		}
-		for (auto it = cursors.begin(); it != cursors.end(); it++) {
-			if (ins->direction == PGDirectionLeft) {
-				(*it)->OffsetStartOfLine();
-			} else {
-				(*it)->OffsetEndOfLine();
-			}
-		}
-		Cursor::NormalizeCursors(this, cursors, false);
-		if (!redo) {
-			std::vector <std::string> lines;
-			lines.push_back("");
-			lines.push_back("");
-			ins->next = new AddText(lines);
-		}
-		return PerformOperation(ins->next, redo);
-	}
-	default:
-		assert(0);
-		return false;
 	}
 	return true;
 }
@@ -1680,49 +1686,53 @@ void TextFile::Undo(RemoveText& delta, std::string& text, int i) {
 
 void TextFile::Undo(TextDelta* delta) {
 	switch (delta->type) {
-	case PGDeltaAddText: {
-		ClearCursors();
-		AddText* add = (AddText*)delta;
-		// we perform undo's in reverse order
-		for (int i = 0; i < delta->stored_cursors.size(); i++) {
-			int index = delta->stored_cursors.size() - (i + 1);
-			cursors.insert(cursors.begin(), RestoreCursor(delta->stored_cursors[index]));
-			Undo(*add, 0);
+		case PGDeltaAddText:
+		{
+			ClearCursors();
+			AddText* add = (AddText*)delta;
+			// we perform undo's in reverse order
+			for (int i = 0; i < delta->stored_cursors.size(); i++) {
+				int index = delta->stored_cursors.size() - (i + 1);
+				cursors.insert(cursors.begin(), RestoreCursor(delta->stored_cursors[index]));
+				Undo(*add, 0);
+			}
+			break;
 		}
-		break;
-	}
-	case PGDeltaRemoveText: {
-		RemoveText* remove = (RemoveText*)delta;
-		ClearCursors();
-		for (int i = 0; i < delta->stored_cursors.size(); i++) {
-			int index = delta->stored_cursors.size() - (i + 1);
-			cursors.insert(cursors.begin(), RestoreCursorPartial(delta->stored_cursors[index]));
-			VerifyTextfile();
-			Undo(*remove, remove->removed_text[index], 0);
-			delete cursors[0];
-			cursors[0] = RestoreCursor(delta->stored_cursors[index]);
+		case PGDeltaRemoveText:
+		{
+			RemoveText* remove = (RemoveText*)delta;
+			ClearCursors();
+			for (int i = 0; i < delta->stored_cursors.size(); i++) {
+				int index = delta->stored_cursors.size() - (i + 1);
+				cursors.insert(cursors.begin(), RestoreCursorPartial(delta->stored_cursors[index]));
+				VerifyTextfile();
+				Undo(*remove, remove->removed_text[index], 0);
+				delete cursors[0];
+				cursors[0] = RestoreCursor(delta->stored_cursors[index]);
+			}
+			break;
 		}
-		break;
-	}
-	case PGDeltaRemoveLine:
-	case PGDeltaRemoveCharacter:
-	case PGDeltaRemoveWord: {
-		RemoveSelection* remove = (RemoveSelection*)delta;
-		assert(remove->next);
-		Undo(remove->next);
-		RestoreCursors(remove->stored_cursors);
-		return;
-	}
-	case PGDeltaAddEmptyLine: {
-		InsertLineBefore* ins = (InsertLineBefore*)delta;
-		assert(ins->next);
-		Undo(ins->next);
-		RestoreCursors(ins->stored_cursors);
-		return;
-	}
-	default:
-		assert(0);
-		break;
+		case PGDeltaRemoveLine:
+		case PGDeltaRemoveCharacter:
+		case PGDeltaRemoveWord:
+		{
+			RemoveSelection* remove = (RemoveSelection*)delta;
+			assert(remove->next);
+			Undo(remove->next);
+			RestoreCursors(remove->stored_cursors);
+			return;
+		}
+		case PGDeltaAddEmptyLine:
+		{
+			InsertLineBefore* ins = (InsertLineBefore*)delta;
+			assert(ins->next);
+			Undo(ins->next);
+			RestoreCursors(ins->stored_cursors);
+			return;
+		}
+		default:
+			assert(0);
+			break;
 	}
 	if (delta->next) {
 		Undo(delta->next);
@@ -1788,18 +1798,18 @@ void TextFile::SaveChanges() {
 				// new line
 				this->WriteToFile(handle, encoder, line + prev_position, i - prev_position, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 				switch (line_ending) {
-				case PGLineEndingWindows:
-					this->WriteToFile(handle, encoder, "\r\n", 2, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
-					break;
-				case PGLineEndingMacOS:
-					this->WriteToFile(handle, encoder, "\r", 1, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
-					break;
-				case PGLineEndingUnix:
-					this->WriteToFile(handle, encoder, "\n", 1, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
-					break;
-				default:
-					assert(0);
-					break;
+					case PGLineEndingWindows:
+						this->WriteToFile(handle, encoder, "\r\n", 2, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
+						break;
+					case PGLineEndingMacOS:
+						this->WriteToFile(handle, encoder, "\r", 1, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
+						break;
+					case PGLineEndingUnix:
+						this->WriteToFile(handle, encoder, "\n", 1, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
+						break;
+					default:
+						assert(0);
+						break;
 				}
 				prev_position = i + 1;
 			}
@@ -1915,7 +1925,39 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 	return FindMatch(text, direction, start_buffer, start_position, end_buffer, end_position, error_message, match_case, wrap, regex, current_task);
 }
 
-PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
+PGFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
+	if (!regex) {
+		// FIXME: escape pattern
+	}
+	// we start "outside" of the current selection
+	// e.g. if we go right, we start at the end and continue right
+	// if we go left, we start at the beginning and go left
+	PGTextBuffer* begin_buffer = direction == PGDirectionLeft ? start_buffer : end_buffer;
+	lng begin_position = direction == PGDirectionLeft ? start_position : end_position;
+	int offset = direction == PGDirectionLeft ? -1 : 1;
+	PGTextBuffer* end = buffers.back();
+	PGTextBuffer* current_buffer = begin_buffer;
+	PGRegexHandle regex_handle = PGCompileRegex(pattern, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	if (!regex_handle) {
+		// FIXME: throw an error, regex was not compiled properly
+		*error_message = panther::strdup("Error");
+		return PGFindMatch(-1, -1, -1, -1);
+	}
+	PGRegexBounds bounds = PGRegexBounds(begin_buffer, begin_position, end, end->current_size);
+	PGRegexMatch match = PGMatchRegex(regex_handle, bounds, direction);
+	if (match.matched) {
+		lng start_line, start_character;
+		lng end_line, end_character;
+		match.groups[0].start_buffer->GetCursorFromBufferLocation(match.groups[0].start_position, start_line, start_character);
+		match.groups[0].end_buffer->GetCursorFromBufferLocation(match.groups[0].end_position, end_line, end_character);
+		return PGFindMatch(start_character, start_line, end_character, end_line);
+	}
+	return PGFindMatch(-1, -1, -1, -1);
+
+
+
+
+	/*
 	if (!match_case) {
 		text = utf8_tolower(text);
 	}
@@ -1971,11 +2013,11 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, PGTextB
 		}
 	}
 	if (regex_handle) PGDeleteRegex(regex_handle);
-	return PGFindMatch(-1, -1, -1, -1);
+	return PGFindMatch(-1, -1, -1, -1);*/
 }
 
 PGBufferFindMatch TextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line) {
-	size_t pos = std::string::npos;
+	/*size_t pos = std::string::npos;
 	PGRegexMatch match;
 	match.matched = false;
 	if (begin_position > 0) {
@@ -1996,7 +2038,7 @@ PGBufferFindMatch TextFile::FindMatch(PGRegexHandle regex_handle, PGDirection di
 	}
 	if (match.matched) {
 		return PGBufferFindMatch(match.start, match.end);
-	}
+	}*/
 	return PGBufferFindMatch();
 }
 
@@ -2443,7 +2485,7 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 	}
 	if (settings.yoffset.linenumber >= 0) {
 		this->yoffset = settings.yoffset;
-		this->yoffset.linenumber = std::min(linecount - 1, std::max((lng) 0, this->yoffset.linenumber));
+		this->yoffset.linenumber = std::min(linecount - 1, std::max((lng)0, this->yoffset.linenumber));
 		settings.yoffset.linenumber = -1;
 	}
 	if (settings.wordwrap) {
@@ -2454,8 +2496,8 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 	if (settings.cursor_data.size() > 0) {
 		this->ClearCursors();
 		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
-			it->start_line = std::min(linecount - 1, std::max((lng) 0, it->start_line));
-			it->end_line = std::min(linecount - 1, std::max((lng) 0, it->end_line));
+			it->start_line = std::min(linecount - 1, std::max((lng)0, it->start_line));
+			it->end_line = std::min(linecount - 1, std::max((lng)0, it->end_line));
 			this->cursors.push_back(new Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
 		}
 		settings.cursor_data.clear();
