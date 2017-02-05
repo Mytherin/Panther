@@ -25,6 +25,9 @@
     <Filter Include="Header Files\regex">
       <UniqueIdentifier>{bb73b4e1-324d-4dcd-9716-05c81b51a20e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\regex">
+      <UniqueIdentifier>{bd90b255-32b6-46df-bc6d-428d022cb9b3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -165,65 +168,71 @@
     <ClCompile Include="projectexplorer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="third_party\re2\re2\re2.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\stringpiece.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\bitstate.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\compile.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\dfa.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\filtered_re2.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\mimics_pcre.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\nfa.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\onepass.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\parse.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\perl_groups.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\prefilter.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\prefilter_tree.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\prog.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\regexp.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\set.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\simplify.cc">
-      <Filter>Header Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="third_party\re2\re2\tostring.cc">
-      <Filter>Header Files\regex</Filter>
+    <ClCompile Include="third_party\re2\re2\unicode_groups.cc">
+      <Filter>Source Files\regex</Filter>
     </ClCompile>
     <ClCompile Include="third_party\re2\re2\unicode_casefold.cc">
-      <Filter>Header Files\regex</Filter>
+      <Filter>Source Files\regex</Filter>
     </ClCompile>
-    <ClCompile Include="third_party\re2\re2\unicode_groups.cc">
-      <Filter>Header Files\regex</Filter>
+    <ClCompile Include="third_party\re2\re2\tostring.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\stringpiece.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\simplify.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\set.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\regexp.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\re2.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\prog.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\prefilter_tree.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\prefilter.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\perl_groups.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\parse.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\onepass.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\nfa.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\mimics_pcre.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\filtered_re2.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\dfa.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\compile.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\re2\bitstate.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\util\rune.cc">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\re2\util\strutil.cc">
+      <Filter>Source Files\regex</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -420,6 +429,33 @@
       <Filter>Header Files\regex</Filter>
     </ClInclude>
     <ClInclude Include="third_party\re2\re2\walker-inl.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\flags.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\logging.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\strutil.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\utf.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\util.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\sparse_array.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\sparse_set.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\mutex.h">
+      <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\re2\util\mix.h">
       <Filter>Header Files\regex</Filter>
     </ClInclude>
   </ItemGroup>

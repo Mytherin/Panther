@@ -4,6 +4,10 @@
 //#include <unicode/utf8.h>
 #include "unicode.h"
 
+
+#include <re2/re2.h>
+
+
 struct PGRegex {
 	bool matched = false;
 	RegexMatcher* matcher = nullptr;

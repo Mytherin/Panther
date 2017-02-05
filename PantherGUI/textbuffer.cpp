@@ -6,6 +6,13 @@
 
 lng TEXT_BUFFER_SIZE = 4096;
 
+
+PGTextBuffer::PGTextBuffer() : 
+	buffer(nullptr), buffer_size(0), current_size(0), start_line(0), 
+	state(nullptr), syntax(nullptr), cumulative_width(-1) {
+
+}
+
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
 	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr), cumulative_width(-1) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {

@@ -69,16 +69,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Users\wieis\Skia\src\skia\include\core;C:\Users\wieis\Skia\src\skia\include\config;$(IncludePath)</IncludePath>
+    <IncludePath>$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\wieis\Skia\src\skia\out\Static;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;D:\icu\x64\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\codec;$(IncludePath)</IncludePath>
+    <IncludePath>$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;D:\icu\x64\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\core;D:\icu\x64\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\codec;$(IncludePath)</IncludePath>
+    <IncludePath>$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;D:\icu\x64\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,7 +100,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -124,7 +127,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
@@ -192,6 +195,8 @@
     <ClCompile Include="third_party\re2\re2\tostring.cc" />
     <ClCompile Include="third_party\re2\re2\unicode_casefold.cc" />
     <ClCompile Include="third_party\re2\re2\unicode_groups.cc" />
+    <ClCompile Include="third_party\re2\util\rune.cc" />
+    <ClCompile Include="third_party\re2\util\strutil.cc" />
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="togglebutton.cpp" />
     <ClCompile Include="unicode.cpp" />
@@ -258,6 +263,15 @@
     <ClInclude Include="third_party\re2\re2\unicode_casefold.h" />
     <ClInclude Include="third_party\re2\re2\unicode_groups.h" />
     <ClInclude Include="third_party\re2\re2\walker-inl.h" />
+    <ClInclude Include="third_party\re2\util\flags.h" />
+    <ClInclude Include="third_party\re2\util\logging.h" />
+    <ClInclude Include="third_party\re2\util\mix.h" />
+    <ClInclude Include="third_party\re2\util\mutex.h" />
+    <ClInclude Include="third_party\re2\util\sparse_array.h" />
+    <ClInclude Include="third_party\re2\util\sparse_set.h" />
+    <ClInclude Include="third_party\re2\util\strutil.h" />
+    <ClInclude Include="third_party\re2\util\utf.h" />
+    <ClInclude Include="third_party\re2\util\util.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="togglebutton.h" />
     <ClInclude Include="unicode.h" />

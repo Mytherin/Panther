@@ -40,6 +40,7 @@ struct PGBufferUpdate {
 
 struct PGTextBuffer {
 public:
+	PGTextBuffer();
 	PGTextBuffer(const char* text, lng size, lng start_line);
 	~PGTextBuffer();
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.h"
+#include "textbuffer.h"
 
 struct PGRegex;
 typedef PGRegex* PGRegexHandle;
