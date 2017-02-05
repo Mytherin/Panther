@@ -20,8 +20,6 @@
 #include "textiterator.h"
 #include "wrappedtextiterator.h"
 
-#define SCROLLBAR_PADDING 4
-
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TextField);
 
 
@@ -511,10 +509,10 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 
 		// render the scrollbar
 		if (this->display_scrollbar) {
-			scrollbar->UpdateValues(0, 
-				textfile->GetMaxYScroll(), 
-				GetLineHeight(), 
-				textfile->GetWordWrap() ? textfile->GetScrollPercentage() *  textfile->GetMaxYScroll(): textfile->GetLineOffset().linenumber);
+			scrollbar->UpdateValues(0,
+				textfile->GetMaxYScroll(),
+				GetLineHeight(),
+				textfile->GetWordWrap() ? textfile->GetScrollPercentage() *  textfile->GetMaxYScroll() : textfile->GetLineOffset().linenumber);
 			scrollbar->Draw(renderer, rectangle);
 			// horizontal scrollbar
 			display_horizontal_scrollbar = max_xoffset > 0;
@@ -523,7 +521,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 				horizontal_scrollbar->Draw(renderer, rectangle);
 			}
 		}
-		textfile->Unlock(PGReadLock);	
+		textfile->Unlock(PGReadLock);
 	} else {
 		if (textfile->bytes >= 0) {
 			// file is currently being loaded, display the progress bar
@@ -578,7 +576,7 @@ PGScalar TextField::GetMinimapOffset() {
 	GetMinimapLinesRendered(total_lines_rendered, percentage);
 	lng line_offset;
 	textfile->OffsetVerticalScroll(textfile->GetLineOffset(), -(total_lines_rendered * percentage), line_offset);
-	return this->height * ((double) line_offset / (double) total_lines_rendered);
+	return this->height * ((double)line_offset / (double)total_lines_rendered);
 }
 
 PGVerticalScroll TextField::GetMinimapStartLine() {
@@ -794,11 +792,11 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 
 				if (!first) {
 					if (backwards) {
-						if (iterator_line < line || 
+						if (iterator_line < line ||
 							(iterator_line == line && iterator_character + textline.GetLength() < character))
 							break;
 					} else {
-						if (iterator_line > line || 
+						if (iterator_line > line ||
 							(iterator_line == line && iterator_character > character))
 							break;
 					}
@@ -1134,7 +1132,10 @@ void TextField::SelectionChanged() {
 						// file is below automatic threshold: reload without prompting the user
 						textfile->last_modified_time = stats.modification_time;
 						textfile->last_modified_notification = stats.modification_time;
-						textfile->Reload();
+						PGFileError error;
+						if (!textfile->Reload(error)) {
+							DisplayNotification(error);
+						}
 					} else {
 						// file is too large for automatic reload: prompt the user
 						textfile->last_modified_notification = stats.modification_time;
@@ -1144,8 +1145,11 @@ void TextField::SelectionChanged() {
 							((TextField*)control)->ClearNotification();
 						}, this, notification, "Cancel");
 						notification->AddButton([](Control* control, void* data) {
-							((TextFile*)data)->Reload();
 							((TextField*)control)->ClearNotification();
+							PGFileError error;
+							if (!((TextFile*)data)->Reload(error)) {
+								((TextField*)control)->DisplayNotification(error);
+							}
 						}, this, textfile, "Reload");
 						ShowNotification();
 					}
@@ -1339,4 +1343,42 @@ void TextField::ClearNotification() {
 		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this->notification);
 		this->notification = nullptr;
 	}
+}
+
+void TextField::DisplayNotification(PGFileError error) {
+	if (error == PGFileSuccess) return;
+	std::string error_message;
+	switch (error) {
+	case PGFileAccessDenied:
+		error_message = "Access denied.";
+		break;
+	case PGFileNoSpace:
+		error_message = "No space left on device.";
+		break;
+	case PGFileTooLarge:
+		error_message = "File too large.";
+		break;
+	case PGFileReadOnlyFS:
+		error_message = "Read only file system.";
+		break;
+	case PGFileNameTooLong:
+		error_message = "File name too long.";
+		break;
+	case PGFileIOError:
+		error_message = "Unspecified I/O Error.";
+		break;
+	case PGFileEncodingFailure:
+		error_message = "Failed to encode/decode file.";
+		break;
+	default:
+		return;
+	}
+	CreateNotification(PGNotificationTypeError, error_message);
+
+	assert(notification);
+	notification->AddButton([](Control* control, void* data) {
+		// FIXME: close tab
+		((TextField*)control)->ClearNotification();
+	}, this, notification, "Close");
+	ShowNotification();
 }

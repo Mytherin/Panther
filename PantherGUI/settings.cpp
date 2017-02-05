@@ -11,7 +11,8 @@ using namespace nlohmann;
 
 void PGSettings::LoadSettings(std::string filename) {
 	lng result_size;
-	char* ptr = (char*) panther::ReadFile(filename, result_size);
+	PGFileError error;
+	char* ptr = (char*) panther::ReadFile(filename, result_size, error);
 	if (!ptr) {
 		assert(0);
 		return;

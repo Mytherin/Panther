@@ -71,14 +71,14 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 }
 
 
-void TextFile::Reload() {
-	if (!is_loaded) return;
+bool TextFile::Reload(PGFileError& error) {
+	if (!is_loaded) return true;
 
 	lng size = 0;
-	char* base = (char*)panther::ReadFile(path, size);
+	char* base = (char*)panther::ReadFile(path, size, error);
 	if (!base || size < 0) {
 		// FIXME: proper error message
-		return;
+		return false;
 	}
 	std::string text = std::string(base, size);
 	panther::DestroyFileContents(base);
@@ -86,10 +86,17 @@ void TextFile::Reload() {
 		char* output = nullptr;
 		lng output_size = PGConvertText(text, &output, encoding, PGEncodingUTF8);
 		if (!output || output_size < 0) {
-			return;
+			error = PGFileEncodingFailure;
+			return false;
 		}
 		text = std::string(output, output_size);
 		free(output);
+	}
+
+	std::vector<std::string> lines;
+	if (!SplitLines(text, lines)) {
+		error = PGFileEncodingFailure;
+		return false;
 	}
 
 	// first backup the cursors
@@ -99,14 +106,21 @@ void TextFile::Reload() {
 	settings.cursor_data = BackupCursors();
 
 	this->SelectEverything();
-	this->PasteText(text);
+	if (lines.size() == 0 || lines.size() == 1 && lines[0].size() == 0) {
+		this->DeleteCharacter(PGDirectionLeft);
+	} else if (lines.size() == 1) {
+		this->InsertText(lines[0]);
+	} else {
+		this->InsertLines(lines);
+	}
 	this->SetUnsavedChanges(false);
 	this->ApplySettings(settings);
+	return true;
 }
 
-TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, bool immediate_load) {
+TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, PGFileError& error, bool immediate_load) {
 	lng size = 0;
-	char* base = (char*)panther::ReadFile(filename, size);
+	char* base = (char*)panther::ReadFile(filename, size, error);
 	if (!base || size < 0) {
 		// FIXME: proper error message
 		return nullptr;
@@ -891,16 +905,18 @@ void TextFile::InsertLines(const std::vector<std::string>& lines) {
 	PerformOperation(delta);
 }
 
-std::vector<std::string> TextFile::SplitLines(const std::string& text) {
-	std::vector<std::string> lines;
+bool TextFile::SplitLines(const std::string& text, std::vector<std::string>& lines) {
 	lng start = 0;
 	lng current = 0;
 	lng offset = 0;
-	for (auto it = text.begin(); it != text.end(); it++) {
-		if (*it == '\r') {
-			if (*(it + 1) == '\n') {
+	int utf_offset = 0;
+	for (const char* ptr = text.c_str(); *ptr; ptr += utf_offset) {
+		utf_offset = utf8_character_length(*ptr);
+		if (utf_offset <= 0) return false;
+		if (*ptr == '\r') {
+			if (*(ptr + 1) == '\n') {
 				offset = 1;
-				it++;
+				ptr++;
 			} else {
 				lines.push_back(text.substr(start, current - start));
 				start = current + 1;
@@ -908,16 +924,22 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 				continue;
 			}
 		}
-		if (*it == '\n') {
+		if (*ptr == '\n') {
 			lines.push_back(text.substr(start, current - start));
 			start = current + 1 + offset;
 			current = start;
 			offset = 0;
 			continue;
 		}
-		current++;
+		current += utf_offset;
 	}
 	lines.push_back(text.substr(start, current - start));
+	return true;
+}
+
+std::vector<std::string> TextFile::SplitLines(const std::string& text) {
+	std::vector<std::string> lines;
+	SplitLines(text, lines);
 	return lines;
 }
 
@@ -1707,6 +1729,21 @@ void TextFile::Undo(TextDelta* delta) {
 	}
 }
 
+bool TextFile::WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
+	if (size <= 0) return true;
+	if (encoding != PGEncodingUTF8) {
+		// first convert the text
+		lng result_size = PGConvertText(encoder, text, size, output_text, output_size, intermediate_buffer, intermediate_size);
+		if (result_size < 0) {
+			return false;
+		}
+		text = *output_text;
+		size = result_size;
+	}
+	panther::WriteToFile(file, text, size);
+	return true;
+}
+
 void TextFile::SaveChanges() {
 	if (!is_loaded) return;
 	if (this->path == "") return;
@@ -1718,13 +1755,28 @@ void TextFile::SaveChanges() {
 	if (line_ending != PGLineEndingWindows && line_ending != PGLineEndingMacOS && line_ending != PGLineEndingUnix) {
 		line_ending = GetSystemLineEnding();
 	}
-	// FIXME: respect file encoding
-	// FIXME: handle errors properly
-	PGFileHandle handle = panther::OpenFile(this->path, PGFileReadWrite);
+
+	PGFileError error;
+	PGFileHandle handle = panther::OpenFile(this->path, PGFileReadWrite, error);
 	if (!handle) {
-		assert(0);
+		this->Unlock(PGReadLock);
 		return;
 	}
+
+	if (encoding == PGEncodingUTF8BOM) {
+		// first write the BOM
+		unsigned char bom[3] = { 0xEF, 0xBB, 0xBF };
+		panther::WriteToFile(handle, (const char*)bom, 3);
+	}
+	PGEncoderHandle encoder = nullptr;
+	if (encoding != PGEncodingUTF8) {
+		encoder = PGCreateEncoder(PGEncodingUTF8, encoding);
+	}
+	char* intermediate_buffer = nullptr;
+	lng intermediate_size = 0;
+	char* output_buffer = nullptr;
+	lng output_size = 0;
+
 	lng position = 0;
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		char* line = (*it)->buffer;
@@ -1734,16 +1786,16 @@ void TextFile::SaveChanges() {
 		for (i = 0; i < end; i++) {
 			if (line[i] == '\n') {
 				// new line
-				panther::WriteToFile(handle, line + prev_position, i - prev_position);
+				this->WriteToFile(handle, encoder, line + prev_position, i - prev_position, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 				switch (line_ending) {
 				case PGLineEndingWindows:
-					panther::WriteToFile(handle, "\r\n", 2);
+					this->WriteToFile(handle, encoder, "\r\n", 2, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 					break;
 				case PGLineEndingMacOS:
-					panther::WriteToFile(handle, "\r", 1);
+					this->WriteToFile(handle, encoder, "\r", 1, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 					break;
 				case PGLineEndingUnix:
-					panther::WriteToFile(handle, "\n", 1);
+					this->WriteToFile(handle, encoder, "\n", 1, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 					break;
 				default:
 					assert(0);
@@ -1754,8 +1806,19 @@ void TextFile::SaveChanges() {
 		}
 		if (prev_position < (*it)->current_size) {
 			assert((*it) == buffers.back());
-			panther::WriteToFile(handle, line + prev_position, i - prev_position);
+			this->WriteToFile(handle, encoder, line + prev_position, i - prev_position, &output_buffer, &output_size, &intermediate_buffer, &intermediate_size);
 		}
+	}
+	if (intermediate_buffer) {
+		free(intermediate_buffer);
+		intermediate_buffer = nullptr;
+	}
+	if (output_buffer) {
+		free(output_buffer);
+		output_buffer = nullptr;
+	}
+	if (encoder) {
+		PGDestroyEncoder(encoder);
 	}
 	this->Unlock(PGReadLock);
 	panther::CloseFile(handle);

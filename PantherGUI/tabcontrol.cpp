@@ -283,7 +283,8 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 					} else if (path.size() > 0) {
 						// otherwise, if there is a file speciifed
 						// we load the text from the file instead
-						textfile = file_manager.OpenFile(path);
+						PGFileError error;
+						textfile = file_manager.OpenFile(path, error);
 					} else {
 						continue;
 					}
@@ -430,17 +431,23 @@ void TabControl::NewTab() {
 }
 
 void TabControl::OpenFile(std::string path) {
-	TextFile* textfile = file_manager.OpenFile(path);
+	PGFileError error;
+	TextFile* textfile = file_manager.OpenFile(path, error);
 	if (textfile) {
 		AddTab(textfile);
+	} else if (textfield) {
+		this->textfield->DisplayNotification(error);
 	}
 }
 
 
 void TabControl::ReopenFile(PGClosedTab tab) {
-	TextFile* textfile = file_manager.OpenFile(tab.filepath);
+	PGFileError error;
+	TextFile* textfile = file_manager.OpenFile(tab.filepath, error);
 	if (textfile) {
 		AddTab(textfile, tab.id, tab.neighborid);
+	} else if (textfield) {
+		this->textfield->DisplayNotification(error);
 	}
 }
 

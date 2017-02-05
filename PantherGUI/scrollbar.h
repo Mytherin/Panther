@@ -7,6 +7,7 @@ class Scrollbar;
 #define SCROLLBAR_ARROW_SIZE 16
 #define SCROLLBAR_SIZE 16
 #define SCROLLBAR_MINIMUM_SIZE 16
+#define SCROLLBAR_PADDING 4
 
 enum PGScrollbarDragType {
 	PGScrollbarDragNone,

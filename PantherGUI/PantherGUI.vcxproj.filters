@@ -159,6 +159,9 @@
     <ClCompile Include="workspace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="projectexplorer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -180,9 +183,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="textdelta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="encoding.h">
@@ -275,9 +275,6 @@
     <ClInclude Include="regex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="textbuffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="assert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -305,14 +302,23 @@
     <ClInclude Include="textiterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="projectmanager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="workspace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="json.h">
       <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="projectexplorer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dirent.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="textdelta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="textbuffer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -136,3 +136,20 @@ std::vector<std::string> GetClipboardTextHistory() {
 	return clipboard_history;
 }
 
+
+std::string PGFile::Filename() {
+	size_t pos = path.find_last_of(GetSystemPathSeparator());
+	if (pos == std::string::npos) return "";
+	return path.substr(pos + 1);
+}
+
+std::string PGFile::Extension() {
+	size_t pos = path.find_last_of('.');
+	if (pos == std::string::npos) return "";
+	return path.substr(pos + 1);
+}
+
+std::string PGPathJoin(std::string path_one, std::string path_two) {
+	// FIXME: safe path join
+	return path_one + GetSystemPathSeparator() + path_two;
+}

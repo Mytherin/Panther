@@ -10,10 +10,39 @@ struct PGFile {
 };
 
 namespace panther {
-	PGFileHandle OpenFile(std::string filename, PGFileAccess access) {
+	PGFileHandle OpenFile(std::string filename, PGFileAccess access, PGFileError& error) {
 		PGFileHandle handle = new PGFile();
+		error = PGFileSuccess;
 #ifdef WIN32
-		fopen_s(&handle->f, filename.c_str(), access == PGFileReadOnly ? "rb" : (access == PGFileReadWrite ? "wb" : "wb+"));
+		errno_t retval = fopen_s(&handle->f, filename.c_str(), access == PGFileReadOnly ? "rb" : (access == PGFileReadWrite ? "wb" : "wb+"));
+		if (!handle->f) {
+			switch(retval) {
+			case ENOMEM:
+			case ENOSPC:
+				error = PGFileNoSpace;
+				break;
+			case EFBIG:
+				error = PGFileTooLarge;
+				break;
+			case EBUSY:
+			case EIO:
+			case ENFILE:
+				error = PGFileIOError;
+				break;
+			case EROFS:
+				error = PGFileReadOnlyFS;
+				break;
+			case ENAMETOOLONG:
+				error = PGFileNameTooLong;
+				break;
+			case EPERM:
+			case EACCES:
+				error = PGFileAccessDenied;
+				break;
+			default:
+				break;
+			}
+		}
 #else
 		handle->f = fopen(filename.c_str(), access == PGFileReadOnly ? "rb" : (access == PGFileReadWrite ? "wb" : "wb+"));
 #endif
@@ -28,9 +57,9 @@ namespace panther {
 		fclose(handle->f);
 	}
 
-	void* ReadFile(std::string filename, lng& result_size) {
+	void* ReadFile(std::string filename, lng& result_size, PGFileError& error) {
 		result_size = -1;
-		PGFileHandle handle = OpenFile(filename, PGFileReadOnly);
+		PGFileHandle handle = OpenFile(filename, PGFileReadOnly, error);
 		if (!handle) {
 			return nullptr;
 		}
