@@ -494,7 +494,7 @@ void SetWindowTitle(PGWindowHandle window, char* title) {
 	assert(0);
 }
 
-void SetClipboardText(PGWindowHandle window, std::string text) {
+void SetClipboardTextOS(PGWindowHandle window, std::string text) {
 	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
 	[pasteboard clearContents];
 	 NSArray *copiedObjects = [NSArray arrayWithObject:[NSString stringWithUTF8String:text.c_str()]];
@@ -573,14 +573,14 @@ void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submen
 	//assert(0);
 }
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGControlCallback callback, PGPopupMenuFlags flags) {
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupCallback callback, PGPopupMenuFlags flags) {
 	PGPopupInformation info;
 	info.text = text;
 	info.hotkey = "";
 	PGPopupMenuInsertEntry(handle, info, callback, flags);
 }
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation info, PGControlCallback callback, PGPopupMenuFlags flags) {
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation info, PGPopupCallback callback, PGPopupMenuFlags flags) {
 	NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:info.text.c_str()] action:@selector(popupMenuPress:) keyEquivalent:@""];
 	NSValue* _callback = [NSValue valueWithPointer:(void*)callback];
 	NSValue* _handle = [NSValue valueWithPointer:(void*)handle->control];

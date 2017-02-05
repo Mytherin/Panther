@@ -1247,7 +1247,7 @@ void TextField::GetPositionFromLineCharacter(lng line, lng character, PGScalar& 
 	lng index = 0;
 	for (index = 1; index < rendered_lines.size(); index++) {
 		if (rendered_lines[index].line > line || 
-			rendered_lines[index].line == line && rendered_lines[index].position > character) {
+			(rendered_lines[index].line == line && rendered_lines[index].position > character)) {
 			index = index - 1;
 			break;
 		} else if (index == rendered_lines.size() - 1) {
