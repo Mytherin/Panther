@@ -315,17 +315,17 @@ const std::map<int, string>& RE2::CapturingGroupNames() const {
 
 /***** Convenience interfaces *****/
 
-bool RE2::FullMatchN(const PGRegexContext& text, const RE2& re,
+bool RE2::FullMatchN(const PGTextRange& text, const RE2& re,
                      const Arg* const args[], int n) {
   return re.DoMatch(text, ANCHOR_BOTH, NULL, args, n);
 }
 
-bool RE2::PartialMatchN(const PGRegexContext& text, const RE2& re,
+bool RE2::PartialMatchN(const PGTextRange& text, const RE2& re,
                         const Arg* const args[], int n) {
   return re.DoMatch(text, UNANCHORED, NULL, args, n);
 }
 
-bool RE2::ConsumeN(PGRegexContext* input, const RE2& re,
+bool RE2::ConsumeN(PGTextRange* input, const RE2& re,
                    const Arg* const args[], int n) {
   size_t consumed;
   if (re.DoMatch(*input, ANCHOR_START, &consumed, args, n)) {
@@ -336,7 +336,7 @@ bool RE2::ConsumeN(PGRegexContext* input, const RE2& re,
   }
 }
 
-bool RE2::FindAndConsumeN(PGRegexContext* input, const RE2& re,
+bool RE2::FindAndConsumeN(PGTextRange* input, const RE2& re,
                           const Arg* const args[], int n) {
   size_t consumed;
   if (re.DoMatch(*input, UNANCHORED, &consumed, args, n)) {
@@ -350,7 +350,7 @@ bool RE2::FindAndConsumeN(PGRegexContext* input, const RE2& re,
 bool RE2::ConsumeNSP(StringPiece* input, const RE2& re,
                    const Arg* const args[], int n) {
   size_t consumed;
-  if (re.DoMatch(*input, ANCHOR_START, &consumed, args, n)) {
+  if (re.DoMatch(input->as_string(), ANCHOR_START, &consumed, args, n)) {
     input->remove_prefix(consumed);
     return true;
   } else {
@@ -361,7 +361,7 @@ bool RE2::ConsumeNSP(StringPiece* input, const RE2& re,
 bool RE2::FindAndConsumeNSP(StringPiece* input, const RE2& re,
                           const Arg* const args[], int n) {
   size_t consumed;
-  if (re.DoMatch(*input, UNANCHORED, &consumed, args, n)) {
+  if (re.DoMatch(input->as_string(), UNANCHORED, &consumed, args, n)) {
     input->remove_prefix(consumed);
     return true;
   } else {
@@ -580,15 +580,15 @@ bool RE2::Match(const StringPiece& str_context,
         Anchor anchor,
         StringPiece *match,
         int nmatch) const {
-  PGRegexContext context = PGRegexContext(str_context);
+  PGTextRange context = PGTextRange(str_context.as_string());
 
-  PGRegexContext text;
+  PGTextRange text;
   text.start_buffer = context.start_buffer;
   text.end_buffer = context.end_buffer;
   text.start_position = startpos;
   text.end_position = endpos;
 
-  PGRegexContext* submatches = (PGRegexContext*) malloc(sizeof(PGRegexContext) * nmatch);
+  PGTextRange* submatches = (PGTextRange*) malloc(sizeof(PGTextRange) * nmatch);
   for(int i = 0; i < nmatch; i++) {
     submatches[i].start_buffer = nullptr;
     match[i] = StringPiece();
@@ -604,10 +604,10 @@ bool RE2::Match(const StringPiece& str_context,
   return retval;
 }
 
-bool RE2::Match(const PGRegexContext& context,
-                PGRegexContext subtext,
+bool RE2::Match(const PGTextRange& context,
+                PGTextRange subtext,
                 Anchor re_anchor,
-                PGRegexContext* submatch,
+                PGTextRange* submatch,
                 int nsubmatch) const {
   if (!ok() || suffix_regexp_ == NULL) {
     if (options_.log_errors())
@@ -619,8 +619,8 @@ bool RE2::Match(const PGRegexContext& context,
 
   // Don't ask for the location if we won't use it.
   // SearchDFA can do extra optimizations in that case.
-  PGRegexContext match;
-  PGRegexContext* matchp = &match;
+  PGTextRange match;
+  PGTextRange* matchp = &match;
   if (nsubmatch == 0)
     matchp = NULL;
 
@@ -765,7 +765,7 @@ bool RE2::Match(const PGRegexContext& context,
     if (ncap == 1)
       submatch[0] = match;
   } else {
-    PGRegexContext subtext1;
+    PGTextRange subtext1;
     if (skipped_test) {
       // DFA ran out of memory or was skipped:
       // need to search in entire original text.
@@ -811,12 +811,12 @@ bool RE2::Match(const PGRegexContext& context,
   
   // Zero submatches that don't exist in the regexp.
   for (int i = ncap; i < nsubmatch; i++)
-    submatch[i] = PGRegexContext();
+    submatch[i] = PGTextRange();
   return true;
 }
 
 // Internal matcher - like Match() but takes Args not StringPieces.
-bool RE2::DoMatch(const PGRegexContext& text,
+bool RE2::DoMatch(const PGTextRange& text,
                   Anchor anchor,
                   size_t* consumed,
                   const Arg* const* args,
@@ -834,14 +834,14 @@ bool RE2::DoMatch(const PGRegexContext& text,
   else
     nvec = n+1;
 
-  PGRegexContext* vec;
-  PGRegexContext stkvec[kVecSize];
-  PGRegexContext* heapvec = NULL;
+  PGTextRange* vec;
+  PGTextRange stkvec[kVecSize];
+  PGTextRange* heapvec = NULL;
 
   if (nvec <= arraysize(stkvec)) {
     vec = stkvec;
   } else {
-    vec = new PGRegexContext[nvec];
+    vec = new PGTextRange[nvec];
     heapvec = vec;
   }
 
@@ -868,7 +868,7 @@ bool RE2::DoMatch(const PGRegexContext& text,
 
   // If we got here, we must have matched the whole pattern.
   for (int i = 0; i < n; i++) {
-    const PGRegexContext& s = vec[i+1];
+    const PGTextRange& s = vec[i+1];
     auto match = s.GetString();
     if (!args[i]->Parse(match.data(), match.size())) {
       // TODO: Should we indicate what the error was?

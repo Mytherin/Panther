@@ -1943,8 +1943,8 @@ PGFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, PGTe
 		*error_message = panther::strdup("Error");
 		return PGFindMatch(-1, -1, -1, -1);
 	}
-	PGRegexBounds bounds = PGRegexBounds(begin_buffer, begin_position, end, end->current_size);
-	PGRegexMatch match = PGMatchRegex(regex_handle, bounds, direction);
+	PGTextRange bounds = PGTextRange(begin_buffer, begin_position, end, end->current_size);
+	PGRegexMatch match = PGMatchRegex(regex_handle, bounds);
 	if (match.matched) {
 		lng start_line, start_character;
 		lng end_line, end_character;

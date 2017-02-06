@@ -102,7 +102,7 @@ bool RE2::Set::Match(const StringPiece& text, std::vector<int>* v) const {
   if (v != NULL)
     v->clear();
   bool dfa_failed = false;
-  bool ret = prog_->SearchDFA(text, text, Prog::kAnchored,
+  bool ret = prog_->SearchDFA(text.as_string(), text.as_string(), Prog::kAnchored,
                               Prog::kManyMatch, NULL, &dfa_failed, v);
   if (dfa_failed) {
     if (options_.log_errors())

@@ -288,7 +288,7 @@ static bool IsMatch(Prog* prog, Prog::Inst* ip) {
   }
 }
 
-uint32_t Prog::EmptyFlags(const PGRegexContext& context, PGTextPosition p) {
+uint32_t Prog::EmptyFlags(const PGTextRange& context, PGTextPosition p) {
   int flags = 0;
 
   PGTextPosition prev = p - 1;
@@ -324,7 +324,7 @@ uint32_t Prog::EmptyFlags(const PGRegexContext& context, PGTextPosition p) {
   return flags;
 }
 
-uint32_t Prog::EmptyFlagsCharacter(const PGRegexContext& text, const char* p) {
+uint32_t Prog::EmptyFlagsCharacter(const StringPiece& text, const char* p) {
   int flags = 0;
 
   // ^ and \A

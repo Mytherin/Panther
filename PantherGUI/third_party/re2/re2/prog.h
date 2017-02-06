@@ -211,8 +211,8 @@ class Prog {
 
   // Returns the set of kEmpty flags that are in effect at
   // position p within context.
-  static uint32_t EmptyFlags(const PGRegexContext& context, PGTextPosition p);
-  static uint32_t EmptyFlagsCharacter(const PGRegexContext& context, const char* p);
+  static uint32_t EmptyFlags(const PGTextRange& context, PGTextPosition p);
+  static uint32_t EmptyFlagsCharacter(const StringPiece& context, const char* p);
 
   // Returns whether byte c is a word character: ASCII only.
   // Used by the implementation of \b and \B.
@@ -243,9 +243,9 @@ class Prog {
   // match anything.  Either way, match[i] == NULL.
 
   // Search using NFA: can find submatches but kind of slow.
-  bool SearchNFA(const PGRegexContext& text, const PGRegexContext& context,
+  bool SearchNFA(const PGTextRange& text, const PGTextRange& context,
                  Anchor anchor, MatchKind kind,
-                 PGRegexContext* match, int nmatch);
+                 PGTextRange* match, int nmatch);
 
   // Search using DFA: much faster than NFA but only finds
   // end of match and can use a lot more memory.
@@ -253,8 +253,8 @@ class Prog {
   // If the DFA runs out of memory, sets *failed to true and returns false.
   // If matches != NULL and kind == kManyMatch and there is a match,
   // SearchDFA fills matches with the match IDs of the final matching state.
-  bool SearchDFA(const PGRegexContext& text, const PGRegexContext& const_context,
-                     Anchor anchor, MatchKind kind, PGRegexContext* match0,
+  bool SearchDFA(const PGTextRange& text, const PGTextRange& const_context,
+                     Anchor anchor, MatchKind kind, PGTextRange* match0,
                      bool* failed, std::vector<int>* matches);
 
   // Build the entire DFA for the given match kind.  FOR TESTING ONLY.
@@ -281,15 +281,15 @@ class Prog {
   // but much faster than NFA (competitive with PCRE)
   // for those expressions.
   bool IsOnePass();
-  bool SearchOnePass(const PGRegexContext& text, const PGRegexContext& context,
+  bool SearchOnePass(const PGTextRange& text, const PGTextRange& context,
                      Anchor anchor, MatchKind kind,
-                     PGRegexContext* match, int nmatch);
+                     PGTextRange* match, int nmatch);
 
   // Bit-state backtracking.  Fast on small cases but uses memory
   // proportional to the product of the program size and the text size.
-  bool SearchBitState(const PGRegexContext& text, const PGRegexContext& context,
+  bool SearchBitState(const PGTextRange& text, const PGTextRange& context,
                       Anchor anchor, MatchKind kind,
-                      PGRegexContext* match, int nmatch);
+                      PGTextRange* match, int nmatch);
   bool SearchBitState(const StringPiece& text,
                           const StringPiece& context,
                           Anchor anchor,

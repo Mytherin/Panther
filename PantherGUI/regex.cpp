@@ -11,24 +11,6 @@ struct PGRegex {
 	std::unique_ptr<RE2> regex;
 };
 
-static PGRegexContext PGContextFromBounds(PGRegexBounds in) {
-	PGRegexContext out;
-	out.start_buffer = in.start_buffer;
-	out.start_position = in.start_position;
-	out.end_buffer = in.end_buffer;
-	out.end_position = in.end_position;
-	return out;
-}
-
-static PGRegexBounds PGBoundsFromContext(PGRegexContext in) {
-	PGRegexBounds out;
-	out.start_buffer = in.start_buffer;
-	out.start_position = in.start_position;
-	out.end_buffer = in.end_buffer;
-	out.end_position = in.end_position;
-	return out;
-}
-
 PGRegexHandle PGCompileRegex(std::string& pattern, PGRegexFlags flags) {
 	RE2::Options options;
 	options.set_case_sensitive(!(flags & PGRegexCaseInsensitive));
@@ -42,22 +24,34 @@ PGRegexHandle PGCompileRegex(std::string& pattern, PGRegexFlags flags) {
 	return handle;
 }
 
-PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGRegexBounds bounds, PGDirection direction) {
+PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context) {
 	PGRegexMatch match;
 	match.matched = false;
 	if (!handle) {
 		return match;
 	}
 
-	PGRegexContext context = PGContextFromBounds(bounds);
-	PGRegexContext subtext = context;
-	PGRegexContext matches[PGREGEX_MAXIMUM_MATCHES];
-	match.matched = handle->regex.get()->Match(context, subtext, RE2::UNANCHORED, matches, PGREGEX_MAXIMUM_MATCHES);
-	if (match.matched) {
-		for (int i = 0; i < PGREGEX_MAXIMUM_MATCHES; i++) {
-			match.groups[i] = PGBoundsFromContext(matches[i]);
-		}
-	}
+	PGTextRange subtext = context;
+	match.matched = handle->regex.get()->Match(context, subtext, RE2::UNANCHORED, match.groups, PGREGEX_MAXIMUM_MATCHES);
+	return match;
+}
+
+PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& context) {
+	PGTextBuffer buffer;
+	buffer.buffer = (char*) context.data();
+	buffer.current_size = context.size();
+	buffer.start_line = 0;
+	buffer.prev = nullptr;
+	buffer.next = nullptr;
+
+	PGTextRange text;
+	text.start_buffer = &buffer;
+	text.start_position = 0;
+	text.end_buffer = &buffer;
+	text.end_position = buffer.current_size;
+	PGRegexMatch match = PGMatchRegex(handle, text);
+	buffer.buffer = nullptr;
+	buffer.current_size = 0;
 	return match;
 }
 

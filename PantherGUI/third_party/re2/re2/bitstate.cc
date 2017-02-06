@@ -370,9 +370,9 @@ bool BitState::Search(const StringPiece& text, const StringPiece& context,
 
 // Bit-state search.
 
-bool Prog::SearchBitState(const PGRegexContext& text, const PGRegexContext& context,
+bool Prog::SearchBitState(const PGTextRange& text, const PGTextRange& context,
                       Anchor anchor, MatchKind kind,
-                      PGRegexContext* match, int nmatch) {
+                      PGTextRange* match, int nmatch) {
   // bit states only work on single buffers
   if (text.start_buffer != text.end_buffer) {
     return false;

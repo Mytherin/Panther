@@ -27,74 +27,8 @@
 #include <string>
 #include <malloc.h>
 
-#include "../../../utils.h"
 #include "../../../textbuffer.h"
-
-struct PGTextPosition {
-  PGTextBuffer* buffer = nullptr;
-  lng position = 0;
-
-  lng GetPosition(PGTextBuffer* start_buffer) {
-    lng current_position = 0;
-    PGTextBuffer* current_buffer = start_buffer;
-    while(current_buffer != buffer) {
-      current_position += current_buffer->current_size;
-      current_buffer = current_buffer->next;
-    }
-    current_position += position;
-    return current_position;
-  }
-
-  char* data() { return buffer->buffer + position; }
-
-  PGTextPosition(PGTextBuffer* buffer, const char* ptr) : buffer(buffer), position(ptr - buffer->buffer) { }
-  PGTextPosition() : buffer(nullptr), position(0) { }
-  PGTextPosition(PGTextBuffer* buffer) : buffer(buffer), position(0) { }
-  PGTextPosition(PGTextBuffer* buffer, lng position) : buffer(buffer), position(position) { }
-
-  inline char operator* (){ return buffer ? buffer->buffer[position] : '\0'; }
-
-
-  void Offset(lng offset) {
-    if (buffer == nullptr) {
-      return;
-    }
-    position += offset;
-    while(position >= (lng) buffer->current_size) {
-      if (!buffer->next) return;
-      position -= buffer->current_size;
-      buffer = buffer->next;
-    }
-    while(position < 0) {
-      buffer = buffer->prev;
-      if (!buffer) return;
-      position += buffer->current_size;
-    }
-  }
-};
-
-inline bool operator< (const PGTextPosition& lhs, const PGTextPosition& rhs) { 
-  return (lhs.buffer->start_line < rhs.buffer->start_line) || 
-    (lhs.buffer->start_line == rhs.buffer->start_line && lhs.position < rhs.position);
-}
-inline bool operator> (const PGTextPosition& lhs, const PGTextPosition& rhs){ return rhs < lhs; }
-inline bool operator<=(const PGTextPosition& lhs, const PGTextPosition& rhs){ return !(lhs > rhs); }
-inline bool operator>=(const PGTextPosition& lhs, const PGTextPosition& rhs){ return !(lhs < rhs); }
-inline bool operator== (const PGTextPosition& lhs, const PGTextPosition& rhs){ 
-  return (lhs.buffer == rhs.buffer && lhs.position == rhs.position);
-}
-inline bool operator!= (const PGTextPosition& lhs, const PGTextPosition& rhs){ return !(lhs == rhs); }
-
-
-inline PGTextPosition operator+ (PGTextPosition lhs, lng rhs) {
-  lhs.Offset(rhs);
-  return lhs;
-}
-inline PGTextPosition operator- (const PGTextPosition& lhs, lng rhs) {
-  return lhs + (-rhs);
-}
-
-#include <memory>
+#include "../../../textposition.h"
 
 namespace re2 {
 
@@ -117,13 +51,13 @@ class StringPiece {
   // in a "const char*" or a "string" wherever a "StringPiece" is
   // expected.
   StringPiece()
-      : data_(NULL), size_(0), owned_data_(nullptr) {}
+      : data_(NULL), size_(0) {}
   StringPiece(const std::string& str)
-      : data_(str.data()), size_(str.size()), owned_data_(nullptr) {}
+      : data_(str.data()), size_(str.size()) {}
   StringPiece(const char* str)
-      : data_(str), size_(str == NULL ? 0 : strlen(str)), owned_data_(nullptr) {}
+      : data_(str), size_(str == NULL ? 0 : strlen(str)) {}
   StringPiece(const char* str, size_type len, bool own_data = false)
-      : data_(str), size_(len), owned_data_(own_data ? (char*) str : nullptr) {}
+      : data_(str), size_(len) {}
 
 
   const_iterator begin() const { return data_; }
@@ -222,7 +156,6 @@ class StringPiece {
  private:
   const_pointer data_;
   size_type size_;
-  std::shared_ptr<char> owned_data_;
 };
 
 inline bool operator==(const StringPiece& x, const StringPiece& y) {
@@ -258,86 +191,5 @@ inline bool operator>=(const StringPiece& x, const StringPiece& y) {
 std::ostream& operator<<(std::ostream& o, const StringPiece& p);
 
 }  // namespace re2
-
-
-struct PGRegexContext {
-  PGTextBuffer* start_buffer;
-  lng start_position;
-  PGTextBuffer* end_buffer;
-  lng end_position;
-
-  PGRegexContext(re2::StringPiece text) {
-    PGTextBuffer* buffer = new PGTextBuffer(text.data(), text.size(), 0);
-    buffer->prev = nullptr;
-    buffer->next = nullptr;
-    buffer->buffer = (char*) text.data();
-    buffer->current_size = text.size();
-
-    this->start_buffer = buffer;
-    this->start_position = 0;
-    this->end_buffer = buffer;
-    this->end_position = buffer->current_size;
-  }
-
-  PGRegexContext(PGTextPosition start, PGTextPosition end) : 
-    start_buffer(start.buffer), start_position(start.position),
-    end_buffer(end.buffer), end_position(end.position) { }
-
-  PGRegexContext() : start_buffer(nullptr), start_position(0), end_buffer(nullptr), end_position(0) { }
-
-  re2::StringPiece GetString() const {
-    if (!start_buffer || !end_buffer) {
-      return re2::StringPiece();
-    }
-    if (start_buffer == end_buffer) {
-      return re2::StringPiece(start_buffer->buffer + start_position, end_position - start_position);
-    }
-    size_t size = 0;
-    PGTextBuffer* buffer = start_buffer;
-    lng position = start_position;
-    while(buffer != end_buffer) {
-      size += buffer->current_size - position;
-      position = 0;
-      buffer = buffer->next;
-    }
-    size += end_position - position;
-    char* data = (char*) malloc(size * sizeof(char) + 1);
-    if (!data) {
-      return re2::StringPiece();
-    }
-    char* current_data = data;
-    buffer = start_buffer;
-    position = start_position;
-    while(buffer != end_buffer) {
-      size_t size = buffer->current_size - position;
-      memcpy(current_data, buffer->buffer + position, size);
-      current_data += size;
-      position = 0;
-      buffer = buffer->next;
-    }
-    memcpy(current_data, buffer->buffer + position, end_position - position);
-    re2::StringPiece result = re2::StringPiece(data, size, true);
-    return result;
-  }
-
-  // "data" has to be lowercase
-  int ascii_strcasecmp(const char* data, size_t length) const;
-  int _memcmp(const char* data, size_t length) const;
-  PGTextPosition _memchr(int value) const;
-  PGTextPosition _memrchr(int value) const;
-
-
-  PGTextPosition startpos() const { return PGTextPosition(start_buffer, start_position); }
-  PGTextPosition endpos() const { return PGTextPosition(end_buffer, end_position); }
-
-  char* begin() const { return start_buffer->buffer + start_position; }
-  char* end_start() const { return 
-    start_buffer == end_buffer ? 
-    start_buffer->buffer + end_position : 
-    start_buffer->buffer + start_buffer->current_size; }
-  char* end() const { return end_buffer->buffer + end_position; }
-
-  void remove_prefix(size_t length);
-};
 
 #endif  // RE2_STRINGPIECE_H_

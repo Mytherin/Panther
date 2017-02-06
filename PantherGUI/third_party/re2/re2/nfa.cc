@@ -58,9 +58,9 @@ class NFA {
   // Submatch[0] is the entire match.  When there is a choice in
   // which text matches each subexpression, the submatch boundaries
   // are chosen to match what a backtracking implementation would choose.
-  bool Search(const PGRegexContext& text, const PGRegexContext& context,
+  bool Search(const PGTextRange& text, const PGTextRange& context,
               bool anchored, bool longest,
-              PGRegexContext* submatch, int nsubmatch);
+              PGTextRange* submatch, int nsubmatch);
 
  private:
   struct Thread {
@@ -410,13 +410,13 @@ int NFA::Step(Threadq* runq, Threadq* nextq, int c, int flag, PGTextPosition p) 
   return 0;
 }
 
-bool NFA::Search(const PGRegexContext& text, const PGRegexContext& const_context,
+bool NFA::Search(const PGTextRange& text, const PGTextRange& const_context,
             bool anchored, bool longest,
-            PGRegexContext* submatch, int nsubmatch) {
+            PGTextRange* submatch, int nsubmatch) {
   if (start_ == 0)
     return false;
 
-  PGRegexContext context = const_context;
+  PGTextRange context = const_context;
   if (context.begin() == NULL)
     context = text;
 
@@ -573,7 +573,7 @@ bool NFA::Search(const PGRegexContext& text, const PGRegexContext& const_context
       // use memchr to search for the byte quickly.
       int fb = prog_->first_byte();
       if (!anchored && runq->size() == 0 && fb >= 0 && current_position < text.endpos() && (p[0] & 0xFF) != fb) {
-        PGRegexContext remaining_text(current_position, text.endpos());
+        PGTextRange remaining_text(current_position, text.endpos());
         PGTextPosition position = remaining_text._memchr(fb);
 
         if (position.buffer == NULL) {
@@ -614,7 +614,7 @@ bool NFA::Search(const PGRegexContext& text, const PGRegexContext& const_context
   if (matched_) {
     for (int i = 0; i < nsubmatch; i++)
       submatch[i] =
-          PGRegexContext(match_[2 * i], match_[2 * i + 1]);
+          PGTextRange(match_[2 * i], match_[2 * i + 1]);
     return true;
   }
   return false;
@@ -682,14 +682,14 @@ int Prog::ComputeFirstByte() {
 }
 
 bool
-Prog::SearchNFA(const PGRegexContext& text, const PGRegexContext& context,
+Prog::SearchNFA(const PGTextRange& text, const PGTextRange& context,
                 Anchor anchor, MatchKind kind,
-                PGRegexContext* match, int nmatch) {
+                PGTextRange* match, int nmatch) {
   if (ExtraDebug)
     Dump();
 
   NFA nfa(this);
-  PGRegexContext sp;
+  PGTextRange sp;
   if (kind == kFullMatch) {
     anchor = kAnchored;
     if (nmatch == 0) {

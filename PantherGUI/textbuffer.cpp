@@ -27,7 +27,9 @@ PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
 }
 
 PGTextBuffer::~PGTextBuffer() {
-	delete buffer;
+	if (buffer) {
+		delete buffer;
+	}
 }
 
 lng PGTextBuffer::GetLineCount(lng total_lines) {

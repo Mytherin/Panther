@@ -188,7 +188,7 @@ void OnePass_Checks() {
                 "kMaxCap disagrees with kMaxOnePassCapture");
 }
 
-static bool Satisfy(uint32_t cond, const PGRegexContext& context, PGTextPosition p) {
+static bool Satisfy(uint32_t cond, const PGTextRange& context, PGTextPosition p) {
   uint32_t satisfied = Prog::EmptyFlags(context, p);
   if (cond & kEmptyAllFlags & ~satisfied)
     return false;
@@ -210,10 +210,10 @@ static inline OneState* IndexToNode(uint8_t* nodes, int statesize,
   return reinterpret_cast<OneState*>(nodes + statesize*nodeindex);
 }
 
-bool Prog::SearchOnePass(const PGRegexContext& text,
-                         const PGRegexContext& const_context,
+bool Prog::SearchOnePass(const PGTextRange& text,
+                         const PGTextRange& const_context,
                          Anchor anchor, MatchKind kind,
-                         PGRegexContext* match, int nmatch) {
+                         PGTextRange* match, int nmatch) {
   if (anchor != kAnchored && kind != kFullMatch) {
     LOG(DFATAL) << "Cannot use SearchOnePass for unanchored matches.";
     return false;
@@ -233,7 +233,7 @@ bool Prog::SearchOnePass(const PGRegexContext& text,
   for (int i = 0; i < ncap; i++)
     matchcap[i].buffer = NULL;
 
-  PGRegexContext context = const_context;
+  PGTextRange context = const_context;
   if (context.begin() == NULL)
     context = text;
   if (anchor_start() && context.begin() != text.begin())
@@ -354,7 +354,7 @@ done:
   if (!matched)
     return false;
   for (int i = 0; i < nmatch; i++)
-    match[i] = PGRegexContext(matchcap[2 * i], matchcap[2 * i + 1]);
+    match[i] = PGTextRange(matchcap[2 * i], matchcap[2 * i + 1]);
   return true;
 }
 

@@ -1271,7 +1271,7 @@ Prog* Compiler::CompileSet(const RE2::Options& options, RE2::Anchor anchor,
   PGTextBuffer buffer1;
   buffer1.buffer = (char*) text;
   buffer1.current_size = strlen(buffer1.buffer);
-  PGRegexContext context;
+  PGTextRange context;
   context.start_buffer = &buffer1;
   context.start_position = 0;
   context.end_buffer = &buffer1;

@@ -234,6 +234,9 @@
     <ClCompile Include="third_party\re2\util\strutil.cc">
       <Filter>Source Files\regex</Filter>
     </ClCompile>
+    <ClCompile Include="textposition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -457,6 +460,9 @@
     </ClInclude>
     <ClInclude Include="third_party\re2\util\mix.h">
       <Filter>Header Files\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="textposition.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

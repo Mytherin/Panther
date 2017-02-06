@@ -81,8 +81,8 @@ class DFA {
   //   returning the leftmost end of the match instead of the rightmost one.
   // If the DFA cannot complete the search (for example, if it is out of
   //   memory), it sets *failed and returns false.
-  bool Search(const PGRegexContext& text,
-                 const PGRegexContext& context,
+  bool Search(const PGTextRange& text,
+                 const PGTextRange& context,
                  bool anchored,
                  bool want_earliest_match,
                  bool run_forward,
@@ -240,7 +240,7 @@ class DFA {
 
   // Search parameters
   struct SearchParams {
-    SearchParams(const PGRegexContext& text, const PGRegexContext& context,
+    SearchParams(const PGTextRange& text, const PGTextRange& context,
                  RWLocker* cache_lock)
       : text(text), context(context),
         anchored(false),
@@ -253,8 +253,8 @@ class DFA {
         ep(NULL),
         matches(NULL) { }
 
-    PGRegexContext text;
-    PGRegexContext context;
+    PGTextRange text;
+    PGTextRange context;
     bool anchored;
     bool want_earliest_match;
     bool run_forward;
@@ -1294,7 +1294,7 @@ inline bool DFA::InlinedSearchLoop(SearchParams* params,
                                    bool want_earliest_match,
                                    bool run_forward) {
   State* start = params->start;
-  PGRegexContext* piece = &params->text;
+  PGTextRange* piece = &params->text;
   PGTextBuffer* current_buffer;
   const uint8_t* bp;            // start of text
   const uint8_t* p;             // text scanning point
@@ -1344,14 +1344,14 @@ inline bool DFA::InlinedSearchLoop(SearchParams* params,
 
         // FIXME: use memchr on buffers
         if (run_forward) {
-          PGRegexContext remaining_text(PGTextPosition(current_buffer, (char*)p), piece->endpos());
+          PGTextRange remaining_text(PGTextPosition(current_buffer, (char*)p), piece->endpos());
           PGTextPosition position = remaining_text._memchr(params->firstbyte);
           current_buffer = position.buffer == nullptr ? piece->end_buffer : position.buffer;
           ep = (const uint8_t*) current_buffer->buffer +  (piece->start_buffer == piece->end_buffer ? piece->end_position : current_buffer->current_size);
           p = position.buffer == nullptr ? ep : (const uint8_t*) current_buffer->buffer + position.position;
           if (position.buffer == nullptr) break;
         } else {
-          PGRegexContext remaining_text(piece->startpos(), PGTextPosition(current_buffer, (char*)p));
+          PGTextRange remaining_text(piece->startpos(), PGTextPosition(current_buffer, (char*)p));
           PGTextPosition position = remaining_text._memrchr(params->firstbyte);
           if (position.buffer != nullptr) position = position + 1;
           current_buffer = position.buffer == nullptr ? piece->end_buffer : position.buffer;
@@ -1638,8 +1638,8 @@ bool DFA::FastSearchLoop(SearchParams* params) {
 // state for the DFA search loop.  Fills in params and returns true on success.
 // Returns false on failure.
 bool DFA::AnalyzeSearch(SearchParams* params) {
-  const PGRegexContext& text = params->text;
-  const PGRegexContext& context = params->context;
+  const PGTextRange& text = params->text;
+  const PGTextRange& context = params->context;
 
   // Sanity check: make sure that text lies within context.
   if (text.startpos() < context.startpos() || text.endpos() > context.endpos()) {
@@ -1774,8 +1774,8 @@ bool DFA::AnalyzeSearchHelper(SearchParams* params, StartInfo* info,
 }
 
 // The actual DFA search: calls AnalyzeSearch and then FastSearchLoop.
-bool DFA::Search(const PGRegexContext& text,
-                 const PGRegexContext& context,
+bool DFA::Search(const PGTextRange& text,
+                 const PGTextRange& context,
                  bool anchored,
                  bool want_earliest_match,
                  bool run_forward,
@@ -1866,12 +1866,12 @@ void Prog::DeleteDFA(DFA* dfa) {
 //
 // This is the only external interface (class DFA only exists in this file).
 //
-bool Prog::SearchDFA(const PGRegexContext& text, const PGRegexContext& const_context,
-                     Anchor anchor, MatchKind kind, PGRegexContext* match0,
+bool Prog::SearchDFA(const PGTextRange& text, const PGTextRange& const_context,
+                     Anchor anchor, MatchKind kind, PGTextRange* match0,
                      bool* failed, std::vector<int>* matches) {
   *failed = false;
 
-  PGRegexContext context = const_context;
+  PGTextRange context = const_context;
   if (context.begin() == NULL)
     context = text;
   bool carat = anchor_start();
@@ -1946,7 +1946,7 @@ int DFA::BuildAllStates() {
   // Pick out start state for unanchored search
   // at beginning of text.
   RWLocker l(&cache_mutex_);
-  SearchParams params(PGRegexContext(), PGRegexContext(), &l);
+  SearchParams params(PGTextRange(), PGTextRange(), &l);
   params.anchored = false;
   if (!AnalyzeSearch(&params) || params.start <= SpecialStateMax)
     return 0;
@@ -2006,7 +2006,7 @@ bool DFA::PossibleMatchRange(string* min, string* max, int maxlen) {
 
   // Pick out start state for anchored search at beginning of text.
   RWLocker l(&cache_mutex_);
-  SearchParams params(PGRegexContext(), PGRegexContext(), &l);
+  SearchParams params(PGTextRange(), PGTextRange(), &l);
   params.anchored = true;
   if (!AnalyzeSearch(&params))
     return false;
