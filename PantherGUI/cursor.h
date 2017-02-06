@@ -3,33 +3,13 @@
 #include <string>
 #include "utils.h"
 #include "textbuffer.h"
+#include "textposition.h"
 
 #include <vector>
 #include "windowfunctions.h"
 
 class TextFile;
 class TextField;
-struct CursorPosition;
-
-struct CursorPosition {
-	PGTextBuffer* buffer;
-	lng position;
-
-	friend bool operator< (const CursorPosition& lhs, const CursorPosition& rhs) {
-		return (lhs.buffer->start_line < rhs.buffer->start_line ||
-			(lhs.buffer->start_line == rhs.buffer->start_line && lhs.position < rhs.position));
-	}
-	friend bool operator> (const CursorPosition& lhs, const CursorPosition& rhs){ return rhs < lhs; }
-	friend bool operator<=(const CursorPosition& lhs, const CursorPosition& rhs){ return !(lhs > rhs); }
-	friend bool operator>=(const CursorPosition& lhs, const CursorPosition& rhs){ return !(lhs < rhs); }
-
-	friend bool operator==(const CursorPosition& lhs, const CursorPosition& rhs) {
-		return (lhs.buffer->start_line == rhs.buffer->start_line && lhs.position == rhs.position);
-	}
-	friend bool operator!=(const CursorPosition& lhs, const CursorPosition& rhs){ return !(lhs == rhs); }
-
-	CursorPosition(PGTextBuffer* buffer, lng position) : buffer(buffer), position(position) { }
-};
 
 struct CursorData {
 	lng start_line;
@@ -40,16 +20,6 @@ struct CursorData {
 	CursorData(lng start_line, lng start_position, lng end_line, lng end_position) :
 		start_line(start_line), start_position(start_position), end_line(end_line), end_position(end_position) {
 	}
-};
-
-struct CursorSelection {
-	CursorPosition begin;
-	CursorPosition end;
-
-	CursorSelection(PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position) :
-		begin(start_buffer, start_position), end(end_buffer, end_position) { }
-	CursorSelection() : 
-		begin(nullptr, 0), end(nullptr, 0) { }
 };
 
 class Cursor {
@@ -63,7 +33,7 @@ public:
 	static std::vector<CursorData> GetCursorData(std::vector<Cursor*> cursors);
 
 	CursorData GetCursorData();
-	CursorSelection GetCursorSelection();
+	PGTextRange GetCursorSelection();
 
 	void OffsetLine(lng offset);
 	void OffsetCharacter(PGDirection direction);
@@ -94,7 +64,7 @@ public:
 	PGCharacterPosition BeginCharacterPosition();
 	PGCharacterPosition EndCharacterPosition();
 
-	PGScalar GetXOffset(CursorPosition position);
+	PGScalar GetXOffset(PGTextPosition position);
 	PGScalar BeginXPosition();
 	PGScalar EndXPosition();
 	PGScalar SelectedXPosition();
@@ -116,13 +86,14 @@ public:
 	void SetCursorStartLocation(lng linenr, lng characternr);
 	void SetCursorLocation(lng linenr, lng characternr);
 
-	void ApplyMinimalSelection(CursorSelection selection);
+	void ApplyMinimalSelection(PGTextRange selection);
+
+	PGTextPosition BeginCursorPosition();
+	PGTextPosition EndCursorPosition();
 private:
 	void _SetCursorStartLocation(lng linenr, lng characternr);
 
 	static bool CursorPositionOccursFirst(PGTextBuffer* a, lng a_pos, PGTextBuffer* b, lng b_pos);
-	CursorPosition BeginCursorPosition();
-	CursorPosition EndCursorPosition();
 
 	TextFile* file;
 	PGTextBuffer* start_buffer;

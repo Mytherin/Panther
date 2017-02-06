@@ -99,7 +99,7 @@ private:
 	bool display_scrollbar;
 	bool display_horizontal_scrollbar = false;
 	PGScalar drag_offset;
-	std::map<Cursor*, CursorSelection> minimal_selections;
+	std::map<Cursor*, PGTextRange> minimal_selections;
 
 	std::vector<RenderedLine> rendered_lines;
 

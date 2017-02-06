@@ -438,12 +438,12 @@ PGCursorPosition Cursor::UnselectedPosition() {
 }
 
 PGCursorPosition Cursor::BeginPosition() {
-	CursorPosition begin = BeginCursorPosition();
+	PGTextPosition begin = BeginCursorPosition();
 	return begin.buffer->GetCursorFromPosition(begin.position, file->GetLineCount());
 }
 
 PGCursorPosition Cursor::EndPosition() {
-	CursorPosition end = EndCursorPosition();
+	PGTextPosition end = EndCursorPosition();
 	return end.buffer->GetCursorFromPosition(end.position, file->GetLineCount());
 }
 
@@ -452,12 +452,12 @@ PGCharacterPosition Cursor::SelectedCharacterPosition() {
 }
 
 PGCharacterPosition Cursor::BeginCharacterPosition() {
-	CursorPosition begin = BeginCursorPosition();
+	PGTextPosition begin = BeginCursorPosition();
 	return begin.buffer->GetCharacterFromPosition(begin.position);
 }
 
 PGCharacterPosition Cursor::EndCharacterPosition() {
-	CursorPosition end = EndCursorPosition();
+	PGTextPosition end = EndCursorPosition();
 	return end.buffer->GetCharacterFromPosition(end.position);
 }
 
@@ -466,7 +466,7 @@ bool Cursor::CursorOccursFirst(Cursor* a, Cursor* b) {
 		(a->start_buffer->start_line == b->start_buffer->start_line && a->start_buffer_position < b->start_buffer_position));
 }
 
-PGScalar Cursor::GetXOffset(CursorPosition position) {
+PGScalar Cursor::GetXOffset(PGTextPosition position) {
 	TextLine line = position.buffer->GetLineFromPosition(position.position);
 	lng line_position = position.buffer->buffer + position.position - line.GetLine();
 	auto textfield_font = file->textfield->GetTextfieldFont();
@@ -479,7 +479,7 @@ PGScalar Cursor::GetXOffset(CursorPosition position) {
 }
 
 PGScalar Cursor::SelectedXPosition() {
-	return GetXOffset(CursorPosition(start_buffer, start_buffer_position));
+	return GetXOffset(PGTextPosition(start_buffer, start_buffer_position));
 }
 
 PGScalar Cursor::BeginXPosition() {
@@ -522,28 +522,28 @@ bool Cursor::CursorPositionOccursFirst(PGTextBuffer* a, lng a_pos, PGTextBuffer*
 		(a->start_line == b->start_line && a_pos < b_pos);
 }
 
-CursorPosition Cursor::BeginCursorPosition() {
+PGTextPosition Cursor::BeginCursorPosition() {
 	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
-		return CursorPosition(start_buffer, start_buffer_position);
+		return PGTextPosition(start_buffer, start_buffer_position);
 	} else {
-		return CursorPosition(end_buffer, end_buffer_position);
+		return PGTextPosition(end_buffer, end_buffer_position);
 	}
 }
 
-CursorPosition Cursor::EndCursorPosition() {
+PGTextPosition Cursor::EndCursorPosition() {
 	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
-		return CursorPosition(end_buffer, end_buffer_position);
+		return PGTextPosition(end_buffer, end_buffer_position);
 	} else {
-		return CursorPosition(start_buffer, start_buffer_position);
+		return PGTextPosition(start_buffer, start_buffer_position);
 	}
 }
 
 
 bool Cursor::OverlapsWith(Cursor* cursor) {
-	CursorPosition begin_position = BeginCursorPosition();
-	CursorPosition cursor_begin_position = cursor->BeginCursorPosition();
-	CursorPosition end_position = EndCursorPosition();
-	CursorPosition cursor_end_position = cursor->EndCursorPosition();
+	PGTextPosition begin_position = BeginCursorPosition();
+	PGTextPosition cursor_begin_position = cursor->BeginCursorPosition();
+	PGTextPosition end_position = EndCursorPosition();
+	PGTextPosition cursor_end_position = cursor->EndCursorPosition();
 
 	if (begin_position <= cursor_end_position && end_position >= cursor_begin_position) {
 		return true;
@@ -555,8 +555,8 @@ bool Cursor::OverlapsWith(Cursor* cursor) {
 }
 
 void Cursor::Merge(Cursor* cursor) {
-	CursorPosition begin_position = BeginCursorPosition();
-	CursorPosition cursor_begin_position = cursor->BeginCursorPosition();
+	PGTextPosition begin_position = BeginCursorPosition();
+	PGTextPosition cursor_begin_position = cursor->BeginCursorPosition();
 	if (begin_position.buffer == cursor_begin_position.buffer) {
 		begin_position.position = std::min(begin_position.position, cursor_begin_position.position);
 	} else if (begin_position.buffer->start_line > cursor_begin_position.buffer->start_line) {
@@ -564,8 +564,8 @@ void Cursor::Merge(Cursor* cursor) {
 		begin_position.position = cursor_begin_position.position;
 	}
 
-	CursorPosition end_position = EndCursorPosition();
-	CursorPosition cursor_end_position = cursor->EndCursorPosition();
+	PGTextPosition end_position = EndCursorPosition();
+	PGTextPosition cursor_end_position = cursor->EndCursorPosition();
 	if (end_position.buffer == cursor_end_position.buffer) {
 		end_position.position = std::max(end_position.position, cursor_end_position.position);
 	} else if (end_position.buffer->start_line < cursor_end_position.buffer->start_line) {
@@ -673,36 +673,36 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 	}
 }
 
-CursorSelection Cursor::GetCursorSelection() {
+PGTextRange Cursor::GetCursorSelection() {
 	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
-		return CursorSelection(start_buffer, start_buffer_position, end_buffer, end_buffer_position);
+		return PGTextRange(start_buffer, start_buffer_position, end_buffer, end_buffer_position);
 	} else {
-		return CursorSelection(end_buffer, end_buffer_position, start_buffer, start_buffer_position);
+		return PGTextRange(end_buffer, end_buffer_position, start_buffer, start_buffer_position);
 	}
 }
 
-void Cursor::ApplyMinimalSelection(CursorSelection selection) {
+void Cursor::ApplyMinimalSelection(PGTextRange selection) {
 	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
-		if (!CursorPositionOccursFirst(start_buffer, start_buffer_position, 
-			selection.begin.buffer, selection.begin.position)) {
-			start_buffer = selection.begin.buffer;
-			start_buffer_position = selection.begin.position;
+		if (!CursorPositionOccursFirst(start_buffer, start_buffer_position,
+			selection.start_buffer, selection.start_position)) {
+			start_buffer = selection.start_buffer;
+			start_buffer_position = selection.start_position;
 		}
-		if (!CursorPositionOccursFirst(selection.end.buffer, selection.end.position,
-				end_buffer, end_buffer_position)) {
-			end_buffer = selection.end.buffer;
-			end_buffer_position = selection.end.position;
+		if (!CursorPositionOccursFirst(selection.end_buffer, selection.end_position,
+			end_buffer, end_buffer_position)) {
+			end_buffer = selection.end_buffer;
+			end_buffer_position = selection.end_position;
 		}
 	} else {
-		if (!CursorPositionOccursFirst(end_buffer, end_buffer_position, 
-			selection.begin.buffer, selection.begin.position)) {
-			end_buffer = selection.begin.buffer;
-			end_buffer_position = selection.begin.position;
+		if (!CursorPositionOccursFirst(end_buffer, end_buffer_position,
+			selection.start_buffer, selection.start_position)) {
+			end_buffer = selection.start_buffer;
+			end_buffer_position = selection.start_position;
 		}
-		if (!CursorPositionOccursFirst(selection.end.buffer, selection.end.position,
+		if (!CursorPositionOccursFirst(selection.end_buffer, selection.end_position,
 			start_buffer, start_buffer_position)) {
-			start_buffer = selection.end.buffer;
-			start_buffer_position = selection.end.position;
+			start_buffer = selection.end_buffer;
+			start_buffer_position = selection.end_position;
 		}
 	}
 }
