@@ -295,8 +295,7 @@ private:
 	static void OpenFileAsync(Task* task, void* info);
 
 	Task* find_task = nullptr;
-	static void RunTextFinder(Task* task, TextFile* textfile, std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool match_case, bool wrap, bool regex);
-
+	static void RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character);
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateParsing();

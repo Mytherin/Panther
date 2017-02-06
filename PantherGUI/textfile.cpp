@@ -1926,94 +1926,44 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 }
 
 PGFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
-	if (!regex) {
-		// FIXME: escape pattern
-	}
 	// we start "outside" of the current selection
 	// e.g. if we go right, we start at the end and continue right
 	// if we go left, we start at the beginning and go left
 	PGTextBuffer* begin_buffer = direction == PGDirectionLeft ? start_buffer : end_buffer;
 	lng begin_position = direction == PGDirectionLeft ? start_position : end_position;
 	int offset = direction == PGDirectionLeft ? -1 : 1;
-	PGTextBuffer* end = buffers.back();
-	PGTextBuffer* current_buffer = begin_buffer;
-	PGRegexHandle regex_handle = PGCompileRegex(pattern, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	PGTextBuffer* end = direction == PGDirectionLeft ? buffers.front() : buffers.back();
+	PGRegexHandle regex_handle = PGCompileRegex(pattern, regex, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
 	if (!regex_handle) {
 		// FIXME: throw an error, regex was not compiled properly
 		*error_message = panther::strdup("Error");
 		return PGFindMatch(-1, -1, -1, -1);
 	}
-	PGTextRange bounds = PGTextRange(begin_buffer, begin_position, end, end->current_size);
-	PGRegexMatch match = PGMatchRegex(regex_handle, bounds);
-	if (match.matched) {
-		lng start_line, start_character;
-		lng end_line, end_character;
-		match.groups[0].start_buffer->GetCursorFromBufferLocation(match.groups[0].start_position, start_line, start_character);
-		match.groups[0].end_buffer->GetCursorFromBufferLocation(match.groups[0].end_position, end_line, end_character);
-		return PGFindMatch(start_character, start_line, end_character, end_line);
-	}
-	return PGFindMatch(-1, -1, -1, -1);
-
-
-
-
-	/*
-	if (!match_case) {
-		text = utf8_tolower(text);
-	}
-
-	// we start "outside" of the current selection
-	// e.g. if we go right, we start at the end and continue right
-	// if we go left, we start at the beginning and go left
-	PGTextBuffer* begin_buffer = direction == PGDirectionLeft ? start_buffer : end_buffer;
-	lng begin_position = direction == PGDirectionLeft ? start_position : end_position;
-	int offset = direction == PGDirectionLeft ? -1 : 1;
-	PGTextBuffer* end = nullptr;
-	PGTextBuffer* current_buffer = begin_buffer;
-	PGRegexHandle regex_handle = nullptr;
-	if (regex) {
-		regex_handle = PGCompileRegex(text, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
-		if (!regex_handle) {
-			// FIXME: throw an error, regex was not compiled properly
-			*error_message = panther::strdup("Error");
-			return PGFindMatch(-1, -1, -1, -1);
-		}
-	}
-	bool wrapped_search = false;
+	PGTextRange bounds = direction == PGDirectionLeft ?
+		PGTextRange(end, 0, begin_buffer, begin_position) :
+		PGTextRange(begin_buffer, begin_position, buffers.back(), end->current_size);
 	while (true) {
-		for (; current_buffer != end; direction == PGDirectionLeft ?
-			current_buffer = current_buffer->prev :
-			current_buffer = current_buffer->next) {
-			if (current_task != nullptr && find_task != current_task) {
-				return PGFindMatch(-1, -1, -1, -1);
-			}
-			std::string line = std::string(current_buffer->buffer, current_buffer->current_size);
-
-			PGBufferFindMatch match = regex ?
-				FindMatch(regex_handle, direction, current_buffer == start_buffer ? begin_position : 0, match_case, current_buffer, line) :
-				FindMatch(text, direction, current_buffer == start_buffer ? begin_position : 0, match_case, current_buffer, line);
-			if (match.start_buffer_pos >= 0) {
-				if (regex_handle) PGDeleteRegex(regex_handle);
-				return PGFindMatch(current_buffer, &match);
-			}
+		PGRegexMatch match = PGMatchRegex(regex_handle, bounds, direction);
+		if (match.matched) {
+			lng start_line, start_character;
+			lng end_line, end_character;
+			match.groups[0].start_buffer->GetCursorFromBufferLocation(match.groups[0].start_position, start_line, start_character);
+			match.groups[0].end_buffer->GetCursorFromBufferLocation(match.groups[0].end_position, end_line, end_character);
+			return PGFindMatch(start_character, start_line, end_character, end_line);
 		}
-		if (wrap && !wrapped_search) {
-			// if we wrap, we also search the rest of the text
-			current_buffer = direction == PGDirectionLeft ? buffers[linecount - 1] : buffers[0];
-			end_buffer = direction == PGDirectionLeft ? begin_buffer->prev : begin_buffer->next;
-			// we set begin_line to -1, so we search the starting line entirely
-			// this is because the match might be part of the selection
-			// e.g. consider we have a string "ab|cd" and we search for "abc"
-			// if we first search right of the cursor and then left we don't find the match
-			// thus we search the final line in its entirety after we wrap
-			start_buffer = nullptr;
-			wrapped_search = true;
+		// no match was found
+		if (wrap) {
+			// if wrap is enabled, search the entire buffer this time
+			// the reason we search everything now is because the regex can match anything
+			// (e.g. the entire block of text), in which we need to supply all the text
+			// otherwise a match might not be found while one exists
+			bounds = PGTextRange(buffers.front(), 0, buffers.back(), buffers.back()->current_size);
+			wrap = false;
 		} else {
 			break;
 		}
 	}
-	if (regex_handle) PGDeleteRegex(regex_handle);
-	return PGFindMatch(-1, -1, -1, -1);*/
+	return PGFindMatch(-1, -1, -1, -1);
 }
 
 PGBufferFindMatch TextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line) {
@@ -2075,121 +2025,69 @@ PGBufferFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction
 
 struct FindInformation {
 	TextFile* textfile;
-	std::string pattern;
-	PGDirection direction;
+	PGRegexHandle handle;
 	lng start_line;
 	lng start_character;
-	lng end_line;
-	lng end_character;
-	bool match_case;
-	bool wrap;
-	bool regex;
 };
 
-void TextFile::RunTextFinder(Task* task, TextFile* textfile, std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool match_case, bool wrap, bool regex) {
+void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng current_line, lng current_character) {
 	textfile->Lock(PGWriteLock);
 	textfile->finished_search = false;
 	textfile->matches.clear();
 	textfile->Unlock(PGWriteLock);
 
-	PGRegexHandle regex_handle = nullptr;
-	if (regex) {
-		regex_handle = PGCompileRegex(text, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
-		assert(regex_handle);
-	} else if (!match_case) {
-		text = utf8_tolower(text);
-	}
+	if (!regex_handle) return;
 
+	textfile->Lock(PGReadLock);
 	bool found_initial_match = false;
-	PGTextBuffer* start_buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, start_line)];
-	lng start_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
+	PGTextBuffer* selection_buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, current_line)];
+	lng selection_position = selection_buffer->GetBufferLocationFromCursor(current_line, current_character);
 
-	PGTextBuffer* end_buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, start_line)];
-	lng end_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
+	PGTextRange bounds;
+	bounds.start_buffer = textfile->buffers.front();
+	bounds.start_position = 0;
+	bounds.end_buffer = textfile->buffers.back();
+	bounds.end_position = bounds.end_buffer->current_size - 1;
 	while (true) {
-		if (textfile->find_task != task) {
+		/*if (textfile->find_task != task) {
 			// a new find task has been activated
 			// stop searching for an outdated find query
-			if (regex_handle) PGDeleteRegex(regex_handle);
+			PGDeleteRegex(regex_handle);
 			return;
+		}*/
+		PGRegexMatch match = PGMatchRegex(regex_handle, bounds, PGDirectionRight);
+		if (!match.matched) {
+			break;
+		}
+		lng start_line, start_character;
+		lng end_line, end_character;
+		match.groups[0].start_buffer->GetCursorFromBufferLocation(match.groups[0].start_position, start_line, start_character);
+		match.groups[0].end_buffer->GetCursorFromBufferLocation(match.groups[0].end_position, end_line, end_character);
+		textfile->matches.push_back(PGFindMatch(start_character, start_line, end_character, end_line));
+
+		if (!found_initial_match && start_line > current_line ||
+			(start_line == current_line && start_character >= current_character)) {
+			found_initial_match = true;
+			textfile->selected_match = textfile->matches.size() - 1;
+			textfile->SetCursorLocation(start_line, start_character, end_line, end_character);
 		}
 
-		PGTextBuffer* current_start_buffer = start_buffer;
-		PGTextBuffer* current_end_buffer = end_buffer;
-		std::vector<PGBufferFindMatch> prev_matches;
-		std::vector<PGBufferFindMatch> next_matches;
-		textfile->Lock(PGReadLock);
-		if (start_buffer) {
-			std::string line = start_buffer->GetString();
+		bounds.start_buffer = match.groups[0].end_buffer;
+		bounds.start_position = match.groups[0].end_position;
 
-			while (start_buffer) {
-				PGBufferFindMatch prev_match = regex ?
-					textfile->FindMatch(regex_handle, PGDirectionLeft, start_position, match_case, start_buffer, line) :
-					textfile->FindMatch(text, PGDirectionLeft, start_position, match_case, start_buffer, line);
-				if (prev_match.start_buffer_pos < 0) {
-					// no match found, move to previous buffer
-					start_position = 0;
-					start_buffer = start_buffer->prev;
-					break;
-				} else {
-					// match found
-					prev_matches.push_back(prev_match);
-					start_position = prev_match.start_buffer_pos;
-				}
-			}
-		}
-		if (end_buffer) {
-			std::string line = end_buffer->GetString();
-			while (end_buffer) {
-				PGBufferFindMatch next_match = regex ?
-					textfile->FindMatch(regex_handle, PGDirectionRight, end_position, match_case, end_buffer, line) :
-					textfile->FindMatch(text, PGDirectionRight, end_position, match_case, end_buffer, line);
-				if (next_match.start_buffer_pos < 0) {
-					// no match found, move to next buffer
-					end_position = 0;
-					end_buffer = end_buffer->next;
-					break;
-				} else {
-					// match found
-					next_matches.push_back(next_match);
-					end_position = next_match.end_buffer_pos;
-				}
-			}
-		}
-		textfile->Unlock(PGReadLock);
 
-		if (textfile->find_task != task) {
+		/*if (textfile->find_task != task) {
 			// a new find task has been activated
 			// stop searching for an outdated find query
-			if (regex_handle) PGDeleteRegex(regex_handle);
+			PGDeleteRegex(regex_handle);
 			return;
-		}
-
-		if (prev_matches.size() > 0 || next_matches.size() > 0) {
-			std::vector<PGFindMatch> prev = PGFindMatch::FromBufferMatches(current_start_buffer, prev_matches);
-			std::vector<PGFindMatch> next = PGFindMatch::FromBufferMatches(current_end_buffer, next_matches);
-
-			textfile->Lock(PGWriteLock);
-			textfile->selected_match += prev.size();
-			textfile->matches.insert(textfile->matches.begin(), prev.begin(), prev.end());
-
-			for (auto it = next.begin(); it != next.end(); it++) {
-				textfile->matches.push_back(*it);
-				if (!found_initial_match) {
-					found_initial_match = true;
-					textfile->selected_match = textfile->matches.size() - 1;
-					textfile->SetCursorLocation(it->start_line, it->start_character,
-						it->end_line, it->end_character);
-				}
-			}
-			textfile->Unlock(PGWriteLock);
-			if (textfile->textfield) textfile->textfield->Invalidate();
 		}
 		if (!start_buffer && !end_buffer) {
 			textfile->finished_search = true;
 			break;
-		}
+		}*/
 	}
+	textfile->Unlock(PGReadLock);
 #ifdef PANTHER_DEBUG
 	// FIXME: check if matches overlap?
 	/*for (lng i = 0; i < textfile->matches.size() - 1; i++) {
@@ -2212,13 +2110,10 @@ void TextFile::ClearMatches() {
 }
 
 void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex) {
-	if (regex) {
-		PGRegexHandle handle = PGCompileRegex(text, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
-		if (!handle) {
-			*error_message = "Error";
-			return;
-		}
-		PGDeleteRegex(handle);
+	PGRegexHandle handle = PGCompileRegex(text, regex, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	if (!handle) {
+		*error_message = "Error";
+		return;
 	}
 	if (!is_loaded) return;
 	if (text.size() == 0) {
@@ -2231,18 +2126,11 @@ void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng star
 
 	FindInformation* info = new FindInformation();
 	info->textfile = this;
-	info->pattern = text;
-	info->direction = direction;
+	info->handle = handle;
 	info->start_line = start_line;
 	info->start_character = start_character;
-	info->end_line = end_line;
-	info->end_character = end_character;
-	info->match_case = match_case;
-	info->wrap = wrap;
-	info->regex = regex;
 
-	RunTextFinder(nullptr, this, text, direction, end_line, end_character, start_line, start_character,
-		match_case, wrap, regex);
+	RunTextFinder(nullptr, this, handle, start_line, start_character);
 	/*
 
 	this->find_task = new Task([](Task* t, void* in) {
@@ -2309,12 +2197,12 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 	// otherwise, search only for the next match in either direction
 	*error_message = nullptr;
 	Lock(PGReadLock);
-	auto begin = GetActiveCursor()->BeginPosition();
-	auto end = GetActiveCursor()->EndPosition();
+	auto begin = GetActiveCursor()->BeginCursorPosition();
+	auto end = GetActiveCursor()->EndCursorPosition();
 	match = this->FindMatch(text, direction,
-		include_selection ? end.line : begin.line,
+		include_selection ? end.buffer : begin.buffer,
 		include_selection ? end.position : begin.position,
-		include_selection ? begin.line : end.line,
+		include_selection ? begin.buffer : end.buffer,
 		include_selection ? begin.position : end.position,
 		error_message, match_case, wrap, regex, nullptr);
 	Unlock(PGReadLock);

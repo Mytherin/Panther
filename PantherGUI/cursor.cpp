@@ -538,7 +538,6 @@ PGTextPosition Cursor::EndCursorPosition() {
 	}
 }
 
-
 bool Cursor::OverlapsWith(Cursor* cursor) {
 	PGTextPosition begin_position = BeginCursorPosition();
 	PGTextPosition cursor_begin_position = cursor->BeginCursorPosition();
