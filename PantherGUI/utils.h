@@ -31,6 +31,8 @@ namespace panther {
 
 	std::string tolower(std::string str);
 	std::string toupper(std::string str);
+	unsigned char tolower(unsigned char character);
+	unsigned char toupper(unsigned char character);
 
 	void replace(std::string& source, std::string from, std::string to);
 

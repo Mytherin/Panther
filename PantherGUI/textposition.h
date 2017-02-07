@@ -16,7 +16,7 @@ struct PGTextPosition {
 
 	inline char operator* () { return buffer ? buffer->buffer[position] : '\0'; }
 
-	void Offset(lng offset);
+	bool Offset(lng offset);
 };
 
 inline bool operator< (const PGTextPosition& lhs, const PGTextPosition& rhs) {
@@ -58,6 +58,8 @@ struct PGTextRange {
 	int _memcmp(const char* data, size_t length) const;
 	PGTextPosition _memchr(int value) const;
 	PGTextPosition _memrchr(int value) const;
+	PGTextPosition _memcasechr(int value) const;
+	PGTextPosition _memcaserchr(int value) const;
 
 	PGTextPosition startpos() const { return PGTextPosition(start_buffer, start_position); }
 	PGTextPosition endpos() const { return PGTextPosition(end_buffer, end_position); }

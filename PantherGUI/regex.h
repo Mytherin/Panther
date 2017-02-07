@@ -19,7 +19,7 @@ enum PGRegexFlags {
 	PGRegexCaseInsensitive
 };
 
-PGRegexHandle PGCompileRegex(std::string& pattern, bool is_regex, PGRegexFlags);
+PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexFlags);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context, PGDirection direction);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& context, PGDirection direction);
 void PGDeleteRegex(PGRegexHandle handle);

@@ -505,6 +505,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		}
 		highlighter->DeleteParserState(state);
 		if (buffers.size() > 10) {
+			is_loaded = true;
 			this->current_task = new Task((PGThreadFunctionParams)RunHighlighter, (void*) this);
 			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 		}

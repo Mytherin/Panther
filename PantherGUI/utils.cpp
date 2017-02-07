@@ -48,6 +48,19 @@ namespace panther {
 		return result;
 	}
 
+
+	unsigned char tolower(unsigned char character) {
+		if ('A' <= character && character <= 'Z')
+			character += 'a' - 'A';
+		return character;
+	}
+
+	unsigned char toupper(unsigned char character) {
+		if ('a' <= character && character <= 'z')
+			character += 'A' - 'a';
+		return character;
+	}
+
 	std::string tolower(std::string str) {
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 		return str;

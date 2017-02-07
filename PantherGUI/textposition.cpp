@@ -12,21 +12,22 @@ lng PGTextPosition::GetPosition(PGTextBuffer* start_buffer) {
 	return current_position;
 }
 
-void PGTextPosition::Offset(lng offset) {
+bool PGTextPosition::Offset(lng offset) {
 	if (buffer == nullptr) {
-		return;
+		return false;
 	}
 	position += offset;
 	while (position >= (lng)buffer->current_size) {
-		if (!buffer->next) return;
+		if (!buffer->next) return false;
 		position -= buffer->current_size;
 		buffer = buffer->next;
 	}
 	while (position < 0) {
 		buffer = buffer->prev;
-		if (!buffer) return;
+		if (!buffer) return false;
 		position += buffer->current_size;
 	}
+	return true;
 }
 
 PGTextRange::PGTextRange(std::string text) : owned_data(nullptr) {
@@ -112,7 +113,6 @@ void PGTextRange::remove_prefix(size_t length) {
 	start_position = 0;
 }
 
-
 // Avoid possible locale nonsense in standard strcasecmp.
 // The string a is known to be all lowercase.
 static int _ascii_strcasecmp(const char* a, const char* b, size_t len) {
@@ -176,39 +176,76 @@ static void* memrchr(const void* s, int c, size_t n) {
 }
 #endif
 
-PGTextPosition PGTextRange::_memrchr(int value) const {
-	PGTextBuffer* buffer = end_buffer;
-	lng end = end_position;
-	while (buffer) {
-		lng start = (buffer == start_buffer ? start_position : 0);
-		void* ptr = memrchr(buffer->buffer + start, value, end - start);
-		if (ptr != nullptr) {
-			return PGTextPosition(buffer, (char*)ptr);
-		}
-		if (buffer == start_buffer) {
-			break;
-		}
-		buffer = buffer->next;
-		end = buffer->current_size;
-	}
-	return PGTextPosition(nullptr, (lng)0);
+static void* memcasechr(const void* s, int c, size_t n) {
+	int upper = panther::toupper(c);
+	const unsigned char* p = (const unsigned char*)s;
+	for (; n > 0; p++, n--)
+		if (*p == c || *p == upper)
+			return (void*)p;
+	return NULL;
 }
 
+static void* memcaserchr(const void* s, int c, size_t n) {
+	int upper = panther::toupper(c);
+	const unsigned char* p = (const unsigned char*)s;
+	for (p += n; n > 0; n--)
+		if (*--p == c || *p == upper)
+			return (void*)p;
+
+	return NULL;
+}
+
+
+#define REVERSE_BUFFER_LOOKUP(function) \
+	PGTextBuffer* buffer = end_buffer; \
+	lng end = end_position; \
+	while (buffer) { \
+		lng start = (buffer == start_buffer ? start_position : 0); \
+		void* ptr = function(buffer->buffer + start, value, end - start); \
+		if (ptr != nullptr) { \
+			return PGTextPosition(buffer, (char*)ptr); \
+		} \
+		if (buffer == start_buffer) { \
+			break; \
+		} \
+		buffer = buffer->next; \
+		end = buffer->current_size; \
+	} \
+	return PGTextPosition(nullptr, (lng)0);
+
+PGTextPosition PGTextRange::_memrchr(int value) const {
+	REVERSE_BUFFER_LOOKUP(memrchr);
+}
+
+PGTextPosition PGTextRange::_memcaserchr(int value) const {
+	value = panther::tolower(value);
+	REVERSE_BUFFER_LOOKUP(memcaserchr);
+}
+
+#define BUFFER_LOOKUP(function) \
+	PGTextBuffer* buffer = start_buffer; \
+	lng start = start_position; \
+	while (buffer) { \
+		lng buffer_left = (buffer == end_buffer ? end_position : buffer->current_size) - start; \
+		void* ptr = function(buffer->buffer + start, value, buffer_left); \
+		if (ptr != nullptr) { \
+			return PGTextPosition(buffer, (char*)ptr); \
+		} \
+		if (buffer == end_buffer) { \
+			break; \
+		} \
+		buffer = buffer->next; \
+		start = 0; \
+	} \
+	return PGTextPosition(nullptr, (lng)0);
 
 PGTextPosition PGTextRange::_memchr(int value) const {
-	PGTextBuffer* buffer = start_buffer;
-	lng start = start_position;
-	while (buffer) {
-		lng buffer_left = (buffer == end_buffer ? end_position : buffer->current_size) - start;
-		void* ptr = memchr(buffer->buffer + start, value, buffer_left);
-		if (ptr != nullptr) {
-			return PGTextPosition(buffer, (char*)ptr);
-		}
-		if (buffer == end_buffer) {
-			break;
-		}
-		buffer = buffer->next;
-		start = 0;
-	}
-	return PGTextPosition(nullptr, (lng)0);
+	BUFFER_LOOKUP(memchr);
 }
+
+
+PGTextPosition PGTextRange::_memcasechr(int value) const {
+	value = panther::tolower(value);
+	BUFFER_LOOKUP(memcasechr);
+}
+
