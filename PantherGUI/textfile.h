@@ -298,6 +298,7 @@ private:
 	static void RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character);
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
+	void InvalidateBuffers();
 	void InvalidateParsing();
 
 	bool is_loaded;

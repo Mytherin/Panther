@@ -36,6 +36,11 @@ lng PGTextBuffer::GetLineCount(lng total_lines) {
 	return (this->next ? this->next->start_line : total_lines) - this->start_line;
 }
 
+double PGTextBuffer::GetTotalWidth(double total_width) {
+	return (this->next ? this->next->cumulative_width : total_width) - this->cumulative_width;
+}
+
+
 std::vector<TextLine> PGTextBuffer::GetLines() {
 	std::vector<TextLine> lines;
 	lng current_position = 0;

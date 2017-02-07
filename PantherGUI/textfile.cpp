@@ -247,39 +247,45 @@ int TextFile::GetLineHeight() {
 }
 
 void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
-	lng added_scrolls = 0;
-	lng prev_scroll = -1;
-	double added_width = 0;
-	while (buffer && (!buffer->parsed || (wordwrap && buffer->cumulative_width < 0))) {
-		buffer->cumulative_width += added_width;
-		buffer->ClearWrappedLines();
-		lng linenr = buffer->start_line;
-		for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
-			TextLine line = it.GetLine();
-			if (!line.IsValid()) break;
+	buffer->parsed = false;
+}
 
-			PGScalar current_length = this->line_lengths[linenr];
-			this->line_lengths[linenr] = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
-			added_width += this->line_lengths[linenr] - current_length;
-			if (linenr == max_line_length && current_length > this->line_lengths[linenr]) {
-				// the maximum line was reduced in length
-				// we have to find the current maximum line
-				max_line_length = -1;
-			} else if (max_line_length >= 0 && line_lengths[linenr] > line_lengths[max_line_length]) {
-				// the current line is bigger than the previous maximum line
-				max_line_length = linenr;
+void TextFile::InvalidateBuffers() {
+	double added_width = 0;
+	PGTextBuffer* buffer = buffers.front();
+	while(buffer) {
+		if (!buffer->parsed) {
+			// we don't know the length of this buffer
+			// get the current length
+			double current_width = buffer->GetTotalWidth(total_width);
+			double new_width = 0;
+			buffer->ClearWrappedLines();
+			lng linenr = buffer->start_line;
+			for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
+				TextLine line = it.GetLine();
+				if (!line.IsValid()) break;
+
+				PGScalar current_length = this->line_lengths[linenr];
+				this->line_lengths[linenr] = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
+				new_width += this->line_lengths[linenr];
+				if (linenr == max_line_length && current_length > this->line_lengths[linenr]) {
+					// the maximum line was reduced in length
+					// we have to find the current maximum line
+					max_line_length = -1;
+				} else if (max_line_length >= 0 && line_lengths[linenr] > line_lengths[max_line_length]) {
+					// the current line is bigger than the previous maximum line
+					max_line_length = linenr;
+				}
+				linenr++;
 			}
-			linenr++;
+			buffer->cumulative_width += added_width;
+			added_width += new_width - current_width;
+		} else {
+			buffer->cumulative_width += added_width;
 		}
 		buffer = buffer->next;
 	}
-	if (added_width != 0) {
-		while (buffer) {
-			buffer->cumulative_width += added_width;
-			buffer = buffer->next;
-		}
-		total_width += added_width;
-	}
+	total_width += added_width;
 	if (max_line_length < 0) {
 		lng max_index = 0;
 		for (lng i = 1; i < line_lengths.size(); i++) {
@@ -289,10 +295,32 @@ void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 		}
 		max_line_length = max_index;
 	}
+
+	// verify cumulative widths
+#ifdef PANTHER_DEBUG
+	buffer = buffers.front();
+	double cumulative_width = 0;
+	while(buffer) {
+		assert(panther::epsilon_equals(cumulative_width, buffer->cumulative_width));
+		lng linenr = buffer->start_line;
+		for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
+			TextLine line = it.GetLine();
+			if (!line.IsValid()) break;
+
+			PGScalar current_length = this->line_lengths[linenr];
+			PGScalar measured_length = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
+			assert(panther::epsilon_equals(current_length, measured_length));
+			cumulative_width += measured_length;
+			linenr++;
+		}
+		buffer = buffer->next;
+	}
+#endif
 }
 
 void TextFile::InvalidateParsing() {
 	assert(is_loaded);
+
 	if (!highlighter) return;
 
 	this->current_task = new Task((PGThreadFunctionParams)RunHighlighter, (void*) this);
@@ -630,6 +658,7 @@ void TextFile::DeleteSelection(int i) {
 	end.buffer->parsed = false;
 
 	PGTextBuffer* buffer = begin.buffer;
+	double width_deleted = 0;
 	lng lines_deleted = 0;
 	lng delete_size;
 	if (end.buffer != begin.buffer) {
@@ -639,6 +668,7 @@ void TextFile::DeleteSelection(int i) {
 		lng buffer_position = PGTextBuffer::GetBuffer(buffers, begin.buffer->start_line);
 		while (buffer != end.buffer) {
 			lines_deleted += buffer->GetLineCount(this->GetLineCount());
+			width_deleted += buffer->GetTotalWidth(total_width);
 			buffers.erase(buffers.begin() + buffer_position + 1);
 			PGTextBuffer* next = buffer->next;
 			delete buffer;
@@ -694,6 +724,7 @@ void TextFile::DeleteSelection(int i) {
 		} else {
 			// have to delete entire end buffer
 			lines_deleted += end.buffer->GetLineCount(this->GetLineCount());
+			width_deleted += end.buffer->GetTotalWidth(total_width);
 			begin.buffer->next = end.buffer->next;
 			if (begin.buffer->next) begin.buffer->next->prev = begin.buffer;
 			buffers.erase(buffers.begin() + buffer_position + 1);
@@ -733,14 +764,6 @@ void TextFile::DeleteSelection(int i) {
 	cursor->end_buffer_position = cursor->start_buffer_position;
 	cursor->end_buffer = cursor->start_buffer;
 
-	// update start_line of the buffers
-	buffer = end.buffer->next;
-	while (buffer) {
-		buffer->start_line -= lines_deleted;
-		buffer = buffer->next;
-	}
-	linecount -= lines_deleted;
-
 	// delete linecount from line_lengths
 	if (lines_deleted > 0) {
 		line_lengths.erase(line_lengths.begin() + begin_position.line, line_lengths.begin() + begin_position.line + lines_deleted);
@@ -748,7 +771,19 @@ void TextFile::DeleteSelection(int i) {
 			max_line_length = -1;
 		}
 	}
+	// recompute line_lengths and cumulative width for begin buffer and end buffer
 	InvalidateBuffer(begin.buffer);
+	InvalidateBuffer(end.buffer);
+
+	// update start_line of the buffers
+	buffer = end.buffer->next;
+	while (buffer) {
+		buffer->cumulative_width -= width_deleted;
+		buffer->start_line -= lines_deleted;
+		buffer = buffer->next;
+	}
+	total_width -= width_deleted;
+	linecount -= lines_deleted;
 
 	VerifyTextfile();
 }
@@ -1457,6 +1492,7 @@ void TextFile::Undo() {
 	VerifyTextfile();
 	this->Undo(delta);
 	VerifyTextfile();
+	InvalidateBuffers();
 	Unlock(PGWriteLock);
 	this->deltas.pop_back();
 	this->redos.push_back(RedoStruct(delta, BackupCursors()));
@@ -1481,6 +1517,7 @@ void TextFile::Redo() {
 	PerformOperation(delta, true);
 	// release the locks again
 	VerifyTextfile();
+	InvalidateBuffers();
 	Unlock(PGWriteLock);
 	this->redos.pop_back();
 	this->deltas.push_back(delta);
@@ -1515,6 +1552,7 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	bool success = PerformOperation(delta, false);
 	// release the locks again
 	VerifyTextfile();
+	InvalidateBuffers();
 	Unlock(PGWriteLock);
 	if (!success) return;
 	AddDelta(delta);
@@ -2088,6 +2126,7 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex
 			break;
 		}*/
 	}
+	textfile->finished_search = true;
 	textfile->Unlock(PGReadLock);
 #ifdef PANTHER_DEBUG
 	// FIXME: check if matches overlap?

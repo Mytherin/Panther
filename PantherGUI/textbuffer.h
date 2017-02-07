@@ -94,6 +94,8 @@ public:
 
 	// gets the total amount of lines in the buffer, parameter should be total amount of lines in the text file
 	lng GetLineCount(lng total_lines);
+	// gets the total width in the buffer; parameter should be total width of the text file
+	double GetTotalWidth(double total_width);
 	// gets all the lines in the buffer as TextLines
 	std::vector<TextLine> GetLines();
 	ulng GetBufferLocationFromCursor(lng line, lng character);
