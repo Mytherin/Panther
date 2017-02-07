@@ -608,7 +608,8 @@ bool RE2::Match(const PGTextRange& context,
                 PGTextRange subtext,
                 Anchor re_anchor,
                 PGTextRange* submatch,
-                int nsubmatch) const {
+                int nsubmatch,
+				bool find_last_match) const {
   if (!ok() || suffix_regexp_ == NULL) {
     if (options_.log_errors())
       LOG(ERROR) << "Invalid RE2: " << *error_;
@@ -678,17 +679,24 @@ bool RE2::Match(const PGTextRange& context,
   bool can_bit_state = prog_->size() <= MaxBitStateProg;
   size_t bit_state_text_max = MaxBitStateVector / prog_->size();
 
+
+  if (find_last_match) {
+	  // Find last match not supported on anchored searches
+	  re_anchor = UNANCHORED;
+  }
+
   bool dfa_failed = false;
   switch (re_anchor) {
     default:
     case UNANCHORED: {
-      if (!prog_->SearchDFA(subtext, context, anchor, kind,
+	  Prog* main_prog = find_last_match ? ReverseProg() : prog_;
+      if (!main_prog->SearchDFA(subtext, context, anchor, kind,
                             matchp, &dfa_failed, NULL)) {
         if (dfa_failed) {
           if (options_.log_errors())
-            LOG(ERROR) << "DFA out of memory: size " << prog_->size() << ", "
-                       << "bytemap range " << prog_->bytemap_range() << ", "
-                       << "list count " << prog_->list_count();
+            LOG(ERROR) << "DFA out of memory: size " << main_prog->size() << ", "
+                       << "bytemap range " << main_prog->bytemap_range() << ", "
+                       << "list count " << main_prog->list_count();
           // Fall back to NFA below.
           skipped_test = true;
           break;
@@ -700,7 +708,7 @@ bool RE2::Match(const PGTextRange& context,
       // SearchDFA set match[0].end() but didn't know where the
       // match started.  Run the regexp backward from match[0].end()
       // to find the longest possible match -- that's where it started.
-      Prog* prog = ReverseProg();
+      Prog* prog = find_last_match ? prog_ : ReverseProg();
       if (prog == NULL)
         return false;
       if (!prog->SearchDFA(match, context, Prog::kAnchored,

@@ -533,7 +533,8 @@ class RE2 {
              PGTextRange subtext,
              Anchor anchor,
              PGTextRange *match,
-             int nmatch) const;
+             int nmatch,
+			 bool find_last_match = false) const;
 
   bool Match(const StringPiece& text,
           size_t startpos, 

@@ -32,7 +32,8 @@ PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context, PGDirection
 	}
 
 	PGTextRange subtext = context;
-	match.matched = handle->regex.get()->Match(context, subtext, RE2::UNANCHORED, match.groups, PGREGEX_MAXIMUM_MATCHES);
+	bool find_last_match = direction == PGDirectionLeft;
+	match.matched = handle->regex.get()->Match(context, subtext, RE2::UNANCHORED, match.groups, PGREGEX_MAXIMUM_MATCHES, find_last_match);
 	return match;
 }
 
