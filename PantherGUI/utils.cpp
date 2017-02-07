@@ -49,13 +49,13 @@ namespace panther {
 	}
 
 
-	unsigned char tolower(unsigned char character) {
+	unsigned char chartolower(unsigned char character) {
 		if ('A' <= character && character <= 'Z')
 			character += 'a' - 'A';
 		return character;
 	}
 
-	unsigned char toupper(unsigned char character) {
+	unsigned char chartoupper(unsigned char character) {
 		if ('a' <= character && character <= 'z')
 			character += 'A' - 'a';
 		return character;

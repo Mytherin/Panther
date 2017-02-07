@@ -10,13 +10,13 @@ using namespace re2;
 struct PGRegex {
 	bool is_regex;
 	std::unique_ptr<RE2> regex;
-	std::vector<size_t> table;
-	std::vector<size_t> reverse_table;
+	std::vector<lng> table;
+	std::vector<lng> reverse_table;
 	std::string needle;
 	PGRegexFlags flags;
 };
 
-static std::vector<size_t> PGPreprocessTextSearch(std::string& needle);
+static std::vector<lng> PGPreprocessTextSearch(std::string& needle);
 static PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection direction);
 
 PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexFlags flags) {
@@ -88,10 +88,10 @@ void PGDeleteRegex(PGRegexHandle handle) {
 	delete handle;
 }
 
-std::vector<size_t> PGPreprocessTextSearch(std::string& needle) {
+std::vector<lng> PGPreprocessTextSearch(std::string& needle) {
 	if (needle.size() >= 1) {
 		// initialize a table of UCHAR_MAX+1 elements to value needle.size()
-		std::vector<size_t> table(256, needle.size());
+		std::vector<lng> table(256, needle.size());
 		/* Populate it with the analysis of the needle */
 		/* But ignoring the last letter */
 		for(size_t a = 0; a < needle.size() - 1; a++) {
@@ -100,7 +100,7 @@ std::vector<size_t> PGPreprocessTextSearch(std::string& needle) {
 		}
 		return table;
 	}
-	return std::vector<size_t>();
+	return std::vector<lng>();
 }
 
 PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection direction) {
@@ -152,7 +152,7 @@ PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection
 		// and is precomputed in PGPreprocessTextSearch for each possible character
 
 		const unsigned char last_needle_char = needle.back();
-		const unsigned char last_needle_char_upper = panther::toupper(last_needle_char);
+		const unsigned char last_needle_char_upper = panther::chartoupper(last_needle_char);
 	 
 		PGTextPosition position;
 		position.buffer = context.start_buffer;
@@ -177,7 +177,7 @@ PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection
 				}
 			}
 	 
-			if (!position.Offset(handle->table[case_insensitive ? panther::tolower(character) : character])) {
+			if (!position.Offset(handle->table[case_insensitive ? panther::chartolower(character) : character])) {
 				return match;
 			}
 		}
@@ -187,7 +187,7 @@ PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection
 		// except just reversed; we scan the string right-to-left and
 		// look for the first character of the needle first
 		const unsigned char first_needle_char = needle.front();
-		const unsigned char first_needle_char_upper = panther::toupper(first_needle_char);
+		const unsigned char first_needle_char_upper = panther::chartoupper(first_needle_char);
 	 
 		PGTextPosition position;
 		position.buffer = context.end_buffer;
@@ -214,7 +214,7 @@ PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection
 				}
 			}
 	 
-			if (!position.Offset(-handle->reverse_table[case_insensitive ? panther::tolower(character) : character])) {
+			if (!position.Offset(-handle->reverse_table[case_insensitive ? panther::chartolower(character) : character])) {
 				return match;
 			}
 		}

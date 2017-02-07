@@ -177,7 +177,7 @@ static void* memrchr(const void* s, int c, size_t n) {
 #endif
 
 static void* memcasechr(const void* s, int c, size_t n) {
-	int upper = panther::toupper(c);
+	int upper = panther::chartoupper(c);
 	const unsigned char* p = (const unsigned char*)s;
 	for (; n > 0; p++, n--)
 		if (*p == c || *p == upper)
@@ -186,7 +186,7 @@ static void* memcasechr(const void* s, int c, size_t n) {
 }
 
 static void* memcaserchr(const void* s, int c, size_t n) {
-	int upper = panther::toupper(c);
+	int upper = panther::chartoupper(c);
 	const unsigned char* p = (const unsigned char*)s;
 	for (p += n; n > 0; n--)
 		if (*--p == c || *p == upper)
@@ -218,7 +218,7 @@ PGTextPosition PGTextRange::_memrchr(int value) const {
 }
 
 PGTextPosition PGTextRange::_memcaserchr(int value) const {
-	value = panther::tolower(value);
+	value = panther::chartolower(value);
 	REVERSE_BUFFER_LOOKUP(memcaserchr);
 }
 
@@ -245,7 +245,7 @@ PGTextPosition PGTextRange::_memchr(int value) const {
 
 
 PGTextPosition PGTextRange::_memcasechr(int value) const {
-	value = panther::tolower(value);
+	value = panther::chartolower(value);
 	BUFFER_LOOKUP(memcasechr);
 }
 
