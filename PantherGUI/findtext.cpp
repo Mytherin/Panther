@@ -290,6 +290,7 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled(), 
 		include_selection);
 
+/*
 	if (find_history->size() == 0 || (*find_history)[0] != search_text) {
 		std::string first_entry = (*find_history)[0];
 		if (first_entry.size() == 0) {
@@ -301,7 +302,7 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 			}
 		}
 		history_entry = 0;
-	}
+	}*/
 
 	if (!error_message) {
 		// successful search

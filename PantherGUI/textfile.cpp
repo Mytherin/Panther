@@ -106,7 +106,7 @@ bool TextFile::Reload(PGFileError& error) {
 	settings.cursor_data = BackupCursors();
 
 	this->SelectEverything();
-	if (lines.size() == 0 || lines.size() == 1 && lines[0].size() == 0) {
+	if (lines.size() == 0 || (lines.size() == 1 && lines[0].size() == 0)) {
 		this->DeleteCharacter(PGDirectionLeft);
 	} else if (lines.size() == 1) {
 		this->InsertText(lines[0]);
@@ -2065,8 +2065,8 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex
 		match.groups[0].end_buffer->GetCursorFromBufferLocation(match.groups[0].end_position, end_line, end_character);
 		textfile->matches.push_back(PGFindMatch(start_character, start_line, end_character, end_line));
 
-		if (!found_initial_match && start_line > current_line ||
-			(start_line == current_line && start_character >= current_character)) {
+		if (!found_initial_match && (start_line > current_line ||
+			(start_line == current_line && start_character >= current_character))) {
 			found_initial_match = true;
 			textfile->selected_match = textfile->matches.size() - 1;
 			textfile->SetCursorLocation(start_line, start_character, end_line, end_character);

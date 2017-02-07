@@ -34,10 +34,10 @@ COBJECTS=obj/basictextfield.o \
 		 obj/notification.o \
 		 obj/regex.o \
 		 obj/renderer.o \
-		 obj/searchbox.o \
-		 obj/settings.o \
 		 obj/scheduler.o \
 		 obj/scrollbar.o \
+		 obj/searchbox.o \
+		 obj/settings.o \
 		 obj/simpletextfield.o \
 		 obj/statusbar.o \
 		 obj/style.o \
@@ -45,19 +45,20 @@ COBJECTS=obj/basictextfield.o \
 		 obj/tabcontrol.o \
 		 obj/text.o \
 		 obj/textbuffer.o \
+		 obj/textdelta.o \
 		 obj/textfield.o \
 		 obj/textfile.o \
+		 obj/textiterator.o \
+		 obj/textline.o \
+		 obj/textposition.o \
 		 obj/thread.o \
 		 obj/togglebutton.o \
 		 obj/unicode.o \
 		 obj/utils.o \
 		 obj/windowfunctions.o \
+		 obj/workspace.o \
 		 obj/wrappedtextiterator.o \
-		 obj/textiterator.o \
-		 obj/textline.o \
-		 obj/xml.o \
-		 obj/textdelta.o \
-		 obj/workspace.o
+		 obj/xml.o 
 
 OBJCOBJECTS=obj/AppDelegate.o \
 			obj/main.o \
@@ -78,14 +79,14 @@ RE2OBJECTS=obj/bitstate.o \
 		   obj/prog.o \
 		   obj/re2.o \
 		   obj/regexp.o \
+		   obj/rune.o \
 		   obj/set.o \
 		   obj/simplify.o \
 		   obj/stringpiece.o \
+		   obj/strutil.o \
 		   obj/tostring.o \
 		   obj/unicode_casefold.o \
-		   obj/unicode_groups.o \
-		   obj/rune.o \
-		   obj/strutil.o
+		   obj/unicode_groups.o 
 
 all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) panther.app
 
