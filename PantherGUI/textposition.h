@@ -68,7 +68,6 @@ struct PGTextRange {
 	PGTextRange();
 
 	std::string GetString() const;
-
 	// "data" has to be lowercase
 	int ascii_strcasecmp(const char* data, size_t length) const;
 	int _memcmp(const char* data, size_t length) const;
@@ -91,3 +90,10 @@ struct PGTextRange {
 
 	void remove_prefix(size_t length);
 };
+
+
+inline bool operator< (const PGTextRange& lhs, const PGTextRange& rhs) {
+	return lhs.end_buffer->index < rhs.start_buffer->index || 
+		(lhs.end_buffer->index == rhs.start_buffer->index && lhs.end_position < rhs.start_position);
+}
+inline bool operator> (const PGTextRange& lhs, const PGTextRange& rhs) { return rhs < lhs; }

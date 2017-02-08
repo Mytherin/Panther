@@ -42,6 +42,7 @@ PGTextRange::PGTextRange() :
 	end_buffer(nullptr), end_position(0), owned_data(nullptr) {
 }
 
+
 std::string PGTextRange::GetString() const {
 	if (!start_buffer || !end_buffer) {
 		return std::string();

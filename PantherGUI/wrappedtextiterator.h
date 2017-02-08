@@ -10,6 +10,8 @@ public:
 
 	lng GetCurrentLineNumber() { return current_line; }
 	lng GetCurrentCharacterNumber() { return start_wrap; }
+	PGTextRange GetCurrentRange() { return PGTextRange(buffer, start_wrap, buffer, end_wrap); }
+
 	PGVerticalScroll GetCurrentScrollOffset();
 
 	WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width);

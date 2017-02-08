@@ -1991,7 +1991,7 @@ Cursor* TextFile::RestoreCursorPartial(CursorData data) {
 	return new Cursor(this, data);
 }
 
-PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
+PGTextRange TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
 	PGTextBuffer* start_buffer = buffers[PGTextBuffer::GetBuffer(buffers, start_line)];
 	PGTextBuffer* end_buffer = buffers[PGTextBuffer::GetBuffer(buffers, end_line)];
 	lng start_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
@@ -1999,7 +1999,7 @@ PGFindMatch TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 	return FindMatch(text, direction, start_buffer, start_position, end_buffer, end_position, error_message, match_case, wrap, regex, current_task);
 }
 
-PGFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
+PGTextRange TextFile::FindMatch(std::string pattern, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
 	// we start "outside" of the current selection
 	// e.g. if we go right, we start at the end and continue right
 	// if we go left, we start at the beginning and go left
@@ -2011,7 +2011,7 @@ PGFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, PGTe
 	if (!regex_handle) {
 		// FIXME: throw an error, regex was not compiled properly
 		*error_message = panther::strdup("Error");
-		return PGFindMatch(-1, -1, -1, -1);
+		return PGTextRange();
 	}
 	PGTextRange bounds = direction == PGDirectionLeft ?
 		PGTextRange(end, 0, begin_buffer, begin_position) :
@@ -2019,11 +2019,7 @@ PGFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, PGTe
 	while (true) {
 		PGRegexMatch match = PGMatchRegex(regex_handle, bounds, direction);
 		if (match.matched) {
-			lng start_line, start_character;
-			lng end_line, end_character;
-			match.groups[0].start_buffer->GetCursorFromBufferLocation(match.groups[0].start_position, start_line, start_character);
-			match.groups[0].end_buffer->GetCursorFromBufferLocation(match.groups[0].end_position, end_line, end_character);
-			return PGFindMatch(start_character, start_line, end_character, end_line);
+			return match.groups[0];
 		}
 		// no match was found
 		if (wrap) {
@@ -2037,64 +2033,7 @@ PGFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, PGTe
 			break;
 		}
 	}
-	return PGFindMatch(-1, -1, -1, -1);
-}
-
-PGBufferFindMatch TextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line) {
-	/*size_t pos = std::string::npos;
-	PGRegexMatch match;
-	match.matched = false;
-	if (begin_position > 0) {
-		size_t start = 0, end = line.size();
-		size_t addition = 0;
-		std::string l;
-		if (direction == PGDirectionLeft) {
-			l = line.substr(0, begin_position);
-		} else {
-			l = line.substr(begin_position);
-			addition = begin_position;
-		}
-		match = PGMatchRegex(regex_handle, l, direction);
-		match.start += (int)addition;
-		match.end += (int)addition;
-	} else {
-		match = PGMatchRegex(regex_handle, line, direction);
-	}
-	if (match.matched) {
-		return PGBufferFindMatch(match.start, match.end);
-	}*/
-	return PGBufferFindMatch();
-}
-
-PGBufferFindMatch TextFile::FindMatch(std::string pattern, PGDirection direction, lng begin_position, bool match_case, PGTextBuffer* buffer, std::string& line) {
-	if (!match_case) {
-		line = utf8_tolower(line);
-	}
-	size_t pos = std::string::npos;
-	if (begin_position > 0) {
-		// at the beginning line, we have to keep the begin_character in mind
-		size_t start = 0, end = line.size();
-		std::string l;
-		if (direction == PGDirectionLeft) {
-			// if we search left, we search UP TO the begin character
-			l = line.substr(0, begin_position);
-			pos = l.rfind(pattern);
-		} else {
-			// if we search right, we search STARTING FROM the begin character
-			l = line.substr(begin_position);
-			pos = l.find(pattern);
-			if (pos != std::string::npos) {
-				// correct "pos" to account for the substr we did
-				pos += begin_position;
-			}
-		}
-	} else {
-		pos = direction == PGDirectionLeft ? line.rfind(pattern) : line.find(pattern);
-	}
-	if (pos != std::string::npos) {
-		return PGBufferFindMatch(pos, pos + pattern.size());
-	}
-	return PGBufferFindMatch();
+	return PGTextRange();
 }
 
 struct FindInformation {
@@ -2133,11 +2072,7 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex
 		if (!match.matched) {
 			break;
 		}
-		lng start_line, start_character;
-		lng end_line, end_character;
-		match.groups[0].start_buffer->GetCursorFromBufferLocation(match.groups[0].start_position, start_line, start_character);
-		match.groups[0].end_buffer->GetCursorFromBufferLocation(match.groups[0].end_position, end_line, end_character);
-		textfile->matches.push_back(PGFindMatch(start_character, start_line, end_character, end_line));
+		textfile->matches.push_back(match.groups[0]);
 
 		if (!found_initial_match && (start_line > current_line ||
 			(start_line == current_line && start_character >= current_character))) {
@@ -2323,72 +2258,6 @@ TextLineIterator* TextFile::GetLineIterator(BasicTextField* textfield, lng linen
 			PGVerticalScroll(linenumber, 0), wordwrap_width);
 	}
 	return new TextLineIterator(this, linenumber);
-}
-
-
-PGFindMatch::PGFindMatch(PGTextBuffer* buffer, PGBufferFindMatch* match) {
-	lng start_line, start_character, end_line, end_character;
-	buffer->GetCursorFromBufferLocation(match->start_buffer_pos, start_line, start_character);
-	buffer->GetCursorFromBufferLocation(match->end_buffer_pos, end_line, end_character);
-	this->start_line = start_line;
-	this->start_character = start_character;
-	this->end_line = end_line;
-	this->end_character = end_character;
-}
-
-std::vector<PGFindMatch> PGFindMatch::FromBufferMatches(PGTextBuffer* buffer, std::vector<PGBufferFindMatch> matches) {
-	std::sort(matches.begin(), matches.end(), PGBufferFindMatch::MatchOccursFirst);
-	std::vector<PGFindMatch> resulting_matches;
-	if (matches.size() == 0 || !buffer) return resulting_matches;
-	PGFindMatch current_match;
-	lng current_line = buffer->start_line;
-	lng current_character = 0;
-	lng current_pos = 0;
-	bool next_pos = false;
-	ulng i = 0;
-	for (; ; ) {
-		if (i == matches[current_pos].start_buffer_pos) {
-			current_match.start_line = current_line;
-			current_match.start_character = current_character;
-			if (matches[current_pos].start_buffer_pos > matches[current_pos].end_buffer_pos) {
-				next_pos = true;
-			}
-		}
-		if (i == matches[current_pos].end_buffer_pos) {
-			current_match.end_line = current_line;
-			current_match.end_character = current_character;
-			if (matches[current_pos].end_buffer_pos >= matches[current_pos].start_buffer_pos) {
-				next_pos = true;
-			}
-		}
-		if (next_pos) {
-			next_pos = false;
-			resulting_matches.push_back(current_match);
-			current_pos++;
-			if (current_pos >= matches.size()) {
-				return resulting_matches;
-			}
-			continue;
-		}
-		if (i >= buffer->current_size) break;
-		int offset = utf8_character_length(buffer->buffer[i]);
-		if (offset == 1 && buffer->buffer[i] == '\n') {
-			current_character = 0;
-			current_line++;
-		} else {
-			current_character += offset;
-		}
-		i += offset;
-	}
-	assert(0);
-	return resulting_matches;
-}
-
-bool PGBufferFindMatch::MatchOccursFirst(PGBufferFindMatch a, PGBufferFindMatch b) {
-	// asssert that matches do not overlap
-	assert((a.start_buffer_pos <= b.start_buffer_pos && a.end_buffer_pos <= b.end_buffer_pos) ||
-		(a.start_buffer_pos >= b.start_buffer_pos && a.end_buffer_pos >= b.end_buffer_pos));
-	return (a.start_buffer_pos < b.start_buffer_pos);
 }
 
 #define TEXTFILE_BUFFER_THRESHOLD 1000000

@@ -256,37 +256,31 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				break;
 			}
 
+			PGTextRange current_range = line_iterator->GetCurrentRange();
 			// render any search matches
 			while (current_match < matches.size()) {
 				auto match = matches[current_match];
-				if (match.start_line > current_start_line ||
-					(match.start_line == current_start_line && match.start_character > current_start_position + length)) {
+				if (match > current_range) {
 					// this match is not rendered on this line yet
 					break;
 				}
-				if (match.end_line < current_start_line ||
-					(match.end_line == current_start_line && match.end_character <= current_start_position)) {
+				if (match < current_range) {
 					// this match has already been rendered
 					current_match++;
 					continue;
 				}
+
 				// we should render the match on this line
 				lng start, end;
-				if (match.start_line == current_start_line) {
-					if (match.end_line == current_start_line) {
-						// start and end are on the same line
-						start = match.start_character - current_start_position;
-						end = match.end_character - current_start_position;
-					} else {
-						start = match.start_character - current_start_position;
-						end = length;
-					}
-				} else if (match.end_line == current_start_line) {
+				if (match.start_position < current_range.start_position) {
 					start = 0;
-					end = match.end_character - current_start_position;
 				} else {
-					start = 0;
+					start = match.start_position - current_range.start_position;
+				}
+				if (match.end_position > current_range.end_position) {
 					end = length;
+				} else {
+					end = current_range.end_position - match.end_position;
 				}
 
 				PGScalar x_offset = MeasureTextWidth(font, line, start);
