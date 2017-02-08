@@ -191,7 +191,7 @@ public:
 	PGScalar GetMaxLineWidth(PGFontHandle font);
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
-	PGVerticalScroll GetLineOffset() { return yoffset; }
+	PGVerticalScroll GetLineOffset();
 	double GetScrollPercentage();
 	void SetLineOffset(lng offset);
 	void SetLineOffset(PGVerticalScroll scroll);

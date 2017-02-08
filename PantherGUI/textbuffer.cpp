@@ -9,12 +9,14 @@ lng TEXT_BUFFER_SIZE = 4096;
 
 PGTextBuffer::PGTextBuffer() : 
 	buffer(nullptr), buffer_size(0), current_size(0), start_line(0), 
-	state(nullptr), syntax(nullptr), cumulative_width(0) {
+	state(nullptr), syntax(nullptr), cumulative_width(0),
+	width(0), line_count(0), index(0), wrap_width(0) {
 
 }
 
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
-	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr), cumulative_width(0) {
+	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr), 
+	cumulative_width(0), width(0), line_count(0), index(0), wrap_width(0) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {
 		buffer_size = TEXT_BUFFER_SIZE;
 	} else {
@@ -33,11 +35,11 @@ PGTextBuffer::~PGTextBuffer() {
 }
 
 lng PGTextBuffer::GetLineCount(lng total_lines) {
-	return (this->next ? this->next->start_line : total_lines) - this->start_line;
+	return line_count;
 }
 
 double PGTextBuffer::GetTotalWidth(double total_width) {
-	return (this->next ? this->next->cumulative_width : total_width) - this->cumulative_width;
+	return width;
 }
 
 
@@ -217,8 +219,7 @@ void PGTextBuffer::Extend(ulng new_size) {
 PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer, ulng position, std::string text, ulng linecount) {
 	if (buffer->current_size + text.size() >= buffer->buffer_size) {
 		// data does not fit within the current buffer
-		if ((buffer->next != nullptr && buffer->start_line + 1 == buffer->next->start_line) ||
-			(buffer->next == nullptr && buffer->start_line + 1 >= linecount)) {
+		if (buffer->line_count == 1) {
 			// there is only one line in the current buffer
 			// that means we can't move lines out of the buffer to the next buffer
 			// thus we extend the current buffer instead of creating new buffers
@@ -227,7 +228,7 @@ PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGT
 			buffer->InsertText(position, text);
 			return PGBufferUpdate(text.size());
 		} else {
-			lng buffer_position = PGTextBuffer::GetBuffer(buffers, buffer->start_line);
+			lng buffer_position = PGTextBuffer::GetBuffer(buffers, buffer);
 
 			// there are multiple lines in the current buffer
 			// in this case, we can make room in the buffer by splitting the buffer
@@ -266,13 +267,15 @@ PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGT
 						split_point++;
 						assert(split_point < buffer->current_size);
 						// create the new buffer and insert it to the right of the current buffer
-						lng line = (buffer->next == nullptr ? linecount : buffer->next->start_line) - current_line;
-						PGTextBuffer* new_buffer = new PGTextBuffer(buffer->buffer + split_point, buffer->current_size - split_point, line);
+						// current_line is the amount of lines that will be in the new buffer
+						// and hence also the amount of lines that will be removed from the current buffer
+						PGTextBuffer* new_buffer = new PGTextBuffer(buffer->buffer + split_point, buffer->current_size - split_point, -1);
 						if (buffer->next != nullptr) buffer->next->prev = new_buffer;
 						new_buffer->next = buffer->next;
 						new_buffer->prev = buffer;
-						assert(new_buffer->start_line > buffer->start_line);
-						assert(!new_buffer->next || new_buffer->next->start_line != new_buffer->start_line);
+						new_buffer->line_count = current_line;
+						new_buffer->cumulative_width = -1;
+						buffer->line_count -= current_line;
 						buffer->current_size = split_point;
 						buffer->next = new_buffer;
 						buffers.insert(buffers.begin() + buffer_position + 1, new_buffer);
@@ -308,6 +311,8 @@ PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGT
 }
 
 PGBufferUpdate PGTextBuffer::DeleteText(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer, ulng position, ulng size) {
+	// this should never get used
+	assert(0);
 	// first delete the text from the current buffer
 	buffer->DeleteText(position, size);
 	// now check if we want to merge this buffer to any adjacent buffers
@@ -329,7 +334,7 @@ PGBufferUpdate PGTextBuffer::DeleteText(std::vector<PGTextBuffer*>& buffers, PGT
 		memcpy(buffer->buffer + buffer->current_size, merge_buffer->buffer, merge_buffer->current_size);
 		buffer->current_size += merge_buffer->current_size;
 		// finally delete merge_buffer from the buffer list
-		lng bufpos = GetBuffer(buffers, merge_buffer->start_line);
+		lng bufpos = GetBuffer(buffers, merge_buffer);
 		buffers.erase(buffers.begin() + bufpos);
 		delete merge_buffer;
 		return PGBufferUpdate(old_size, merge_buffer);
@@ -359,6 +364,10 @@ lng PGTextBuffer::GetBufferFromWidth(std::vector<PGTextBuffer*>& buffers, double
 	}
 	assert(0);
 	return limit;
+}
+
+lng PGTextBuffer::GetBuffer(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer) {
+	return buffer->index;
 }
 
 lng PGTextBuffer::GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line) {

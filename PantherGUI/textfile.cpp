@@ -248,44 +248,61 @@ int TextFile::GetLineHeight() {
 
 void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 	buffer->parsed = false;
+	buffer->start_line = -1;
+	buffer->cumulative_width = -1;
 }
 
 void TextFile::InvalidateBuffers() {
-	double added_width = 0;
+	double current_width = 0;
+	double current_lines = 0;
 	PGTextBuffer* buffer = buffers.front();
+
+	lng buffer_index = 0;
+
 	while(buffer) {
-		if (!buffer->parsed) {
+		assert(buffer->index == buffer_index);
+		buffer_index++;
+		if (buffer->cumulative_width < 0) {
 			// we don't know the length of this buffer
 			// get the current length
-			double current_width = buffer->GetTotalWidth(total_width);
 			double new_width = 0;
 			buffer->ClearWrappedLines();
-			lng linenr = buffer->start_line;
-			for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
-				TextLine line = it.GetLine();
-				if (!line.IsValid()) break;
+			lng linenr = current_lines;
 
-				PGScalar current_length = this->line_lengths[linenr];
-				this->line_lengths[linenr] = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
-				new_width += this->line_lengths[linenr];
-				if (linenr == max_line_length && current_length > this->line_lengths[linenr]) {
-					// the maximum line was reduced in length
-					// we have to find the current maximum line
-					max_line_length = -1;
-				} else if (max_line_length >= 0 && line_lengths[linenr] > line_lengths[max_line_length]) {
-					// the current line is bigger than the previous maximum line
-					max_line_length = linenr;
+			char* ptr = buffer->buffer;
+			for(lng j = 0; j < buffer->current_size; j++) {
+				if (buffer->buffer[j] == '\n') {
+					PGSyntax syntax;
+					syntax.end = -1;
+					char* current_ptr = buffer->buffer + j;
+					TextLine line = TextLine(ptr, current_ptr - ptr, syntax);
+
+					ptr = buffer->buffer + j + 1;
+					PGScalar current_length = this->line_lengths[linenr];
+					this->line_lengths[linenr] = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
+					new_width += this->line_lengths[linenr];
+					if (linenr == max_line_length && current_length > this->line_lengths[linenr]) {
+						// the maximum line was reduced in length
+						// we have to find the current maximum line
+						max_line_length = -1;
+					} else if (max_line_length >= 0 && line_lengths[linenr] > line_lengths[max_line_length]) {
+						// the current line is bigger than the previous maximum line
+						max_line_length = linenr;
+					}
+					linenr++;
 				}
-				linenr++;
 			}
-			buffer->cumulative_width += added_width;
-			added_width += new_width - current_width;
-		} else {
-			buffer->cumulative_width += added_width;
+			buffer->width = new_width;
+			buffer->line_count = linenr - current_lines;
 		}
+		buffer->cumulative_width = current_width;
+		buffer->start_line = current_lines;
+		current_width += buffer->width;
+		current_lines += buffer->line_count;
 		buffer = buffer->next;
 	}
-	total_width += added_width;
+	total_width = current_width;
+	linecount = current_lines;
 	if (max_line_length < 0) {
 		lng max_index = 0;
 		for (lng i = 1; i < line_lengths.size(); i++) {
@@ -296,26 +313,7 @@ void TextFile::InvalidateBuffers() {
 		max_line_length = max_index;
 	}
 
-	// verify cumulative widths
-#ifdef PANTHER_DEBUG
-	buffer = buffers.front();
-	double cumulative_width = 0;
-	while(buffer) {
-		assert(panther::epsilon_equals(cumulative_width, buffer->cumulative_width));
-		lng linenr = buffer->start_line;
-		for (auto it = TextLineIterator(this, buffer); it.CurrentBuffer() == buffer; it++) {
-			TextLine line = it.GetLine();
-			if (!line.IsValid()) break;
-
-			PGScalar current_length = this->line_lengths[linenr];
-			PGScalar measured_length = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
-			assert(panther::epsilon_equals(current_length, measured_length));
-			cumulative_width += measured_length;
-			linenr++;
-		}
-		buffer = buffer->next;
-	}
-#endif
+	yoffset.linenumber = std::min(linecount - 1, std::max((lng) 0, yoffset.linenumber));
 }
 
 void TextFile::InvalidateParsing() {
@@ -434,6 +432,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 				current_buffer = new_buffer;
 				current_buffer->cumulative_width = current_width;
 				current_buffer->buffer[current_buffer->current_size++] = '\n';
+				current_buffer->index = buffers.size();
 				buffers.push_back(current_buffer);
 			} else {
 				//add line to the current buffer
@@ -448,6 +447,8 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 				max_length = length;
 			}
 			this->line_lengths.push_back(length);
+			current_buffer->line_count++;
+			current_buffer->width += length;
 			current_width += length;
 
 			linenr++;
@@ -479,6 +480,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 			current_buffer = new_buffer;
 			current_buffer->cumulative_width = current_width;
 			current_buffer->buffer[current_buffer->current_size++] = '\n';
+			current_buffer->index = buffers.size();
 			buffers.push_back(current_buffer);
 		} else {
 			//add line to the current buffer
@@ -493,12 +495,15 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		}
 		this->line_lengths.push_back(length);
 		current_width += length;
+		current_buffer->width += length;
+		current_buffer->line_count++;
 
 		linenr++;
 	}
 	if (linenr == 0) {
 		lineending = GetSystemLineEnding();
 		current_buffer = new PGTextBuffer("", 1, 0);
+		current_buffer->line_count++;
 		buffers.push_back(current_buffer);
 		linenr++;
 	}
@@ -510,6 +515,8 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	if (delete_file) {
 		panther::DestroyFileContents(base);
 	}
+	is_loaded = true;
+	VerifyTextfile();
 
 	if (highlighter) {
 		// we parse the first 10 blocks before opening the textfield for viewing
@@ -539,7 +546,6 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		}
 	}
 
-	is_loaded = true;
 	ApplySettings(this->settings);
 	UnlockMutex(text_lock);
 }
@@ -642,8 +648,12 @@ void TextFile::InsertText(std::string text, size_t i) {
 		assert(c2->start_buffer_position < c2->start_buffer->current_size);
 		assert(c2->end_buffer_position < c2->end_buffer->current_size);
 	}
+	if (update.new_buffer != nullptr) {
+		for(lng index = buffer->index + 1; index < buffers.size(); index++) {
+			buffers[index]->index = index;
+		}
+	}
 	InvalidateBuffer(buffer);
-	VerifyTextfile();
 }
 
 void TextFile::DeleteSelection(int i) {
@@ -658,17 +668,17 @@ void TextFile::DeleteSelection(int i) {
 	end.buffer->parsed = false;
 
 	PGTextBuffer* buffer = begin.buffer;
-	double width_deleted = 0;
 	lng lines_deleted = 0;
+	lng buffers_deleted = 0;
 	lng delete_size;
 	if (end.buffer != begin.buffer) {
 		lines_deleted += begin.buffer->DeleteLines(begin.position);
 		buffer = buffer->next;
 
-		lng buffer_position = PGTextBuffer::GetBuffer(buffers, begin.buffer->start_line);
+		lng buffer_position = PGTextBuffer::GetBuffer(buffers, begin.buffer);
 		while (buffer != end.buffer) {
 			lines_deleted += buffer->GetLineCount(this->GetLineCount());
-			width_deleted += buffer->GetTotalWidth(total_width);
+			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
 			PGTextBuffer* next = buffer->next;
 			delete buffer;
@@ -697,8 +707,8 @@ void TextFile::DeleteSelection(int i) {
 		}
 		if (split_point < buffer->current_size - 1) {
 			// only deleting part of end buffer
-			buffer->start_line -= lines_deleted;
 			lines_deleted += buffer->DeleteLines(0, split_point + 1);
+			end.buffer->line_count -= lines_deleted;
 			begin.buffer->next = end.buffer;
 			end.buffer->prev = begin.buffer;
 			// we know there are no cursors within the selection
@@ -724,9 +734,9 @@ void TextFile::DeleteSelection(int i) {
 		} else {
 			// have to delete entire end buffer
 			lines_deleted += end.buffer->GetLineCount(this->GetLineCount());
-			width_deleted += end.buffer->GetTotalWidth(total_width);
 			begin.buffer->next = end.buffer->next;
 			if (begin.buffer->next) begin.buffer->next->prev = begin.buffer;
+			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
 			delete end.buffer;
 			// there can still be cursors in the end buffer
@@ -775,17 +785,11 @@ void TextFile::DeleteSelection(int i) {
 	InvalidateBuffer(begin.buffer);
 	InvalidateBuffer(end.buffer);
 
-	// update start_line of the buffers
-	buffer = end.buffer->next;
-	while (buffer) {
-		buffer->cumulative_width -= width_deleted;
-		buffer->start_line -= lines_deleted;
-		buffer = buffer->next;
+	if (buffers_deleted > 0) {
+		for(lng i = begin.buffer->index; i < buffers.size(); i++) {
+			buffers[i]->index = i;
+		}
 	}
-	total_width -= width_deleted;
-	linecount -= lines_deleted;
-
-	VerifyTextfile();
 }
 
 // insert text into the textfile at each cursors' position
@@ -822,13 +826,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	PGTextBuffer* extra_buffer = nullptr;
 
 	buffer->parsed = false;
-
-	lng start_line = buffer->start_line;
-	for (lng i = 0; i < position; i++) {
-		if (buffer->buffer[i] == '\n') {
-			start_line++;
-		}
-	}
+	bool inserted_buffers = false;
 
 	if (position < buffer->current_size - 1) {
 		// there is some text in the buffer that we have to move
@@ -845,7 +843,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 				if (i < buffer->current_size - 1) {
 					// this is not the last line in the buffer
 					// add the remaining lines to "extra_buffer"
-					extra_buffer = new PGTextBuffer(buffer->buffer + i + 1, buffer->current_size - (i + 1), start_line + added_lines + 1);
+					extra_buffer = new PGTextBuffer(buffer->buffer + i + 1, buffer->current_size - (i + 1), -1);
 				}
 				break;
 			}
@@ -855,13 +853,12 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	}
 	position = buffer->current_size;
 
-	lng buffer_position = PGTextBuffer::GetBuffer(buffers, buffer->start_line) + 1;
+	lng buffer_position = PGTextBuffer::GetBuffer(buffers, buffer) + 1;
 	lng current_lines = 1;
 	for (auto it = lines.begin() + 1; it != lines.end(); it++) {
 		if ((*it).size() + 1 >= buffer->buffer_size - buffer->current_size) {
-			start_line += current_lines;
 			// line does not fit within the current buffer: have to make a new buffer
-			PGTextBuffer* new_buffer = new PGTextBuffer((*it).c_str(), (*it).size(), start_line);
+			PGTextBuffer* new_buffer = new PGTextBuffer((*it).c_str(), (*it).size(), -1);
 			new_buffer->next = buffer->next;
 			if (new_buffer->next) new_buffer->next->prev = new_buffer;
 			new_buffer->prev = buffer;
@@ -871,7 +868,9 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 			buffer->buffer[buffer->current_size++] = '\n';
 			position = buffer->current_size;
 
+			new_buffer->cumulative_width = -1;
 			buffers.insert(buffers.begin() + buffer_position, new_buffer);
+			inserted_buffers = true;
 			buffer_position++;
 		} else {
 			// line fits within the current buffer
@@ -893,7 +892,9 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 		if (extra_buffer->next) extra_buffer->next->prev = extra_buffer;
 		buffer->next = extra_buffer;
 		extra_buffer->prev = buffer;
+		extra_buffer->cumulative_width = -1;
 		buffers.insert(buffers.begin() + buffer_position, extra_buffer);
+		inserted_buffers = true;
 	}
 	for (size_t j = i + 1; j < cursors.size(); j++) {
 		if (cursors[j]->start_buffer != start_buffer &&
@@ -918,18 +919,17 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	if (extra_buffer) {
 		buffer = extra_buffer;
 	}
-	buffer = buffer->next;
-	while (buffer) {
-		buffer->start_line += added_lines;
-		buffer = buffer->next;
+
+	if (inserted_buffers) {
+		for(lng i = start_buffer->index; i < buffers.size(); i++) {
+			buffers[i]->index = i;
+		}
 	}
-	linecount += added_lines;
 
 	// insert linecount into line_lengths
 	std::vector<PGScalar> lengths(added_lines);
 	line_lengths.insert(line_lengths.begin() + begin_position.line, lengths.begin(), lengths.end());
 	InvalidateBuffer(start_buffer);
-	VerifyTextfile();
 }
 
 // insert text into the textfile at each cursors' position
@@ -999,12 +999,19 @@ double TextFile::GetScrollPercentage() {
 	}
 }
 
+PGVerticalScroll TextFile::GetLineOffset() {
+	assert(yoffset.linenumber >= 0 && yoffset.linenumber < linecount);
+	return yoffset;
+}
+
 void TextFile::SetLineOffset(lng offset) {
+	assert(offset >= 0 && offset < linecount);
 	yoffset.linenumber = offset;
 	yoffset.inner_line = 0;
 }
 
 void TextFile::SetLineOffset(PGVerticalScroll scroll) {
+	assert(scroll.linenumber >= 0 && scroll.linenumber < linecount);
 	yoffset.linenumber = scroll.linenumber;
 	yoffset.inner_line = scroll.inner_line;
 }
@@ -1368,7 +1375,33 @@ void TextFile::PasteText(std::string& text) {
 
 void TextFile::VerifyTextfile() {
 #ifdef PANTHER_DEBUG
+	lng total_lines = 0;
+	double measured_width = 0;
 	for (size_t i = 0; i < buffers.size(); i++) {
+		PGTextBuffer* buffer = buffers[i];
+		assert(panther::epsilon_equals(measured_width, buffer->cumulative_width));
+		assert(buffers[i]->index == i);
+		lng current_lines = 0;
+		char* ptr = buffer->buffer;
+		for(lng j = 0; j < buffer->current_size; j++) {
+			if (buffer->buffer[j] == '\n') {
+				PGSyntax syntax;
+				syntax.end = -1;
+				char* current_ptr = buffer->buffer + j;
+				TextLine line = TextLine(ptr, current_ptr - ptr, syntax);
+
+				ptr = buffer->buffer + j + 1;
+
+				PGScalar current_length = this->line_lengths[total_lines + current_lines];
+				PGScalar measured_length = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
+				assert(panther::epsilon_equals(current_length, measured_length));
+				measured_width += measured_length;
+				current_lines++;
+			}
+		}
+		assert(buffers[i]->start_line == total_lines);
+		assert(buffers[i]->line_count == current_lines);
+		total_lines += current_lines;
 		if (i < buffers.size() - 1) {
 			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
 			assert(buffers[i]->next == buffers[i + 1]);
@@ -1380,6 +1413,7 @@ void TextFile::VerifyTextfile() {
 		}
 		assert(buffers[i]->current_size < buffers[i]->buffer_size);
 	}
+	assert(panther::epsilon_equals(total_width, measured_width));
 	assert(cursors.size() > 0);
 	for (int i = 0; i < cursors.size(); i++) {
 		Cursor* c = cursors[i];
@@ -1491,8 +1525,9 @@ void TextFile::Undo() {
 	Lock(PGWriteLock);
 	VerifyTextfile();
 	this->Undo(delta);
-	VerifyTextfile();
 	InvalidateBuffers();
+	VerifyTextfile();
+	Cursor::NormalizeCursors(this, cursors, true);
 	Unlock(PGWriteLock);
 	this->deltas.pop_back();
 	this->redos.push_back(RedoStruct(delta, BackupCursors()));
@@ -1516,8 +1551,9 @@ void TextFile::Redo() {
 	// perform the operation
 	PerformOperation(delta, true);
 	// release the locks again
-	VerifyTextfile();
 	InvalidateBuffers();
+	VerifyTextfile();
+	Cursor::NormalizeCursors(this, cursors, true);
 	Unlock(PGWriteLock);
 	this->redos.pop_back();
 	this->deltas.push_back(delta);
@@ -1551,8 +1587,9 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	// perform the operation
 	bool success = PerformOperation(delta, false);
 	// release the locks again
-	VerifyTextfile();
 	InvalidateBuffers();
+	VerifyTextfile();
+	Cursor::NormalizeCursors(this, cursors, true);
 	Unlock(PGWriteLock);
 	if (!success) return;
 	AddDelta(delta);
@@ -1560,7 +1597,6 @@ void TextFile::PerformOperation(TextDelta* delta) {
 		saved_undo_count = -1;
 	}
 	SetUnsavedChanges(true);
-	Cursor::NormalizeCursors(this, cursors);
 	if (this->textfield) {
 		this->textfield->TextChanged();
 	}
@@ -1609,7 +1645,7 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 					remove->stored_cursors.push_back(BackupCursor(i));
 				}
 			}
-			Cursor::NormalizeCursors(this, cursors, true);
+			Cursor::NormalizeCursors(this, cursors, false);
 			break;
 		}
 		case PGDeltaRemoveLine:
@@ -1744,7 +1780,6 @@ void TextFile::Undo(TextDelta* delta) {
 			for (int i = 0; i < delta->stored_cursors.size(); i++) {
 				int index = delta->stored_cursors.size() - (i + 1);
 				cursors.insert(cursors.begin(), RestoreCursorPartial(delta->stored_cursors[index]));
-				VerifyTextfile();
 				Undo(*remove, remove->removed_text[index], 0);
 				delete cursors[0];
 				cursors[0] = RestoreCursor(delta->stored_cursors[index]);

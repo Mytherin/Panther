@@ -20,8 +20,8 @@ struct PGTextPosition {
 };
 
 inline bool operator< (const PGTextPosition& lhs, const PGTextPosition& rhs) {
-	return (lhs.buffer->start_line < rhs.buffer->start_line) ||
-		(lhs.buffer->start_line == rhs.buffer->start_line && lhs.position < rhs.position);
+	return (lhs.buffer->index < rhs.buffer->index) ||
+		(lhs.buffer->index == rhs.buffer->index && lhs.position < rhs.position);
 }
 inline bool operator> (const PGTextPosition& lhs, const PGTextPosition& rhs) { return rhs < lhs; }
 inline bool operator<=(const PGTextPosition& lhs, const PGTextPosition& rhs) { return !(lhs > rhs); }

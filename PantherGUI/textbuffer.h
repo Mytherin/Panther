@@ -44,10 +44,13 @@ public:
 	PGTextBuffer(const char* text, lng size, lng start_line);
 	~PGTextBuffer();
 
+	lng index = 0;
+
 	char* buffer = nullptr;
 	ulng buffer_size = 0;
 	ulng current_size = 0;
 	ulng start_line = 0;
+	ulng line_count = 0;
 
 	ulng syntax_count = 0;
 	PGSyntax* syntax = nullptr;
@@ -57,6 +60,7 @@ public:
 	PGTextBuffer* prev = nullptr;
 	PGTextBuffer* next = nullptr;
 
+	double width = 0;
 	double cumulative_width = -1;
 	PGScalar wrap_width;
 	std::vector<PGLineWrap> line_wraps;
@@ -72,7 +76,7 @@ public:
 
 	static lng GetBufferFromWidth(std::vector<PGTextBuffer*>& buffers, double percentage);
 	static lng GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line);
-
+	static lng GetBuffer(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer);
 	// insert text into the specified buffer, "text" should not contain newlines
 	// this function accounts for extending buffers and creating new buffers
 	static PGBufferUpdate InsertText(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer, ulng position, std::string text, ulng linecount);

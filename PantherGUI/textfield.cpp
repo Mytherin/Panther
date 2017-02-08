@@ -128,7 +128,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	bool toggle = false;
 	TextLineIterator* line_iterator = textfile->GetScrollIterator(this, start_line);
 	auto buffer = line_iterator->CurrentBuffer();
-	toggle = PGTextBuffer::GetBuffer(textfile->buffers, buffer->start_line) % 2 != 0;
+	toggle = PGTextBuffer::GetBuffer(textfile->buffers, buffer) % 2 != 0;
 	lng current_cursor = 0;
 	lng current_match = 0;
 	auto matches = textfile->GetFindMatches();

@@ -56,7 +56,7 @@ void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 TextLineIterator::TextLineIterator(TextFile* textfile, PGTextBuffer* buffer) :
 	textfile(textfile) {
 	this->buffer = buffer;
-	this->current_line = buffer->start_line - 1;
+	this->current_line = (lng) buffer->start_line - 1;
 	this->end_position = -1;
 	this->start_position = 0;
 	NextLine();
