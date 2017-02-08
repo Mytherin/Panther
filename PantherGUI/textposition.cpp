@@ -12,24 +12,6 @@ lng PGTextPosition::GetPosition(PGTextBuffer* start_buffer) {
 	return current_position;
 }
 
-bool PGTextPosition::Offset(const lng offset) {
-	if (buffer == nullptr) {
-		return false;
-	}
-	position += offset;
-	while (position >= (lng)buffer->current_size) {
-		if (!buffer->next) return false;
-		position -= buffer->current_size;
-		buffer = buffer->next;
-	}
-	while (position < 0) {
-		buffer = buffer->prev;
-		if (!buffer) return false;
-		position += buffer->current_size;
-	}
-	return true;
-}
-
 PGTextRange::PGTextRange(std::string text) : owned_data(nullptr) {
 	PGTextBuffer* buffer = new PGTextBuffer(text.data(), text.size(), 0);
 	buffer->prev = nullptr;
