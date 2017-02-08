@@ -89,6 +89,16 @@ std::vector<CursorData> Cursor::GetCursorData(std::vector<Cursor*> cursors) {
 	return data;
 }
 
+Cursor::Cursor(TextFile* file, PGTextRange range) : 
+	file(file), x_position(-1), 
+	start_buffer(range.start_buffer), 
+	start_buffer_position(range.start_position), 
+	end_buffer(range.end_buffer),
+	end_buffer_position(range.end_position)
+{
+
+}
+
 void Cursor::OffsetLine(lng offset) {
 	OffsetSelectionLine(offset);
 	end_buffer = start_buffer;
@@ -415,6 +425,13 @@ void Cursor::SetCursorLocation(lng linenr, lng characternr) {
 	x_position = -1;
 }
 
+void Cursor::SetCursorLocation(PGTextRange range) {
+	start_buffer = range.start_buffer;
+	start_buffer_position = range.start_position;
+	end_buffer = range.end_buffer;
+	end_buffer_position = range.end_position;
+	x_position = -1;
+}
 void Cursor::_SetCursorStartLocation(lng linenr, lng characternr) {
 	start_buffer = file->GetBuffer(linenr);
 	start_buffer_position = start_buffer->GetBufferLocationFromCursor(linenr, characternr);

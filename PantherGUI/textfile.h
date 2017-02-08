@@ -128,6 +128,7 @@ public:
 	void ClearCursors();
 	void SetCursorLocation(lng line, lng character);
 	void SetCursorLocation(lng start_line, lng start_character, lng end_line, lng end_character);
+	void SetCursorLocation(PGTextRange range);
 	void AddNewCursor(lng line, lng character);
 	void SelectEverything();
 	void OffsetLine(lng offset);

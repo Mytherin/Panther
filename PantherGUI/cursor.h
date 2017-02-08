@@ -29,6 +29,7 @@ public:
 	Cursor(TextFile* file, lng start_line, lng start_character);
 	Cursor(TextFile* file, lng start_line, lng start_character, lng end_line, lng end_character);
 	Cursor(TextFile* file, CursorData data);
+	Cursor(TextFile* file, PGTextRange range);
 
 	static std::vector<CursorData> GetCursorData(std::vector<Cursor*> cursors);
 
@@ -85,6 +86,7 @@ public:
 
 	void SetCursorStartLocation(lng linenr, lng characternr);
 	void SetCursorLocation(lng linenr, lng characternr);
+	void SetCursorLocation(PGTextRange range);
 
 	void ApplyMinimalSelection(PGTextRange selection);
 

@@ -45,7 +45,7 @@ public:
 	~PGTextBuffer();
 
 	lng index = 0;
-
+	
 	char* buffer = nullptr;
 	ulng buffer_size = 0;
 	ulng current_size = 0;

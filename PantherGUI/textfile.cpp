@@ -34,6 +34,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 	default_font = PGCreateFont();
 	SetTextFontSize(default_font, 10);
 	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
+	buffers.back()->line_count = 1;
 	this->line_lengths.push_back(0);
 	cursors.push_back(new Cursor(this));
 	this->linecount = 1;
@@ -1125,6 +1126,13 @@ void TextFile::SetCursorLocation(lng start_line, lng start_character, lng end_li
 	Cursor::NormalizeCursors(this, cursors);
 }
 
+void TextFile::SetCursorLocation(PGTextRange range) {
+	ClearExtraCursors();
+	cursors[0]->SetCursorLocation(range);
+	Cursor::NormalizeCursors(this, cursors);
+
+}
+
 void TextFile::AddNewCursor(lng line, lng character) {
 	cursors.push_back(new Cursor(this, line, character));
 	active_cursor = cursors.back();
@@ -2055,6 +2063,8 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex
 	bool found_initial_match = false;
 	PGTextBuffer* selection_buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, current_line)];
 	lng selection_position = selection_buffer->GetBufferLocationFromCursor(current_line, current_character);
+	PGTextPosition position = PGTextPosition(selection_buffer, selection_position);
+
 
 	PGTextRange bounds;
 	bounds.start_buffer = textfile->buffers.front();
@@ -2074,11 +2084,10 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex
 		}
 		textfile->matches.push_back(match.groups[0]);
 
-		if (!found_initial_match && (start_line > current_line ||
-			(start_line == current_line && start_character >= current_character))) {
+		if (!found_initial_match && match.groups[0].startpos() >= position) {
 			found_initial_match = true;
 			textfile->selected_match = textfile->matches.size() - 1;
-			textfile->SetCursorLocation(start_line, start_character, end_line, end_character);
+			textfile->SetCursorLocation(match.groups[0]);
 		}
 
 		bounds.start_buffer = match.groups[0].end_buffer;
@@ -2156,7 +2165,7 @@ void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng star
 
 bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, bool include_selection) {
 	if (!is_loaded) return false;
-	PGFindMatch match;
+	PGTextRange match;
 	if (selected_match >= 0) {
 		// if FindAll has been performed, we should already have all the matches
 		// simply select the next match, rather than searching again
@@ -2191,8 +2200,8 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 		}
 
 		match = matches[selected_match];
-		if (match.start_line >= 0) {
-			this->SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
+		if (match.start_buffer != nullptr) {
+			this->SetCursorLocation(match);
 		}
 		Unlock(PGWriteLock);
 		return true;
@@ -2218,15 +2227,15 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 	Unlock(PGReadLock);
 	if (!(*error_message)) {
 		Lock(PGWriteLock);
-		if (match.start_character >= 0) {
-			SetCursorLocation(match.start_line, match.start_character, match.end_line, match.end_character);
+		if (match.start_buffer != nullptr) {
+			SetCursorLocation(match);
 		}
 		matches.clear();
-		if (match.start_character >= 0) {
+		if (match.start_buffer != nullptr) {
 			matches.push_back(match);
 		}
 		Unlock(PGWriteLock);
-		return match.start_character >= 0;
+		return match.start_buffer != nullptr;
 	}
 	return false;
 }
@@ -2235,7 +2244,7 @@ void TextFile::SelectMatches() {
 	assert(matches.size() > 0);
 	ClearCursors();
 	for (auto it = matches.begin(); it != matches.end(); it++) {
-		Cursor* c = new Cursor(this, (*it).end_line, (*it).end_character, (*it).start_line, (*it).start_character);
+		Cursor* c = new Cursor(this, *it);
 		cursors.push_back(c);
 	}
 	active_cursor = cursors[0];

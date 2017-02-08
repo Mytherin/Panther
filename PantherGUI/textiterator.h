@@ -2,6 +2,7 @@
 
 #include "textbuffer.h"
 #include "textline.h"
+#include "textposition.h"
 
 class TextLineIterator {
 	friend class TextFile;

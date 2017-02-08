@@ -131,7 +131,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	toggle = PGTextBuffer::GetBuffer(textfile->buffers, buffer) % 2 != 0;
 	lng current_cursor = 0;
 	lng current_match = 0;
-	auto matches = textfile->GetFindMatches();
+	const std::vector<PGTextRange>& matches = textfile->GetFindMatches();
 
 	if (!minimap) {
 		rendered_lines.clear();
@@ -256,44 +256,45 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				break;
 			}
 
-			PGTextRange current_range = line_iterator->GetCurrentRange();
-			// render any search matches
-			while (current_match < matches.size()) {
-				auto match = matches[current_match];
-				if (match > current_range) {
-					// this match is not rendered on this line yet
+			if (!minimap) {
+				PGTextRange current_range = line_iterator->GetCurrentRange();
+				// render any search matches
+				while (current_match < matches.size()) {
+					auto match = matches[current_match];
+					if (match > current_range) {
+						// this match is not rendered on this line yet
+						break;
+					}
+					if (match < current_range) {
+						// this match has already been rendered
+						current_match++;
+						continue;
+					}
+
+					// we should render the match on this line
+					lng start, end;
+					if (match.start_position < current_range.start_position) {
+						start = 0;
+					} else {
+						start = match.start_position - current_range.start_position;
+					}
+					if (match.end_position > current_range.end_position) {
+						end = length;
+					} else {
+						end = match.end_position - current_range.start_position;
+					}
+
+					PGScalar x_offset = MeasureTextWidth(font, line, start);
+					PGScalar width = MeasureTextWidth(font, line + start, end - start);
+					PGRect rect(position_x_text + x_offset - xoffset, position_y, width, line_height);
+					RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
+					if (end < length) {
+						current_match++;
+						continue;
+					}
 					break;
 				}
-				if (match < current_range) {
-					// this match has already been rendered
-					current_match++;
-					continue;
-				}
-
-				// we should render the match on this line
-				lng start, end;
-				if (match.start_position < current_range.start_position) {
-					start = 0;
-				} else {
-					start = match.start_position - current_range.start_position;
-				}
-				if (match.end_position > current_range.end_position) {
-					end = length;
-				} else {
-					end = current_range.end_position - match.end_position;
-				}
-
-				PGScalar x_offset = MeasureTextWidth(font, line, start);
-				PGScalar width = MeasureTextWidth(font, line + start, end - start);
-				PGRect rect(position_x_text + x_offset - xoffset, position_y, width, line_height);
-				RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
-				if (end < length) {
-					current_match++;
-					continue;
-				}
-				break;
 			}
-
 
 			// render the actual text
 			lng position = 0;
