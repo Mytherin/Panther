@@ -1334,7 +1334,7 @@ inline bool DFA::InlinedSearchLoop(SearchParams* params,
 
   lastmatch.buffer = nullptr;
   lastmatch.position = 0;
-  while(1) {
+  while(true) {
     while (p != ep) {
       if (have_firstbyte && s == start) {
         // In start state, only way out is to find firstbyte,

@@ -12,7 +12,7 @@ lng PGTextPosition::GetPosition(PGTextBuffer* start_buffer) {
 	return current_position;
 }
 
-bool PGTextPosition::Offset(lng offset) {
+bool PGTextPosition::Offset(const lng offset) {
 	if (buffer == nullptr) {
 		return false;
 	}

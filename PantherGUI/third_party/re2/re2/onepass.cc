@@ -257,7 +257,7 @@ bool Prog::SearchOnePass(const PGTextRange& text,
   matchcap[0] = PGTextPosition(current_buffer, bp);
   cap[0] = PGTextPosition(current_buffer, bp);
   uint32_t nextmatchcond = state->matchcond;
-  while(1) {
+  while(true) {
     for (p = bp; p < ep; p++) {
       int c = bytemap[*p & 0xFF];
       uint32_t matchcond = nextmatchcond;

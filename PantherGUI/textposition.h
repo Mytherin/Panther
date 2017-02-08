@@ -16,7 +16,7 @@ struct PGTextPosition {
 
 	inline char operator* () { return buffer ? buffer->buffer[position] : '\0'; }
 
-	bool Offset(lng offset);
+	inline bool Offset(const lng offset);
 };
 
 inline bool operator< (const PGTextPosition& lhs, const PGTextPosition& rhs) {
