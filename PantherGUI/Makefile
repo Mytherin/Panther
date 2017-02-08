@@ -92,22 +92,28 @@ all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) panther.app
 
 clean:
 	rm -rf obj
+	rm -rf deps
 	rm -f main.app
 
 create_build_directory:
 	mkdir -p obj
+	mkdir -p deps
+
+
+DEPS = $(shell find deps -name "*.d")
+-include $(DEPS)
 
 obj/%.o: third_party/re2/re2/%.cc
-	$(CCPP) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst obj,re2,$(subst .o,.cc,$@)) -o $@
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst obj,deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst obj,re2,$(subst .o,.cc,$@)) -o $@
 
 obj/%.o: third_party/re2/util/%.cc
-	$(CCPP) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst obj,util,$(subst .o,.cc,$@)) -o $@
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst obj,deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst obj,util,$(subst .o,.cc,$@)) -o $@
 
 obj/%.o: %.mm
-	$(CCPP) $(OBJCFLAGS) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst obj/,,$(subst .o,.mm,$@)) -o $@
+	$(CCPP) $(OBJCFLAGS) -MMD -MF $(subst obj,deps,$(subst .o,.d,$@)) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst obj/,,$(subst .o,.mm,$@)) -o $@
 
 obj/%.o: %.cpp
-	$(CCPP) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst obj/,,$(subst .o,.cpp,$@)) -o $@
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst obj,deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst obj/,,$(subst .o,.cpp,$@)) -o $@
 
 panther.app: 
 	$(CCPP) $(OBJCFLAGS) $(LDFLAGS) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OBJCOBJECTS) $(RE2OBJECTS) $(COBJECTS) $(OPTFLAGS) -o main.app
