@@ -377,7 +377,7 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 					text_size += font->character_width;
 				}
 			}
-			if (text_size > xoffset) {
+			if (text_size >= xoffset) {
 				if (!found_initial_character) {
 					found_initial_character = true;
 					render_start = i;
@@ -423,7 +423,7 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 					text_size += font->textpaint->measureText(text + i, offset);
 				}
 			}
-			if (text_size > xoffset) {
+			if (text_size >= xoffset) {
 				if (!found_initial_character) {
 					render_start = i;
 					found_initial_character = true;
@@ -436,7 +436,9 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 			i += offset;
 		}
 	}
-	cumulative_widths.push_back(text_size - xoffset);
+	if (text_size > xoffset) {
+		cumulative_widths.push_back(text_size - xoffset);	
+	}
 	return cumulative_widths;
 }
 
@@ -558,9 +560,9 @@ PGScalar GetTextHeight(PGFontHandle font) {
 	return metrics.fDescent - metrics.fAscent;
 }
 
-void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color) {
-	PGScalar width = MeasureTextWidth(font, text, characternr);
-	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), color);
+void RenderCaret(PGRendererHandle renderer, PGFontHandle font, PGScalar selection_offset, PGScalar x, PGScalar y, PGColor color) {
+	PGScalar line_height = GetTextHeight(font);
+	RenderLine(renderer, PGLine(x + selection_offset, y, x + selection_offset, y + line_height), color);
 }
 
 void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, 

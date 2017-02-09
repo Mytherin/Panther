@@ -6,7 +6,7 @@
 #include "wrappedtextiterator.h"
 
 WrappedTextLineIterator::WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width) :
-	font(font), wrap_width(wrap_width) {
+	font(font), wrap_width(wrap_width), start_wrap(0) {
 	lng current_line = scroll.linenumber;
 	this->Initialize(textfile, current_line);
 	delete_syntax = false;

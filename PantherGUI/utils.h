@@ -37,6 +37,12 @@ namespace panther {
 	void replace(std::string& source, std::string from, std::string to);
 
 	bool epsilon_equals(double a, double b);
+
+
+	template<class T>
+	T clamped_access(const std::vector<T>& vector, lng index) {
+		return vector[std::min((lng)vector.size() - 1, std::max((lng)0, index))];
+	}
 }
 
 

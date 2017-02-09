@@ -28,33 +28,48 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 
 	x += 4;
 	y += 2;
-
+	
 	Cursor* cursor = textfile->GetCursors()[0];
 	SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldText));
 	PGScalar line_height = GetTextHeight(textfield_font);
-	TextLine line = textfile->GetLine(0);
-	/*RenderSelection(renderer, 
-		textfield_font, 
-		line.GetLine(), 
-		line.GetLength(), 
-		x - xoffset, 
-		y, cursor->BeginPosition().position,
-		cursor->EndPosition().position,
-		PGStyleManager::GetColor(PGColorTextFieldSelection), 
-		max_x);*/
-	if (display_carets) {
-		RenderCaret(renderer, 
+	TextLine textline = textfile->GetLine(0);
+	char* line = textline.GetLine();
+	lng length = textline.GetLength();
+
+	lng render_start = 0, render_end = length;
+	auto character_widths = CumulativeCharacterWidths(textfield_font, line, length, xoffset, this->width, render_start, render_end);
+	if (character_widths.size() == 0) {
+		// the entire line is out of bounds, nothing to render
+		return;
+	}
+
+	auto begin_pos = cursor->BeginPosition();
+	auto end_pos = cursor->EndPosition();
+
+	if (begin_pos.position != end_pos.position) {
+		RenderSelection(renderer, 
 			textfield_font, 
-			line.GetLine(),
-			line.GetLength(),
-			x - xoffset,
+			line,
+			length, 
+			x,
 			y,
-			cursor->SelectedPosition().position,
-			line_height,
+			begin_pos.position,
+			end_pos.position,
+			render_start,
+			render_end,
+			character_widths,
+			PGStyleManager::GetColor(PGColorTextFieldSelection));
+	}
+	if (display_carets) {
+		RenderCaret(renderer,
+			textfield_font,
+			panther::clamped_access(character_widths, cursor->SelectedPosition().position - render_start),
+			x,
+			y,
 			PGStyleManager::GetColor(PGColorTextFieldCaret));
 	}
 
-	RenderText(renderer, textfield_font, line.GetLine(), line.GetLength(), x - xoffset, y, max_x);
+	RenderText(renderer, textfield_font, line + render_start, render_end - render_start, x + character_widths[0], y, max_x);
 }
 
 void SimpleTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {

@@ -178,8 +178,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				RenderText(renderer, textfield_font, line_number.c_str(), line_number.size(), position_x + margin_width, position_y);
 			}
 
-			SetRenderBounds(renderer, PGRect(position_x_text, y, this->width, this->height));
-
 			char* line = current_line.GetLine();
 			lng length = current_line.GetLength();
 
@@ -190,6 +188,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				// the entire line is out of bounds, nothing to render
 				goto next_line;
 			}
+
+			SetRenderBounds(renderer, PGRect(position_x_text, y, this->width, this->height));
 
 			// render the selections and cursors, if there are any on this line
 			while (current_cursor < cursors.size()) {
@@ -243,19 +243,16 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 				if (!minimap && display_carets) {
 					PGTextPosition selected_position = cursors[current_cursor]->SelectedCursorPosition();
-					if (selected_position >= current_range.startpos() && selected_position < current_range.endpos()) {
+					if (selected_position >= current_range.startpos() && selected_position <= current_range.endpos()) {
 						// render the caret on the selected line
 						lng render_position = selected_position.position - current_range.start_position;
 						if (render_position >= render_start && render_position <= render_end) {
 							// check if the caret is in the rendered area first
 							RenderCaret(renderer,
 								font,
-								current_line.GetLine(),
-								current_line.GetLength(),
-								position_x_text - xoffset,
+								character_widths[render_position - render_start],
+								position_x_text,
 								position_y,
-								render_position,
-								line_height,
 								PGStyleManager::GetColor(PGColorTextFieldCaret));
 						}
 					}
@@ -297,9 +294,9 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 						end = match.end_position - current_range.start_position;
 					}
 					if ((end >= render_start && start <= render_end) && start != end) {
-						PGScalar x_offset = MeasureTextWidth(font, line, start);
-						PGScalar width = MeasureTextWidth(font, line + start, end - start);
-						PGRect rect(position_x_text + x_offset - xoffset, position_y, width, line_height);
+						PGScalar x_offset = panther::clamped_access(character_widths, start - render_start);
+						PGScalar width = panther::clamped_access(character_widths, end - render_start) - x_offset;
+						PGRect rect(position_x_text + x_offset, position_y, width, line_height);
 						RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
 						if (end < length) {
 							current_match++;
@@ -322,10 +319,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				RenderRectangle(renderer, PGRect(position_x_text, position_y, this->width, line_height), PGColor(72, 72, 72, 60), PGDrawStyleFill);
 			}
 
-			PGScalar xpos = position_x_text - xoffset;
-			// if we are rendering the line into a bitmap, it starts at (0,0)
-			// otherwise we render onto the screen normally
-			PGScalar bitmap_x = xpos;
+			PGScalar bitmap_x = position_x_text + character_widths[0];
 			PGScalar bitmap_y = position_y;
 			PGSyntax* syntax = &current_line.syntax;
 			while (syntax && syntax->end > 0) {
@@ -335,45 +329,51 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					syntax = syntax->next;
 					continue;
 				}
-				if (syntax->type == PGSyntaxError) {
-					squiggles = true;
-				} else if (syntax->type == PGSyntaxNone) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-				} else if (syntax->type == PGSyntaxString) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
-				} else if (syntax->type == PGSyntaxConstant) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
-				} else if (syntax->type == PGSyntaxComment) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
-				} else if (syntax->type == PGSyntaxOperator) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
-				} else if (syntax->type == PGSyntaxFunction) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
-				} else if (syntax->type == PGSyntaxKeyword) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
-				} else if (syntax->type == PGSyntaxClass1) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
-				} else if (syntax->type == PGSyntaxClass2) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
-				} else if (syntax->type == PGSyntaxClass3) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
-				} else if (syntax->type == PGSyntaxClass4) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
-				} else if (syntax->type == PGSyntaxClass5) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
-				} else if (syntax->type == PGSyntaxClass6) {
-					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
+				if (syntax->end >= render_start && position <= render_end) {
+					lng spos = std::max(position, render_start);
+					lng epos = std::min(syntax->end, render_end);
+					if (syntax->type == PGSyntaxError) {
+						squiggles = true;
+					} else if (syntax->type == PGSyntaxNone) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+					} else if (syntax->type == PGSyntaxString) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
+					} else if (syntax->type == PGSyntaxConstant) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
+					} else if (syntax->type == PGSyntaxComment) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
+					} else if (syntax->type == PGSyntaxOperator) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
+					} else if (syntax->type == PGSyntaxFunction) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
+					} else if (syntax->type == PGSyntaxKeyword) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
+					} else if (syntax->type == PGSyntaxClass1) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
+					} else if (syntax->type == PGSyntaxClass2) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
+					} else if (syntax->type == PGSyntaxClass3) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
+					} else if (syntax->type == PGSyntaxClass4) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
+					} else if (syntax->type == PGSyntaxClass5) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
+					} else if (syntax->type == PGSyntaxClass6) {
+						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
+					}
+					RenderText(renderer, font, line + spos, epos - spos, bitmap_x, bitmap_y);
+
+					PGScalar text_width = character_widths[epos - render_start] - character_widths[spos - render_start];
+					bitmap_x += text_width;
 				}
-				RenderText(renderer, font, line + position, syntax->end - position, bitmap_x, bitmap_y, this->width);
-				PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
-				bitmap_x += text_width;
 				position = syntax->end;
 				syntax = syntax->next;
 			}
 
-			if (length > position) {
+			if (render_end > position) {
+				position = std::max(position, render_start);
 				SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-				RenderText(renderer, font, line + position, length - position, bitmap_x, bitmap_y, this->width);
+				RenderText(renderer, font, line + position, render_end - position, bitmap_x, bitmap_y);
 			}
 			
 			if ((lng)selected_word.size() > 0 && length >= (lng)selected_word.size()) {

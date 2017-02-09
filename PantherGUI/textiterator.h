@@ -40,7 +40,7 @@ protected:
 	virtual void NextLine();
 
 	PGTextBuffer* buffer;
-	lng start_position, end_position;
+	lng start_position = 0, end_position;
 	TextFile* textfile;
 	lng current_line;
 	TextLine textline;

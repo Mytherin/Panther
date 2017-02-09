@@ -3,18 +3,21 @@
 #include "textfile.h"
 #include "unicode.h"
 
-TextLineIterator::TextLineIterator(TextFile* textfile, lng line) {
+TextLineIterator::TextLineIterator(TextFile* textfile, lng line) : 
+	start_position(0) {
 	Initialize(textfile, line);
 }
 
-TextLineIterator::TextLineIterator() {
+TextLineIterator::TextLineIterator() : 
+	start_position(0) {
 
 }
 
 void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 	this->textfile = textfile;
 	this->current_line = line;
-
+	this->start_position = 0;
+	
 	buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, line)];
 
 	lng current_line = buffer->start_line;

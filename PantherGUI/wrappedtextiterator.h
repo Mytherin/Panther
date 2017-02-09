@@ -21,7 +21,7 @@ protected:
 
 	PGFontHandle font;
 	PGScalar wrap_width;
-	lng start_wrap;
+	lng start_wrap = 0;
 	lng end_wrap;
 	lng inner_line;
 	lng max_inner_line;
