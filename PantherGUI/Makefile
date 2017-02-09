@@ -1,16 +1,18 @@
 
 
-OPTIMIZE=false
+OPTIMIZE=$(OPT)
 
 CCPP=clang++
 
-ifeq ($(OPTIMIZE), false)
+ifneq ($(OPTIMIZE), true)
 	OPTFLAGS=-O0 -g
 	OBJDIR=obj
 else
 	OPTFLAGS=-O3
 	OBJDIR=opt
 endif
+
+DEPSDIR=$(OBJDIR)/deps
 
 SKIA_INCLUDE_FLAGS=-I/Users/myth/Sources/skia/skia/include/core \
 				   -I/Users/myth/Sources/skia/skia/include/config \
@@ -26,7 +28,7 @@ OBJCFLAGS=-fobjc-arc
 LDFLAGS=-framework AppKit -lobjc -L/opt/local/lib $(ICU_LDFLAGS) $(SKIA_LDFLAGS)
 INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) -Ithird_party/re2
 
-ifeq ($(OPTIMIZE), false)
+ifneq ($(OPTIMIZE), true)
 	CPPFLAGS+=-DPANTHER_DEBUG
 endif
 
@@ -106,28 +108,27 @@ all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) panther.app
 
 clean:
 	rm -rf $(OBJDIR)
-	rm -rf deps
 	rm -f main.app
 
 create_build_directory:
 	mkdir -p $(OBJDIR)
-	mkdir -p deps
+	mkdir -p $(DEPSDIR)
 
 
-DEPS = $(shell find deps -name "*.d")
+DEPS = $(shell find $(DEPSDIR) -name "*.d")
 -include $(DEPS)
 
 $(OBJDIR)/%.o: third_party/re2/re2/%.cc
-	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),re2,$(subst .o,.cc,$@)) -o $@
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),re2,$(subst .o,.cc,$@)) -o $@
 
 $(OBJDIR)/%.o: third_party/re2/util/%.cc
-	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),util,$(subst .o,.cc,$@)) -o $@
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),util,$(subst .o,.cc,$@)) -o $@
 
 $(OBJDIR)/%.o: %.mm
-	$(CCPP) $(OBJCFLAGS) -MMD -MF $(subst $(OBJDIR),deps,$(subst .o,.d,$@)) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.mm,$@)) -o $@
+	$(CCPP) $(OBJCFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.mm,$@)) -o $@
 
 $(OBJDIR)/%.o: %.cpp
-	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.cpp,$@)) -o $@
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.cpp,$@)) -o $@
 
 panther.app: 
 	$(CCPP) $(OBJCFLAGS) $(LDFLAGS) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OBJCOBJECTS) $(RE2OBJECTS) $(COBJECTS) $(OPTFLAGS) -o main.app
