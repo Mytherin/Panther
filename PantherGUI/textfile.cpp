@@ -566,7 +566,6 @@ void TextFile::SetWordWrap(bool wordwrap, PGScalar wrap_width) {
 	}
 }
 
-// FIXME: "file has been modified without us being the one that modified it"
 TextLine TextFile::GetLine(lng linenumber) {
 	if (!is_loaded) return TextLine();
 	if (linenumber < 0 || linenumber >= linecount)

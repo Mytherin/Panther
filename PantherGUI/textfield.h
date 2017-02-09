@@ -118,8 +118,6 @@ private:
 
 	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
-	std::map<lng, PGBitmapHandle> minimap_line_cache;
-
 	void CreateNotification(PGNotificationType type, std::string text);
 	void ShowNotification();
 

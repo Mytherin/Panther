@@ -539,7 +539,7 @@ bool Cursor::CursorPositionOccursFirst(PGTextBuffer* a, lng a_pos, PGTextBuffer*
 		(a->start_line == b->start_line && a_pos < b_pos);
 }
 
-PGTextPosition Cursor::BeginCursorPosition() {
+PGTextPosition Cursor::BeginCursorPosition() const {
 	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
 		return PGTextPosition(start_buffer, start_buffer_position);
 	} else {
@@ -547,12 +547,16 @@ PGTextPosition Cursor::BeginCursorPosition() {
 	}
 }
 
-PGTextPosition Cursor::EndCursorPosition() {
+PGTextPosition Cursor::EndCursorPosition() const {
 	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
 		return PGTextPosition(end_buffer, end_buffer_position);
 	} else {
 		return PGTextPosition(start_buffer, start_buffer_position);
 	}
+}
+
+PGTextPosition Cursor::SelectedCursorPosition() const {
+	return PGTextPosition(start_buffer, start_buffer_position);
 }
 
 bool Cursor::OverlapsWith(Cursor* cursor) {

@@ -132,41 +132,44 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	lng current_cursor = 0;
 	lng current_match = 0;
 	const std::vector<PGTextRange>& matches = textfile->GetFindMatches();
+	lng selected_line = -1;
 
 	if (!minimap) {
 		rendered_lines.clear();
 	}
-	std::map<Cursor*, PGCursorPosition> begin_positions;
-	std::map<Cursor*, PGCursorPosition> end_positions;
-	std::map<Cursor*, PGCursorPosition> selected_positions;
-	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		selected_positions[*it] = (*it)->SelectedPosition();
-		begin_positions[*it] = (*it)->BeginPosition();
-		end_positions[*it] = (*it)->EndPosition();
-	}
 
 	while ((current_line = line_iterator->GetLine()).IsValid()) {
-		assert(current_line.GetLength() >= 0);
-		lng current_start_line = line_iterator->GetCurrentLineNumber();
-		lng current_start_position = line_iterator->GetCurrentCharacterNumber();
-
-		if (!minimap) {
-			rendered_lines.push_back(RenderedLine(current_line, current_start_line, current_start_position));
-		}
+		if (position_y > rectangle->height) break;
 
 		// only render lines that fall within the render rectangle
-		if (position_y > rectangle->height) break;
 		if (!(position_y + line_height < 0)) {
+			PGTextRange current_range = line_iterator->GetCurrentRange();
+			if (selected_line < 0) {
+				// figure out the first cursor we could want to render with a binary search
+				auto entry = std::lower_bound(cursors.begin(), cursors.end(), current_range.startpos(), [](const Cursor* lhs, const PGTextPosition& rhs) -> bool {
+					return lhs->BeginCursorPosition() < rhs;
+				});
+				lng selected_entry = entry - cursors.begin();
+				current_cursor = std::max((lng) 0, std::min(selected_entry, (lng) cursors.size() - 1));
+				selected_line = cursors[current_cursor]->SelectedPosition().line;
+			}
+
+			assert(current_line.GetLength() >= 0);
+			lng current_start_line = line_iterator->GetCurrentLineNumber();
+			lng current_start_position = line_iterator->GetCurrentCharacterNumber();
+
+			if (!minimap) {
+				rendered_lines.push_back(RenderedLine(current_line, current_start_line, current_start_position));
+			}
+
 			// render the linenumber of the current line if it is not wrapped
 			if (!minimap && display_linenumbers && current_start_position == 0) {
 				lng displayed_line = current_start_line;
 				SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldLineNumber));
 
-				for (auto it = cursors.begin(); it != cursors.end(); it++) {
-					if (displayed_line == selected_positions[*it].line) {
-						RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
-						break;
-					}
+				if (displayed_line == selected_line) {
+					// if a cursor selects this line, highlight the linenumber
+					RenderRectangle(renderer, PGRect(position_x, position_y, text_offset, line_height), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 				}
 
 				// render the line number
@@ -180,43 +183,33 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			lng length = current_line.GetLength();
 			// render the selections and cursors, if there are any on this line
 			while (current_cursor < cursors.size()) {
-				auto begin_pos = begin_positions[cursors[current_cursor]];
-				if (begin_pos.line > current_start_line ||
-					(begin_pos.line == current_start_line && begin_pos.position > current_start_position + length)) {
+				PGTextRange range = cursors[current_cursor]->GetCursorSelection();
+				if (range > current_range) {
 					// this cursor is not rendered on this line yet
 					break;
 				}
-				auto end_pos = end_positions[cursors[current_cursor]];
-				if (end_pos.line < current_start_line ||
-					(end_pos.line == current_start_line && end_pos.position < current_start_position)) {
+				if (range < current_range) {
 					// this cursor has already been rendered
+					// move to the next cursor
 					current_cursor++;
+					if (current_cursor < cursors.size()) {
+						selected_line = cursors[current_cursor]->SelectedPosition().line;
+					}
 					continue;
 				}
-				// we should render the cursor on this line
-				auto selected_pos = selected_positions[cursors[current_cursor]];
+				// we have to render the cursor on this line
 
 				lng start, end;
-				if (current_start_line == begin_pos.line) {
-					if (current_start_line == end_pos.line) {
-						// start and end are on the same line
-						start = begin_pos.position - current_start_position;
-						end = end_pos.position - current_start_position;
-					} else {
-						// only "start" is on this line
-						start = begin_pos.position - current_start_position;
-						end = length + 1;
-					}
-				} else if (current_start_line == end_pos.line) {
-					// only "end" is on this line
+				if (range.startpos() < current_range.startpos()) {
 					start = 0;
-					end = end_pos.position - current_start_position;
 				} else {
-					// the entire line is located in the selection
-					start = 0;
-					end = length + 1;
+					start = range.start_position - current_range.start_position;
 				}
-
+				if (range.endpos() > current_range.endpos()) {
+					end = length + 1;
+				} else {
+					end = range.end_position - current_range.start_position;
+				}
 				start = std::min(length, std::max((lng)0, start));
 				end = std::min(length + 1, std::max((lng)0, end));
 				if (start != end) {
@@ -233,31 +226,33 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 						max_x);
 				}
 
-				if (!minimap && current_start_line == selected_pos.line) {
-					// render the caret if it occurs on this line
-					lng selected_position = selected_pos.position - current_start_position;
-					if (display_carets && selected_position >= 0 && selected_position <= length) {
+				if (!minimap && display_carets) {
+					PGTextPosition selected_position = cursors[current_cursor]->SelectedCursorPosition();
+					if (selected_position >= current_range.startpos() && selected_position < current_range.endpos()) {
 						// render the caret on the selected line
+						lng render_position = selected_position.position - current_range.start_position;
 						RenderCaret(renderer,
 							font,
 							current_line.GetLine(),
 							current_line.GetLength(),
 							position_x_text - xoffset,
 							position_y,
-							selected_position,
+							render_position,
 							line_height,
 							PGStyleManager::GetColor(PGColorTextFieldCaret));
 					}
 				}
 				if (end < length) {
 					current_cursor++;
+					if (current_cursor < cursors.size()) {
+						selected_line = cursors[current_cursor]->SelectedPosition().line;
+					}
 					continue;
 				}
 				break;
 			}
 
 			if (!minimap) {
-				PGTextRange current_range = line_iterator->GetCurrentRange();
 				// render any search matches
 				while (current_match < matches.size()) {
 					auto match = matches[current_match];
@@ -273,13 +268,13 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 					// we should render the match on this line
 					lng start, end;
-					if (match.start_position < current_range.start_position) {
+					if (match.startpos() < current_range.startpos()) {
 						start = 0;
 					} else {
 						start = match.start_position - current_range.start_position;
 					}
-					if (match.end_position > current_range.end_position) {
-						end = length;
+					if (match.endpos() > current_range.endpos()) {
+						end = length + 1;
 					} else {
 						end = match.end_position - current_range.start_position;
 					}
@@ -308,89 +303,60 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				RenderRectangle(renderer, PGRect(position_x_text, position_y, this->width, line_height), PGColor(72, 72, 72, 60), PGDrawStyleFill);
 			}
 
-			// because RenderText is expensive, we cache rendered text lines for the minimap
-			// this is because the minimap renders far more lines than the textfield (generally 10x more)
-			// we cache by simply rendering the textline to a bitmap, and then rendering the bitmap
-			// to the screen
-			PGBitmapHandle line_bitmap = nullptr;
-			PGRendererHandle line_renderer = renderer;
-			bool render_text = true;
-			/*if (minimap) {
-				// first check if the line is found in the cache, if it is not, we rerender
-				render_text = !minimap_line_cache.count(linenr);
-				if (render_text) {
-					// we have to render, create the bitmap and a renderer for the bitmap
-					line_bitmap = CreateBitmapForText(font, line, length);
-					line_renderer = CreateRendererForBitmap(line_bitmap);
-				}
-			}*/
-
 			PGScalar xpos = position_x_text - xoffset;
-			if (render_text) {
-				// if we are rendering the line into a bitmap, it starts at (0,0)
-				// otherwise we render onto the screen normally
-				PGScalar bitmap_x = /*minimap ? 0 : */xpos;
-				PGScalar bitmap_y = /*minimap ? 0 : */position_y;
-				PGSyntax* syntax = &current_line.syntax;
-				while (syntax && syntax->end > 0) {
-					bool squiggles = false;
-					//assert(syntax->end > position);
-					if (syntax->end <= position) {
-						syntax = syntax->next;
-						continue;
-					}
-					if (syntax->type == PGSyntaxError) {
-						squiggles = true;
-					} else if (syntax->type == PGSyntaxNone) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-					} else if (syntax->type == PGSyntaxString) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
-					} else if (syntax->type == PGSyntaxConstant) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
-					} else if (syntax->type == PGSyntaxComment) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
-					} else if (syntax->type == PGSyntaxOperator) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
-					} else if (syntax->type == PGSyntaxFunction) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
-					} else if (syntax->type == PGSyntaxKeyword) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
-					} else if (syntax->type == PGSyntaxClass1) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
-					} else if (syntax->type == PGSyntaxClass2) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
-					} else if (syntax->type == PGSyntaxClass3) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
-					} else if (syntax->type == PGSyntaxClass4) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
-					} else if (syntax->type == PGSyntaxClass5) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
-					} else if (syntax->type == PGSyntaxClass6) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
-					}
-					RenderText(line_renderer, font, line + position, syntax->end - position, bitmap_x, bitmap_y, this->width);
-					PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
-					bitmap_x += text_width;
-					position = syntax->end;
+			// if we are rendering the line into a bitmap, it starts at (0,0)
+			// otherwise we render onto the screen normally
+			PGScalar bitmap_x = xpos;
+			PGScalar bitmap_y = position_y;
+			PGSyntax* syntax = &current_line.syntax;
+			while (syntax && syntax->end > 0) {
+				bool squiggles = false;
+				//assert(syntax->end > position);
+				if (syntax->end <= position) {
 					syntax = syntax->next;
+					continue;
 				}
-				if (length > position) {
+				if (syntax->type == PGSyntaxError) {
+					squiggles = true;
+				} else if (syntax->type == PGSyntaxNone) {
 					SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-					RenderText(line_renderer, font, line + position, length - position, bitmap_x, bitmap_y, this->width);
+				} else if (syntax->type == PGSyntaxString) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
+				} else if (syntax->type == PGSyntaxConstant) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
+				} else if (syntax->type == PGSyntaxComment) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
+				} else if (syntax->type == PGSyntaxOperator) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
+				} else if (syntax->type == PGSyntaxFunction) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
+				} else if (syntax->type == PGSyntaxKeyword) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
+				} else if (syntax->type == PGSyntaxClass1) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
+				} else if (syntax->type == PGSyntaxClass2) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
+				} else if (syntax->type == PGSyntaxClass3) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
+				} else if (syntax->type == PGSyntaxClass4) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
+				} else if (syntax->type == PGSyntaxClass5) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
+				} else if (syntax->type == PGSyntaxClass6) {
+					SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
 				}
-				/*if (minimap) {
-					// we rendered into a bitmap: delete the renderer and store the line
-					DeleteRenderer(line_renderer);
-					minimap_line_cache[linenr] = line_bitmap;
-				}*/
-			}/* else {
-				// if the line is already cached, simply retrieve the bitmap
-				line_bitmap = minimap_line_cache[linenr];
+				RenderText(renderer, font, line + position, syntax->end - position, bitmap_x, bitmap_y, this->width);
+				PGScalar text_width = MeasureTextWidth(font, line + position, syntax->end - position);
+				bitmap_x += text_width;
+				position = syntax->end;
+				syntax = syntax->next;
 			}
-			if (minimap) {
-				// render the cached bitmap to the screen
-				RenderImage(renderer, line_bitmap, (int)xpos, (int)position_y);
-			}*/
+
+			if (length > position) {
+				SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+				RenderText(renderer, font, line + position, length - position, bitmap_x, bitmap_y, this->width);
+			}
+			
 			if ((lng)selected_word.size() > 0 && length >= (lng)selected_word.size()) {
 				// FIXME: use strstr here instead of implementing the search ourself
 				for (lng i = 0; i <= length - selected_word.size(); i++) {
@@ -1189,24 +1155,10 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 }
 
 void TextField::TextChanged() {
-	// all text has changed (this typically happens when e.g. switching files)
-	// clear the line cache entirely
-	for (auto it = minimap_line_cache.begin(); it != minimap_line_cache.end(); it++) {
-		DeleteImage(it->second);
-	}
-	minimap_line_cache.clear();
 	BasicTextField::TextChanged();
 }
 
 void TextField::TextChanged(std::vector<lng> lines) {
-	// a number of specific lines has changed, delete those lines from the cache
-	for (auto it = lines.begin(); it != lines.end(); it++) {
-		auto res = minimap_line_cache.find(*it);
-		if (res != minimap_line_cache.end()) {
-			DeleteImage(res->second);
-			minimap_line_cache.erase(res);
-		}
-	}
 	BasicTextField::TextChanged(lines);
 }
 

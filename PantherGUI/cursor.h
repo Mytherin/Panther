@@ -90,8 +90,9 @@ public:
 
 	void ApplyMinimalSelection(PGTextRange selection);
 
-	PGTextPosition BeginCursorPosition();
-	PGTextPosition EndCursorPosition();
+	PGTextPosition BeginCursorPosition() const;
+	PGTextPosition SelectedCursorPosition() const;
+	PGTextPosition EndCursorPosition() const;
 private:
 	void _SetCursorStartLocation(lng linenr, lng characternr);
 
