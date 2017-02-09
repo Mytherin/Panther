@@ -54,6 +54,7 @@ static TCHAR szTitle[] = _T("Panther");
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
+#ifndef PANTHER_TESTS
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	OleInitialize(nullptr);
 	cmdshow = nCmdShow;
@@ -125,6 +126,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	return (int)msg.wParam;
 }
+#endif
 
 size_t UCS2Length(char* data) {
 	int i = 0;

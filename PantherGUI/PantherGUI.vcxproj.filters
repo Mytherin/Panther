@@ -237,6 +237,12 @@
     <ClCompile Include="textposition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="testmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tester.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -462,6 +468,9 @@
       <Filter>Header Files\regex</Filter>
     </ClInclude>
     <ClInclude Include="textposition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tester.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
