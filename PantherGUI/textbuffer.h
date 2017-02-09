@@ -63,10 +63,11 @@ public:
 	double width = 0;
 	double cumulative_width = -1;
 	PGScalar wrap_width;
+
+	std::vector<lng> line_start;
+	std::vector<PGScalar> line_lengths;
 	std::vector<PGLineWrap> line_wraps;
-
 	std::vector<PGCharacterPosition> cached_positions;
-
 
 	void ClearWrappedLines();
 
@@ -108,6 +109,12 @@ public:
 	PGCharacterPosition GetCharacterFromPosition(ulng position);
 	PGCursorPosition GetCursorFromPosition(ulng position, lng total_lines);
 	TextLine GetLineFromPosition(ulng position);
+
+	void VerifyBuffer();
+private:
+	// performs a deletion of text without updating any indices; should not be called directly
+	void _DeleteText(ulng position, ulng size);
+	lng GetStartLine(lng position);
 };
 
 void SetTextBufferSize(lng bufsiz);

@@ -213,7 +213,6 @@ private:
 
 	// insert text at the specified cursor number, text must not include newlines
 	void InsertText(std::string text, size_t cursornr);
-	void DeleteCharacter(PGDirection direction, size_t i);
 
 	void DeleteSelection(int cursornr);
 
@@ -282,9 +281,7 @@ private:
 	PGTextBuffer* GetBuffer(lng line);
 
 	lng linecount = 0;
-	lng max_line_length = 0;
-
-	std::vector<PGScalar> line_lengths;
+	PGTextPosition max_line_length;
 
 	std::vector<PGTextBuffer*> buffers;
 	std::vector<TextDelta*> deltas;

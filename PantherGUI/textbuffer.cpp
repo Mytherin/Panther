@@ -405,6 +405,31 @@ void PGTextBuffer::InsertText(ulng position, std::string text) {
 }
 
 void PGTextBuffer::DeleteText(ulng position, ulng size) {
+	lng start_line = GetStartLine(position);
+	// have to update line_start for all subsequent lines
+	for(size_t i = start_line; i < line_start.size(); i++) {
+		line_start[i] -= size;
+	}
+	this->_DeleteText(position, size);
+}
+
+lng PGTextBuffer::DeleteLines(ulng position, ulng end_position) {
+	lng start_line = GetStartLine(position);
+	lng end_line = GetStartLine(end_position);
+	if (end_line != start_line) {
+		// remove any erased lines from line_start
+		line_start.erase(line_start.begin() + start_line, line_start.begin() + end_line);	
+	}
+	lng size = end_position - position;
+	// have to update line_start for all subsequent lines
+	for(size_t i = start_line; i < line_start.size(); i++) {
+		line_start[i] -= size;
+	}
+	this->_DeleteText(position, size);
+	return end_line - start_line;
+}
+
+void PGTextBuffer::_DeleteText(ulng position, ulng size) {
 	// text deletion is a right => deletion
 	assert(position + size < current_size);
 	assert(position >= 0);
@@ -414,23 +439,36 @@ void PGTextBuffer::DeleteText(ulng position, ulng size) {
 	current_size -= size;
 }
 
-lng PGTextBuffer::DeleteLines(ulng position, ulng end_position) {
-	ulng size = end_position - position;
-	lng lines = 0;
-	for (lng i = position; i < position + size; i++) {
-		if (buffer[i] == '\n') lines++;
-	}
-	this->DeleteText(position, size);
-	return lines;
-}
-
 lng PGTextBuffer::DeleteLines(ulng position) {
 	return DeleteLines(position, current_size - 1);
+}
+
+lng PGTextBuffer::GetStartLine(lng position) {
+	// FIXME: either binary search or non-branching loop here
+	for(size_t i = 0; i < line_start.size(); i++) {
+		if (line_start[i] > position) {
+			return i;
+		}
+	}
+	return line_start.size() - 1;
 }
 
 void PGTextBuffer::ClearWrappedLines() {
 	line_wraps.clear();
 	cached_positions.clear();
+}
+
+void PGTextBuffer::VerifyBuffer() {
+#ifdef PANTHER_DEBUG
+	lng current_line = 0;
+	for (int i = 0; i < current_size; i++) {
+		if (buffer[i] == '\n') {
+			assert(line_start.size() > current_line);
+			assert(line_start[current_line] == i + 1);
+			current_line++;
+		}
+	}
+#endif
 }
 
 void SetTextBufferSize(lng bufsiz) {

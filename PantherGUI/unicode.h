@@ -16,6 +16,9 @@ utf8_char: The first byte of a utf8 character.
 */
 int utf8_character_length(unsigned char utf8_char);
 
+// TODO: use this everywhere error checking is not required
+inline int utf8_character_length_fast(unsigned char utf8_char) { return 1 + (utf8_char >= 0x80) + (utf8_char >= 0xe0) + (utf8_char >= 0xf0); }
+
 //! Returns the position of the previous character in the UTF8 string
 lng utf8_prev_character(char* text, lng current_character);
 
