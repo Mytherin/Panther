@@ -258,7 +258,6 @@ void TextFile::InvalidateBuffers() {
 	double current_lines = 0;
 	PGTextBuffer* buffer = buffers.front();
 
-
 	bool find_new_max = false;
 	PGScalar current_maximum_size = -1;
 	if (max_line_length.buffer->cumulative_width < 0) {
@@ -282,9 +281,9 @@ void TextFile::InvalidateBuffers() {
 			lng linenr = 0;
 
 			char* ptr = buffer->buffer;
-			buffer->line_lengths.clear();
+			buffer->line_lengths.resize(buffer->line_start.size() + 1);
 			for(size_t i = 0; i <= buffer->line_start.size(); i++) {
-				lng end_index = (i == buffer->line_start.size()) ? buffer->current_size : buffer->line_start[i];
+				lng end_index = ((i == buffer->line_start.size()) ? buffer->current_size : buffer->line_start[i]) - 1;
 				PGSyntax syntax;
 				syntax.end = -1;
 				char* current_ptr = buffer->buffer + end_index;
@@ -371,6 +370,47 @@ void TextFile::Unlock(PGLockType type) {
 	}
 }
 
+
+void TextFile::_InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+	char* line_start = ptr + prev;
+	lng line_size = (lng)((bytes - prev) - offset);
+	if (current_buffer == nullptr ||
+		(current_buffer->current_size > TEXT_BUFFER_SIZE) ||
+		(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
+		// create a new buffer
+		PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
+		if (current_buffer) current_buffer->next = new_buffer;
+		new_buffer->prev = current_buffer;
+		current_buffer = new_buffer;
+		current_buffer->cumulative_width = current_width;
+		current_buffer->buffer[current_buffer->current_size++] = '\n';
+		current_buffer->index = buffers.size();
+		buffers.push_back(current_buffer);
+	} else {
+		//add line to the current buffer
+		memcpy(current_buffer->buffer + current_buffer->current_size, line_start, line_size);
+		current_buffer->line_start.push_back(current_buffer->current_size);
+		assert(current_buffer->line_start.size() == 1 || 
+			current_buffer->line_start.back() > current_buffer->line_start[current_buffer->line_start.size() - 2]);
+		current_buffer->current_size += line_size;
+		current_buffer->buffer[current_buffer->current_size++] = '\n';
+	}
+	assert(current_buffer->current_size < current_buffer->buffer_size);
+	PGScalar length = MeasureTextWidth(default_font, line_start, line_size);
+	if (length > max_length) {
+		max_line_length.buffer = current_buffer;
+		max_line_length.position = current_buffer->line_lengths.size();
+		max_length = length;
+	}
+	current_buffer->line_lengths.push_back(length);
+	current_buffer->line_count++;
+	current_buffer->width += length;
+	current_width += length;
+
+	linenr++;
+
+}
+
 void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	this->lineending = PGLineEndingUnknown;
 	this->indentation = PGIndentionTabs;
@@ -431,40 +471,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 			}
 		}
 		if (ptr[bytes] == '\r' || ptr[bytes] == '\n') {
-			char* line_start = ptr + prev;
-			lng line_size = (lng)((bytes - prev) - offset);
-			if (current_buffer == nullptr ||
-				(current_buffer->current_size > TEXT_BUFFER_SIZE) ||
-				(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
-				// create a new buffer
-				PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
-				if (current_buffer) current_buffer->next = new_buffer;
-				new_buffer->prev = current_buffer;
-				current_buffer = new_buffer;
-				current_buffer->cumulative_width = current_width;
-				current_buffer->buffer[current_buffer->current_size++] = '\n';
-				current_buffer->index = buffers.size();
-				buffers.push_back(current_buffer);
-			} else {
-				//add line to the current buffer
-				memcpy(current_buffer->buffer + current_buffer->current_size, line_start, line_size);
-				current_buffer->line_start.push_back(current_buffer->current_size);
-				current_buffer->current_size += line_size;
-				current_buffer->buffer[current_buffer->current_size++] = '\n';
-			}
-			assert(current_buffer->current_size < current_buffer->buffer_size);
-			PGScalar length = MeasureTextWidth(default_font, line_start, line_size);
-			if (length > max_length) {
-				max_line_length.buffer = current_buffer;
-				max_line_length.position = current_buffer->line_lengths.size();
-				max_length = length;
-			}
-			current_buffer->line_lengths.push_back(length);
-			current_buffer->line_count++;
-			current_buffer->width += length;
-			current_width += length;
-
-			linenr++;
+			_InsertLine(ptr, prev, offset, max_length, current_width, current_buffer, linenr);
 
 			prev = bytes + 1;
 			offset = 0;
@@ -480,44 +487,8 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		}
 		bytes += character_offset;
 	}
-	// FIXME: code duplication should be removed here
-	/*
-	{
-		char* line_start = ptr + prev;
-		lng line_size = (lng)((bytes - prev) - offset);
-		if (current_buffer == nullptr ||
-			(current_buffer->current_size > TEXT_BUFFER_SIZE) ||
-			(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
-			// create a new buffer
-			PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
-			if (current_buffer) current_buffer->next = new_buffer;
-			new_buffer->prev = current_buffer;
-			current_buffer = new_buffer;
-			current_buffer->cumulative_width = current_width;
-			current_buffer->buffer[current_buffer->current_size++] = '\n';
-			current_buffer->index = buffers.size();
-			buffers.push_back(current_buffer);
-		} else {
-			//add line to the current buffer
-			memcpy(current_buffer->buffer + current_buffer->current_size, line_start, line_size);
-			current_buffer->current_size += line_size;
-			current_buffer->line_start.push_back(line_start - current_buffer->buffer);
-			current_buffer->buffer[current_buffer->current_size++] = '\n';
-		}
-		assert(current_buffer->current_size < current_buffer->buffer_size);
-		PGScalar length = MeasureTextWidth(default_font, line_start, line_size);
-		if (length > max_length) {
-			max_line_length.buffer = current_buffer;
-			max_line_length.position = current_buffer->line_lengths.size();
-			max_length = length;
-		}
-		current_buffer->line_lengths.push_back(length);
-		current_buffer->line_count++;
-		current_buffer->width += length;
-		current_width += length;
-
-		linenr++;
-	}*/	
+	// insert the final line
+	_InsertLine(ptr, prev, offset, max_length, current_width, current_buffer, linenr);
 	if (linenr == 0) {
 		lineending = GetSystemLineEnding();
 		current_buffer = new PGTextBuffer("", 1, 0);
@@ -791,15 +762,6 @@ void TextFile::DeleteSelection(int i) {
 	cursor->end_buffer = cursor->start_buffer;
 
 	// delete linecount from line_lengths
-	// FIXME: this should be done by the textbuffer itself
-	/*if (lines_deleted > 0) {
-		auto begin_position = cursor->BeginPosition();
-		line_lengths.erase(line_lengths.begin() + begin_position.line, line_lengths.begin() + begin_position.line + lines_deleted);
-		if (max_line_length >= begin_position.line && max_line_length < begin_position.line + lines_deleted) {
-			max_line_length = -1;
-		}
-	}*/
-
 	// recompute line_lengths and cumulative width for begin buffer and end buffer
 	InvalidateBuffer(begin.buffer);
 	InvalidateBuffer(end.buffer);
@@ -854,22 +816,29 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 		// the other lines get added to a new buffer we create
 		std::string& current_line = lines.back();
 		final_line_size = current_line.size();
-		for (lng i = position; i < buffer->current_size; i++) {
-			if (buffer->buffer[i] == '\n' || i == buffer->current_size - 1) {
-				line_position = i;
-				cursor_offset = line_position - position;
-				current_line += std::string(buffer->buffer + position, i - position);
-				if (i < buffer->current_size - 1) {
-					// this is not the last line in the buffer
-					// add the remaining lines to "extra_buffer"
-					extra_buffer = new PGTextBuffer(buffer->buffer + i + 1, buffer->current_size - (i + 1), -1);
-				}
-				break;
+
+		lng start_line = buffer->GetStartLine(position);
+		line_position = (start_line == buffer->line_start.size() ? buffer->current_size : buffer->line_start[start_line]);
+		cursor_offset = line_position - position;
+		current_line += std::string(buffer->buffer + position, line_position - position - 1);
+		if (start_line != buffer->line_start.size()) {
+			// this is not the last line in the buffer
+			// add the remaining lines to "extra_buffer"
+			extra_buffer = new PGTextBuffer(buffer->buffer + line_position, buffer->current_size - line_position, -1);
+			extra_buffer->line_count = buffer->line_count - (start_line + 1);
+			for (lng i = start_line + 1; i < buffer->line_start.size(); i++) {
+				extra_buffer->line_start.push_back(buffer->line_start[i] - line_position);
 			}
+			extra_buffer->cumulative_width = -1;
+			extra_buffer->VerifyBuffer();
+			buffer->line_count -= extra_buffer->line_count;
+			buffer->line_start.erase(buffer->line_start.begin() + buffer->line_count - 1, buffer->line_start.end());
 		}
 		buffer->buffer[position] = '\n';
 		buffer->current_size = position + 1;
 	}
+
+	buffer->VerifyBuffer();
 	position = buffer->current_size;
 
 	lng buffer_position = PGTextBuffer::GetBuffer(buffers, buffer) + 1;
@@ -886,19 +855,22 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 			current_lines = 1;
 			buffer->buffer[buffer->current_size++] = '\n';
 			position = buffer->current_size;
-
 			new_buffer->cumulative_width = -1;
 			buffers.insert(buffers.begin() + buffer_position, new_buffer);
 			inserted_buffers = true;
 			buffer_position++;
 		} else {
+			lng current_line = buffer->current_size;
 			// line fits within the current buffer
 			if ((*it).size() > 0) {
 				buffer->InsertText(position, (*it));
 			}
 			buffer->buffer[buffer->current_size++] = '\n';
+			buffer->line_start.push_back(current_line);
+			buffer->line_count++;
 			position = buffer->current_size;
 			current_lines++;
+			buffer->VerifyBuffer();
 		}
 	}
 	cursor->start_buffer = buffer;
@@ -912,6 +884,8 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 		buffer->next = extra_buffer;
 		extra_buffer->prev = buffer;
 		extra_buffer->cumulative_width = -1;
+		extra_buffer->start_line = buffer->start_line + buffer->line_count;
+		extra_buffer->parsed = false;
 		buffers.insert(buffers.begin() + buffer_position, extra_buffer);
 		inserted_buffers = true;
 	}
@@ -935,8 +909,17 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 			}
 		}
 	}
+
+	buffer->VerifyBuffer();
 	if (extra_buffer) {
 		buffer = extra_buffer;
+		extra_buffer->VerifyBuffer();
+	}
+
+	buffer = buffer->next;
+	while (buffer) {
+		buffer->start_line += added_lines;
+		buffer = buffer->next;
 	}
 
 	if (inserted_buffers) {
@@ -945,7 +928,6 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 		}
 	}
 
-	// insert linecount into line_lengths
 	InvalidateBuffer(start_buffer);
 }
 
@@ -1417,6 +1399,7 @@ void TextFile::VerifyTextfile() {
 
 				ptr = buffer->buffer + j + 1;
 
+				assert(current_lines < buffer->line_lengths.size());
 				PGScalar current_length = buffer->line_lengths[current_lines];
 				PGScalar measured_length = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
 				assert(panther::epsilon_equals(current_length, measured_length));

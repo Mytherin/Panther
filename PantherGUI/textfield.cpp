@@ -294,8 +294,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 						end = match.end_position - current_range.start_position;
 					}
 					if ((end >= render_start && start <= render_end) && start != end) {
-						PGScalar x_offset = panther::clamped_access(character_widths, start - render_start);
-						PGScalar width = panther::clamped_access(character_widths, end - render_start) - x_offset;
+						PGScalar x_offset = panther::clamped_access<PGScalar>(character_widths, start - render_start);
+						PGScalar width = panther::clamped_access<PGScalar>(character_widths, end - render_start) - x_offset;
 						PGRect rect(position_x_text + x_offset, position_y, width, line_height);
 						RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
 						if (end < length) {

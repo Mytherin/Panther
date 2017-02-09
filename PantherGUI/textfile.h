@@ -302,4 +302,6 @@ private:
 	PGTextFileSettings settings;
 
 	lng refcount = 0;
+
+	void _InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 };

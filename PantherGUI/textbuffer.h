@@ -111,10 +111,10 @@ public:
 	TextLine GetLineFromPosition(ulng position);
 
 	void VerifyBuffer();
+	lng GetStartLine(lng position);
 private:
 	// performs a deletion of text without updating any indices; should not be called directly
 	void _DeleteText(ulng position, ulng size);
-	lng GetStartLine(lng position);
 };
 
 void SetTextBufferSize(lng bufsiz);

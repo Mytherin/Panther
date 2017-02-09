@@ -4,7 +4,7 @@
 #include "textfile.h"
 #include "unicode.h"
 
-lng TEXT_BUFFER_SIZE = 4096;
+lng TEXT_BUFFER_SIZE = 250;
 
 
 PGTextBuffer::PGTextBuffer() : 
@@ -279,6 +279,11 @@ PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGT
 						buffer->current_size = split_point;
 						buffer->next = new_buffer;
 						buffers.insert(buffers.begin() + buffer_position + 1, new_buffer);
+						new_buffer->start_line = buffer->start_line + buffer->line_count;
+						for (lng k = buffer->line_count; k < buffer->line_start.size(); k++) {
+							new_buffer->line_start.push_back(buffer->line_start[k] - split_point);
+						}
+						buffer->line_start.erase(buffer->line_start.begin() + buffer->line_count - 1, buffer->line_start.end());
 
 						PGTextBuffer* text_buffer = buffer;
 						if (split_point <= position) {
@@ -396,6 +401,11 @@ void PGTextBuffer::InsertText(ulng position, std::string text) {
 	assert(current_size + (lng)text.size() < buffer_size);
 	assert(text.size() > 0);
 	assert(position <= current_size);
+	lng start_line = GetStartLine(position);
+	// have to update line_start for all subsequent lines
+	for (size_t i = start_line; i < line_start.size(); i++) {
+		line_start[i] += text.size();
+	}
 	// first move the edge of the buffer to the right so we can fit the text into the buffer
 	memmove(buffer + position + text.size(), buffer + position, current_size - position);
 	// now insert the text into the buffer
@@ -450,7 +460,7 @@ lng PGTextBuffer::GetStartLine(lng position) {
 			return i;
 		}
 	}
-	return line_start.size() - 1;
+	return line_start.size();
 }
 
 void PGTextBuffer::ClearWrappedLines() {

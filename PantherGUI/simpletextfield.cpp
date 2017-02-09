@@ -63,7 +63,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	if (display_carets) {
 		RenderCaret(renderer,
 			textfield_font,
-			panther::clamped_access(character_widths, cursor->SelectedPosition().position - render_start),
+			panther::clamped_access<PGScalar>(character_widths, cursor->SelectedPosition().position - render_start),
 			x,
 			y,
 			PGStyleManager::GetColor(PGColorTextFieldCaret));

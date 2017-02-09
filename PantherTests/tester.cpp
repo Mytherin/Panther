@@ -25,7 +25,8 @@ void Tester::RunTextFileTest(std::string name, TextFileTestFunction testFunction
 	fwrite(input.c_str(), input.size(), 1, f);
 	fclose(f);
 	// create a temporary textfile
-	TextFile* textfile = TextFile::OpenTextFile(nullptr, TEMPORARY_FILE, true);
+	PGFileError error;
+	TextFile* textfile = TextFile::OpenTextFile(nullptr, TEMPORARY_FILE, error, true);
 	// run the actual test
 	std::string result = testFunction(textfile);
 	if (result.size() != 0) {
