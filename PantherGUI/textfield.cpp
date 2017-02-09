@@ -410,19 +410,6 @@ next_line:
 	if (!minimap) {
 		this->line_height = line_height;
 	} else {
-		// to prevent potential memory explosion we limit the size of the minimap line cache
-		/*if (minimap_line_cache.size() > MAX_MINIMAP_LINE_CACHE) {
-			lng i = 0;
-			// we just randomly delete 10% of the line cache when the line cache is full
-			// there is probably a better way of doing this
-			for (auto it = minimap_line_cache.begin(); it != minimap_line_cache.end(); it++) {
-				DeleteImage(it->second);
-				minimap_line_cache.erase(it++);
-				i++;
-				if (i > MAX_MINIMAP_LINE_CACHE / 10) break;
-			}
-		}*/
-
 		this->minimap_line_height = line_height;
 		if (render_overlay) {
 			// render the overlay for the minimap
