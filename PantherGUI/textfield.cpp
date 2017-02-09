@@ -94,7 +94,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		xoffset = textfile->GetXOffset();
 	PGScalar y = Y() - rectangle->y;
 	auto start_line = textfile->GetLineOffset();
-	std::vector<Cursor*> cursors = textfile->GetCursors();
+	const std::vector<Cursor*>& cursors = textfile->GetCursors();
 	TextLine current_line;
 	PGColor selection_color = PGStyleManager::GetColor(PGColorTextFieldSelection);
 	PGScalar line_height = GetTextHeight(font);

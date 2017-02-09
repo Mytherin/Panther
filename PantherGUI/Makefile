@@ -1,6 +1,16 @@
 
+
+OPTIMIZE=false
+
 CCPP=clang++
-OPTFLAGS=-O0 -g
+
+ifeq ($(OPTIMIZE), false)
+	OPTFLAGS=-O0 -g
+	OBJDIR=obj
+else
+	OPTFLAGS=-O3
+	OBJDIR=opt
+endif
 
 SKIA_INCLUDE_FLAGS=-I/Users/myth/Sources/skia/skia/include/core \
 				   -I/Users/myth/Sources/skia/skia/include/config \
@@ -11,109 +21,113 @@ ICU_INCLUDE_FLAGS=
 ICU_LDFLAGS=-licuuc -licutu -liculx -licuio -licule -licudata -licui18n
 
 
-CPPFLAGS=-DPANTHER_DEBUG -std=c++11
+CPPFLAGS=-std=c++11
 OBJCFLAGS=-fobjc-arc
 LDFLAGS=-framework AppKit -lobjc -L/opt/local/lib $(ICU_LDFLAGS) $(SKIA_LDFLAGS)
 INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) -Ithird_party/re2
 
-COBJECTS=obj/basictextfield.o \
-		 obj/button.o \
-		 obj/c.o \
-		 obj/container.o \
-		 obj/control.o \
-		 obj/controlmanager.o \
-		 obj/cursor.o \
-		 obj/encoding.o \
-		 obj/file.o \
-		 obj/filemanager.o \
-		 obj/findtext.o \
-		 obj/keybindings.o \
-		 obj/keywords.o \
-		 obj/language.o \
-		 obj/logger.o \
-		 obj/notification.o \
-		 obj/regex.o \
-		 obj/renderer.o \
-		 obj/scheduler.o \
-		 obj/scrollbar.o \
-		 obj/searchbox.o \
-		 obj/settings.o \
-		 obj/simpletextfield.o \
-		 obj/statusbar.o \
-		 obj/style.o \
-		 obj/syntaxhighlighter.o \
-		 obj/tabcontrol.o \
-		 obj/text.o \
-		 obj/textbuffer.o \
-		 obj/textdelta.o \
-		 obj/textfield.o \
-		 obj/textfile.o \
-		 obj/textiterator.o \
-		 obj/textline.o \
-		 obj/textposition.o \
-		 obj/thread.o \
-		 obj/togglebutton.o \
-		 obj/unicode.o \
-		 obj/utils.o \
-		 obj/windowfunctions.o \
-		 obj/workspace.o \
-		 obj/wrappedtextiterator.o \
-		 obj/xml.o 
+ifeq ($(OPTIMIZE), false)
+	CPPFLAGS+=-DPANTHER_DEBUG
+endif
 
-OBJCOBJECTS=obj/AppDelegate.o \
-			obj/main.o \
-			obj/PGView.o \
-			obj/PGWindow.o
+COBJECTS=$(OBJDIR)/basictextfield.o \
+		 $(OBJDIR)/button.o \
+		 $(OBJDIR)/c.o \
+		 $(OBJDIR)/container.o \
+		 $(OBJDIR)/control.o \
+		 $(OBJDIR)/controlmanager.o \
+		 $(OBJDIR)/cursor.o \
+		 $(OBJDIR)/encoding.o \
+		 $(OBJDIR)/file.o \
+		 $(OBJDIR)/filemanager.o \
+		 $(OBJDIR)/findtext.o \
+		 $(OBJDIR)/keybindings.o \
+		 $(OBJDIR)/keywords.o \
+		 $(OBJDIR)/language.o \
+		 $(OBJDIR)/logger.o \
+		 $(OBJDIR)/notification.o \
+		 $(OBJDIR)/regex.o \
+		 $(OBJDIR)/renderer.o \
+		 $(OBJDIR)/scheduler.o \
+		 $(OBJDIR)/scrollbar.o \
+		 $(OBJDIR)/searchbox.o \
+		 $(OBJDIR)/settings.o \
+		 $(OBJDIR)/simpletextfield.o \
+		 $(OBJDIR)/statusbar.o \
+		 $(OBJDIR)/style.o \
+		 $(OBJDIR)/syntaxhighlighter.o \
+		 $(OBJDIR)/tabcontrol.o \
+		 $(OBJDIR)/text.o \
+		 $(OBJDIR)/textbuffer.o \
+		 $(OBJDIR)/textdelta.o \
+		 $(OBJDIR)/textfield.o \
+		 $(OBJDIR)/textfile.o \
+		 $(OBJDIR)/textiterator.o \
+		 $(OBJDIR)/textline.o \
+		 $(OBJDIR)/textposition.o \
+		 $(OBJDIR)/thread.o \
+		 $(OBJDIR)/togglebutton.o \
+		 $(OBJDIR)/unicode.o \
+		 $(OBJDIR)/utils.o \
+		 $(OBJDIR)/windowfunctions.o \
+		 $(OBJDIR)/workspace.o \
+		 $(OBJDIR)/wrappedtextiterator.o \
+		 $(OBJDIR)/xml.o 
 
-RE2OBJECTS=obj/bitstate.o \
-		   obj/compile.o \
-		   obj/dfa.o \
-		   obj/filtered_re2.o \
-		   obj/mimics_pcre.o \
-		   obj/nfa.o \
-		   obj/onepass.o \
-		   obj/parse.o \
-		   obj/perl_groups.o \
-		   obj/prefilter.o \
-		   obj/prefilter_tree.o \
-		   obj/prog.o \
-		   obj/re2.o \
-		   obj/regexp.o \
-		   obj/rune.o \
-		   obj/set.o \
-		   obj/simplify.o \
-		   obj/stringpiece.o \
-		   obj/strutil.o \
-		   obj/tostring.o \
-		   obj/unicode_casefold.o \
-		   obj/unicode_groups.o 
+OBJCOBJECTS=$(OBJDIR)/AppDelegate.o \
+			$(OBJDIR)/main.o \
+			$(OBJDIR)/PGView.o \
+			$(OBJDIR)/PGWindow.o
+
+RE2OBJECTS=$(OBJDIR)/bitstate.o \
+		   $(OBJDIR)/compile.o \
+		   $(OBJDIR)/dfa.o \
+		   $(OBJDIR)/filtered_re2.o \
+		   $(OBJDIR)/mimics_pcre.o \
+		   $(OBJDIR)/nfa.o \
+		   $(OBJDIR)/onepass.o \
+		   $(OBJDIR)/parse.o \
+		   $(OBJDIR)/perl_groups.o \
+		   $(OBJDIR)/prefilter.o \
+		   $(OBJDIR)/prefilter_tree.o \
+		   $(OBJDIR)/prog.o \
+		   $(OBJDIR)/re2.o \
+		   $(OBJDIR)/regexp.o \
+		   $(OBJDIR)/rune.o \
+		   $(OBJDIR)/set.o \
+		   $(OBJDIR)/simplify.o \
+		   $(OBJDIR)/stringpiece.o \
+		   $(OBJDIR)/strutil.o \
+		   $(OBJDIR)/tostring.o \
+		   $(OBJDIR)/unicode_casefold.o \
+		   $(OBJDIR)/unicode_groups.o 
 
 all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) panther.app
 
 clean:
-	rm -rf obj
+	rm -rf $(OBJDIR)
 	rm -rf deps
 	rm -f main.app
 
 create_build_directory:
-	mkdir -p obj
+	mkdir -p $(OBJDIR)
 	mkdir -p deps
 
 
 DEPS = $(shell find deps -name "*.d")
 -include $(DEPS)
 
-obj/%.o: third_party/re2/re2/%.cc
-	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst obj,deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst obj,re2,$(subst .o,.cc,$@)) -o $@
+$(OBJDIR)/%.o: third_party/re2/re2/%.cc
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),re2,$(subst .o,.cc,$@)) -o $@
 
-obj/%.o: third_party/re2/util/%.cc
-	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst obj,deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst obj,util,$(subst .o,.cc,$@)) -o $@
+$(OBJDIR)/%.o: third_party/re2/util/%.cc
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),util,$(subst .o,.cc,$@)) -o $@
 
-obj/%.o: %.mm
-	$(CCPP) $(OBJCFLAGS) -MMD -MF $(subst obj,deps,$(subst .o,.d,$@)) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst obj/,,$(subst .o,.mm,$@)) -o $@
+$(OBJDIR)/%.o: %.mm
+	$(CCPP) $(OBJCFLAGS) -MMD -MF $(subst $(OBJDIR),deps,$(subst .o,.d,$@)) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.mm,$@)) -o $@
 
-obj/%.o: %.cpp
-	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst obj,deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst obj/,,$(subst .o,.cpp,$@)) -o $@
+$(OBJDIR)/%.o: %.cpp
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),deps,$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.cpp,$@)) -o $@
 
 panther.app: 
 	$(CCPP) $(OBJCFLAGS) $(LDFLAGS) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OBJCOBJECTS) $(RE2OBJECTS) $(COBJECTS) $(OPTFLAGS) -o main.app
