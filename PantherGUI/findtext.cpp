@@ -50,7 +50,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 		// if HighlightMatches is turned on, we search as soon as text is entered
 		FindText* f = (FindText*)data;
 		if (f->HighlightMatches()) {
-			f->FindAll(PGDirectionRight);
+			f->FindAll(true);
 		}
 	}, (void*) this);
 	this->AddControl(field);
@@ -102,7 +102,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	initial_values[2] = find_text.get_if_exists(toggle_wholeword_text, false);
 	initial_values[3] = find_text.get_if_exists(toggle_wrap_text, true);
 	initial_values[4] = find_text.get_if_exists(toggle_highlight_text, true);
-	
+
 	ToggleButton* toggles[5];
 	for (int i = 0; i < 5; i++) {
 		toggles[i] = new ToggleButton(window, this, initial_values[i]);
@@ -120,7 +120,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	toggle_wholeword = toggles[2];
 	toggle_wrap = toggles[3];
 	toggle_highlight = toggles[4];
-	
+
 	find_button->SetText(std::string("Find"), font);
 	find_prev->SetText(std::string("Find Prev"), font);
 	find_all->SetText(std::string("Find All"), font);
@@ -135,7 +135,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
 		FindText* f = dynamic_cast<FindText*>(b->parent);
 		if (toggled) {
-			f->FindAll(PGDirectionRight);
+			f->FindAll(true);
 		} else {
 			ControlManager* manager = GetControlManager(f);
 			TextFile& tf = manager->active_textfield->GetTextFile();
@@ -147,7 +147,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
 		FindText* f = dynamic_cast<FindText*>(b->parent);
 		if (f->HighlightMatches()) {
-			f->FindAll(PGDirectionRight);
+			f->FindAll(true);
 		}};
 
 	toggle_regex->OnToggle(update_highlight, toggle_regex_text);
@@ -173,6 +173,14 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	SetTextfile(&tf);
+
+	manager->active_textfield->OnTextChanged([](Control* c, void* data) {
+		FindText* f = (FindText*) data;
+		if (f->HighlightMatches()) {
+			f->FindAll(false);
+		};
+	},
+	this);
 
 	if (replace) {
 		ToggleReplace();
@@ -287,22 +295,22 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	std::string search_text = field->GetText();
 	bool found_result = tf.FindMatch(search_text, direction,
 		&error_message,
-		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled(), 
+		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled(),
 		include_selection);
 
-/*
-	if (find_history->size() == 0 || (*find_history)[0] != search_text) {
-		std::string first_entry = (*find_history)[0];
-		if (first_entry.size() == 0) {
-			(*find_history)[0] = search_text;
-		} else {
-			(*find_history).insert(find_history->begin(), search_text);
-			if ((*find_history).size() > MAXIMUM_FIND_HISTORY) {
-				find_history->erase(find_history->begin() + find_history->size() - 1);
+	/*
+		if (find_history->size() == 0 || (*find_history)[0] != search_text) {
+			std::string first_entry = (*find_history)[0];
+			if (first_entry.size() == 0) {
+				(*find_history)[0] = search_text;
+			} else {
+				(*find_history).insert(find_history->begin(), search_text);
+				if ((*find_history).size() > MAXIMUM_FIND_HISTORY) {
+					find_history->erase(find_history->begin() + find_history->size() - 1);
+				}
 			}
-		}
-		history_entry = 0;
-	}*/
+			history_entry = 0;
+		}*/
 
 	if (!error_message) {
 		// successful search
@@ -329,12 +337,12 @@ void FindText::SelectAllMatches() {
 		// otherwise, we have to actually perform the search
 		// FIXME: if FindAll becomes non-blocking, we have to call the
 		// blocking version here
-		this->FindAll(PGDirectionRight);
+		this->FindAll(false);
 	}
 	assert(tf.FinishedSearch());
 	tf.SelectMatches();
 }
-void FindText::FindAll(PGDirection direction) {
+void FindText::FindAll(bool select_first_match) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
@@ -342,8 +350,8 @@ void FindText::FindAll(PGDirection direction) {
 	if (&tf != current_textfile)
 		SetTextfile(&tf);
 	tf.SetSelectedMatch(0);
-	tf.FindAllMatches(text, direction, 
-		begin_pos.line, begin_pos.position, 
+	tf.FindAllMatches(text, select_first_match,
+		begin_pos.line, begin_pos.position,
 		end_pos.line, end_pos.position,
 		&error_message,
 		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled());
@@ -383,7 +391,7 @@ void FindText::ReplaceAll() {
 		tf.InsertText(replacement);
 		this->SetTextfile(&tf);
 		if (HighlightMatches()) {
-			this->FindAll(PGDirectionRight);
+			this->FindAll(false);
 		}
 	}
 }

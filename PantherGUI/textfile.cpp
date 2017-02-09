@@ -315,6 +315,8 @@ void TextFile::InvalidateBuffers() {
 	}
 
 	yoffset.linenumber = std::min(linecount - 1, std::max((lng) 0, yoffset.linenumber));
+
+	matches.clear();
 }
 
 void TextFile::InvalidateParsing() {
@@ -2051,7 +2053,7 @@ struct FindInformation {
 	lng start_character;
 };
 
-void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng current_line, lng current_character) {
+void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng current_line, lng current_character, bool select_first_match) {
 	textfile->Lock(PGWriteLock);
 	textfile->finished_search = false;
 	textfile->matches.clear();
@@ -2060,7 +2062,7 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex
 	if (!regex_handle) return;
 
 	textfile->Lock(PGReadLock);
-	bool found_initial_match = false;
+	bool found_initial_match = !select_first_match;
 	PGTextBuffer* selection_buffer = textfile->buffers[PGTextBuffer::GetBuffer(textfile->buffers, current_line)];
 	lng selection_position = selection_buffer->GetBufferLocationFromCursor(current_line, current_character);
 	PGTextPosition position = PGTextPosition(selection_buffer, selection_position);
@@ -2128,7 +2130,7 @@ void TextFile::ClearMatches() {
 	textfield->Invalidate();
 }
 
-void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex) {
+void TextFile::FindAllMatches(std::string& text, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex) {
 	PGRegexHandle handle = PGCompileRegex(text, regex, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
 	if (!handle) {
 		*error_message = "Error";
@@ -2149,7 +2151,7 @@ void TextFile::FindAllMatches(std::string& text, PGDirection direction, lng star
 	info->start_line = start_line;
 	info->start_character = start_character;
 
-	RunTextFinder(nullptr, this, handle, start_line, start_character);
+	RunTextFinder(nullptr, this, handle, start_line, start_character, select_first_match);
 	/*
 
 	this->find_task = new Task([](Task* t, void* in) {

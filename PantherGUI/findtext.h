@@ -22,7 +22,7 @@ public:
 
 	void SelectAllMatches();
 	bool Find(PGDirection direction, bool include_selection = false);
-	void FindAll(PGDirection direction);
+	void FindAll(bool select_first_match = true);
 	void Replace();
 	void ReplaceAll();
 

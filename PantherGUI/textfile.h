@@ -150,7 +150,7 @@ public:
 	bool FinishedSearch() { return finished_search; }
 
 	bool FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, bool include_selection);
-	void FindAllMatches(std::string& text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
+	void FindAllMatches(std::string& text, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
 
 	int GetLineHeight();
 
@@ -245,7 +245,7 @@ private:
 	lng longest_line = 0;
 	lng xoffset = 0;
 	PGVerticalScroll yoffset;
-
+	
 	bool wordwrap = false;
 	PGScalar wordwrap_width;
 
@@ -269,7 +269,7 @@ private:
 	static void OpenFileAsync(Task* task, void* info);
 
 	Task* find_task = nullptr;
-	static void RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character);
+	static void RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character, bool select_first_match);
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateBuffers();
