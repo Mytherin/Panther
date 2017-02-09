@@ -338,6 +338,108 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text) {
 	return MeasureTextWidth(font, text, strlen(text));
 }
 
+std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* text, size_t length, PGScalar xoffset, PGScalar maximum_width, lng& render_start, lng& render_end) {
+	std::vector<PGScalar> cumulative_widths;
+	PGScalar text_size = 0;
+	bool found_initial_character = false;
+	if (font->character_width > 0) {
+		// main font is a monospace font
+		int regular_elements = 0;
+		for (size_t i = 0; i < length; ) {
+			if (text_size - xoffset > maximum_width) {
+				if (render_end == length) {
+					render_end = i;
+				}
+				return cumulative_widths;
+			}
+			PGScalar current_width = text_size;
+			int offset = utf8_character_length(text[i]);
+			if (offset == 1) {
+				if (text[i] == '\t') {
+					text_size += font->tabwidth;
+				} else {
+					text_size += font->character_width;
+				}
+			} else {
+				if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
+					// if the main font does not support the current glyph, look into the fallback fonts
+					bool found_fallback = false;
+					for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
+						if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
+							text_size += (*it)->measureText(text + i, offset);
+							found_fallback = true;
+							break;
+						}
+					}
+					if (!found_fallback)
+						text_size += font->character_width;
+				} else {
+					text_size += font->character_width;
+				}
+			}
+			if (text_size > xoffset) {
+				if (!found_initial_character) {
+					found_initial_character = true;
+					render_start = i;
+				}
+				for(int p = 0; p < offset; p++) {
+					cumulative_widths.push_back(current_width - xoffset);
+				}
+			}
+			assert(offset > 0);
+			i += offset;
+		}
+	} else {
+		// main font is not monospace
+		for (size_t i = 0; i < length; ) {
+			if (text_size - xoffset > maximum_width) {
+				if (render_end == length) {
+					render_end = i;
+				}
+				return cumulative_widths;
+			}
+			PGScalar current_width = text_size;
+			int offset = utf8_character_length(text[i]);
+			if (offset == 1) {
+				if (text[i] == '\t') {
+					text_size += font->textpaint->measureText(" ", 1) * font->tabwidth;
+				} else {
+					text_size += font->textpaint->measureText(text + i, 1);
+				}
+			} else {
+				if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
+					// if the main font does not support the current glyph, look into the fallback fonts
+					bool found_fallback = false;
+					for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
+						if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
+							text_size += (*it)->measureText(text + i, offset);
+							found_fallback = true;
+							break;
+						}
+					}
+					if (!found_fallback)
+						text_size += font->textpaint->measureText("?", 1);
+				} else {
+					text_size += font->textpaint->measureText(text + i, offset);
+				}
+			}
+			if (text_size > xoffset) {
+				if (!found_initial_character) {
+					render_start = i;
+					found_initial_character = true;
+				}
+				for(int p = 0; p < offset; p++) {
+					cumulative_widths.push_back(current_width - xoffset);
+				}
+			}
+			assert(offset > 0);
+			i += offset;
+		}
+	}
+	cumulative_widths.push_back(text_size - xoffset);
+	return cumulative_widths;
+}
+
 PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 	PGScalar text_size = 0;
 	if (font->character_width > 0) {
@@ -461,23 +563,31 @@ void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text,
 	RenderLine(renderer, PGLine(x + width, y, x + width, y + line_height), color);
 }
 
-void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar max_position) {
-	if (start == end) return;
-	max_position -= x;
-	PGScalar selection_start = MeasureTextWidth(font, text, start);
-	PGScalar selection_width = MeasureTextWidth(font, text, end > (lng)len ? len : end);
-	PGScalar lineheight = GetTextHeight(font);
-	if (end > (lng)len) {
-		assert(end == len + 1);
-		selection_width += font->character_width;
-	}
-	if (selection_start >= max_position) return;
-	selection_width = std::min(max_position, selection_width);
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, 
+	PGScalar x, PGScalar y, lng start, lng end, 
+	lng render_start, lng render_end, std::vector<PGScalar>& character_widths, 
+	PGColor selection_color) {
+	// if the entire line is selected and the selection continues no the next line
+	// we render one extra character to indicate the selected newline
+	bool padding = end == len + 1;
+	start = std::min((lng)character_widths.size() - 1, std::max((lng)0, start - render_start));
+	end = std::min((lng)character_widths.size() - 1, std::max((lng)0, end - render_start));
 
-	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_width - selection_start, lineheight), selection_color, PGDrawStyleFill);
+	PGScalar selection_start = character_widths[start];
+	PGScalar selection_end = character_widths[end];
+	if (padding) {
+		selection_end += font->character_width;
+	}
+	// render the selection rectangle
+	PGScalar lineheight = GetTextHeight(font);
+	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_end - selection_start, lineheight), selection_color, PGDrawStyleFill);
+
+	start += render_start;
+	end += render_start;
+	// if spaces/tabs are only rendered within the selection, render them now by scanning the text
 	// if (!render_spaces_always)
-	PGScalar cumsiz = selection_start;
 	for (lng i = start; i < end;) {
+		PGScalar cumsiz = character_widths[i - render_start];
 		int offset = utf8_character_length(text[i]);
 		if (offset == 1) {
 			if (text[i] == '\t') {
@@ -495,10 +605,12 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 				SetTextColor(font, color);
 			}
 		}
-		cumsiz += MeasureTextWidth(font, text + i, offset);
 		i += offset;
 	}
+
+
 }
+
 
 void SetTextColor(PGFontHandle font, PGColor color) {
 	if (font->normaltext) {

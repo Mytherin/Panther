@@ -33,7 +33,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldText));
 	PGScalar line_height = GetTextHeight(textfield_font);
 	TextLine line = textfile->GetLine(0);
-	RenderSelection(renderer, 
+	/*RenderSelection(renderer, 
 		textfield_font, 
 		line.GetLine(), 
 		line.GetLength(), 
@@ -41,7 +41,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		y, cursor->BeginPosition().position,
 		cursor->EndPosition().position,
 		PGStyleManager::GetColor(PGColorTextFieldSelection), 
-		max_x);
+		max_x);*/
 	if (display_carets) {
 		RenderCaret(renderer, 
 			textfield_font, 

@@ -298,10 +298,10 @@ void DeleteImage(PGBitmapHandle handle);
 PGScalar MeasureTextWidth(PGFontHandle font, std::string& text);
 PGScalar MeasureTextWidth(PGFontHandle font, const char* text);
 PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length);
+std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* text, size_t length, PGScalar xoffset, PGScalar maximum_width, lng& render_start, lng& render_end);
 PGScalar GetTextHeight(PGFontHandle font);
 void RenderCaret(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng characternr, PGScalar line_height, PGColor color);
-void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, PGColor selection_color, PGScalar max_position = INT_MAX);
-
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, lng start, lng end, lng render_start, lng render_end, std::vector<PGScalar>& character_widths, PGColor selection_color);
 
 enum PGTextStyle {
 	PGTextStyleNormal,

@@ -99,13 +99,14 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	PGColor selection_color = PGStyleManager::GetColor(PGColorTextFieldSelection);
 	PGScalar line_height = GetTextHeight(font);
 	PGScalar initial_position_y = position_y;
-
+	PGScalar render_width = GetTextfieldWidth();
 	if (minimap) {
 		// fill in the background of the minimap
 		PGRect rect(position_x_text, position_y, this->width - position_x_text, this->height - position_y);
 		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGDrawStyleFill);
 		// start line of the minimap
 		start_line = GetMinimapStartLine();
+		render_width = GetMinimapWidth();
 	}
 
 	std::string selected_word = std::string();
@@ -181,6 +182,15 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 			char* line = current_line.GetLine();
 			lng length = current_line.GetLength();
+
+			// find the part of the line that we actually have to render
+			lng render_start = 0, render_end = length;
+			auto character_widths = CumulativeCharacterWidths(font, line, length, xoffset, render_width, render_start, render_end);
+			if (character_widths.size() == 0) {
+				// the entire line is out of bounds, nothing to render
+				goto next_line;
+			}
+
 			// render the selections and cursors, if there are any on this line
 			while (current_cursor < cursors.size()) {
 				PGTextRange range = cursors[current_cursor]->GetCursorSelection();
@@ -198,7 +208,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					continue;
 				}
 				// we have to render the cursor on this line
-
 				lng start, end;
 				if (range.startpos() < current_range.startpos()) {
 					start = 0;
@@ -212,18 +221,24 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				}
 				start = std::min(length, std::max((lng)0, start));
 				end = std::min(length + 1, std::max((lng)0, end));
-				if (start != end) {
-					// if there is a selection, render it
+				if ((end >= render_start && start <= render_end) && start != end) {
+					// if there is a selection and it is on the screen, render it
 					RenderSelection(renderer,
 						font,
 						line,
 						length,
-						position_x_text - xoffset,
+						position_x_text,
 						position_y,
 						start,
 						end,
-						selection_color,
-						max_x);
+						render_start,
+						render_end,
+						character_widths,
+						selection_color);
+				} else if (render_start > render_end) {
+					// we are already past the to-be rendered text
+					// any subsequent cursors will also be past this point
+					break;
 				}
 
 				if (!minimap && display_carets) {
@@ -231,15 +246,18 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					if (selected_position >= current_range.startpos() && selected_position < current_range.endpos()) {
 						// render the caret on the selected line
 						lng render_position = selected_position.position - current_range.start_position;
-						RenderCaret(renderer,
-							font,
-							current_line.GetLine(),
-							current_line.GetLength(),
-							position_x_text - xoffset,
-							position_y,
-							render_position,
-							line_height,
-							PGStyleManager::GetColor(PGColorTextFieldCaret));
+						if (render_position >= render_start && render_position <= render_end) {
+							// check if the caret is in the rendered area first
+							RenderCaret(renderer,
+								font,
+								current_line.GetLine(),
+								current_line.GetLength(),
+								position_x_text - xoffset,
+								position_y,
+								render_position,
+								line_height,
+								PGStyleManager::GetColor(PGColorTextFieldCaret));
+						}
 					}
 				}
 				if (end < length) {
@@ -278,14 +296,15 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					} else {
 						end = match.end_position - current_range.start_position;
 					}
-
-					PGScalar x_offset = MeasureTextWidth(font, line, start);
-					PGScalar width = MeasureTextWidth(font, line + start, end - start);
-					PGRect rect(position_x_text + x_offset - xoffset, position_y, width, line_height);
-					RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
-					if (end < length) {
-						current_match++;
-						continue;
+					if ((end >= render_start && start <= render_end) && start != end) {
+						PGScalar x_offset = MeasureTextWidth(font, line, start);
+						PGScalar width = MeasureTextWidth(font, line + start, end - start);
+						PGRect rect(position_x_text + x_offset - xoffset, position_y, width, line_height);
+						RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
+						if (end < length) {
+							current_match++;
+							continue;
+						}
 					}
 					break;
 				}
@@ -383,6 +402,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			}
 			ClearRenderBounds(renderer);
 		}
+next_line:
 		(*line_iterator)++;
 		position_y += line_height;
 	}
