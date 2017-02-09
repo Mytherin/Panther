@@ -1417,7 +1417,7 @@ void TextFile::VerifyTextfile() {
 
 				ptr = buffer->buffer + j + 1;
 
-				PGScalar current_length = buffer->line_lengths[total_lines];
+				PGScalar current_length = buffer->line_lengths[current_lines];
 				PGScalar measured_length = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
 				assert(panther::epsilon_equals(current_length, measured_length));
 				measured_width += measured_length;

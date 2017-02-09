@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <string>
 #include "assert.h"
+#include <vector>
 
 typedef enum {
 	PGDirectionLeft,

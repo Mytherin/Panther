@@ -356,7 +356,7 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 			int offset = utf8_character_length(text[i]);
 			if (offset == 1) {
 				if (text[i] == '\t') {
-					text_size += font->tabwidth;
+					text_size += font->tabwidth * font->character_width;
 				} else {
 					text_size += font->character_width;
 				}
