@@ -1063,10 +1063,11 @@ void TextFile::SetScrollOffset(lng offset) {
 			start_width = next_width;
 			line++;
 		}
+		line += buffer->start_line;
 		// find position within buffer
 		TextLine textline = GetLine(line);
 		lng inner_lines = textline.RenderedLines(buffer, line, GetLineCount(), textfield->GetTextfieldFont(), wordwrap_width);
-		percentage = buffer->line_lengths[line] == 0 ? 0 : (width - start_width) / buffer->line_lengths[line];
+		percentage = buffer->line_lengths[line - buffer->start_line] == 0 ? 0 : (width - start_width) / buffer->line_lengths[line];
 		percentage = std::max(0.0, std::min(1.0, percentage));
 		PGVerticalScroll scroll;
 		scroll.linenumber = line;

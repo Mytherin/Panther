@@ -4,7 +4,7 @@
 #include "textfile.h"
 #include "unicode.h"
 
-lng TEXT_BUFFER_SIZE = 250;
+lng TEXT_BUFFER_SIZE = 4096;
 
 
 PGTextBuffer::PGTextBuffer() : 
@@ -61,6 +61,16 @@ std::vector<TextLine> PGTextBuffer::GetLines() {
 }
 
 TextLine PGTextBuffer::GetLineFromPosition(ulng pos) {
+	lng line_pos = GetStartLine(pos);
+	lng start = line_pos == 0 ? 0 : line_start[line_pos - 1];
+	lng end = (line_pos == line_start.size() ? current_size : line_start[line_pos]) - 1;
+	// FIXME: do we want to get the correct syntax for the line?
+	PGSyntax syntax;
+	syntax.end = -1;
+	return TextLine(buffer + start, end - start, syntax);
+	/*
+
+
 	char* position = buffer + pos;
 	if (pos > 0) {
 		if (*position == '\n') position--;
@@ -73,10 +83,9 @@ TextLine PGTextBuffer::GetLineFromPosition(ulng pos) {
 	while (end < buffer + current_size && *end != '\n') {
 		end++;
 	}
-	// FIXME: do we want to get the correct syntax for the line?
 	PGSyntax syntax;
 	syntax.end = -1;
-	return TextLine(position, end - position, syntax);
+	return TextLine(position, end - position, syntax);*/
 }
 
 void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& character) {
@@ -87,21 +96,16 @@ void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& cha
 		assert(this->prev);
 		return this->prev->GetCursorFromBufferLocation(position + this->prev->current_size, line, character);
 	}
-	assert(position < current_size);
-	line = start_line;
-	character = 0;
-	char* current_position = buffer;
-	for (int i = 0; i < position; i++) {
-		if (current_position[i] == '\n') {
-			line++;
-			character = 0;
-		} else {
-			character++;
-		}
-	}
+	auto pos = GetCursorFromPosition(position, 0);
+	line = pos.line;
+	character = pos.position;
 }
 
 ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
+	lng start = line == start_line ? 0 : line_start[line - start_line - 1];
+	return start + position;
+	/*
+
 	lng current_line = start_line;
 	lng current_character = 0;
 	if (current_line == line && current_character == position) {
@@ -128,7 +132,7 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 		return i;
 	}
 	assert(0);
-	return 0;
+	return 0;*/
 }
 
 PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position, lng total_lines) {
@@ -143,11 +147,20 @@ PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position, lng total_li
 PGCharacterPosition PGTextBuffer::GetCharacterFromPosition(ulng position) {
 	assert(position <= current_size);
 	PGCharacterPosition pos;
-	pos.line = start_line;
-	pos.position = 0;
+	lng end = GetStartLine(position);
+	lng start = end == 0 ? 0 : line_start[end - 1];
+	pos.line = start_line + end;
+	pos.position = position - start;
 	pos.character = 0;
-	ulng i = 0;
 
+	for (lng i = start; i < position; ) {
+		int offset = utf8_character_length(buffer[i]);
+		pos.character++;
+		i += offset;
+	}
+	return pos;
+
+/*
 	lng cache_entry = TEXT_BUFFER_SIZE == 0 ? 0 : (position / TEXT_BUFFER_SIZE) - 1;
 	if (cache_entry >= 0) {
 		if (cache_entry < cached_positions.size()) {
@@ -182,7 +195,7 @@ PGCharacterPosition PGTextBuffer::GetCharacterFromPosition(ulng position) {
 			}
 		}
 	}
-	return pos;
+	return pos;*/
 }
 
 void PGTextBuffer::Extend(ulng new_size) {
