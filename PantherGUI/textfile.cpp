@@ -36,6 +36,8 @@ TextFile::TextFile(BasicTextField* textfield) :
 	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
 	buffers.back()->line_count = 1;
 	buffers.back()->line_lengths.push_back(0);
+	max_line_length.buffer = buffers.back();
+	max_line_length.position = 0;
 	cursors.push_back(new Cursor(this));
 	this->linecount = 1;
 	is_loaded = true;
@@ -260,7 +262,7 @@ void TextFile::InvalidateBuffers() {
 
 	bool find_new_max = false;
 	PGScalar current_maximum_size = -1;
-	if (max_line_length.buffer->cumulative_width < 0) {
+	if (max_line_length.buffer == nullptr || max_line_length.buffer->cumulative_width < 0) {
 		// the maximum line used to be in an invalidated buffer
 		// we have to find the new maximum line
 		max_line_length.buffer = nullptr;
@@ -270,7 +272,7 @@ void TextFile::InvalidateBuffers() {
 	}
 
 	lng buffer_index = 0;
-	while(buffer) {
+	while (buffer) {
 		assert(buffer->index == buffer_index);
 		buffer_index++;
 		if (buffer->cumulative_width < 0) {
@@ -282,7 +284,7 @@ void TextFile::InvalidateBuffers() {
 
 			char* ptr = buffer->buffer;
 			buffer->line_lengths.resize(buffer->line_start.size() + 1);
-			for(size_t i = 0; i <= buffer->line_start.size(); i++) {
+			for (size_t i = 0; i <= buffer->line_start.size(); i++) {
 				lng end_index = ((i == buffer->line_start.size()) ? buffer->current_size : buffer->line_start[i]) - 1;
 				PGSyntax syntax;
 				syntax.end = -1;
@@ -314,7 +316,7 @@ void TextFile::InvalidateBuffers() {
 			}
 		}
 		buffer->cumulative_width = current_width;
-		buffer->start_line = current_lines;
+		//buffer->start_line = current_lines;
 		current_width += buffer->width;
 		current_lines += buffer->line_count;
 		buffer = buffer->next;
@@ -322,7 +324,7 @@ void TextFile::InvalidateBuffers() {
 	total_width = current_width;
 	linecount = current_lines;
 
-	yoffset.linenumber = std::min(linecount - 1, std::max((lng) 0, yoffset.linenumber));
+	yoffset.linenumber = std::min(linecount - 1, std::max((lng)0, yoffset.linenumber));
 
 	matches.clear();
 }
@@ -390,7 +392,7 @@ void TextFile::_InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_le
 		//add line to the current buffer
 		memcpy(current_buffer->buffer + current_buffer->current_size, line_start, line_size);
 		current_buffer->line_start.push_back(current_buffer->current_size);
-		assert(current_buffer->line_start.size() == 1 || 
+		assert(current_buffer->line_start.size() == 1 ||
 			current_buffer->line_start.back() > current_buffer->line_start[current_buffer->line_start.size() - 2]);
 		current_buffer->current_size += line_size;
 		current_buffer->buffer[current_buffer->current_size++] = '\n';
@@ -637,7 +639,7 @@ void TextFile::InsertText(std::string text, size_t i) {
 		assert(c2->end_buffer_position < c2->end_buffer->current_size);
 	}
 	if (update.new_buffer != nullptr) {
-		for(lng index = buffer->index + 1; index < buffers.size(); index++) {
+		for (lng index = buffer->index + 1; index < buffers.size(); index++) {
 			buffers[index]->index = index;
 		}
 	}
@@ -658,12 +660,17 @@ void TextFile::DeleteSelection(int i) {
 	lng lines_deleted = 0;
 	lng buffers_deleted = 0;
 	lng delete_size;
+	lng start_index = begin.buffer->index + 1;
+
 	if (end.buffer != begin.buffer) {
 		lines_deleted += begin.buffer->DeleteLines(begin.position);
 		buffer = buffer->next;
 
 		lng buffer_position = PGTextBuffer::GetBuffer(buffers, begin.buffer);
 		while (buffer != end.buffer) {
+			if (buffer == max_line_length.buffer) {
+				max_line_length.buffer = nullptr;
+			}
 			lines_deleted += buffer->GetLineCount(this->GetLineCount());
 			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
@@ -694,10 +701,19 @@ void TextFile::DeleteSelection(int i) {
 		}
 		if (split_point < buffer->current_size - 1) {
 			// only deleting part of end buffer
-			lines_deleted += buffer->DeleteLines(0, split_point + 1);
-			end.buffer->line_count -= lines_deleted;
+			// first adjust start_line of end buffer based on previously deleted lines
+			end.buffer->start_line -= lines_deleted;
+			// now delete the lines in end_buffer and update the line_count
+			lng deleted_lines_in_end_buffer = buffer->DeleteLines(0, split_point + 1);
+			lines_deleted += deleted_lines_in_end_buffer;
+			end.buffer->line_count -= deleted_lines_in_end_buffer;
+			// set the index, in case there were any deleted buffers
+			end.buffer->index = begin.buffer->index + 1;
 			begin.buffer->next = end.buffer;
 			end.buffer->prev = begin.buffer;
+			start_index = end.buffer->index + 1;
+
+			end.buffer->VerifyBuffer();
 			// we know there are no cursors within the selection
 			// because overlapping cursors are not allowed
 			// however, we have to update any cursors after the selection
@@ -720,6 +736,9 @@ void TextFile::DeleteSelection(int i) {
 			}
 		} else {
 			// have to delete entire end buffer
+			if (end.buffer == max_line_length.buffer) {
+				max_line_length.buffer = nullptr;
+			}
 			lines_deleted += end.buffer->GetLineCount(this->GetLineCount());
 			begin.buffer->next = end.buffer->next;
 			if (begin.buffer->next) begin.buffer->next->prev = begin.buffer;
@@ -761,14 +780,18 @@ void TextFile::DeleteSelection(int i) {
 	cursor->end_buffer_position = cursor->start_buffer_position;
 	cursor->end_buffer = cursor->start_buffer;
 
+	begin.buffer->VerifyBuffer();
+
 	// delete linecount from line_lengths
 	// recompute line_lengths and cumulative width for begin buffer and end buffer
 	InvalidateBuffer(begin.buffer);
 	InvalidateBuffer(end.buffer);
 
-	if (buffers_deleted > 0) {
-		for(lng i = begin.buffer->index; i < buffers.size(); i++) {
+	if (buffers_deleted > 0 || lines_deleted > 0) {
+		for (lng i = start_index; i < buffers.size(); i++) {
 			buffers[i]->index = i;
+			buffers[i]->start_line -= lines_deleted;
+			buffers[i]->VerifyBuffer();
 		}
 	}
 }
@@ -801,6 +824,8 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	lng position = cursor->start_buffer_position;
 	PGTextBuffer* buffer = cursor->start_buffer;
 
+	start_buffer->cumulative_width = -1;
+
 	lng cursor_offset = 0;
 	lng final_line_size = -1;
 	lng line_position = 0;
@@ -819,7 +844,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 
 		lng start_line = buffer->GetStartLine(position);
 		line_position = (start_line == buffer->line_start.size() ? buffer->current_size : buffer->line_start[start_line]);
-		cursor_offset = line_position - position;
+		cursor_offset = line_position - (position + 1);
 		current_line += std::string(buffer->buffer + position, line_position - position - 1);
 		if (start_line != buffer->line_start.size()) {
 			// this is not the last line in the buffer
@@ -842,7 +867,6 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	position = buffer->current_size;
 
 	lng buffer_position = PGTextBuffer::GetBuffer(buffers, buffer) + 1;
-	lng current_lines = 1;
 	for (auto it = lines.begin() + 1; it != lines.end(); it++) {
 		if ((*it).size() + 1 >= buffer->buffer_size - buffer->current_size) {
 			// line does not fit within the current buffer: have to make a new buffer
@@ -850,12 +874,13 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 			new_buffer->next = buffer->next;
 			if (new_buffer->next) new_buffer->next->prev = new_buffer;
 			new_buffer->prev = buffer;
+			new_buffer->cumulative_width = -1;
+			new_buffer->line_count = 1;
+			new_buffer->start_line = buffer->start_line + buffer->line_count;
 			buffer->next = new_buffer;
 			buffer = new_buffer;
-			current_lines = 1;
 			buffer->buffer[buffer->current_size++] = '\n';
 			position = buffer->current_size;
-			new_buffer->cumulative_width = -1;
 			buffers.insert(buffers.begin() + buffer_position, new_buffer);
 			inserted_buffers = true;
 			buffer_position++;
@@ -869,8 +894,6 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 			buffer->line_start.push_back(current_line);
 			buffer->line_count++;
 			position = buffer->current_size;
-			current_lines++;
-			buffer->VerifyBuffer();
 		}
 	}
 	cursor->start_buffer = buffer;
@@ -923,7 +946,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	}
 
 	if (inserted_buffers) {
-		for(lng i = start_buffer->index; i < buffers.size(); i++) {
+		for (lng i = start_buffer->index; i < buffers.size(); i++) {
 			buffers[i]->index = i;
 		}
 	}
@@ -1390,7 +1413,7 @@ void TextFile::VerifyTextfile() {
 		assert(buffers[i]->index == i);
 		lng current_lines = 0;
 		char* ptr = buffer->buffer;
-		for(lng j = 0; j < buffer->current_size; j++) {
+		for (lng j = 0; j < buffer->current_size; j++) {
 			if (buffer->buffer[j] == '\n') {
 				PGSyntax syntax;
 				syntax.end = -1;

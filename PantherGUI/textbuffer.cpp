@@ -470,6 +470,7 @@ void PGTextBuffer::ClearWrappedLines() {
 
 void PGTextBuffer::VerifyBuffer() {
 #ifdef PANTHER_DEBUG
+	assert(this->line_lengths.size() == this->line_count || this->cumulative_width < 0);
 	lng current_line = 0;
 	for (int i = 0; i < current_size - 1; i++) {
 		if (buffer[i] == '\n') {

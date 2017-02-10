@@ -174,6 +174,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	SetTextfile(&tf);
 
+	// FIXME: unsubscribe after findtext is done
 	manager->active_textfield->OnTextChanged([](Control* c, void* data) {
 		FindText* f = (FindText*) data;
 		if (f->HighlightMatches()) {
@@ -188,6 +189,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 }
 
 FindText::~FindText() {
+	
 
 }
 
