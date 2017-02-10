@@ -629,28 +629,16 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, 
 			}
 			end_scroll = (*it).GetCurrentScrollOffset();
 		}
-		PGCursorPosition cursor_min_position = cursors[0].SelectedPosition();
-		PGCursorPosition cursor_max_position = cursor_min_position;
-		PGScalar cursor_min_xoffset = word_wrap ? 0 : cursors[0].SelectedXPosition();
-		PGScalar cursor_max_xoffset = cursor_min_xoffset;
-		for (int i = 1; i < cursors.size(); i++) {
-			auto position = cursors[i].SelectedPosition();
-			if (position.line < cursor_min_position.line ||
-				(position.line == cursor_min_position.line && position.position < cursor_min_position.position)) {
-				cursor_min_position = position;
-			}
-			if (position.line > cursor_max_position.line ||
-				(position.line == cursor_max_position.line && position.position > cursor_max_position.position)) {
-				cursor_max_position = position;
-			}
-			if (!word_wrap) {
-				PGScalar cursor_position = cursors[i].SelectedXPosition();
-				cursor_min_xoffset = std::min(cursor_min_xoffset, cursor_position);
-				cursor_max_xoffset = std::max(cursor_max_xoffset, cursor_position);
-			}
+		if (textfile->active_cursor < 0) {
+			textfile->active_cursor = 0;
 		}
+		PGCursorPosition cursor_min_position = cursors[textfile->active_cursor].SelectedPosition();
+		PGCursorPosition cursor_max_position = cursor_min_position;
+		PGScalar cursor_min_xoffset = word_wrap ? 0 : cursors[textfile->active_cursor].SelectedXPosition();
+		PGScalar cursor_max_xoffset = cursor_min_xoffset;
+
 		PGVerticalScroll min_scroll = textfile->GetVerticalScroll(cursor_min_position.line, cursor_min_position.position);
-		PGVerticalScroll max_scroll = textfile->GetVerticalScroll(cursor_max_position.line, cursor_max_position.position);
+		PGVerticalScroll max_scroll = min_scroll;
 
 		if (max_scroll < line_offset) {
 			// cursor is located past the end of what is visible, offset the view

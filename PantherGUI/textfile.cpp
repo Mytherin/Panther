@@ -599,23 +599,25 @@ void TextFile::InsertText(std::string text, size_t i) {
 	// invalidate parsing of the current buffer
 	buffer->parsed = false;
 	PGBufferUpdate update = PGTextBuffer::InsertText(buffers, cursor.start_buffer, insert_point, text, this->linecount);
-	// since the split point can be BEFORE this cursor
-	// we need to look at previous cursors as well
-	// cursors before this cursor might also have to move to the new buffer
-	for (lng j = i - 1; j >= 0; j--) {
-		Cursor& c2 = cursors[j];
-		if (c2.start_buffer != buffer && c2.end_buffer != buffer) break;
-		for (int bufpos = 0; bufpos < 2; bufpos++) {
-			if (update.new_buffer != nullptr) {
+
+	if (update.new_buffer != nullptr) {
+		// since the split point can be BEFORE this cursor
+		// we need to look at previous cursors as well
+		// cursors before this cursor might also have to move to the new buffer
+		for (lng j = i - 1; j >= 0; j--) {
+			Cursor& c2 = cursors[j];
+			if (c2.start_buffer != buffer && c2.end_buffer != buffer) break;
+			for (int bufpos = 0; bufpos < 2; bufpos++) {
 				if (c2.BUFPOS(bufpos) > update.split_point) {
 					c2.BUF(bufpos) = update.new_buffer;
 					c2.BUFPOS(bufpos) -= update.split_point;
 				}
 			}
+			assert(c2.start_buffer_position < c2.start_buffer->current_size);
+			assert(c2.end_buffer_position < c2.end_buffer->current_size);
 		}
-		assert(c2.start_buffer_position < c2.start_buffer->current_size);
-		assert(c2.end_buffer_position < c2.end_buffer->current_size);
 	}
+
 	for (size_t j = i; j < cursors.size(); j++) {
 		Cursor& c2 = cursors[j];
 		if (c2.start_buffer != buffer) break;
@@ -1659,7 +1661,6 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 					remove->stored_cursors.push_back(BackupCursor(i));
 				}
 			}
-			Cursor::NormalizeCursors(this, cursors, false);
 			break;
 		}
 		case PGDeltaRemoveLine:
