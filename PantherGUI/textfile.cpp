@@ -1437,7 +1437,9 @@ void TextFile::VerifyPartialTextfile() {
 	assert(cursors.size() > 0);
 	for (int i = 0; i < cursors.size(); i++) {
 		Cursor& c = cursors[i];
+		if (c.start_buffer == nullptr) continue;
 		if (i < cursors.size() - 1) {
+			if (cursors[i + 1].start_buffer == nullptr) continue;
 			auto end_position = c.EndCursorPosition();
 			auto begin_position = cursors[i + 1].BeginCursorPosition();
 			if (!(end_position.buffer == begin_position.buffer && end_position.position == begin_position.position)) {
@@ -1781,10 +1783,11 @@ void TextFile::Undo(TextDelta* delta) {
 			ClearCursors();
 			AddText* add = (AddText*)delta;
 			// we perform undo's in reverse order
+			cursors.resize(delta->stored_cursors.size());
 			for (int i = 0; i < delta->stored_cursors.size(); i++) {
 				int index = delta->stored_cursors.size() - (i + 1);
-				cursors.insert(cursors.begin(), RestoreCursor(delta->stored_cursors[index]));
-				Undo(*add, 0);
+				cursors[index] = RestoreCursor(delta->stored_cursors[index]);
+				Undo(*add, index);
 			}
 			break;
 		}
@@ -1792,11 +1795,12 @@ void TextFile::Undo(TextDelta* delta) {
 		{
 			RemoveText* remove = (RemoveText*)delta;
 			ClearCursors();
+			cursors.resize(delta->stored_cursors.size());
 			for (int i = 0; i < delta->stored_cursors.size(); i++) {
 				int index = delta->stored_cursors.size() - (i + 1);
-				cursors.insert(cursors.begin(), RestoreCursorPartial(delta->stored_cursors[index]));
-				Undo(*remove, remove->removed_text[index], 0);
-				cursors[0] = RestoreCursor(delta->stored_cursors[index]);
+				cursors[index] = RestoreCursorPartial(delta->stored_cursors[index]);
+				Undo(*remove, remove->removed_text[index], index);
+				cursors[index] = RestoreCursor(delta->stored_cursors[index]);
 			}
 			break;
 		}

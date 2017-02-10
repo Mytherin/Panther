@@ -747,7 +747,7 @@ std::string MultiLineDelete(TextFile* textfile) {
 std::string MultiLineMultiCursorDelete(TextFile* textfile) {
 	textfile->SetCursorLocation(12, 0, 14, 16);
 	textfile->AddNewCursor(20, 16);
-	textfile->GetCursors()[1]->SetCursorStartLocation(18, 0);
+	textfile->GetCursors()[1].SetCursorStartLocation(18, 0);
 	textfile->InsertText('a');
 	textfile->InsertText('a');
 

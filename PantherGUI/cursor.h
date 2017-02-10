@@ -29,6 +29,7 @@ struct CursorData {
 class Cursor {
 	friend class TextFile;
 public:
+	Cursor() : file(nullptr), x_position(-1), start_buffer(nullptr), start_buffer_position(-1), end_buffer(nullptr), end_buffer_position(-1) { }
 	Cursor(TextFile* file);
 	Cursor(TextFile* file, lng start_line, lng start_character);
 	Cursor(TextFile* file, lng start_line, lng start_character, lng end_line, lng end_character);

@@ -629,7 +629,7 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, 
 			}
 			end_scroll = (*it).GetCurrentScrollOffset();
 		}
-		if (textfile->active_cursor < 0) {
+		if (textfile->active_cursor < 0 || textfile->active_cursor >= cursors.size()) {
 			textfile->active_cursor = 0;
 		}
 		PGCursorPosition cursor_min_position = cursors[textfile->active_cursor].SelectedPosition();
