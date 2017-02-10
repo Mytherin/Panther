@@ -253,17 +253,13 @@ void BasicTextField::PasteHistory() {
 			dynamic_cast<BasicTextField*>(c)->textfile->PasteText(info->data);
 		});
 	}
-	Cursor* c = textfile->GetActiveCursor();
-	if (c) {
-		PGScalar x, y;
-		auto position = c->BeginPosition();
-		GetPositionFromLineCharacter(position.line, position.position + 1, x, y);
-		PGDisplayPopupMenu(menu, ConvertWindowToScreen(window, 
-			PGPoint(this->X() + x, this->Y() + y + GetTextHeight(textfield_font))), 
-			PGTextAlignLeft | PGTextAlignTop);
-	} else {
-		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
-	}
+	Cursor& c = textfile->GetActiveCursor();
+	PGScalar x, y;
+	auto position = c.BeginPosition();
+	GetPositionFromLineCharacter(position.line, position.position + 1, x, y);
+	PGDisplayPopupMenu(menu, ConvertWindowToScreen(window, 
+		PGPoint(this->X() + x, this->Y() + y + GetTextHeight(textfield_font))), 
+		PGTextAlignLeft | PGTextAlignTop);
 }
 
 void BasicTextField::InitializeKeybindings() {

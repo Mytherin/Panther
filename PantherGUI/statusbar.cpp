@@ -138,12 +138,12 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			auto cursors = file.GetCursors();
 			std::string str = "";
 			if (cursors.size() == 1) {
-				auto selected_pos = cursors[0]->SelectedCharacterPosition();
-				auto begin_pos = cursors[0]->BeginCharacterPosition();
-				auto end_pos = cursors[0]->EndCharacterPosition();
+				auto selected_pos = cursors[0].SelectedCharacterPosition();
+				auto begin_pos = cursors[0].BeginCharacterPosition();
+				auto end_pos = cursors[0].EndCharacterPosition();
 				str = string_sprintf("Line %lld, Column %lld", selected_pos.line + 1, selected_pos.character + 1);
 
-				if (!cursors[0]->SelectionIsEmpty()) {
+				if (!cursors[0].SelectionIsEmpty()) {
 					if (begin_pos.line == end_pos.line) {
 						str += string_sprintf(" (%lld characters selected)", end_pos.character - begin_pos.character);
 					} else {

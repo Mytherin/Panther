@@ -195,8 +195,8 @@ FindText::~FindText() {
 
 void FindText::SetTextfile(TextFile* textfile) {
 	this->current_textfile = textfile;
-	begin_pos = textfile->GetActiveCursor()->BeginPosition();
-	end_pos = textfile->GetActiveCursor()->EndPosition();
+	begin_pos = textfile->GetActiveCursor().BeginPosition();
+	end_pos = textfile->GetActiveCursor().EndPosition();
 }
 
 void FindText::ToggleReplace() {

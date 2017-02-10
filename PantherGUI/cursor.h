@@ -35,10 +35,10 @@ public:
 	Cursor(TextFile* file, CursorData data);
 	Cursor(TextFile* file, PGTextRange range);
 
-	static std::vector<CursorData> GetCursorData(std::vector<Cursor*> cursors);
+	static std::vector<CursorData> GetCursorData(const std::vector<Cursor>& cursors);
 
-	CursorData GetCursorData();
-	PGTextRange GetCursorSelection();
+	CursorData GetCursorData() const;
+	PGTextRange GetCursorSelection() const;
 
 	void OffsetLine(lng offset);
 	void OffsetCharacter(PGDirection direction);
@@ -58,16 +58,16 @@ public:
 	void OffsetSelectionWord(PGDirection direction);
 	void SelectWord();
 	void SelectLine();
-	std::string GetSelectedWord();
+	std::string GetSelectedWord() const;
 
-	PGCursorPosition UnselectedPosition();
-	PGCursorPosition SelectedPosition();
-	PGCursorPosition BeginPosition();
-	PGCursorPosition EndPosition();
+	PGCursorPosition UnselectedPosition() const;
+	PGCursorPosition SelectedPosition() const;
+	PGCursorPosition BeginPosition() const;
+	PGCursorPosition EndPosition() const;
 
-	PGCharacterPosition SelectedCharacterPosition();
-	PGCharacterPosition BeginCharacterPosition();
-	PGCharacterPosition EndCharacterPosition();
+	PGCharacterPosition SelectedCharacterPosition() const;
+	PGCharacterPosition BeginCharacterPosition() const;
+	PGCharacterPosition EndCharacterPosition() const;
 
 	PGScalar GetXOffset(PGTextPosition position);
 	PGScalar BeginXPosition();
@@ -77,13 +77,13 @@ public:
 	std::string GetLine();
 	std::string GetText();
 
-	bool SelectionIsEmpty();
+	bool SelectionIsEmpty() const;
 
-	bool OverlapsWith(Cursor* cursor);
-	void Merge(Cursor* cursor);
+	bool OverlapsWith(const Cursor& cursor) const;
+	void Merge(const Cursor& cursor);
 
-	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield = true);
-	static bool CursorOccursFirst(Cursor* a, Cursor* b);
+	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, bool scroll_textfield = true);
+	static bool CursorOccursFirst(const Cursor& a, const Cursor& b);
 
 	static void LoadCursors(nlohmann::json& j, std::vector<CursorData>& stored_cursors);
 	static void StoreCursors(nlohmann::json& j, std::vector<CursorData>& cursors);

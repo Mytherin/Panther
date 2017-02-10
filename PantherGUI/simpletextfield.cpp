@@ -29,7 +29,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	x += 4;
 	y += 2;
 	
-	Cursor* cursor = textfile->GetCursors()[0];
+	Cursor& cursor = textfile->GetCursors()[0];
 	SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldText));
 	PGScalar line_height = GetTextHeight(textfield_font);
 	TextLine textline = textfile->GetLine(0);
@@ -43,8 +43,8 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		return;
 	}
 
-	auto begin_pos = cursor->BeginPosition();
-	auto end_pos = cursor->EndPosition();
+	auto begin_pos = cursor.BeginPosition();
+	auto end_pos = cursor.EndPosition();
 
 	if (begin_pos.position != end_pos.position) {
 		RenderSelection(renderer, 
@@ -63,7 +63,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	if (display_carets) {
 		RenderCaret(renderer,
 			textfield_font,
-			panther::clamped_access<PGScalar>(character_widths, cursor->SelectedPosition().position - render_start),
+			panther::clamped_access<PGScalar>(character_widths, cursor.SelectedPosition().position - render_start),
 			x,
 			y,
 			PGStyleManager::GetColor(PGColorTextFieldCaret));
@@ -87,13 +87,13 @@ void SimpleTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 		if (modifier == PGModifierNone && last_click.clicks == 0) {
 			textfile->SetCursorLocation(line, character);
 		} else if (modifier == PGModifierShift) {
-			textfile->GetActiveCursor()->SetCursorStartLocation(line, character);
+			textfile->GetActiveCursor().SetCursorStartLocation(line, character);
 		} else if (last_click.clicks == 1) {
 			textfile->SetCursorLocation(line, character);
-			textfile->GetActiveCursor()->SelectWord();
+			textfile->GetActiveCursor().SelectWord();
 		} else if (last_click.clicks == 2) {
 			textfile->SetCursorLocation(line, character);
-			textfile->GetActiveCursor()->SelectLine();
+			textfile->GetActiveCursor().SelectLine();
 		}
 		this->Invalidate();
 	}
@@ -136,9 +136,9 @@ void SimpleTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		if (drag_type == PGDragSelection) {
 			lng character;
 			_GetCharacterFromPosition(mouse.x, textfile->GetLine(0), character);
-			Cursor* active_cursor = textfile->GetActiveCursor();
-			if (active_cursor->SelectedCharacterPosition().character != character) {
-				active_cursor->SetCursorStartLocation(0, character);
+			Cursor& active_cursor = textfile->GetActiveCursor();
+			if (active_cursor.SelectedCharacterPosition().character != character) {
+				active_cursor.SetCursorStartLocation(0, character);
 				Cursor::NormalizeCursors(textfile, textfile->GetCursors());
 				this->Invalidate();
 			}

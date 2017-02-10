@@ -8,7 +8,7 @@ ifneq ($(OPTIMIZE), true)
 	OPTFLAGS=-O0 -g
 	OBJDIR=obj
 else
-	OPTFLAGS=-O3
+	OPTFLAGS=-O3 -g
 	OBJDIR=opt
 endif
 
@@ -114,7 +114,8 @@ test: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(TESTOBJE
 
 
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf obj
+	rm -rf opt
 	rm -f main.app
 
 create_build_directory:

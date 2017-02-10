@@ -75,16 +75,16 @@ Cursor::Cursor(TextFile* file, CursorData data) :
    Cursor(file, data.start_line, data.start_position, data.end_line, data.end_position) {
 }
 
-CursorData Cursor::GetCursorData() {
+CursorData Cursor::GetCursorData() const {
 	PGCursorPosition start = this->SelectedPosition();
 	PGCursorPosition end = this->UnselectedPosition();
 	return CursorData(start.line, start.position, end.line, end.position);
 }
 
-std::vector<CursorData> Cursor::GetCursorData(std::vector<Cursor*> cursors) {
+std::vector<CursorData> Cursor::GetCursorData(const std::vector<Cursor>& cursors) {
 	std::vector<CursorData> data;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		data.push_back((*it)->GetCursorData());
+		data.push_back(it->GetCursorData());
 	}
 	return data;
 }
@@ -352,7 +352,7 @@ void Cursor::SelectWord() {
 	assert(end_buffer_position >= 0);
 }
 
-std::string Cursor::GetSelectedWord() {
+std::string Cursor::GetSelectedWord() const {
 	std::string word;
 	if (start_buffer != end_buffer) return word;
 	if (start_buffer_position == end_buffer_position) return word;
@@ -442,45 +442,45 @@ void Cursor::SetCursorStartLocation(lng linenr, lng characternr) {
 	x_position = -1;
 }
 
-bool Cursor::SelectionIsEmpty() {
+bool Cursor::SelectionIsEmpty() const {
 	return this->start_buffer == this->end_buffer && this->start_buffer_position == this->end_buffer_position;
 }
 
-PGCursorPosition Cursor::SelectedPosition() {
+PGCursorPosition Cursor::SelectedPosition() const {
 	return start_buffer->GetCursorFromPosition(start_buffer_position, file->GetLineCount());
 }
 
-PGCursorPosition Cursor::UnselectedPosition() {
+PGCursorPosition Cursor::UnselectedPosition() const {
 	return end_buffer->GetCursorFromPosition(end_buffer_position, file->GetLineCount());
 }
 
-PGCursorPosition Cursor::BeginPosition() {
+PGCursorPosition Cursor::BeginPosition() const {
 	PGTextPosition begin = BeginCursorPosition();
 	return begin.buffer->GetCursorFromPosition(begin.position, file->GetLineCount());
 }
 
-PGCursorPosition Cursor::EndPosition() {
+PGCursorPosition Cursor::EndPosition() const {
 	PGTextPosition end = EndCursorPosition();
 	return end.buffer->GetCursorFromPosition(end.position, file->GetLineCount());
 }
 
-PGCharacterPosition Cursor::SelectedCharacterPosition() {
+PGCharacterPosition Cursor::SelectedCharacterPosition() const {
 	return start_buffer->GetCharacterFromPosition(start_buffer_position);
 }
 
-PGCharacterPosition Cursor::BeginCharacterPosition() {
+PGCharacterPosition Cursor::BeginCharacterPosition() const {
 	PGTextPosition begin = BeginCursorPosition();
 	return begin.buffer->GetCharacterFromPosition(begin.position);
 }
 
-PGCharacterPosition Cursor::EndCharacterPosition() {
+PGCharacterPosition Cursor::EndCharacterPosition() const {
 	PGTextPosition end = EndCursorPosition();
 	return end.buffer->GetCharacterFromPosition(end.position);
 }
 
-bool Cursor::CursorOccursFirst(Cursor* a, Cursor* b) {
-	return (a->start_buffer->start_line < b->start_buffer->start_line ||
-		(a->start_buffer->start_line == b->start_buffer->start_line && a->start_buffer_position < b->start_buffer_position));
+bool Cursor::CursorOccursFirst(const Cursor& a, const Cursor& b) {
+	return (a.start_buffer->start_line < b.start_buffer->start_line ||
+		(a.start_buffer->start_line == b.start_buffer->start_line && a.start_buffer_position < b.start_buffer_position));
 }
 
 PGScalar Cursor::GetXOffset(PGTextPosition position) {
@@ -559,11 +559,11 @@ PGTextPosition Cursor::SelectedCursorPosition() const {
 	return PGTextPosition(start_buffer, start_buffer_position);
 }
 
-bool Cursor::OverlapsWith(Cursor* cursor) {
+bool Cursor::OverlapsWith(const Cursor& cursor) const {
 	PGTextPosition begin_position = BeginCursorPosition();
-	PGTextPosition cursor_begin_position = cursor->BeginCursorPosition();
+	PGTextPosition cursor_begin_position = cursor.BeginCursorPosition();
 	PGTextPosition end_position = EndCursorPosition();
-	PGTextPosition cursor_end_position = cursor->EndCursorPosition();
+	PGTextPosition cursor_end_position = cursor.EndCursorPosition();
 
 	if (begin_position <= cursor_end_position && end_position >= cursor_begin_position) {
 		return true;
@@ -574,9 +574,9 @@ bool Cursor::OverlapsWith(Cursor* cursor) {
 	return false;
 }
 
-void Cursor::Merge(Cursor* cursor) {
+void Cursor::Merge(const Cursor& cursor) {
 	PGTextPosition begin_position = BeginCursorPosition();
-	PGTextPosition cursor_begin_position = cursor->BeginCursorPosition();
+	PGTextPosition cursor_begin_position = cursor.BeginCursorPosition();
 	if (begin_position.buffer == cursor_begin_position.buffer) {
 		begin_position.position = std::min(begin_position.position, cursor_begin_position.position);
 	} else if (begin_position.buffer->start_line > cursor_begin_position.buffer->start_line) {
@@ -585,7 +585,7 @@ void Cursor::Merge(Cursor* cursor) {
 	}
 
 	PGTextPosition end_position = EndCursorPosition();
-	PGTextPosition cursor_end_position = cursor->EndCursorPosition();
+	PGTextPosition cursor_end_position = cursor.EndCursorPosition();
 	if (end_position.buffer == cursor_end_position.buffer) {
 		end_position.position = std::max(end_position.position, cursor_end_position.position);
 	} else if (end_position.buffer->start_line < cursor_end_position.buffer->start_line) {
@@ -606,12 +606,11 @@ void Cursor::Merge(Cursor* cursor) {
 	}
 }
 
-void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors, bool scroll_textfield) {
+void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, bool scroll_textfield) {
 	for (size_t i = 0; i < cursors.size() - 1; i++) {
 		int j = i + 1;
-		if (cursors[i]->OverlapsWith(cursors[j])) {
-			cursors[i]->Merge(cursors[j]);
-			delete cursors[j];
+		if (cursors[i].OverlapsWith(cursors[j])) {
+			cursors[i].Merge(cursors[j]);
 			cursors.erase(cursors.begin() + j);
 			i--;
 		}
@@ -630,12 +629,12 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 			}
 			end_scroll = (*it).GetCurrentScrollOffset();
 		}
-		PGCursorPosition cursor_min_position = cursors[0]->SelectedPosition();
+		PGCursorPosition cursor_min_position = cursors[0].SelectedPosition();
 		PGCursorPosition cursor_max_position = cursor_min_position;
-		PGScalar cursor_min_xoffset = word_wrap ? 0 : cursors[0]->SelectedXPosition();
+		PGScalar cursor_min_xoffset = word_wrap ? 0 : cursors[0].SelectedXPosition();
 		PGScalar cursor_max_xoffset = cursor_min_xoffset;
 		for (int i = 1; i < cursors.size(); i++) {
-			auto position = cursors[i]->SelectedPosition();
+			auto position = cursors[i].SelectedPosition();
 			if (position.line < cursor_min_position.line ||
 				(position.line == cursor_min_position.line && position.position < cursor_min_position.position)) {
 				cursor_min_position = position;
@@ -645,7 +644,7 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 				cursor_max_position = position;
 			}
 			if (!word_wrap) {
-				PGScalar cursor_position = cursors[i]->SelectedXPosition();
+				PGScalar cursor_position = cursors[i].SelectedXPosition();
 				cursor_min_xoffset = std::min(cursor_min_xoffset, cursor_position);
 				cursor_max_xoffset = std::max(cursor_max_xoffset, cursor_position);
 			}
@@ -693,7 +692,7 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor*>& cursors,
 	}
 }
 
-PGTextRange Cursor::GetCursorSelection() {
+PGTextRange Cursor::GetCursorSelection() const {
 	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
 		return PGTextRange(start_buffer, start_buffer_position, end_buffer, end_buffer_position);
 	} else {

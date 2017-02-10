@@ -38,7 +38,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 	buffers.back()->line_lengths.push_back(0);
 	max_line_length.buffer = buffers.back();
 	max_line_length.position = 0;
-	cursors.push_back(new Cursor(this));
+	cursors.push_back(Cursor(this));
 	this->linecount = 1;
 	is_loaded = true;
 	unsaved_changes = true;
@@ -501,7 +501,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	linecount = linenr;
 	total_width = current_width;
 
-	cursors.push_back(new Cursor(this));
+	cursors.push_back(Cursor(this));
 
 	if (delete_file) {
 		panther::DestroyFileContents(base);
@@ -572,9 +572,9 @@ PGScalar TextFile::GetMaxLineWidth(PGFontHandle font) {
 }
 
 static bool
-CursorsContainSelection(std::vector<Cursor*>& cursors) {
+CursorsContainSelection(const std::vector<Cursor>& cursors) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if (!(*it)->SelectionIsEmpty()) {
+		if (!(it->SelectionIsEmpty())) {
 			return true;
 		}
 	}
@@ -592,51 +592,51 @@ void TextFile::InsertText(PGUTF8Character u) {
 }
 
 void TextFile::InsertText(std::string text, size_t i) {
-	Cursor* cursor = cursors[i];
-	assert(cursor->SelectionIsEmpty());
-	lng insert_point = cursor->start_buffer_position;
-	PGTextBuffer* buffer = cursor->start_buffer;
+	Cursor& cursor = cursors[i];
+	assert(cursor.SelectionIsEmpty());
+	lng insert_point = cursor.start_buffer_position;
+	PGTextBuffer* buffer = cursor.start_buffer;
 	// invalidate parsing of the current buffer
 	buffer->parsed = false;
-	PGBufferUpdate update = PGTextBuffer::InsertText(buffers, cursor->start_buffer, insert_point, text, this->linecount);
+	PGBufferUpdate update = PGTextBuffer::InsertText(buffers, cursor.start_buffer, insert_point, text, this->linecount);
 	// since the split point can be BEFORE this cursor
 	// we need to look at previous cursors as well
 	// cursors before this cursor might also have to move to the new buffer
 	for (lng j = i - 1; j >= 0; j--) {
-		Cursor* c2 = cursors[j];
-		if (c2->start_buffer != buffer && c2->end_buffer != buffer) break;
+		Cursor& c2 = cursors[j];
+		if (c2.start_buffer != buffer && c2.end_buffer != buffer) break;
 		for (int bufpos = 0; bufpos < 2; bufpos++) {
 			if (update.new_buffer != nullptr) {
-				if (c2->BUFPOS(bufpos) > update.split_point) {
-					c2->BUF(bufpos) = update.new_buffer;
-					c2->BUFPOS(bufpos) -= update.split_point;
+				if (c2.BUFPOS(bufpos) > update.split_point) {
+					c2.BUF(bufpos) = update.new_buffer;
+					c2.BUFPOS(bufpos) -= update.split_point;
 				}
 			}
 		}
-		assert(c2->start_buffer_position < c2->start_buffer->current_size);
-		assert(c2->end_buffer_position < c2->end_buffer->current_size);
+		assert(c2.start_buffer_position < c2.start_buffer->current_size);
+		assert(c2.end_buffer_position < c2.end_buffer->current_size);
 	}
 	for (size_t j = i; j < cursors.size(); j++) {
-		Cursor* c2 = cursors[j];
-		if (c2->start_buffer != buffer) break;
+		Cursor& c2 = cursors[j];
+		if (c2.start_buffer != buffer) break;
 		for (int bufpos = 0; bufpos < 2; bufpos++) {
 			if (update.new_buffer == nullptr) {
-				c2->BUFPOS(bufpos) += update.split_point;
+				c2.BUFPOS(bufpos) += update.split_point;
 			} else {
-				if (c2->BUFPOS(bufpos) >= update.split_point) {
+				if (c2.BUFPOS(bufpos) >= update.split_point) {
 					// cursor moves to new buffer
-					c2->BUF(bufpos) = update.new_buffer;
-					c2->BUFPOS(bufpos) -= update.split_point;
+					c2.BUF(bufpos) = update.new_buffer;
+					c2.BUFPOS(bufpos) -= update.split_point;
 					if (insert_point >= update.split_point) {
-						c2->BUFPOS(bufpos) += text.size();
+						c2.BUFPOS(bufpos) += text.size();
 					}
 				} else {
-					c2->BUFPOS(bufpos) += text.size();
+					c2.BUFPOS(bufpos) += text.size();
 				}
 			}
 		}
-		assert(c2->start_buffer_position < c2->start_buffer->current_size);
-		assert(c2->end_buffer_position < c2->end_buffer->current_size);
+		assert(c2.start_buffer_position < c2.start_buffer->current_size);
+		assert(c2.end_buffer_position < c2.end_buffer->current_size);
 	}
 	if (update.new_buffer != nullptr) {
 		for (lng index = buffer->index + 1; index < buffers.size(); index++) {
@@ -647,11 +647,11 @@ void TextFile::InsertText(std::string text, size_t i) {
 }
 
 void TextFile::DeleteSelection(int i) {
-	Cursor* cursor = cursors[i];
-	assert(!cursor->SelectionIsEmpty());
+	Cursor& cursor = cursors[i];
+	assert(!cursor.SelectionIsEmpty());
 
-	auto begin = cursor->BeginCursorPosition();
-	auto end = cursor->EndCursorPosition();
+	auto begin = cursor.BeginCursorPosition();
+	auto end = cursor.EndCursorPosition();
 
 	begin.buffer->parsed = false;
 	end.buffer->parsed = false;
@@ -721,18 +721,18 @@ void TextFile::DeleteSelection(int i) {
 			// because overlapping cursors are not allowed
 			// however, we have to update any cursors after the selection
 			for (int j = i + 1; j < cursors.size(); j++) {
-				if (cursors[j]->start_buffer != end.buffer &&
-					cursors[j]->end_buffer != end.buffer) break;
+				if (cursors[j].start_buffer != end.buffer &&
+					cursors[j].end_buffer != end.buffer) break;
 				for (int bufpos = 0; bufpos < 2; bufpos++) {
-					if (cursors[j]->BUF(bufpos) == end.buffer) {
-						if (cursors[j]->BUFPOS(bufpos) < split_point) {
+					if (cursors[j].BUF(bufpos) == end.buffer) {
+						if (cursors[j].BUFPOS(bufpos) < split_point) {
 							// the cursor occurs on the text we moved to the begin line
 							// this means we have to move the cursor the begin buffer
-							cursors[j]->BUF(bufpos) = begin.buffer;
-							cursors[j]->BUFPOS(bufpos) = cursors[j]->BUFPOS(bufpos) + begin.position - end.position;
+							cursors[j].BUF(bufpos) = begin.buffer;
+							cursors[j].BUFPOS(bufpos) = cursors[j].BUFPOS(bufpos) + begin.position - end.position;
 						} else {
 							// otherwise, we offset the cursor by the deleted amount
-							cursors[j]->BUFPOS(bufpos) -= split_point + 1;
+							cursors[j].BUFPOS(bufpos) -= split_point + 1;
 						}
 					}
 				}
@@ -752,12 +752,12 @@ void TextFile::DeleteSelection(int i) {
 			// AFTER the selection but BEFORE the split point
 			// we have to move these cursors to the begin buffer
 			for (int j = i + 1; j < cursors.size(); j++) {
-				if (cursors[j]->start_buffer != end.buffer &&
-					cursors[j]->end_buffer != end.buffer) break;
+				if (cursors[j].start_buffer != end.buffer &&
+					cursors[j].end_buffer != end.buffer) break;
 				for (int bufpos = 0; bufpos < 2; bufpos++) {
-					if (cursors[j]->BUF(bufpos) == end.buffer) {
-						cursors[j]->BUF(bufpos) = begin.buffer;
-						cursors[j]->BUFPOS(bufpos) = begin.position + (cursors[j]->BUFPOS(bufpos) - end.position);
+					if (cursors[j].BUF(bufpos) == end.buffer) {
+						cursors[j].BUF(bufpos) = begin.buffer;
+						cursors[j].BUFPOS(bufpos) = begin.position + (cursors[j].BUFPOS(bufpos) - end.position);
 					}
 				}
 			}
@@ -769,20 +769,20 @@ void TextFile::DeleteSelection(int i) {
 		lines_deleted += begin.buffer->DeleteLines(begin.position, end.position);
 		begin.buffer->line_count -= lines_deleted;
 		for (int j = i + 1; j < cursors.size(); j++) {
-			if (cursors[j]->start_buffer != begin.buffer &&
-				cursors[j]->end_buffer != begin.buffer) break;
+			if (cursors[j].start_buffer != begin.buffer &&
+				cursors[j].end_buffer != begin.buffer) break;
 			for (int bufpos = 0; bufpos < 2; bufpos++) {
-				if (cursors[j]->BUF(bufpos) == begin.buffer) {
-					cursors[j]->BUFPOS(bufpos) -= deleted_text;
+				if (cursors[j].BUF(bufpos) == begin.buffer) {
+					cursors[j].BUFPOS(bufpos) -= deleted_text;
 				}
 			}
 		}
 	}
 	// update the current cursor so it only select the start of the selection
-	cursor->start_buffer = begin.buffer;
-	cursor->start_buffer_position = begin.position;
-	cursor->end_buffer_position = cursor->start_buffer_position;
-	cursor->end_buffer = cursor->start_buffer;
+	cursor.start_buffer = begin.buffer;
+	cursor.start_buffer_position = begin.position;
+	cursor.end_buffer_position = cursor.start_buffer_position;
+	cursor.end_buffer = cursor.start_buffer;
 
 	// delete linecount from line_lengths
 	// recompute line_lengths and cumulative width for begin buffer and end buffer
@@ -811,8 +811,8 @@ void TextFile::InsertText(std::string text) {
 }
 
 void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
-	Cursor* cursor = cursors[i];
-	assert(cursor->SelectionIsEmpty());
+	Cursor& cursor = cursors[i];
+	assert(cursor.SelectionIsEmpty());
 	// InsertText should be used to insert text to a line
 	assert(lines.size() > 1);
 	lng added_lines = lines.size() - 1;
@@ -821,13 +821,13 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 		InsertText(lines[0], i);
 	}
 
-	auto begin_position = cursor->BeginPosition();
+	auto begin_position = cursor.BeginPosition();
 
-	lng start_position = cursor->start_buffer_position;
-	PGTextBuffer* start_buffer = cursor->start_buffer;
+	lng start_position = cursor.start_buffer_position;
+	PGTextBuffer* start_buffer = cursor.start_buffer;
 
-	lng position = cursor->start_buffer_position;
-	PGTextBuffer* buffer = cursor->start_buffer;
+	lng position = cursor.start_buffer_position;
+	PGTextBuffer* buffer = cursor.start_buffer;
 
 	start_buffer->cumulative_width = -1;
 
@@ -901,10 +901,10 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 			position = buffer->current_size;
 		}
 	}
-	cursor->start_buffer = buffer;
-	cursor->start_buffer_position = buffer->current_size - cursor_offset - 1;
-	cursor->end_buffer = cursor->start_buffer;
-	cursor->end_buffer_position = cursor->start_buffer_position;
+	cursor.start_buffer = buffer;
+	cursor.start_buffer_position = buffer->current_size - cursor_offset - 1;
+	cursor.end_buffer = cursor.start_buffer;
+	cursor.end_buffer_position = cursor.start_buffer_position;
 	if (extra_buffer) {
 		// insert the extra buffer, if we have it
 		extra_buffer->next = buffer->next;
@@ -918,21 +918,21 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 		inserted_buffers = true;
 	}
 	for (size_t j = i + 1; j < cursors.size(); j++) {
-		if (cursors[j]->start_buffer != start_buffer &&
-			cursors[j]->end_buffer != start_buffer) break;
+		if (cursors[j].start_buffer != start_buffer &&
+			cursors[j].end_buffer != start_buffer) break;
 		for (int bufpos = 0; bufpos < 2; bufpos++) {
-			if (cursors[j]->BUFPOS(bufpos) >= start_position) {
-				if (cursors[j]->BUFPOS(bufpos) < line_position) {
+			if (cursors[j].BUFPOS(bufpos) >= start_position) {
+				if (cursors[j].BUFPOS(bufpos) < line_position) {
 					// the is on the same line as our initial cursor
 					// it is now part of the final buffer we inserted
-					cursors[j]->BUF(bufpos) = buffer;
-					cursors[j]->BUFPOS(bufpos) = buffer->current_size - (line_position - cursors[j]->BUFPOS(bufpos));
+					cursors[j].BUF(bufpos) = buffer;
+					cursors[j].BUFPOS(bufpos) = buffer->current_size - (line_position - cursors[j].BUFPOS(bufpos));
 				} else {
 					// the cursor occurs in the same initial buffer
 					// but not on the same line
 					// thus the cursor now points to the extra_buffer
-					cursors[j]->BUF(bufpos) = extra_buffer;
-					cursors[j]->BUFPOS(bufpos) = cursors[j]->BUFPOS(bufpos) - line_position;
+					cursors[j].BUF(bufpos) = extra_buffer;
+					cursors[j].BUFPOS(bufpos) = cursors[j].BUFPOS(bufpos) - line_position;
 				}
 			}
 		}
@@ -1144,52 +1144,52 @@ void TextFile::OffsetLineOffset(lng offset) {
 
 void TextFile::SetCursorLocation(lng line, lng character) {
 	ClearExtraCursors();
-	cursors[0]->SetCursorLocation(line, character);
+	cursors[0].SetCursorLocation(line, character);
 	if (textfield) textfield->SelectionChanged();
 }
 
 void TextFile::SetCursorLocation(lng start_line, lng start_character, lng end_line, lng end_character) {
 	ClearExtraCursors();
-	cursors[0]->SetCursorLocation(end_line, end_character);
-	cursors[0]->SetCursorStartLocation(start_line, start_character);
+	cursors[0].SetCursorLocation(end_line, end_character);
+	cursors[0].SetCursorStartLocation(start_line, start_character);
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::SetCursorLocation(PGTextRange range) {
 	ClearExtraCursors();
-	cursors[0]->SetCursorLocation(range);
+	cursors[0].SetCursorLocation(range);
 	Cursor::NormalizeCursors(this, cursors);
 
 }
 
 void TextFile::AddNewCursor(lng line, lng character) {
-	cursors.push_back(new Cursor(this, line, character));
-	active_cursor = cursors.back();
+	cursors.push_back(Cursor(this, line, character));
+	active_cursor = cursors.size() - 1;
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	Cursor::NormalizeCursors(this, cursors, false);
 }
 
 void TextFile::OffsetLine(lng offset) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetLine(offset);
+		it->OffsetLine(offset);
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetSelectionLine(lng offset) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetSelectionLine(offset);
+		it->OffsetSelectionLine(offset);
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetCharacter(PGDirection direction) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		if ((*it)->SelectionIsEmpty()) {
-			(*it)->OffsetCharacter(direction);
+		if (it->SelectionIsEmpty()) {
+			it->OffsetCharacter(direction);
 		} else {
-			auto pos = direction == PGDirectionLeft ? (*it)->BeginCharacterPosition() : (*it)->EndCharacterPosition();
-			(*it)->SetCursorLocation(pos.line, pos.character);
+			auto pos = direction == PGDirectionLeft ? it->BeginCharacterPosition() : it->EndCharacterPosition();
+			it->SetCursorLocation(pos.line, pos.character);
 		}
 	}
 	Cursor::NormalizeCursors(this, cursors);
@@ -1197,108 +1197,102 @@ void TextFile::OffsetCharacter(PGDirection direction) {
 
 void TextFile::OffsetSelectionCharacter(PGDirection direction) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetSelectionCharacter(direction);
+		it->OffsetSelectionCharacter(direction);
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetWord(PGDirection direction) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetWord(direction);
+		it->OffsetWord(direction);
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetSelectionWord(PGDirection direction) {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetSelectionWord(direction);
+		it->OffsetSelectionWord(direction);
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetStartOfLine() {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetStartOfLine();
+		it->OffsetStartOfLine();
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::SelectStartOfLine() {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->SelectStartOfLine();
+		it->SelectStartOfLine();
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetStartOfFile() {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetStartOfFile();
+		it->OffsetStartOfFile();
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::SelectStartOfFile() {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->SelectStartOfFile();
+		it->SelectStartOfFile();
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetEndOfLine() {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetEndOfLine();
+		it->OffsetEndOfLine();
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::SelectEndOfLine() {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->SelectEndOfLine();
+		it->SelectEndOfLine();
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::OffsetEndOfFile() {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->OffsetEndOfFile();
+		it->OffsetEndOfFile();
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::SelectEndOfFile() {
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		(*it)->SelectEndOfFile();
+		it->SelectEndOfFile();
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
 void TextFile::ClearExtraCursors() {
 	if (cursors.size() > 1) {
-		for (auto it = cursors.begin() + 1; it != cursors.end(); it++) {
-			delete *it;
-		}
 		cursors.erase(cursors.begin() + 1, cursors.end());
 	}
-	active_cursor = cursors.front();
+	active_cursor = 0;
 }
 
 void TextFile::ClearCursors() {
-	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		delete *it;
-	}
 	cursors.clear();
-	active_cursor = nullptr;
+	active_cursor = -1;
 }
 
-Cursor*& TextFile::GetActiveCursor() {
-	if (active_cursor == nullptr)
-		active_cursor = cursors.front();
-	return active_cursor;
+Cursor& TextFile::GetActiveCursor() {
+	if (active_cursor < 0)
+		active_cursor = 0;
+	return cursors[active_cursor];
 }
 
 void TextFile::SelectEverything() {
 	ClearCursors();
-	this->cursors.push_back(new Cursor(this, linecount - 1, GetLine(linecount - 1).GetLength(), 0, 0));
+	this->cursors.push_back(Cursor(this, linecount - 1, GetLine(linecount - 1).GetLength(), 0, 0));
 	if (this->textfield) textfield->SelectionChanged();
 }
 
@@ -1313,9 +1307,9 @@ std::vector<Interval> TextFile::GetCursorIntervals() {
 	assert(is_loaded);
 	std::vector<Interval> intervals;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		auto begin_position = (*it)->BeginPosition();
-		auto end_position = (*it)->BeginPosition();
-		intervals.push_back(Interval(begin_position.line, end_position.line, *it));
+		auto begin_position = it->BeginPosition();
+		auto end_position = it->BeginPosition();
+		intervals.push_back(Interval(begin_position.line, end_position.line, &*it));
 	}
 	// if we get here we know the movement is possible
 	// first merge the different intervals so each interval is "standalone" (i.e. not adjacent to another interval)
@@ -1366,7 +1360,7 @@ std::string TextFile::CutText() {
 	std::string text = CopyText();
 	if (!CursorsContainSelection(cursors)) {
 		for (auto it = cursors.begin(); it != cursors.end(); it++) {
-			(*it)->SelectLine();
+			it->SelectLine();
 		}
 		Cursor::NormalizeCursors(this, cursors, false);
 	}
@@ -1380,11 +1374,11 @@ std::string TextFile::CopyText() {
 	if (CursorsContainSelection(cursors)) {
 		bool first_copy = true;
 		for (auto it = cursors.begin(); it != cursors.end(); it++) {
-			if (!(*it)->SelectionIsEmpty()) {
+			if (!(it->SelectionIsEmpty())) {
 				if (!first_copy) {
 					text += NEWLINE_CHARACTER;
 				}
-				text += (*it)->GetText();
+				text += it->GetText();
 				first_copy = false;
 			}
 		}
@@ -1393,7 +1387,7 @@ std::string TextFile::CopyText() {
 			if (it != cursors.begin()) {
 				text += NEWLINE_CHARACTER;
 			}
-			text += (*it)->GetLine();
+			text += it->GetLine();
 		}
 	}
 	return text;
@@ -1440,19 +1434,19 @@ void TextFile::VerifyPartialTextfile() {
 	assert(linecount == total_lines);
 	assert(cursors.size() > 0);
 	for (int i = 0; i < cursors.size(); i++) {
-		Cursor* c = cursors[i];
+		Cursor& c = cursors[i];
 		if (i < cursors.size() - 1) {
-			auto end_position = c->EndCursorPosition();
-			auto begin_position = cursors[i + 1]->BeginCursorPosition();
+			auto end_position = c.EndCursorPosition();
+			auto begin_position = cursors[i + 1].BeginCursorPosition();
 			if (!(end_position.buffer == begin_position.buffer && end_position.position == begin_position.position)) {
 				assert(Cursor::CursorPositionOccursFirst(end_position.buffer, end_position.position,
 					begin_position.buffer, begin_position.position));
 			}
 		}
-		assert(c->start_buffer_position >= 0 && c->start_buffer_position < c->start_buffer->current_size);
-		assert(c->end_buffer_position >= 0 && c->end_buffer_position < c->end_buffer->current_size);
-		assert(std::find(buffers.begin(), buffers.end(), c->start_buffer) != buffers.end());
-		assert(std::find(buffers.begin(), buffers.end(), c->end_buffer) != buffers.end());
+		assert(c.start_buffer_position >= 0 && c.start_buffer_position < c.start_buffer->current_size);
+		assert(c.end_buffer_position >= 0 && c.end_buffer_position < c.end_buffer->current_size);
+		assert(std::find(buffers.begin(), buffers.end(), c.start_buffer) != buffers.end());
+		assert(std::find(buffers.begin(), buffers.end(), c.end_buffer) != buffers.end());
 	}
 #endif
 }
@@ -1637,7 +1631,7 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 				PerformOperation(add->next, redo);
 			}
 			for (size_t i = 0; i < cursors.size(); i++) {
-				assert(cursors[i]->SelectionIsEmpty());
+				assert(cursors[i].SelectionIsEmpty());
 				if (add->lines.size() == 1) {
 					InsertText(add->lines[0], i);
 				} else {
@@ -1654,9 +1648,9 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			RemoveText* remove = (RemoveText*)delta;
 			assert(CursorsContainSelection(cursors));
 			for (size_t i = 0; i < cursors.size(); i++) {
-				if (!cursors[i]->SelectionIsEmpty()) {
+				if (!cursors[i].SelectionIsEmpty()) {
 					if (!redo) {
-						remove->removed_text.push_back(cursors[i]->GetText());
+						remove->removed_text.push_back(cursors[i].GetText());
 						remove->stored_cursors.push_back(BackupCursor(i));
 					}
 					DeleteSelection(i);
@@ -1676,9 +1670,9 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			for (int i = 0; i < cursors.size(); i++) {
 				if (remove->direction == PGDirectionLeft) {
-					cursors[i]->SelectStartOfLine();
+					cursors[i].SelectStartOfLine();
 				} else {
-					cursors[i]->SelectEndOfLine();
+					cursors[i].SelectEndOfLine();
 				}
 			}
 			if (!CursorsContainSelection(cursors)) {
@@ -1698,7 +1692,7 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			if (!CursorsContainSelection(cursors)) {
 				for (auto it = cursors.begin(); it != cursors.end(); it++) {
-					(*it)->OffsetSelectionWord(remove->direction);
+					it->OffsetSelectionWord(remove->direction);
 				}
 			}
 			if (!CursorsContainSelection(cursors)) {
@@ -1718,7 +1712,7 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			if (!CursorsContainSelection(cursors)) {
 				for (auto it = cursors.begin(); it != cursors.end(); it++) {
-					(*it)->OffsetSelectionCharacter(remove->direction);
+					it->OffsetSelectionCharacter(remove->direction);
 				}
 			}
 			if (!CursorsContainSelection(cursors)) {
@@ -1738,9 +1732,9 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			for (auto it = cursors.begin(); it != cursors.end(); it++) {
 				if (ins->direction == PGDirectionLeft) {
-					(*it)->OffsetStartOfLine();
+					it->OffsetStartOfLine();
 				} else {
-					(*it)->OffsetEndOfLine();
+					it->OffsetEndOfLine();
 				}
 			}
 			Cursor::NormalizeCursors(this, cursors, false);
@@ -1764,7 +1758,7 @@ void TextFile::Undo(AddText& delta, int i) {
 	for (int line = 0; line < delta.lines.size(); line++) {
 		offset += delta.lines[line].size() + 1;
 	}
-	cursors[i]->OffsetSelectionPosition(-offset);
+	cursors[i].OffsetSelectionPosition(-offset);
 	DeleteSelection(i);
 }
 
@@ -1801,7 +1795,6 @@ void TextFile::Undo(TextDelta* delta) {
 				int index = delta->stored_cursors.size() - (i + 1);
 				cursors.insert(cursors.begin(), RestoreCursorPartial(delta->stored_cursors[index]));
 				Undo(*remove, remove->removed_text[index], 0);
-				delete cursors[0];
 				cursors[0] = RestoreCursor(delta->stored_cursors[index]);
 			}
 			break;
@@ -1978,28 +1971,28 @@ void TextFile::RemoveTrailingWhitespace() {
 std::vector<CursorData> TextFile::BackupCursors() {
 	std::vector<CursorData> backup;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
-		backup.push_back((*it)->GetCursorData());
+		backup.push_back(it->GetCursorData());
 	}
 	return backup;
 }
 
 CursorData TextFile::BackupCursor(int i) {
-	return cursors[i]->GetCursorData();
+	return cursors[i].GetCursorData();
 }
 
 void TextFile::RestoreCursors(std::vector<CursorData>& data) {
 	ClearCursors();
 	for (auto it = data.begin(); it != data.end(); it++) {
-		cursors.push_back(new Cursor(this, *it));
+		cursors.push_back(Cursor(this, *it));
 	}
 	Cursor::NormalizeCursors(this, cursors);
 }
 
-Cursor* TextFile::RestoreCursor(CursorData data) {
-	return new Cursor(this, data);
+Cursor TextFile::RestoreCursor(CursorData data) {
+	return Cursor(this, data);
 }
 
-Cursor* TextFile::RestoreCursorPartial(CursorData data) {
+Cursor TextFile::RestoreCursorPartial(CursorData data) {
 	if (data.start_line < data.end_line ||
 		(data.start_line == data.end_line && data.start_position < data.end_position)) {
 		data.end_line = data.start_line;
@@ -2008,7 +2001,7 @@ Cursor* TextFile::RestoreCursorPartial(CursorData data) {
 		data.start_line = data.end_line;
 		data.start_position = data.end_position;
 	}
-	return new Cursor(this, data);
+	return Cursor(this, data);
 }
 
 PGTextRange TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
@@ -2228,8 +2221,8 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 	// otherwise, search only for the next match in either direction
 	*error_message = nullptr;
 	Lock(PGReadLock);
-	auto begin = GetActiveCursor()->BeginCursorPosition();
-	auto end = GetActiveCursor()->EndCursorPosition();
+	auto begin = GetActiveCursor().BeginCursorPosition();
+	auto end = GetActiveCursor().EndCursorPosition();
 	match = this->FindMatch(text, direction,
 		include_selection ? end.buffer : begin.buffer,
 		include_selection ? end.position : begin.position,
@@ -2256,10 +2249,9 @@ void TextFile::SelectMatches() {
 	assert(matches.size() > 0);
 	ClearCursors();
 	for (auto it = matches.begin(); it != matches.end(); it++) {
-		Cursor* c = new Cursor(this, *it);
-		cursors.push_back(c);
+		cursors.push_back(Cursor(this, *it));
 	}
-	active_cursor = cursors[0];
+	active_cursor = 0;
 	VerifyTextfile();
 	if (textfield) textfield->SelectionChanged();
 }
@@ -2351,7 +2343,7 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
 			it->start_line = std::min(linecount - 1, std::max((lng)0, it->start_line));
 			it->end_line = std::min(linecount - 1, std::max((lng)0, it->end_line));
-			this->cursors.push_back(new Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
+			this->cursors.push_back(Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
 		}
 		settings.cursor_data.clear();
 	}

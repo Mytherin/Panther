@@ -94,7 +94,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		xoffset = textfile->GetXOffset();
 	PGScalar y = Y() - rectangle->y;
 	auto start_line = textfile->GetLineOffset();
-	const std::vector<Cursor*>& cursors = textfile->GetCursors();
+	const std::vector<Cursor>& cursors = textfile->GetCursors();
 	TextLine current_line;
 	PGColor selection_color = PGStyleManager::GetColor(PGColorTextFieldSelection);
 	PGScalar line_height = GetTextHeight(font);
@@ -111,7 +111,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 	std::string selected_word = std::string();
 	if (!minimap) {
-		selected_word = cursors[0]->GetSelectedWord();
+		selected_word = cursors[0].GetSelectedWord();
 	}
 	PGScalar text_offset = position_x_text - position_x - margin_width * 2;
 	if (!minimap && display_linenumbers) {
@@ -147,12 +147,12 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			PGTextRange current_range = line_iterator->GetCurrentRange();
 			if (selected_line < 0) {
 				// figure out the first cursor we could want to render with a binary search
-				auto entry = std::lower_bound(cursors.begin(), cursors.end(), current_range.startpos(), [](const Cursor* lhs, const PGTextPosition& rhs) -> bool {
-					return lhs->BeginCursorPosition() < rhs;
+				auto entry = std::lower_bound(cursors.begin(), cursors.end(), current_range.startpos(), [](const Cursor& lhs, const PGTextPosition& rhs) -> bool {
+					return lhs.BeginCursorPosition() < rhs;
 				});
 				lng selected_entry = entry - cursors.begin();
 				current_cursor = std::max((lng) 0, std::min(selected_entry, (lng) cursors.size() - 1));
-				selected_line = cursors[current_cursor]->SelectedPosition().line;
+				selected_line = cursors[current_cursor].SelectedPosition().line;
 			}
 
 			assert(current_line.GetLength() >= 0);
@@ -193,7 +193,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 			// render the selections and cursors, if there are any on this line
 			while (current_cursor < cursors.size()) {
-				PGTextRange range = cursors[current_cursor]->GetCursorSelection();
+				PGTextRange range = cursors[current_cursor].GetCursorSelection();
 				if (range > current_range) {
 					// this cursor is not rendered on this line yet
 					break;
@@ -203,7 +203,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					// move to the next cursor
 					current_cursor++;
 					if (current_cursor < cursors.size()) {
-						selected_line = cursors[current_cursor]->SelectedPosition().line;
+						selected_line = cursors[current_cursor].SelectedPosition().line;
 					}
 					continue;
 				}
@@ -242,7 +242,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				}
 
 				if (!minimap && display_carets) {
-					PGTextPosition selected_position = cursors[current_cursor]->SelectedCursorPosition();
+					PGTextPosition selected_position = cursors[current_cursor].SelectedCursorPosition();
 					if (selected_position >= current_range.startpos() && selected_position <= current_range.endpos()) {
 						// render the caret on the selected line
 						lng render_position = selected_position.position - current_range.start_position;
@@ -260,7 +260,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 				if (end < length) {
 					current_cursor++;
 					if (current_cursor < cursors.size()) {
-						selected_line = cursors[current_cursor]->SelectedPosition().line;
+						selected_line = cursors[current_cursor].SelectedPosition().line;
 					}
 					continue;
 				}
@@ -611,19 +611,19 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			textfile->SetCursorLocation(line, character);
 
 		} else if (modifier == PGModifierShift) {
-			textfile->GetActiveCursor()->SetCursorStartLocation(line, character);
+			textfile->GetActiveCursor().SetCursorStartLocation(line, character);
 		} else if (modifier == PGModifierCtrl) {
 			textfile->AddNewCursor(line, character);
 		} else if (last_click.clicks == 1) {
 			textfile->SetCursorLocation(line, character);
-			Cursor* active_cursor = textfile->GetActiveCursor();
-			active_cursor->SelectWord();
-			minimal_selections[active_cursor] = active_cursor->GetCursorSelection();
+			Cursor& active_cursor = textfile->GetActiveCursor();
+			active_cursor.SelectWord();
+			minimal_selections[textfile->active_cursor] = active_cursor.GetCursorSelection();
 		} else if (last_click.clicks == 2) {
 			textfile->SetCursorLocation(line, character);
-			Cursor* active_cursor = textfile->GetActiveCursor();
-			active_cursor->SelectLine();
-			minimal_selections[active_cursor] = active_cursor->GetCursorSelection();
+			Cursor& active_cursor = textfile->GetActiveCursor();
+			active_cursor.SelectLine();
+			minimal_selections[textfile->active_cursor] = active_cursor.GetCursorSelection();
 		}
 	} else if (button == PGMiddleMouseButton) {
 		if (drag_type == PGDragSelection) return;
@@ -720,13 +720,13 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			// the active cursor can never "consume" the other selections (they should always stay)
 			lng line, character;
 			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-			Cursor* active_cursor = textfile->GetActiveCursor();
-			auto selected_pos = active_cursor->SelectedCharacterPosition();
+			Cursor& active_cursor = textfile->GetActiveCursor();
+			auto selected_pos = active_cursor.SelectedCharacterPosition();
 			if (selected_pos.line != line || selected_pos.character != character) {
 				lng old_line = selected_pos.line;
-				active_cursor->SetCursorStartLocation(line, character);
-				if (minimal_selections.count(active_cursor) > 0) {
-					active_cursor->ApplyMinimalSelection(minimal_selections[active_cursor]);
+				active_cursor.SetCursorStartLocation(line, character);
+				if (minimal_selections.count(textfile->active_cursor) > 0) {
+					active_cursor.ApplyMinimalSelection(minimal_selections[textfile->active_cursor]);
 				}
 				Cursor::NormalizeCursors(textfile, textfile->GetCursors());
 			}
@@ -741,9 +741,9 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			lng line, character;
 			mouse.x = mouse.x - text_offset + textfile->GetXOffset();
 			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-			std::vector<Cursor*>& cursors = textfile->GetCursors();
-			Cursor* active_cursor = textfile->GetActiveCursor();
-			auto end_pos = active_cursor->UnselectedPosition();
+			std::vector<Cursor>& cursors = textfile->GetCursors();
+			Cursor& active_cursor = textfile->GetActiveCursor();
+			auto end_pos = active_cursor.UnselectedPosition();
 			auto start_scroll = textfile->GetVerticalScroll(end_pos.line, end_pos.position);
 			textfile->ClearCursors();
 			bool backwards = end_pos.line > line || (end_pos.line == line && end_pos.position > character);
@@ -786,7 +786,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 						start_position = end_position;
 					}
 
-					Cursor* cursor = new Cursor(textfile, iterator_line, iterator_character + end_position, iterator_line, iterator_character + start_position);
+					Cursor cursor = Cursor(textfile, iterator_line, iterator_character + end_position, iterator_line, iterator_character + start_position);
 					if (backwards) {
 						cursors.insert(cursors.begin(), cursor);
 					} else {
@@ -801,7 +801,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				}
 			}
 			if (backwards) {
-				textfile->active_cursor = cursors.back();
+				textfile->active_cursor = cursors.size() - 1;
 			}
 			this->Invalidate();
 		}

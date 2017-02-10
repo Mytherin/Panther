@@ -161,9 +161,9 @@ public:
 	CursorData BackupCursor(int i);
 
 	void RestoreCursors(std::vector<CursorData>& data);
-	Cursor* RestoreCursor(CursorData data);
+	Cursor RestoreCursor(CursorData data);
 	// same as RestoreCursor, but selections are replaced by the LOWEST value
-	Cursor* RestoreCursorPartial(CursorData data);
+	Cursor RestoreCursorPartial(CursorData data);
 
 	PGScalar GetMaxLineWidth(PGFontHandle font);
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
@@ -177,8 +177,8 @@ public:
 	PGVerticalScroll GetVerticalScroll(lng linenumber, lng characternr);
 	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset);
 	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset, lng& lines_offset);
-	Cursor*& GetActiveCursor();
-	std::vector<Cursor*>& GetCursors() { return cursors; }
+	Cursor& GetActiveCursor();
+	std::vector<Cursor>& GetCursors() { return cursors; }
 	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
@@ -249,8 +249,8 @@ private:
 	bool wordwrap = false;
 	PGScalar wordwrap_width;
 
-	std::vector<Cursor*> cursors;
-	Cursor* active_cursor;
+	std::vector<Cursor> cursors;
+	lng active_cursor;
 
 	void OpenFile(char* base_data, lng size, bool delete_file);
 
