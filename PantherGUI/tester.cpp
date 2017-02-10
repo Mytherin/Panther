@@ -24,6 +24,7 @@ void Tester::RunTextFileTest(std::string name, TextFileTestFunction testFunction
 #endif
 	fwrite(input.c_str(), input.size(), 1, f);
 	fclose(f);
+	std::cout << "START TEST " << name << ": " << std::flush;
 	// create a temporary textfile
 	PGFileError error;
 	TextFile* textfile = TextFile::OpenTextFile(nullptr, TEMPORARY_FILE, error, true);
@@ -43,13 +44,14 @@ void Tester::RunTextFileTest(std::string name, TextFileTestFunction testFunction
 			resultingText += "\n";
 	}
 	if (resultingText != expectedOutput) {
+		std::cout << "FAILED" << std::endl;
 		std::cout << "Tester failed test " << name << " with incorrect output." << std::endl;
 		std::cout << "Expected output:" << std::endl;
 		std::cout << expectedOutput << std::endl;
 		std::cout << "Actual output:" << std::endl;
 		std::cout << resultingText << std::endl;
 	} else {
-		std::cout << "SUCCESS: Test " << name << std::endl;
+		std::cout << "SUCCESS" << std::endl;
 	}
 }
 

@@ -134,30 +134,9 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position, lng total_lines) {
 	assert(position <= current_size);
 	PGCursorPosition pos;
-	pos.line = start_line;
-	pos.position = 0;
-
-	lng next_line = next ? next->start_line : total_lines;
-
-	if (pos.line + 1 == next_line) {
-		pos.position = position;
-		return pos;
-	}
-
-	for (ulng i = 0; i < position; ) {
-		int offset = utf8_character_length(buffer[i]);
-		if (buffer[i] == '\n') {
-			pos.line++;
-			pos.position = 0;
-			if (pos.line + 1 == next_line) {
-				pos.position = position - i - 1;
-				return pos;
-			}
-		} else {
-			pos.position += offset;
-		}
-		i += offset;
-	}
+	lng line_end = GetStartLine(position);
+	pos.line = start_line + line_end;
+	pos.position = position - (line_end == 0 ? 0 : line_start[line_end - 1]);
 	return pos;
 }
 

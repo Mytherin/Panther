@@ -664,6 +664,8 @@ void TextFile::DeleteSelection(int i) {
 
 	if (end.buffer != begin.buffer) {
 		lines_deleted += begin.buffer->DeleteLines(begin.position);
+		begin.buffer->line_count -= lines_deleted;
+
 		buffer = buffer->next;
 
 		lng buffer_position = PGTextBuffer::GetBuffer(buffers, begin.buffer);
@@ -712,6 +714,7 @@ void TextFile::DeleteSelection(int i) {
 			begin.buffer->next = end.buffer;
 			end.buffer->prev = begin.buffer;
 			start_index = end.buffer->index + 1;
+			InvalidateBuffer(end.buffer);
 
 			end.buffer->VerifyBuffer();
 			// we know there are no cursors within the selection
@@ -764,6 +767,7 @@ void TextFile::DeleteSelection(int i) {
 		lng deleted_text = end.position - begin.position;
 		// in this case, we only need to update cursors in this buffer
 		lines_deleted += begin.buffer->DeleteLines(begin.position, end.position);
+		begin.buffer->line_count -= lines_deleted;
 		for (int j = i + 1; j < cursors.size(); j++) {
 			if (cursors[j]->start_buffer != begin.buffer &&
 				cursors[j]->end_buffer != begin.buffer) break;
@@ -780,12 +784,11 @@ void TextFile::DeleteSelection(int i) {
 	cursor->end_buffer_position = cursor->start_buffer_position;
 	cursor->end_buffer = cursor->start_buffer;
 
-	begin.buffer->VerifyBuffer();
-
 	// delete linecount from line_lengths
 	// recompute line_lengths and cumulative width for begin buffer and end buffer
 	InvalidateBuffer(begin.buffer);
-	InvalidateBuffer(end.buffer);
+
+	begin.buffer->VerifyBuffer();
 
 	if (buffers_deleted > 0 || lines_deleted > 0) {
 		for (lng i = start_index; i < buffers.size(); i++) {
@@ -793,7 +796,9 @@ void TextFile::DeleteSelection(int i) {
 			buffers[i]->start_line -= lines_deleted;
 			buffers[i]->VerifyBuffer();
 		}
+		linecount -= lines_deleted;
 	}
+	VerifyPartialTextfile();
 }
 
 // insert text into the textfile at each cursors' position
@@ -921,13 +926,13 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 					// the is on the same line as our initial cursor
 					// it is now part of the final buffer we inserted
 					cursors[j]->BUF(bufpos) = buffer;
-					cursors[j]->BUFPOS(bufpos) = buffer->current_size - (line_position - cursors[j]->BUFPOS(bufpos)) - 1;
+					cursors[j]->BUFPOS(bufpos) = buffer->current_size - (line_position - cursors[j]->BUFPOS(bufpos));
 				} else {
 					// the cursor occurs in the same initial buffer
 					// but not on the same line
 					// thus the cursor now points to the extra_buffer
 					cursors[j]->BUF(bufpos) = extra_buffer;
-					cursors[j]->BUFPOS(bufpos) = cursors[j]->BUFPOS(bufpos) - line_position - 1;
+					cursors[j]->BUFPOS(bufpos) = cursors[j]->BUFPOS(bufpos) - line_position;
 				}
 			}
 		}
@@ -944,6 +949,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 		buffer->start_line += added_lines;
 		buffer = buffer->next;
 	}
+	linecount += added_lines;
 
 	if (inserted_buffers) {
 		for (lng i = start_buffer->index; i < buffers.size(); i++) {
@@ -952,6 +958,7 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 	}
 
 	InvalidateBuffer(start_buffer);
+	VerifyPartialTextfile();
 }
 
 // insert text into the textfile at each cursors' position
@@ -1402,8 +1409,56 @@ void TextFile::PasteText(std::string& text) {
 	}
 }
 
+void TextFile::VerifyPartialTextfile() {
+#ifdef PANTHER_DEBUG
+	lng total_lines = 0;
+	for (size_t i = 0; i < buffers.size(); i++) {
+		PGTextBuffer* buffer = buffers[i];
+		buffer->VerifyBuffer();
+		assert(buffers[i]->index == i);
+		lng current_lines = 0;
+		for (lng j = 0; j < buffer->current_size; j++) {
+			if (buffer->buffer[j] == '\n') {
+				current_lines++;
+			}
+		}
+		assert(buffers[i]->start_line == total_lines);
+		assert(buffers[i]->line_count == current_lines);
+		total_lines += current_lines;
+		if (i < buffers.size() - 1) {
+			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
+			assert(buffers[i]->next == buffers[i + 1]);
+			// only the final buffer can end with a non-newline character
+			assert(buffers[i]->buffer[buffers[i]->current_size - 1] == '\n');
+		}
+		if (i > 0) {
+			assert(buffers[i]->prev == buffers[i - 1]);
+		}
+		assert(buffers[i]->current_size < buffers[i]->buffer_size);
+	}
+	assert(linecount == total_lines);
+	assert(cursors.size() > 0);
+	for (int i = 0; i < cursors.size(); i++) {
+		Cursor* c = cursors[i];
+		if (i < cursors.size() - 1) {
+			auto end_position = c->EndCursorPosition();
+			auto begin_position = cursors[i + 1]->BeginCursorPosition();
+			if (!(end_position.buffer == begin_position.buffer && end_position.position == begin_position.position)) {
+				assert(Cursor::CursorPositionOccursFirst(end_position.buffer, end_position.position,
+					begin_position.buffer, begin_position.position));
+			}
+		}
+		assert(c->start_buffer_position >= 0 && c->start_buffer_position < c->start_buffer->current_size);
+		assert(c->end_buffer_position >= 0 && c->end_buffer_position < c->end_buffer->current_size);
+		assert(std::find(buffers.begin(), buffers.end(), c->start_buffer) != buffers.end());
+		assert(std::find(buffers.begin(), buffers.end(), c->end_buffer) != buffers.end());
+	}
+#endif
+}
+
 void TextFile::VerifyTextfile() {
 #ifdef PANTHER_DEBUG
+	VerifyPartialTextfile();
 	lng total_lines = 0;
 	double measured_width = 0;
 	for (size_t i = 0; i < buffers.size(); i++) {
@@ -1443,23 +1498,6 @@ void TextFile::VerifyTextfile() {
 			assert(buffers[i]->prev == buffers[i - 1]);
 		}
 		assert(buffers[i]->current_size < buffers[i]->buffer_size);
-	}
-	assert(panther::epsilon_equals(total_width, measured_width));
-	assert(cursors.size() > 0);
-	for (int i = 0; i < cursors.size(); i++) {
-		Cursor* c = cursors[i];
-		if (i < cursors.size() - 1) {
-			auto end_position = c->EndCursorPosition();
-			auto begin_position = cursors[i + 1]->BeginCursorPosition();
-			if (!(end_position.buffer == begin_position.buffer && end_position.position == begin_position.position)) {
-				assert(Cursor::CursorPositionOccursFirst(end_position.buffer, end_position.position,
-					begin_position.buffer, begin_position.position));
-			}
-		}
-		assert(c->start_buffer_position >= 0 && c->start_buffer_position < c->start_buffer->current_size);
-		assert(c->end_buffer_position >= 0 && c->end_buffer_position < c->end_buffer->current_size);
-		assert(std::find(buffers.begin(), buffers.end(), c->start_buffer) != buffers.end());
-		assert(std::find(buffers.begin(), buffers.end(), c->end_buffer) != buffers.end());
 	}
 #endif
 }

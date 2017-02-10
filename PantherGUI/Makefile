@@ -29,7 +29,7 @@ LDFLAGS=-framework AppKit -lobjc -L/opt/local/lib $(ICU_LDFLAGS) $(SKIA_LDFLAGS)
 INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) -Ithird_party/re2
 
 ifneq ($(OPTIMIZE), true)
-	CPPFLAGS+=-DPANTHER_DEBUG
+	CPPFLAGS+=-DPANTHER_DEBUG -DPANTHER_TESTS
 endif
 
 COBJECTS=$(OBJDIR)/basictextfield.o \
@@ -77,7 +77,6 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/xml.o 
 
 OBJCOBJECTS=$(OBJDIR)/AppDelegate.o \
-			$(OBJDIR)/main.o \
 			$(OBJDIR)/PGView.o \
 			$(OBJDIR)/PGWindow.o
 
@@ -102,9 +101,17 @@ RE2OBJECTS=$(OBJDIR)/bitstate.o \
 		   $(OBJDIR)/strutil.o \
 		   $(OBJDIR)/tostring.o \
 		   $(OBJDIR)/unicode_casefold.o \
-		   $(OBJDIR)/unicode_groups.o 
+		   $(OBJDIR)/unicode_groups.o
 
-all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) panther.app
+MAINOBJECTS=$(OBJDIR)/main.o
+
+TESTOBJECTS=$(OBJDIR)/testmain.o \
+			$(OBJDIR)/tester.o
+
+all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(MAINOBJECTS) panther.app
+
+test: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(TESTOBJECTS) test_output
+
 
 clean:
 	rm -rf $(OBJDIR)
@@ -130,5 +137,8 @@ $(OBJDIR)/%.o: %.mm
 $(OBJDIR)/%.o: %.cpp
 	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.cpp,$@)) -o $@
 
+test_output:
+	$(CCPP) $(OBJCFLAGS) $(LDFLAGS) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OBJCOBJECTS) $(RE2OBJECTS) $(COBJECTS) $(TESTOBJECTS) $(OPTFLAGS) -o test.out
+
 panther.app: 
-	$(CCPP) $(OBJCFLAGS) $(LDFLAGS) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OBJCOBJECTS) $(RE2OBJECTS) $(COBJECTS) $(OPTFLAGS) -o main.app
+	$(CCPP) $(OBJCFLAGS) $(LDFLAGS) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OBJCOBJECTS) $(RE2OBJECTS) $(MAINOBJECTS) $(COBJECTS) $(OPTFLAGS) -o main.app

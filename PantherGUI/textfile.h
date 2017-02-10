@@ -154,6 +154,7 @@ public:
 
 	int GetLineHeight();
 
+	void VerifyPartialTextfile();
 	void VerifyTextfile();
 
 	std::vector<CursorData> BackupCursors();

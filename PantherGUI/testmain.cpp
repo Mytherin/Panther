@@ -151,7 +151,7 @@ void SetClipboardText(std::string text) {
 	_clipboard_text = text;
 }
 
-std::string GetClipboardText() {
+std::string& GetClipboardText() {
 	return _clipboard_text;
 }
 
