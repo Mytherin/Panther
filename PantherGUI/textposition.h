@@ -89,6 +89,13 @@ struct PGTextRange {
 	char* end() const { return end_buffer->buffer + end_position; }
 
 	void remove_prefix(size_t length);
+private:
+	template<void* T(const void *s, int c, size_t n)>
+	PGTextPosition _reverse_buffer_lookup(int value) const;
+	template<int T(const void* a, const void* b, size_t len)>
+	int _buffer_comparison(const char* data, size_t length) const;
+	template<void* T(const void *s, int c, size_t n)>
+	PGTextPosition _buffer_lookup(int value) const;
 };
 
 

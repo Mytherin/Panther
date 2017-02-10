@@ -1349,15 +1349,19 @@ inline bool DFA::InlinedSearchLoop(SearchParams* params,
           current_buffer = position.buffer == nullptr ? piece->end_buffer : position.buffer;
           ep = (const uint8_t*) current_buffer->buffer +  (piece->start_buffer == piece->end_buffer ? piece->end_position : current_buffer->current_size);
           p = position.buffer == nullptr ? ep : (const uint8_t*) current_buffer->buffer + position.position;
-          if (position.buffer == nullptr) break;
+          if (position.buffer == nullptr) {
+            break;
+          }
         } else {
           PGTextRange remaining_text(piece->startpos(), PGTextPosition(current_buffer, (char*)p));
           PGTextPosition position = remaining_text._memrchr(params->firstbyte);
           if (position.buffer != nullptr) position = position + 1;
-          current_buffer = position.buffer == nullptr ? piece->end_buffer : position.buffer;
+          current_buffer = position.buffer == nullptr ? piece->start_buffer : position.buffer;
           ep = (const uint8_t*) current_buffer->buffer +  (piece->start_buffer == piece->end_buffer ? piece->end_position : current_buffer->current_size);
           p = position.buffer == nullptr ? ep : (const uint8_t*) current_buffer->buffer + position.position;
-          if (position.buffer == nullptr) break;
+          if (position.buffer == nullptr) {
+            break;
+          }
         }
       }
 

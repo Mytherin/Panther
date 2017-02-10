@@ -205,6 +205,9 @@ public:
 	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }
 
+	PGTextRange FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
+	PGTextRange FindMatch(std::string text, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
+
 	void SetSettings(PGTextFileSettings settings);
 private:
 	// load textfile from a file
@@ -216,9 +219,6 @@ private:
 	void InsertText(std::string text, size_t cursornr);
 
 	void DeleteSelection(int cursornr);
-
-	PGTextRange FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
-	PGTextRange FindMatch(std::string text, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
 
 	bool finished_search = false;
 	std::vector<PGTextRange> matches;

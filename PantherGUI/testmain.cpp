@@ -77,6 +77,30 @@ int main() {
 	std::getline(std::cin, line);
 }
 
+//	PGTextRange FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, 
+// lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
+
+std::string RunSearchTest(TextFile* textfile, std::string search_term, CursorData data, PGDirection direction, bool match_case, bool regex, bool wrapped, CursorData& retval, bool expect_match) {
+	char* error_message = nullptr;
+	PGTextRange range = textfile->FindMatch(search_term, direction, data.start_line, data.start_position, data.end_line, data.end_position, &error_message, match_case, wrapped, regex, nullptr);
+	retval.start_line = -1;
+	if (error_message) {
+		return std::string(error_message);
+	}
+	if (range.start_buffer == nullptr) {
+		if (expect_match) {
+			return std::string("Expected a match, but none was found.");
+		}
+	} else {
+		if (!expect_match) {
+			return std::string("No match expected, but one was found.");
+		} else {
+			range.start_buffer->GetCursorFromBufferLocation(range.start_position, retval.start_line, retval.start_position);
+			range.end_buffer->GetCursorFromBufferLocation(range.end_position, retval.end_line, retval.end_position);
+		}
+	}
+	return std::string("");
+}
 
 void RunTests() {
 	Tester tester;
@@ -139,6 +163,109 @@ void RunTests() {
 	tester.RunTextFileTest("Undo Multi Newline", UndoMultiNewLine, "\ndef hello():\n	return \"hello world\";\n", "\ndef hello():\n\tretu\nrn \"h\nello world\";\n");
 
 	tester.RunTextFileTest("Multi Cursor Multi Line Delete", MultiCursorMultiLineDelete, "hello world\nhow are you doing\n\nI am doing well", "hello world\nhow are you doing\n\nI am doing well");
+
+
+	tester.RunTextFileTest("Basic Search", [](TextFile* textfile) -> std::string {
+		CursorData data = CursorData(0, 0, 0, 0);
+		CursorData find;
+		std::string ret = RunSearchTest(textfile, "how", data, PGDirectionRight, true, false, false, find, true);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		if (find.start_line != 1 || find.start_position != 0 || find.end_line != 1 || find.end_position != 3) {
+			return std::string("Incorrect match found.");
+		}
+		return std::string("");
+	}, "hello world\nhow are you doing", "hello world\nhow are you doing");
+
+	tester.RunTextFileTest("Multiline Search", [](TextFile* textfile) -> std::string {
+		CursorData data = CursorData(0, 0, 0, 0);
+		CursorData find;
+		std::string ret = RunSearchTest(textfile, "world\nhow", data, PGDirectionRight, true, false, false, find, true);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		if (find.start_line != 0 || find.start_position != 6 || find.end_line != 1 || find.end_position != 3) {
+			return std::string("Incorrect match found.");
+		}
+		return std::string("");
+	}, "hello world\nhow are you doing", "hello world\nhow are you doing");
+
+
+	tester.RunTextFileTest("Backwards Search", [](TextFile* textfile) -> std::string {
+		CursorData data = CursorData(1, 12, 1, 12);
+		CursorData find;
+		std::string ret = RunSearchTest(textfile, "how", data, PGDirectionLeft, true, false, false, find, true);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		if (find.start_line != 1 || find.start_position != 0 || find.end_line != 1 || find.end_position != 3) {
+			return std::string("Incorrect match found.");
+		}
+		return std::string("");
+	}, "hello world\nhow are you doing", "hello world\nhow are you doing");
+
+
+	tester.RunTextFileTest("Backwards Search Multiline", [](TextFile* textfile) -> std::string {
+		CursorData data = CursorData(1, 12, 1, 12);
+		CursorData find;
+		std::string ret = RunSearchTest(textfile, "world\nhow", data, PGDirectionLeft, true, false, false, find, true);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		if (find.start_line != 0 || find.start_position != 6 || find.end_line != 1 || find.end_position != 3) {
+			return std::string("Incorrect match found.");
+		}
+		return std::string("");
+	}, "hello world\nhow are you doing", "hello world\nhow are you doing");
+
+	tester.RunTextFileTest("Wrapped Search Multiline", [](TextFile* textfile) -> std::string {
+		CursorData data = CursorData(1, 12, 1, 12);
+		CursorData find;
+		// wrapped disabled: expect to fail
+		std::string ret = RunSearchTest(textfile, "world\nhow", data, PGDirectionRight, true, false, false, find, false);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		// wrapped enabled: expect to succeed now
+		ret = RunSearchTest(textfile, "world\nhow", data, PGDirectionRight, true, false, true, find, true);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		if (find.start_line != 0 || find.start_position != 6 || find.end_line != 1 || find.end_position != 3) {
+			return std::string("Incorrect match found.");
+		}
+		return std::string("");
+	}, "hello world\nhow are you doing", "hello world\nhow are you doing");
+
+
+	tester.RunTextFileTest("Regex Search Forward", [](TextFile* textfile) -> std::string {
+		CursorData data = CursorData(0, 0, 0, 0);
+		CursorData find;
+		std::string ret = RunSearchTest(textfile, "\\d+\n\\d+", data, PGDirectionRight, true, true, false, find, true);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		if (find.start_line != 0 || find.start_position != 3 || find.end_line != 1 || find.end_position != 5) {
+			return std::string("Incorrect match found.");
+		}
+		return std::string("");
+	}, "aaa123556\n12345aaa", "aaa123556\n12345aaa");
+
+
+	tester.RunTextFileTest("Regex Search Backward", [](TextFile* textfile) -> std::string {
+		CursorData data =  CursorData(1, 7, 1, 7);
+		CursorData find;
+		std::string ret = RunSearchTest(textfile, "\\d+\n\\d+", data, PGDirectionLeft, true, true, false, find, true);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		if (find.start_line != 0 || find.start_position != 3 || find.end_line != 1 || find.end_position != 5) {
+			return std::string("Incorrect match found.");
+		}
+		return std::string("");
+	}, "aaa123556\n12345aaa", "aaa123556\n12345aaa");
+
 
 	//tester.RunTextFileFileTest("Testerino", Testerino, "mserver.txt", "");
 

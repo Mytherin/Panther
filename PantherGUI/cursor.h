@@ -17,6 +17,10 @@ struct CursorData {
 	lng end_line;
 	lng end_position;
 
+	CursorData() :
+		start_line(0), start_position(0), end_line(0), end_position(0) { 
+	}
+
 	CursorData(lng start_line, lng start_position, lng end_line, lng end_position) :
 		start_line(start_line), start_position(start_position), end_line(end_line), end_position(end_position) {
 	}

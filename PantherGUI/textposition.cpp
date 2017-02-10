@@ -98,7 +98,9 @@ void PGTextRange::remove_prefix(size_t length) {
 
 // Avoid possible locale nonsense in standard strcasecmp.
 // The string a is known to be all lowercase.
-static int _ascii_strcasecmp(const char* a, const char* b, size_t len) {
+static int _ascii_strcasecmp(const void* _a, const void* _b, size_t len) {
+	const char* a = (const char*) _a;
+	const char* b = (const char*) _b;
 	const char *ae = a + len;
 
 	for (; a < ae; a++, b++) {
@@ -112,40 +114,42 @@ static int _ascii_strcasecmp(const char* a, const char* b, size_t len) {
 	return 0;
 }
 
-#define BUFFER_COMPARISON(function) \
-  PGTextBuffer* buffer = start_buffer; \
-  lng start = start_position; \
-  while(buffer) { \
-    lng buffer_left = (buffer == end_buffer ?  end_position : buffer->current_size) - start; \
-    if (buffer_left < (lng) length) { \
-      /* length is bigger than buffer length; consume the entire buffer */ \
-      /* then check the next buffer */ \
-      int retval = function(data, buffer->buffer + start, buffer_left); \
-      if (retval != 0) { \
-        /* early out if the comparison fails */ \
-        return retval; \
-      } \
-      data += buffer_left;  \
-      length -= buffer_left; \
-    } else { \
-      /* length fits within the buffer, finish the comparison */ \
-      return function(data, buffer->buffer + start, length); \
-    } \
-    if (buffer == end_buffer) { \
-      break; \
-    } \
-    buffer = buffer->next; \
-    start = 0; \
-  } \
-  /* we ran out of text */ \
+template<int T(const void* a, const void* b, size_t len)>
+int PGTextRange::_buffer_comparison(const char* data, size_t length) const {
+  PGTextBuffer* buffer = start_buffer;
+  lng start = start_position;
+  while(buffer) {
+    lng buffer_left = (buffer == end_buffer ?  end_position : buffer->current_size) - start;
+    if (buffer_left < (lng) length) {
+      /* length is bigger than buffer length; consume the entire buffer */
+      /* then check the next buffer */
+      int retval = T(data, buffer->buffer + start, buffer_left);
+      if (retval != 0) {
+        /* early out if the comparison fails */
+        return retval;
+      }
+      data += buffer_left; 
+      length -= buffer_left;
+    } else {
+      /* length fits within the buffer, finish the comparison */
+      return T(data, buffer->buffer + start, length);
+    }
+    if (buffer == end_buffer) {
+      break;
+    }
+    buffer = buffer->next;
+    start = 0;
+  }
+  /* we ran out of text */
   return -1;
+}
 
 int PGTextRange::ascii_strcasecmp(const char* data, size_t length) const {
-	BUFFER_COMPARISON(_ascii_strcasecmp);
+	return _buffer_comparison<_ascii_strcasecmp>(data, length);
 }
 
 int PGTextRange::_memcmp(const char* data, size_t length) const {
-	BUFFER_COMPARISON(memcmp);
+	return _buffer_comparison<memcmp>(data, length);
 }
 
 #if !defined(__linux__)  /* only Linux seems to have memrchr */
@@ -179,56 +183,60 @@ static void* memcaserchr(const void* s, int c, size_t n) {
 }
 
 
-#define REVERSE_BUFFER_LOOKUP(function) \
-	PGTextBuffer* buffer = end_buffer; \
-	lng end = end_position; \
-	while (buffer) { \
-		lng start = (buffer == start_buffer ? start_position : 0); \
-		void* ptr = function(buffer->buffer + start, value, end - start); \
-		if (ptr != nullptr) { \
-			return PGTextPosition(buffer, (char*)ptr); \
-		} \
-		if (buffer == start_buffer) { \
-			break; \
-		} \
-		buffer = buffer->next; \
-		end = buffer->current_size; \
-	} \
+template<void* T(const void *s, int c, size_t n)>
+PGTextPosition PGTextRange::_reverse_buffer_lookup(int value) const {
+	PGTextBuffer* buffer = end_buffer;
+	lng end = end_position;
+	while (buffer) {
+		lng start = (buffer == start_buffer ? start_position : 0);
+		void* ptr = T(buffer->buffer + start, value, end - start);
+		if (ptr != nullptr) {
+			return PGTextPosition(buffer, (char*)ptr);
+		}
+		if (buffer == start_buffer) {
+			break;
+		}
+		buffer = buffer->next;
+		end = buffer ? buffer->current_size : 0;
+	}
 	return PGTextPosition(nullptr, (lng)0);
+}
 
 PGTextPosition PGTextRange::_memrchr(int value) const {
-	REVERSE_BUFFER_LOOKUP(memrchr);
+	return _reverse_buffer_lookup<memrchr>(value);
 }
 
 PGTextPosition PGTextRange::_memcaserchr(int value) const {
 	value = panther::chartolower(value);
-	REVERSE_BUFFER_LOOKUP(memcaserchr);
+	return _reverse_buffer_lookup<memcaserchr>(value);
 }
 
-#define BUFFER_LOOKUP(function) \
-	PGTextBuffer* buffer = start_buffer; \
-	lng start = start_position; \
-	while (buffer) { \
-		lng buffer_left = (buffer == end_buffer ? end_position : buffer->current_size) - start; \
-		void* ptr = function(buffer->buffer + start, value, buffer_left); \
-		if (ptr != nullptr) { \
-			return PGTextPosition(buffer, (char*)ptr); \
-		} \
-		if (buffer == end_buffer) { \
-			break; \
-		} \
-		buffer = buffer->next; \
-		start = 0; \
-	} \
+template<void* T(const void *s, int c, size_t n)>
+PGTextPosition PGTextRange::_buffer_lookup(int value) const {
+	PGTextBuffer* buffer = start_buffer;
+	lng start = start_position;
+	while (buffer) {
+		lng buffer_left = (buffer == end_buffer ? end_position : buffer->current_size) - start;
+		void* ptr = T(buffer->buffer + start, value, buffer_left);
+		if (ptr != nullptr) {
+			return PGTextPosition(buffer, (char*)ptr);
+		}
+		if (buffer == end_buffer) {
+			break;
+		}
+		buffer = buffer->next;
+		start = 0;
+	}
 	return PGTextPosition(nullptr, (lng)0);
+}
 
 PGTextPosition PGTextRange::_memchr(int value) const {
-	BUFFER_LOOKUP(memchr);
+	return _buffer_lookup<memchr>(value);
 }
 
 
 PGTextPosition PGTextRange::_memcasechr(int value) const {
 	value = panther::chartolower(value);
-	BUFFER_LOOKUP(memcasechr);
+	return _buffer_lookup<memcasechr>(value);
 }
 
