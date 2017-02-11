@@ -169,3 +169,57 @@ size_t InsertLineBefore::SerializedSize() {
 	size += stored_cursors.size() * 20;
 	return size;
 }
+
+#include "regex.h"
+
+TextDelta* PGRegexReplace::CreateRegexReplace(std::string replacement_text, PGRegexHandle regex) {
+	if (!regex) {
+		return new PGReplaceText(replacement_text);
+	}
+	int capturing_groups = PGRegexNumberOfCapturingGroups(regex);
+	if (capturing_groups < 0) {
+		PGDeleteRegex(regex);
+		return new PGReplaceText(replacement_text);
+	}
+	PGRegexReplace* replace = new PGRegexReplace(replacement_text, regex);
+	if (replace->groups.size() == 0 || replace->groups[0].second < 0) {
+		// no capturing groups in the replacement
+		delete replace;
+		return new PGReplaceText(replacement_text);
+	}
+	return replace;
+}
+
+PGRegexReplace::PGRegexReplace(std::string replacement_text, PGRegexHandle regex) :
+	TextDelta(PGDeltaRegexReplace), regex(regex) {
+	// parse replacement_text
+	lng prev = 0;
+	lng i;
+	int capturing_groups = PGRegexNumberOfCapturingGroups(regex);
+	for (i = 0; i < replacement_text.size() - 1; i++) {
+		if (replacement_text[i] == '\\' || replacement_text[i] == '$') {
+			lng j;
+			for (j = i + 1; j < replacement_text.size(); j++) {
+				if (!panther::is_digit(replacement_text[j])) {
+					break;
+				}
+			}
+			if (j == i + 1) continue; // no number following the character
+			int number = strtol(replacement_text.c_str() + i + 1, nullptr, 0);
+			if (number >= 0 && number <= capturing_groups) {
+				// valid capturing group identifier
+				groups.push_back(std::pair<std::string, int>(replacement_text.substr(prev, i - prev), number));
+				prev = j;
+			}
+
+			i = j - 1;
+		}
+	}
+	if (i != replacement_text.size()) {
+		groups.push_back(std::pair<std::string, int>(replacement_text.substr(prev, replacement_text.size() - prev), -1));
+	}
+}
+
+PGRegexReplace::~PGRegexReplace() {
+	PGDeleteRegex(regex);
+}

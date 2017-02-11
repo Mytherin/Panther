@@ -4,6 +4,7 @@
 #include "json.h"
 #include "textbuffer.h"
 #include "utils.h"
+#include "regex.h"
 
 #include <string>
 #include <vector>
@@ -13,6 +14,7 @@ class TextFile;
 
 typedef enum {
 	PGDeltaReplaceText,
+	PGDeltaRegexReplace,
 	PGDeltaRemoveText,
 	PGDeltaCursor,
 	PGDeltaRemoveLine,
@@ -36,17 +38,31 @@ public:
 	virtual size_t SerializedSize() { return 0; }
 };
 
-class ReplaceDelta : public TextDelta {
+class PGReplaceText : public TextDelta {
 public:
 	std::vector<std::string> removed_text;
 	std::string text;
 
-	ReplaceDelta(std::string text) :
+	PGReplaceText(std::string text) :
 		TextDelta(PGDeltaReplaceText), text(text) {
 		}
 	/*
 	void WriteWorkspace(nlohmann::json& j);
 	size_t SerializedSize();*/
+};
+
+class PGRegexReplace : public TextDelta {
+public:
+	std::vector<std::string> removed_text;
+	std::vector<lng> added_text_size;
+	std::vector<std::pair<std::string, int>> groups;
+	PGRegexHandle regex;
+	// returns either a PGRegexReplace if replacement_text contains valid group substitutions for <regex>
+	// or a PGReplaceText if it does not
+	static TextDelta* CreateRegexReplace(std::string replacement_text, PGRegexHandle regex);
+
+	PGRegexReplace(std::string replacement_text, PGRegexHandle regex);
+	~PGRegexReplace();
 };
 
 class RemoveText : public TextDelta {

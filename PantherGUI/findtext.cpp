@@ -289,7 +289,7 @@ nlohmann::json& FindText::GetFindHistory() {
 	nlohmann::json& find_text = workspace->settings["find_text"];
 	nlohmann::json& find_history = find_text["find_history"];
 	assert(find_history.is_array());
-	assert(history_entry >= 0 && history_entry < find_history.size());
+	assert(history_entry >= 0 && (history_entry < find_history.size() || find_history.size() == 0));
 	return find_history;
 }
 
@@ -306,6 +306,7 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 		include_selection);
 
 	nlohmann::json& find_history = GetFindHistory();
+	/*
 	if (find_history.size() == 0 || find_history[0] != search_text) {
 		std::string first_entry = find_history[0];
 		if (first_entry.size() == 0) {
@@ -317,7 +318,7 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 			}
 		}
 		history_entry = 0;
-	}
+	}*/
 
 	if (!error_message) {
 		// successful search
@@ -378,7 +379,8 @@ void FindText::Replace() {
 	if (this->Find(PGDirectionRight, true)) {
 		ControlManager* manager = GetControlManager(this);
 		TextFile& tf = manager->active_textfield->GetTextFile();
-		tf.InsertText(replacement);
+		PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);
+		tf.RegexReplace(regex, replacement);
 		SetTextfile(&tf);
 		if (HighlightMatches()) {
 			this->FindAll(PGDirectionRight);
@@ -395,7 +397,8 @@ void FindText::ReplaceAll() {
 	this->SelectAllMatches();
 	if (tf.GetCursors().size() > 0) {
 		// check if there are any matches
-		tf.InsertText(replacement);
+		PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);
+		tf.RegexReplace(regex, replacement);
 		this->SetTextfile(&tf);
 		if (HighlightMatches()) {
 			this->FindAll(false);

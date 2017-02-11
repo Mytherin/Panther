@@ -88,6 +88,11 @@ void PGDeleteRegex(PGRegexHandle handle) {
 	delete handle;
 }
 
+int PGRegexNumberOfCapturingGroups(PGRegexHandle handle) {
+	if (!handle->is_regex) return -1;
+	return handle->regex.get()->NumberOfCapturingGroups();
+}
+
 std::vector<lng> PGPreprocessTextSearch(std::string& needle) {
 	if (needle.size() >= 1) {
 		// initialize a table of UCHAR_MAX+1 elements to value needle.size()

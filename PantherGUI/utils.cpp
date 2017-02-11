@@ -61,6 +61,10 @@ namespace panther {
 		return character;
 	}
 
+	unsigned char is_digit(unsigned char character) {
+		return character >= '0' && character <= '9';
+	}
+
 	std::string tolower(std::string str) {
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 		return str;

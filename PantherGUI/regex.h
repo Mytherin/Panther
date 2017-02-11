@@ -22,5 +22,6 @@ enum PGRegexFlags {
 PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexFlags);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context, PGDirection direction);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& context, PGDirection direction);
+int PGRegexNumberOfCapturingGroups(PGRegexHandle handle);
 void PGDeleteRegex(PGRegexHandle handle);
 

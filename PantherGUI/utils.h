@@ -34,6 +34,7 @@ namespace panther {
 	std::string toupper(std::string str);
 	unsigned char chartolower(unsigned char character);
 	unsigned char chartoupper(unsigned char character);
+	unsigned char is_digit(unsigned char character);
 
 	void replace(std::string& source, std::string from, std::string to);
 

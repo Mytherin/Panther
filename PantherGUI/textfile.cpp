@@ -807,7 +807,7 @@ void TextFile::DeleteSelection(int i) {
 void TextFile::InsertText(std::string text) {
 	if (!is_loaded) return;
 
-	TextDelta* delta = new ReplaceDelta(text);
+	TextDelta* delta = new PGReplaceText(text);
 	PerformOperation(delta);
 }
 
@@ -880,7 +880,7 @@ void TextFile::ReplaceText(std::string replacement_text, size_t i) {
 		}
 		linecount += inserted_lines;
 	}
-	
+
 
 
 	// move the cursor to the end and select the remaining text (if any)
@@ -1494,7 +1494,14 @@ std::string TextFile::CopyText() {
 void TextFile::PasteText(std::string& text) {
 	if (!is_loaded) return;
 
-	TextDelta* delta = new ReplaceDelta(text);
+	TextDelta* delta = new PGReplaceText(text);
+	PerformOperation(delta);
+}
+
+void TextFile::RegexReplace(PGRegexHandle regex, std::string& replacement) {
+	if (!is_loaded) return;
+
+	TextDelta* delta = PGRegexReplace::CreateRegexReplace(replacement, regex);
 	PerformOperation(delta);
 }
 
@@ -1716,15 +1723,43 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	switch (delta->type) {
 		case PGDeltaReplaceText:
 		{
-			ReplaceDelta* replace = (ReplaceDelta*)delta;
+			PGReplaceText* replace = (PGReplaceText*)delta;
 			for (size_t i = 0; i < cursors.size(); i++) {
-				if (!cursors[i].SelectionIsEmpty()) {
-					replace->removed_text.push_back(cursors[i].GetText());
-				} else {
-					replace->removed_text.push_back("");
+				if (!redo) {
+					if (!cursors[i].SelectionIsEmpty()) {
+						replace->removed_text.push_back(cursors[i].GetText());
+					} else {
+						replace->removed_text.push_back("");
+					}
 				}
 				ReplaceText(replace->text, i);
 				if (!redo) {
+					replace->stored_cursors.push_back(BackupCursor(i));
+				}
+			}
+			break;
+		}
+		case PGDeltaRegexReplace:
+		{
+			PGRegexReplace* replace = (PGRegexReplace*)delta;
+			for (size_t i = 0; i < cursors.size(); i++) {
+				assert(!cursors[i].SelectionIsEmpty());
+				if (!redo) {
+					replace->removed_text.push_back(cursors[i].GetText());
+				}
+				std::string replaced_text = cursors[i].GetText();
+				PGRegexMatch match = PGMatchRegex(replace->regex, cursors[i].GetCursorSelection(), PGDirectionRight);
+				assert(match.matched);
+				std::string replacement_text = "";
+				for (size_t k = 0; k < replace->groups.size(); k++) {
+					replacement_text += replace->groups[k].first;
+					if (replace->groups[k].second >= 0) {
+						replacement_text += match.groups[replace->groups[k].second].GetString();
+					}
+				}
+				ReplaceText(replacement_text, i);
+				if (!redo) {
+					replace->added_text_size.push_back(replacement_text.size());
 					replace->stored_cursors.push_back(BackupCursor(i));
 				}
 			}
@@ -1825,7 +1860,7 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			Cursor::NormalizeCursors(this, cursors, false);
 			if (!redo) {
-				ins->next = new ReplaceDelta("\n");
+				ins->next = new PGReplaceText("\n");
 			}
 			return PerformOperation(ins->next, redo);
 		}
@@ -1836,8 +1871,23 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	return true;
 }
 
-void TextFile::Undo(ReplaceDelta& delta, int i) {
+void TextFile::Undo(PGReplaceText& delta, int i) {
 	lng offset = delta.text.size();
+	cursors[i].OffsetSelectionPosition(-offset);
+	auto beginpos = cursors[i].BeginCursorPosition();
+	auto endpos = beginpos;
+	ReplaceText(delta.removed_text[i], i);
+	// select the replaced text
+	endpos.Offset(delta.removed_text[i].size());
+	cursors[i].start_buffer = endpos.buffer;
+	cursors[i].start_buffer_position = endpos.position;
+	cursors[i].end_buffer = beginpos.buffer;
+	cursors[i].end_buffer_position = beginpos.position;
+}
+
+
+void TextFile::Undo(PGRegexReplace& delta, int i) {
+	lng offset = delta.added_text_size[i];
 	cursors[i].OffsetSelectionPosition(-offset);
 	auto beginpos = cursors[i].BeginCursorPosition();
 	auto endpos = beginpos;
@@ -1861,7 +1911,20 @@ void TextFile::Undo(TextDelta* delta) {
 		case PGDeltaReplaceText:
 		{
 			ClearCursors();
-			ReplaceDelta* replace = (ReplaceDelta*)delta;
+			PGReplaceText* replace = (PGReplaceText*)delta;
+			// we perform undo's in reverse order
+			cursors.resize(delta->stored_cursors.size());
+			for (int i = 0; i < delta->stored_cursors.size(); i++) {
+				int index = delta->stored_cursors.size() - (i + 1);
+				cursors[index] = RestoreCursor(delta->stored_cursors[index]);
+				Undo(*replace, index);
+			}
+			break;
+		}
+		case PGDeltaRegexReplace:
+		{
+			ClearCursors();
+			PGRegexReplace* replace = (PGRegexReplace*)delta;
 			// we perform undo's in reverse order
 			cursors.resize(delta->stored_cursors.size());
 			for (int i = 0; i < delta->stored_cursors.size(); i++) {

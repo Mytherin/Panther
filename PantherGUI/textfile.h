@@ -96,6 +96,7 @@ public:
 	std::string CutText();
 	std::string CopyText();
 	void PasteText(std::string& text);
+	void RegexReplace(PGRegexHandle regex, std::string& replacement);
 
 	bool Reload(PGFileError& error);
 
@@ -257,7 +258,8 @@ private:
 	void AddDelta(TextDelta* delta);
 	void Undo(TextDelta* delta);
 
-	void Undo(ReplaceDelta& delta, int i);
+	void Undo(PGReplaceText& delta, int i);
+	void Undo(PGRegexReplace& delta, int i);
 	void Undo(RemoveText& delta, std::string& text, int i);
 
 	void PerformOperation(TextDelta* delta);
