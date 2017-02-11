@@ -185,8 +185,13 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			lng render_start = 0, render_end = length;
 			auto character_widths = CumulativeCharacterWidths(font, line, length, xoffset, render_width, render_start, render_end);
 			if (character_widths.size() == 0) {
-				// the entire line is out of bounds, nothing to render
-				goto next_line;
+				if (render_start == 0 && render_end == 0) {
+					// empty line, render cursor/selections
+					character_widths.push_back(0);
+				} else {
+					// the entire line is out of bounds, nothing to render
+					goto next_line;
+				}
 			}
 
 			SetRenderBounds(renderer, PGRect(position_x_text, y, this->width, this->height));
@@ -257,7 +262,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 						}
 					}
 				}
-				if (end < length) {
+				if (end <= length) {
 					current_cursor++;
 					if (current_cursor < cursors.size()) {
 						selected_line = cursors[current_cursor].SelectedPosition().line;
@@ -275,7 +280,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 						// this match is not rendered on this line yet
 						break;
 					}
-					if (match < current_range) {
+					if (match <= current_range) {
 						// this match has already been rendered
 						current_match++;
 						continue;
@@ -296,6 +301,9 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					if ((end >= render_start && start <= render_end) && start != end) {
 						PGScalar x_offset = panther::clamped_access<PGScalar>(character_widths, start - render_start);
 						PGScalar width = panther::clamped_access<PGScalar>(character_widths, end - render_start) - x_offset;
+						if (end == length + 1) {
+							width += MeasureTextWidth(font, " ");
+						}
 						PGRect rect(position_x_text + x_offset, position_y, width, line_height);
 						RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
 						if (end < length) {

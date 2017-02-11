@@ -102,3 +102,9 @@ inline bool operator< (const PGTextRange& lhs, const PGTextRange& rhs) {
 		(lhs.end_buffer->index == rhs.start_buffer->index && lhs.end_position < rhs.start_position);
 }
 inline bool operator> (const PGTextRange& lhs, const PGTextRange& rhs) { return rhs < lhs; }
+
+inline bool operator<= (const PGTextRange& lhs, const PGTextRange& rhs) {
+	return lhs.end_buffer->index < rhs.start_buffer->index ||
+		(lhs.end_buffer->index == rhs.start_buffer->index && lhs.end_position <= rhs.start_position);
+}
+inline bool operator>= (const PGTextRange& lhs, const PGTextRange& rhs) { return rhs <= lhs; }
