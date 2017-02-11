@@ -567,6 +567,7 @@ lng TextFile::GetLineCount() {
 
 PGScalar TextFile::GetMaxLineWidth(PGFontHandle font) {
 	if (!is_loaded) return 0;
+	assert(max_line_length.buffer);
 	return GetTextFontSize(font) / 10.0 * max_line_length.buffer->line_lengths[max_line_length.position];
 }
 

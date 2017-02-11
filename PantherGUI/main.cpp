@@ -658,7 +658,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 	tabbed->width = 0;
 	tabbed->height = TEXT_TAB_HEIGHT;
 	TextField* textfield = new TextField(res, initial_files[0]);
-	textfield->SetAnchor(PGAnchorTop | PGAnchorLeft /*| PGAnchorRight */);
+	textfield->SetAnchor(PGAnchorTop | PGAnchorLeft);
 	textfield->percentage_height = 1;
 	textfield->percentage_width = 1;
 	TabControl* tabs = new TabControl(res, textfield, initial_files);
@@ -668,15 +668,14 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 	tabbed->AddControl(tabs);
 	tabbed->AddControl(textfield);
 	textfield->vertical_anchor = tabs;
-	/*
+	
 	ProjectExplorer* explorer = new ProjectExplorer(res);
-	explorer->SetAnchor(PGAnchorTop | PGAnchorRight);
+	explorer->SetAnchor(PGAnchorTop | PGAnchorLeft);
 	explorer->vertical_anchor = tabs;
 	explorer->fixed_width = 200;
 	explorer->percentage_height = 1;
 	tabbed->AddControl(explorer);
 	textfield->horizontal_anchor = explorer;
-	*/
 
 	StatusBar* bar = new StatusBar(res, textfield);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);

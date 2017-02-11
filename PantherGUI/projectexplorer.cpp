@@ -42,20 +42,35 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 	if (selected) {
 		RenderRectangle(renderer, PGRect(x, y, this->width, GetTextHeight(font)), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 	}
+	
 	if (file_image) {
 		RenderImage(renderer, file_image, x, y);
 	} else {
 		std::string extension = file.Extension();
 		auto language = PGLanguageManager::GetLanguage(extension);
-		
-		RenderFileIcon(renderer, font, extension.c_str(), x, y, 12, 16, 
-			language ? language->GetColor() : PGColor(255, 255, 255), 
-			PGStyleManager::GetColor(PGColorTabControlBackground), 
-			PGStyleManager::GetColor(PGColorTabControlBorder));
+		PGColor language_color = language ? language->GetColor() : PGColor(255, 255, 255);
+		if (extension == "cpp" || extension == "cc") {
+			extension = "c++";
+			language_color = PGColor(185, 117, 181);
+		}
+		PGScalar text_height = GetTextHeight(font);
+		if (!(language_color.r == 255 && language_color.g == 255 && language_color.b == 255)) {
+			PGScalar font_size = GetTextFontSize(font);
+			SetTextFontSize(font, 10);
+			SetTextColor(font, language_color);
+			PGScalar size = MeasureTextWidth(font, extension.c_str(), extension.size());
+			RenderText(renderer, font, extension.c_str(), extension.size(), x + (20 - size) / 2, y + (text_height - GetTextHeight(font)) / 2.0);
 
-		SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+			SetTextFontSize(font, font_size);
+			SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+		} else {
+			RenderFileIcon(renderer, font, "", x + (20 - 8) / 2.0, y + (text_height - 12) / 2.0, 8, 12,
+				PGColor(255, 255, 255),
+				PGStyleManager::GetColor(PGColorTabControlBackground),
+				PGStyleManager::GetColor(PGColorTabControlBorder));
+		}
 	}
-	x += 20;
+	x += 24;
 	RenderText(renderer, font, file.path.c_str(), file.path.size(), x, y);
 	y += GetTextHeight(font);
 }
@@ -71,6 +86,8 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 	}
 	current_offset++;
 	if (directory.expanded) {
+		PGScalar start_x = x + FOLDER_IDENT / 2.0f;
+		PGScalar start_y = y;
 		x += FOLDER_IDENT;
 		for (auto it = directory.directories.begin(); it != directory.directories.end(); it++) {
 			DrawDirectory(renderer, **it, x, y, current_offset, offset, selection);
@@ -83,12 +100,14 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 			}
 			current_offset++;
 		}
+		RenderDashedLine(renderer, PGLine(start_x, start_y, start_x, y), PGColor(255, 255, 255), 1.0f, 1.0f, 1);
 	}
 }
 
 void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
 	PGScalar x = X() - rect->x;
 	PGScalar y = Y() - rect->y;
+	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height));
 
 	// render the background
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
@@ -105,6 +124,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
 
 	scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);
 	PGContainer::Draw(renderer, rect);
+	ClearRenderBounds(renderer);
 }
 
 void ProjectExplorer::MouseWheel(int x, int y, double distance, PGModifier modifier) {

@@ -102,11 +102,11 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	PGScalar render_width = GetTextfieldWidth();
 	if (minimap) {
 		// fill in the background of the minimap
-		PGRect rect(position_x_text, position_y, this->width - position_x_text, this->height - position_y);
+		render_width = GetMinimapWidth();
+		PGRect rect(position_x_text, position_y, render_width, this->height - position_y);
 		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGDrawStyleFill);
 		// start line of the minimap
 		start_line = GetMinimapStartLine();
-		render_width = GetMinimapWidth();
 	}
 
 	std::string selected_word = std::string();

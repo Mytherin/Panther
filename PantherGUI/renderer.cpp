@@ -5,6 +5,7 @@
 #include "unicode.h"
 
 #include <SkGradientShader.h>
+#include "SkDashPathEffect.h"
 
 SkBitmap* PGGetBitmap(PGBitmapHandle handle) {
 	return handle->bitmap;
@@ -145,10 +146,11 @@ void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PG
 	handle->canvas->drawPath(path, *handle->paint);
 }
 
-void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle drawStyle) {
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle drawStyle, PGScalar width) {
 	SkRect rect = CreateSkRect(rectangle);
 	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
 	handle->paint->setColor(CreateSkColor(color));
+	handle->paint->setStrokeWidth(width);
 	handle->canvas->drawRect(rect, *handle->paint);
 }
 
@@ -204,6 +206,16 @@ void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width) 
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	handle->paint->setStrokeWidth(width);
 	handle->canvas->drawLine(line.start.x, line.start.y, line.end.x, line.end.y, *handle->paint);
+}
+
+void RenderDashedLine(PGRendererHandle handle, PGLine line, PGColor color, PGScalar line_width, PGScalar spacing_width, int width) {
+	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
+	handle->paint->setStrokeWidth(width);
+
+	const SkScalar intervals[] = { line_width, spacing_width };
+	handle->paint->setPathEffect(SkDashPathEffect::Make(intervals, 2, 0.0f));
+	handle->canvas->drawLine(line.start.x, line.start.y, line.end.x, line.end.y, *handle->paint);
+	handle->paint->setPathEffect(nullptr);
 }
 
 void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGScalar max_position) {

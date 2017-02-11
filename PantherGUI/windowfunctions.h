@@ -275,10 +275,11 @@ void ClearRenderBounds(PGRendererHandle);
 
 void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGColor right);
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGDrawStyle drawStyle);
-void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle style);
+void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle style, PGScalar width = 1.0f);
 void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDrawStyle style);
 void RenderPolygon(PGRendererHandle handle, PGPolygon polygon, PGColor color, double stroke_width = -1);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width = 2);
+void RenderDashedLine(PGRendererHandle handle, PGLine line, PGColor color, PGScalar line_width, PGScalar spacing_width, int width = 2);
 void RenderImage(PGRendererHandle window, PGBitmapHandle image, int x, int y, PGScalar max_position = INT_MAX);
 // Render text at the specified location with the specified alignment, returns the width of the rendered text
 PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGTextAlign);
