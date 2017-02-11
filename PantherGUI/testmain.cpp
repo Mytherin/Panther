@@ -77,9 +77,6 @@ int main() {
 	std::getline(std::cin, line);
 }
 
-//	PGTextRange FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, 
-// lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
-
 std::string RunSearchTest(TextFile* textfile, std::string search_term, CursorData data, PGDirection direction, bool match_case, bool regex, bool wrapped, CursorData& retval, bool expect_match) {
 	char* error_message = nullptr;
 	PGTextRange range = textfile->FindMatch(search_term, direction, data.start_line, data.start_position, data.end_line, data.end_position, &error_message, match_case, wrapped, regex, nullptr);
@@ -104,7 +101,7 @@ std::string RunSearchTest(TextFile* textfile, std::string search_term, CursorDat
 
 void RunTests() {
 	Tester tester;
-	
+
 	for (int i = 0; i < 100; i++) {
 		tester.RunTextFileTest("Simple Insert Newline", SimpleInsertNewline, "hello world", "hello\n\n world");
 	}
@@ -137,7 +134,7 @@ void RunTests() {
 	tester.RunTextFileTest("Undo Simple Copy Paste", UndoSimpleCopyPaste, "hello world", "hello world");
 	tester.RunTextFileTest("Undo Multiline Copy Paste", UndoMultilineCopyPaste, "hello world\nhow are you doing?", "hello world\nhow are you doing?");
 	tester.RunTextFileTest("Undo Multiline Copy Paste In Text", UndoMultilineCopyPasteReplaceText, "hello world\nhow are you doing?", "hello world\nhow are you doing?");
-	
+
 	tester.RunTextFileTest("Undo Many Operations", UndoManyOperations, "hello world\nhow are you doing?", "ahello world\nhow are you doing?");
 	tester.RunTextFileTest("Redo Many Operations", RedoManyOperations, "hello world\nhow are you doing?", "\nhell\nhello worldhello world\nhow are you doing?hello worldo");
 	tester.RunTextFileTest("Mixed Undo Redo", MixedUndoRedo, "hello world\nhow are you doing?", "\nhell\nhello worldhello world\nhow are you doing?hello worldo");
@@ -254,7 +251,7 @@ void RunTests() {
 
 
 	tester.RunTextFileTest("Regex Search Backward", [](TextFile* textfile) -> std::string {
-		CursorData data =  CursorData(1, 7, 1, 7);
+		CursorData data = CursorData(1, 7, 1, 7);
 		CursorData find;
 		std::string ret = RunSearchTest(textfile, "\\d+\n\\d+", data, PGDirectionLeft, true, true, false, find, true);
 		if (ret.size() != 0) {
@@ -265,6 +262,19 @@ void RunTests() {
 		}
 		return std::string("");
 	}, "aaa123556\n12345aaa", "aaa123556\n12345aaa");
+
+	tester.RunTextFileTest("Regex Search with $^", [](TextFile* textfile) -> std::string {
+		CursorData data = CursorData(0, 0, 0, 0);
+		CursorData find;
+		std::string ret = RunSearchTest(textfile, "^hello world$", data, PGDirectionRight, true, true, false, find, true);
+		if (ret.size() != 0) {
+			return ret;
+		}
+		if (find.start_line != 2 || find.start_position != 0 || find.end_line != 2 || find.end_position != 11) {
+			return std::string("Incorrect match found.");
+		}
+		return std::string("");
+	}, "aaahello worldaaa\n12345aaa\nhello world\ntest123", "aaahello worldaaa\n12345aaa\nhello world\ntest123");
 
 
 	//tester.RunTextFileFileTest("Testerino", Testerino, "mserver.txt", "");

@@ -2176,7 +2176,7 @@ PGTextRange TextFile::FindMatch(std::string pattern, PGDirection direction, PGTe
 	}
 	PGTextRange bounds = direction == PGDirectionLeft ?
 		PGTextRange(end, 0, begin_buffer, begin_position) :
-		PGTextRange(begin_buffer, begin_position, buffers.back(), end->current_size);
+		PGTextRange(begin_buffer, begin_position, buffers.back(), end->current_size - 1);
 	while (true) {
 		PGRegexMatch match = PGMatchRegex(regex_handle, bounds, direction);
 		if (match.matched) {
@@ -2243,6 +2243,9 @@ void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex
 			textfile->SetCursorLocation(match.groups[0]);
 		}
 
+		if (bounds.start_buffer == match.groups[0].end_buffer &&
+			bounds.start_position == match.groups[0].end_position)
+			break;
 		bounds.start_buffer = match.groups[0].end_buffer;
 		bounds.start_position = match.groups[0].end_position;
 

@@ -27,6 +27,12 @@ PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexF
 		// compile "pattern" as a regex pattern
 		RE2::Options options;
 		options.set_case_sensitive(!(flags & PGRegexCaseInsensitive));
+		options.set_utf8(true);
+		options.set_log_errors(false);
+		options.set_posix_syntax(true);
+		options.set_perl_classes(true);
+		options.set_word_boundary(true);
+		options.set_one_line(false);
 		RE2* regex = new RE2(pattern.c_str(), options);
 		if (!regex) {
 			// FIXME: report on the error
@@ -66,6 +72,9 @@ PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context, PGDirection
 }
 
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& context, PGDirection direction) {
+	assert(0);
+	// FIXME: the return value cannot be correct because it points into the below PGTextBuffer
+	// which will be deleted after the function exists
 	PGTextBuffer buffer;
 	buffer.buffer = (char*) context.data();
 	buffer.current_size = context.size();
