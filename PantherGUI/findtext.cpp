@@ -12,6 +12,12 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(FindText);
 
+static void UpdateHighlight(Control* c, FindText* f) {
+	if (f->HighlightMatches()) {
+		f->FindAll(false);
+	};
+}
+
 FindText::FindText(PGWindowHandle window, bool replace) :
 	PGContainer(window), history_entry(0) {
 	font = PGCreateFont("myriad", false, false);
@@ -171,14 +177,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	SetTextfile(&tf);
 
-	// FIXME: unsubscribe after findtext is done
-	manager->active_textfield->OnTextChanged([](Control* c, void* data) {
-		FindText* f = (FindText*)data;
-		if (f->HighlightMatches()) {
-			f->FindAll(false);
-		};
-	},
-		this);
+	manager->active_textfield->OnTextChanged((PGControlDataCallback)UpdateHighlight, this);
 
 	if (replace) {
 		ToggleReplace();
@@ -186,8 +185,8 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 }
 
 FindText::~FindText() {
-
-
+	ControlManager* manager = GetControlManager(this);
+	manager->active_textfield->UnregisterOnTextChanged((PGControlDataCallback)UpdateHighlight, this);
 }
 
 void FindText::SetTextfile(TextFile* textfile) {

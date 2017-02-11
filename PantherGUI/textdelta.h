@@ -12,7 +12,7 @@ class TextDelta;
 class TextFile;
 
 typedef enum {
-	PGDeltaAddText,
+	PGDeltaReplaceText,
 	PGDeltaRemoveText,
 	PGDeltaCursor,
 	PGDeltaRemoveLine,
@@ -36,18 +36,17 @@ public:
 	virtual size_t SerializedSize() { return 0; }
 };
 
-class AddText : public TextDelta {
+class ReplaceDelta : public TextDelta {
 public:
-	std::vector<std::string> lines;
+	std::vector<std::string> removed_text;
+	std::string text;
 
-	AddText(std::string line) : 
-		TextDelta(PGDeltaAddText) {
-			lines.push_back(line);
+	ReplaceDelta(std::string text) :
+		TextDelta(PGDeltaReplaceText), text(text) {
 		}
-	AddText(std::vector<std::string> lines) : 
-		TextDelta(PGDeltaAddText), lines(lines) { }
+	/*
 	void WriteWorkspace(nlohmann::json& j);
-	size_t SerializedSize();
+	size_t SerializedSize();*/
 };
 
 class RemoveText : public TextDelta {

@@ -238,6 +238,16 @@ void BasicTextField::OnTextChanged(PGControlDataCallback callback, void* data) {
 	this->text_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
 }
 
+void BasicTextField::UnregisterOnTextChanged(PGControlDataCallback callback, void* data) {
+	for (lng i = 0; i < text_changed_callbacks.size(); i++) {
+		if (text_changed_callbacks[i].first == callback && text_changed_callbacks[i].second == data) {
+			text_changed_callbacks.erase(text_changed_callbacks.begin() + i);
+			return;
+		}
+	}
+	assert(0);
+}
+
 void BasicTextField::PasteHistory() {
 	std::vector<std::string> history = GetClipboardTextHistory();
 	PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);

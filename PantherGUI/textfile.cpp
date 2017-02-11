@@ -111,10 +111,9 @@ bool TextFile::Reload(PGFileError& error) {
 	this->SelectEverything();
 	if (lines.size() == 0 || (lines.size() == 1 && lines[0].size() == 0)) {
 		this->DeleteCharacter(PGDirectionLeft);
-	} else if (lines.size() == 1) {
-		this->InsertText(lines[0]);
 	} else {
-		this->InsertLines(lines);
+		// FIXME: does not replace \r characters with \n
+		PasteText(text);
 	}
 	this->SetUnsavedChanges(false);
 	this->ApplySettings(settings);
@@ -808,19 +807,125 @@ void TextFile::DeleteSelection(int i) {
 void TextFile::InsertText(std::string text) {
 	if (!is_loaded) return;
 
-	TextDelta* delta = new AddText(text);
+	TextDelta* delta = new ReplaceDelta(text);
 	PerformOperation(delta);
 }
 
-void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
+void TextFile::ReplaceText(std::string replacement_text, size_t i) {
+	Cursor& cursor = cursors[i];
+	if (replacement_text.size() == 0) {
+		if (cursor.SelectionIsEmpty()) {
+			// nothing to do; this shouldn't happen (probably)
+			assert(0);
+			return;
+		}
+		// nothing to replace; just delete the selection
+		DeleteSelection(i);
+		return;
+	}
+	if (cursor.SelectionIsEmpty()) {
+		// nothing to replace; perform a normal insert
+		InsertLines(replacement_text, i);
+		return;
+	}
+	// first replace the text that can be replaced in-line
+	lng current_position = 0;
+	auto beginpos = cursor.BeginCursorPosition();
+	auto curpos = beginpos;
+	auto endpos = cursor.EndCursorPosition();
+	lng inserted_lines = 0;
+	while (curpos < endpos) {
+		if (current_position == replacement_text.size()) {
+			break;
+		}
+		bool replace_newline = curpos.buffer->buffer[curpos.position] == '\n';
+		bool place_newline = replacement_text[current_position] == '\n';
+		if (replace_newline && !place_newline) {
+			if (curpos.position == curpos.buffer->current_size - 1) {
+				// replacing the last newline of a buffer is tricky because
+				// we have to move data between buffers
+				// we can let DeleteSelection and InsertLines handle that complexity
+				break;
+			}
+			lng start_line = curpos.buffer->GetStartLine(curpos.position);
+			assert(curpos.buffer->line_start[start_line] == curpos.position + 1);
+			curpos.buffer->line_start.erase(curpos.buffer->line_start.begin() + start_line);
+			curpos.buffer->line_count--;
+			inserted_lines--;
+		} else if (place_newline && !replace_newline) {
+			lng start_line = curpos.buffer->GetStartLine(curpos.position);
+			curpos.buffer->line_count++;
+			curpos.buffer->line_start.insert(curpos.buffer->line_start.begin() + start_line, curpos.position + 1);
+			inserted_lines++;
+		}
+		curpos.buffer->buffer[curpos.position] = replacement_text[current_position];
+		current_position++;
+		curpos.Offset(1);
+	}
+	PGTextBuffer* buffer = beginpos.buffer;
+	while (buffer) {
+		InvalidateBuffer(buffer);
+		if (buffer == endpos.buffer) {
+			break;
+		}
+		buffer = buffer->next;
+	}
+	if (inserted_lines != 0) {
+		buffer = beginpos.buffer;
+		lng lines = buffer->start_line;
+		while (buffer) {
+			buffer->start_line = lines;
+			lines += buffer->line_count;
+			buffer = buffer->next;
+		}
+		linecount += inserted_lines;
+	}
+	
+
+
+	// move the cursor to the end and select the remaining text (if any)
+	cursor.start_buffer = curpos.buffer;
+	cursor.start_buffer_position = curpos.position;
+	cursor.end_buffer = endpos.buffer;
+	cursor.end_buffer_position = endpos.position;
+	// now we can be in one of three situations:
+	// 1) the deleted text and selection were identical, as such we are done
+	// 2) we replaced the entire selection, but there is still more text to be inserted
+	// 3) we replaced part of the selection, but there is still more text to be deleted
+	// 4) we replaced part of the selection AND there is still more text to be inserted
+	//     this case happens if we try to replace the final newline in a buffer
+	if (current_position < replacement_text.size()) {
+		if (curpos == endpos) {
+			// case (2) haven't finished inserting everything
+			// insert the remaining text
+			InsertLines(replacement_text.substr(current_position), i);
+		} else {
+			// case (4), need to both delete and insert
+			DeleteSelection(i);
+			InsertLines(replacement_text.substr(current_position), i);
+		}
+	} else if (curpos != endpos) {
+		// case (3) haven't finished deleting everything
+		// delete the remaining text
+		DeleteSelection(i);
+	} else {
+		// case (1), finished everything
+		return;
+	}
+}
+
+void TextFile::InsertLines(std::string text, size_t i) {
 	Cursor& cursor = cursors[i];
 	assert(cursor.SelectionIsEmpty());
-	// InsertText should be used to insert text to a line
-	assert(lines.size() > 1);
+	assert(text.size() > 0);
+	auto lines = SplitLines(text);
 	lng added_lines = lines.size() - 1;
 	// the first line gets added to the current line we are on
 	if (lines[0].size() > 0) {
 		InsertText(lines[0], i);
+	}
+	if (lines.size() == 1) {
+		return;
 	}
 
 	auto begin_position = cursor.BeginPosition();
@@ -961,15 +1066,6 @@ void TextFile::InsertLines(std::vector<std::string> lines, size_t i) {
 
 	InvalidateBuffer(start_buffer);
 	VerifyPartialTextfile();
-}
-
-// insert text into the textfile at each cursors' position
-// text can contain newlines
-void TextFile::InsertLines(const std::vector<std::string>& lines) {
-	if (!is_loaded) return;
-
-	TextDelta* delta = new AddText(lines);
-	PerformOperation(delta);
 }
 
 bool TextFile::SplitLines(const std::string& text, std::vector<std::string>& lines) {
@@ -1398,12 +1494,8 @@ std::string TextFile::CopyText() {
 void TextFile::PasteText(std::string& text) {
 	if (!is_loaded) return;
 
-	std::vector<std::string> pasted_lines = SplitLines(text);
-	if (pasted_lines.size() == 1) {
-		InsertText(pasted_lines[0]);
-	} else {
-		InsertLines(pasted_lines);
-	}
+	TextDelta* delta = new ReplaceDelta(text);
+	PerformOperation(delta);
 }
 
 void TextFile::VerifyPartialTextfile() {
@@ -1522,10 +1614,8 @@ void TextFile::AddNewLine() {
 
 void TextFile::AddNewLine(std::string text) {
 	if (!is_loaded) return;
-	std::vector<std::string> lines;
-	lines.push_back("");
-	lines.push_back(text);
-	InsertLines(lines);
+	auto newline = std::string("\n");
+	PasteText(newline);
 }
 
 void TextFile::SetUnsavedChanges(bool changes) {
@@ -1624,25 +1714,18 @@ void TextFile::PerformOperation(TextDelta* delta) {
 
 bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	switch (delta->type) {
-		case PGDeltaAddText:
+		case PGDeltaReplaceText:
 		{
-			AddText* add = (AddText*)delta;
-			bool selection = CursorsContainSelection(cursors);
-			if (selection) {
-				if (!redo) {
-					add->next = new RemoveText();
-				}
-				PerformOperation(add->next, redo);
-			}
+			ReplaceDelta* replace = (ReplaceDelta*)delta;
 			for (size_t i = 0; i < cursors.size(); i++) {
-				assert(cursors[i].SelectionIsEmpty());
-				if (add->lines.size() == 1) {
-					InsertText(add->lines[0], i);
+				if (!cursors[i].SelectionIsEmpty()) {
+					replace->removed_text.push_back(cursors[i].GetText());
 				} else {
-					InsertLines(add->lines, i);
+					replace->removed_text.push_back("");
 				}
+				ReplaceText(replace->text, i);
 				if (!redo) {
-					add->stored_cursors.push_back(BackupCursor(i));
+					replace->stored_cursors.push_back(BackupCursor(i));
 				}
 			}
 			break;
@@ -1742,10 +1825,7 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			Cursor::NormalizeCursors(this, cursors, false);
 			if (!redo) {
-				std::vector <std::string> lines;
-				lines.push_back("");
-				lines.push_back("");
-				ins->next = new AddText(lines);
+				ins->next = new ReplaceDelta("\n");
 			}
 			return PerformOperation(ins->next, redo);
 		}
@@ -1756,38 +1836,38 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	return true;
 }
 
-void TextFile::Undo(AddText& delta, int i) {
-	lng offset = -1;
-	for (int line = 0; line < delta.lines.size(); line++) {
-		offset += delta.lines[line].size() + 1;
-	}
+void TextFile::Undo(ReplaceDelta& delta, int i) {
+	lng offset = delta.text.size();
 	cursors[i].OffsetSelectionPosition(-offset);
-	DeleteSelection(i);
+	auto beginpos = cursors[i].BeginCursorPosition();
+	auto endpos = beginpos;
+	ReplaceText(delta.removed_text[i], i);
+	// select the replaced text
+	endpos.Offset(delta.removed_text[i].size());
+	cursors[i].start_buffer = endpos.buffer;
+	cursors[i].start_buffer_position = endpos.position;
+	cursors[i].end_buffer = beginpos.buffer;
+	cursors[i].end_buffer_position = beginpos.position;
 }
 
 void TextFile::Undo(RemoveText& delta, std::string& text, int i) {
 	if (text.size() > 0) {
-		std::vector<std::string> lines = SplitLines(text);
-		if (lines.size() == 1) {
-			InsertText(text, i);
-		} else {
-			InsertLines(lines, i);
-		}
+		InsertLines(text, i);
 	}
 }
 
 void TextFile::Undo(TextDelta* delta) {
 	switch (delta->type) {
-		case PGDeltaAddText:
+		case PGDeltaReplaceText:
 		{
 			ClearCursors();
-			AddText* add = (AddText*)delta;
+			ReplaceDelta* replace = (ReplaceDelta*)delta;
 			// we perform undo's in reverse order
 			cursors.resize(delta->stored_cursors.size());
 			for (int i = 0; i < delta->stored_cursors.size(); i++) {
 				int index = delta->stored_cursors.size() - (i + 1);
 				cursors[index] = RestoreCursor(delta->stored_cursors[index]);
-				Undo(*add, index);
+				Undo(*replace, index);
 			}
 			break;
 		}

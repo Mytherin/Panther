@@ -59,5 +59,6 @@ private:
 	Button* replace_button = nullptr;
 	Button* replace_all_button = nullptr;
 
+
 	lng history_entry = 0;
 };

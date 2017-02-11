@@ -23,7 +23,9 @@ std::vector<TextDelta*> TextDelta::LoadWorkspace(nlohmann::json& j) {
 			json& k = *it;
 			if (k.count("type") > 0) {
 				if (k["type"] == "addtext") {
-					AddText* text = new AddText(std::vector<std::string>());
+					assert(0);
+					/*
+					ReplaceText* text = new ReplaceText(std::string>());
 					if (k.count("lines") > 0) {
 						json& lines = k["lines"];
 						LoadStrings(lines, text->lines);
@@ -33,7 +35,7 @@ std::vector<TextDelta*> TextDelta::LoadWorkspace(nlohmann::json& j) {
 						delete text;
 						continue;
 					}
-					deltas.push_back(text);
+					deltas.push_back(text);*/
 				} else if (k["type"] == "removetext") {
 					RemoveText* text = new RemoveText();
 					if (k.count("removed_text") > 0) {
@@ -85,7 +87,8 @@ std::vector<TextDelta*> TextDelta::LoadWorkspace(nlohmann::json& j) {
 	return deltas;
 }
 
-void AddText::WriteWorkspace(nlohmann::json& j) {
+/*
+void ReplaceText::WriteWorkspace(nlohmann::json& j) {
 	j["type"] = "addtext";
 	Cursor::StoreCursors(j, this->stored_cursors);
 	if (lines.size() == 1) {
@@ -100,14 +103,14 @@ void AddText::WriteWorkspace(nlohmann::json& j) {
 	}
 }
 
-size_t AddText::SerializedSize() {
+size_t ReplaceText::SerializedSize() {
 	size_t size = 40;
 	for (auto it = lines.begin(); it != lines.end(); it++) {
 		size += it->size();
 	}
 	size += stored_cursors.size() * 20;
 	return size;
-}
+}*/
 
 void RemoveText::WriteWorkspace(nlohmann::json& j) {
 	j["type"] = "removetext";
