@@ -48,6 +48,7 @@ private:
 	ToggleButton* toggle_wrap;
 	ToggleButton* toggle_highlight;
 
+	nlohmann::json& GetFindHistory();
 	void SetTextfile(TextFile* textfile);
 
 	PGCursorPosition begin_pos;
@@ -58,6 +59,5 @@ private:
 	Button* replace_button = nullptr;
 	Button* replace_all_button = nullptr;
 
-	nlohmann::json* find_history = nullptr;
 	lng history_entry = 0;
 };

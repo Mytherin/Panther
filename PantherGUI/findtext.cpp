@@ -13,7 +13,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(FindText);
 
 FindText::FindText(PGWindowHandle window, bool replace) :
-	PGContainer(window), find_history(nullptr), history_entry(0) {
+	PGContainer(window), history_entry(0) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -24,25 +24,23 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	field->y = VPADDING;
 	field->OnPrevEntry([](Control* c, void* data) {
 		FindText* f = (FindText*)data;
-		if (f->find_history) {
-			if (f->find_history->size() > f->history_entry + 1) {
-				f->history_entry++;
-				((SimpleTextField*)c)->SetText((*f->find_history)[f->history_entry]);
-			}
+		nlohmann::json& find_history = f->GetFindHistory();
+		if (find_history.size() > f->history_entry + 1) {
+			f->history_entry++;
+			((SimpleTextField*)c)->SetText(find_history[f->history_entry]);
 		}
 	}, this);
 	field->OnNextEntry([](Control* c, void* data) {
 		FindText* f = (FindText*)data;
-		if (f->find_history) {
-			if (f->history_entry > 0) {
-				f->history_entry--;
-				((SimpleTextField*)c)->SetText((*f->find_history)[f->history_entry]);
-			} else {
-				if ((*f->find_history)[f->history_entry].size() > 0) {
-					f->history_entry = 0;
-					f->find_history->insert(f->find_history->begin(), std::string(""));
-					((SimpleTextField*)c)->SetText((*f->find_history)[f->history_entry]);
-				}
+		nlohmann::json& find_history = f->GetFindHistory();
+		if (f->history_entry > 0) {
+			f->history_entry--;
+			((SimpleTextField*)c)->SetText(find_history[f->history_entry]);
+		} else {
+			if (find_history[f->history_entry].size() > 0) {
+				f->history_entry = 0;
+				find_history.insert(find_history.begin(), std::string(""));
+				((SimpleTextField*)c)->SetText(find_history[f->history_entry]);
 			}
 		}
 	}, this);
@@ -84,7 +82,6 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	}
 	nlohmann::json& find_history = find_text["find_history"];
 	assert(find_history.is_array());
-	this->find_history = &find_history;
 	if (find_history.size() > 0) {
 		field->SetText(find_history[0]);
 		field->Invalidate();
@@ -176,12 +173,12 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 
 	// FIXME: unsubscribe after findtext is done
 	manager->active_textfield->OnTextChanged([](Control* c, void* data) {
-		FindText* f = (FindText*) data;
+		FindText* f = (FindText*)data;
 		if (f->HighlightMatches()) {
 			f->FindAll(false);
 		};
 	},
-	this);
+		this);
 
 	if (replace) {
 		ToggleReplace();
@@ -189,7 +186,7 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 }
 
 FindText::~FindText() {
-	
+
 
 }
 
@@ -288,6 +285,15 @@ void FindText::OnResize(PGSize old_size, PGSize new_size) {
 	find_expand->SetPosition(PGPoint(find_all->x + find_all->width + HPADDING, find_expand->y));
 }
 
+nlohmann::json& FindText::GetFindHistory() {
+	auto workspace = PGGetWorkspace(window);
+	nlohmann::json& find_text = workspace->settings["find_text"];
+	nlohmann::json& find_history = find_text["find_history"];
+	assert(find_history.is_array());
+	assert(history_entry >= 0 && history_entry < find_history.size());
+	return find_history;
+}
+
 bool FindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
@@ -300,19 +306,19 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled(),
 		include_selection);
 
-	/*
-		if (find_history->size() == 0 || (*find_history)[0] != search_text) {
-			std::string first_entry = (*find_history)[0];
-			if (first_entry.size() == 0) {
-				(*find_history)[0] = search_text;
-			} else {
-				(*find_history).insert(find_history->begin(), search_text);
-				if ((*find_history).size() > MAXIMUM_FIND_HISTORY) {
-					find_history->erase(find_history->begin() + find_history->size() - 1);
-				}
+	nlohmann::json& find_history = GetFindHistory();
+	if (find_history.size() == 0 || find_history[0] != search_text) {
+		std::string first_entry = find_history[0];
+		if (first_entry.size() == 0) {
+			find_history[0] = search_text;
+		} else {
+			find_history.insert(find_history.begin(), search_text);
+			if (find_history.size() > MAXIMUM_FIND_HISTORY) {
+				find_history.erase(find_history.begin() + find_history.size() - 1);
 			}
-			history_entry = 0;
-		}*/
+		}
+		history_entry = 0;
+	}
 
 	if (!error_message) {
 		// successful search
