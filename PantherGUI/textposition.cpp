@@ -211,13 +211,12 @@ PGTextPosition PGTextRange::_memcaserchr(int value) const {
 	return _reverse_buffer_lookup<memcaserchr>(value);
 }
 
-template<void* T(const void *s, int c, size_t n)>
-PGTextPosition PGTextRange::_buffer_lookup(int value) const {
+PGTextPosition PGTextRange::_memchr(int value) const {
 	PGTextBuffer* buffer = start_buffer;
 	lng start = start_position;
 	while (buffer) {
 		lng buffer_left = (buffer == end_buffer ? end_position : buffer->current_size) - start;
-		void* ptr = T(buffer->buffer + start, value, buffer_left);
+		void* ptr = memchr(buffer->buffer + start, value, buffer_left);
 		if (ptr != nullptr) {
 			return PGTextPosition(buffer, (char*)ptr);
 		}
@@ -230,13 +229,23 @@ PGTextPosition PGTextRange::_buffer_lookup(int value) const {
 	return PGTextPosition(nullptr, (lng)0);
 }
 
-PGTextPosition PGTextRange::_memchr(int value) const {
-	return _buffer_lookup<memchr>(value);
-}
-
 
 PGTextPosition PGTextRange::_memcasechr(int value) const {
 	value = panther::chartolower(value);
-	return _buffer_lookup<memcasechr>(value);
+	PGTextBuffer* buffer = start_buffer;
+	lng start = start_position;
+	while (buffer) {
+		lng buffer_left = (buffer == end_buffer ? end_position : buffer->current_size) - start;
+		void* ptr = memcasechr(buffer->buffer + start, value, buffer_left);
+		if (ptr != nullptr) {
+			return PGTextPosition(buffer, (char*)ptr);
+		}
+		if (buffer == end_buffer) {
+			break;
+		}
+		buffer = buffer->next;
+		start = 0;
+	}
+	return PGTextPosition(nullptr, (lng)0);
 }
 
