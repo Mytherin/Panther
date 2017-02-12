@@ -53,62 +53,6 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	if (this->PressKey(BasicTextField::keybindings, button, modifier)) {
 		return true;
 	}
-	switch (button) {
-	case PGButtonLeft:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetCharacter(PGDirectionLeft);
-		} else if (modifier == PGModifierShift) {
-			textfile->OffsetSelectionCharacter(PGDirectionLeft);
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetWord(PGDirectionLeft);
-		} else if (modifier == PGModifierCtrlShift) {
-			textfile->OffsetSelectionWord(PGDirectionLeft);
-		} else {
-			return false;
-		}
-		return true;
-	case PGButtonRight:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetCharacter(PGDirectionRight);
-		} else if (modifier == PGModifierShift) {
-			textfile->OffsetSelectionCharacter(PGDirectionRight);
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetWord(PGDirectionRight);
-		} else if (modifier == PGModifierCtrlShift) {
-			textfile->OffsetSelectionWord(PGDirectionRight);
-		} else {
-			return false;
-		}
-		return true;
-	case PGButtonEnd:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetEndOfLine();
-		} else if (modifier == PGModifierShift) {
-			textfile->SelectEndOfLine();
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetEndOfFile();
-		} else if (modifier == PGModifierCtrlShift) {
-			textfile->SelectEndOfFile();
-		} else {
-			return false;
-		}
-		return true;
-	case PGButtonHome:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetStartOfLine();
-		} else if (modifier == PGModifierShift) {
-			textfile->SelectStartOfLine();
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetStartOfFile();
-		} else if (modifier == PGModifierCtrlShift) {
-			textfile->SelectStartOfFile();
-		} else {
-			return false;
-		}
-		return true;
-	default:
-		return false;
-	}
 	return false;
 }
 
@@ -168,7 +112,7 @@ void BasicTextField::GetPositionFromLineCharacter(lng line, lng pos, PGScalar& x
 
 void BasicTextField::GetPositionFromLine(lng line, PGScalar& y) {
 	lng lineoffset_y = textfile->GetLineOffset().linenumber;
-	y =  (line - lineoffset_y) * GetTextHeight(textfield_font);
+	y = (line - lineoffset_y) * GetTextHeight(textfield_font);
 }
 
 void BasicTextField::_GetPositionFromCharacter(lng pos, TextLine line, PGScalar& x) {
@@ -237,7 +181,7 @@ void BasicTextField::UnregisterOnTextChanged(PGControlDataCallback callback, voi
 void BasicTextField::PasteHistory() {
 	std::vector<std::string> history = GetClipboardTextHistory();
 	PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
-	for (auto it = history.begin(); it != history.end(); it ++) {
+	for (auto it = history.begin(); it != history.end(); it++) {
 		PGPopupInformation info;
 		info.text = *it;
 		if (info.text.size() > 20) {
@@ -253,8 +197,8 @@ void BasicTextField::PasteHistory() {
 	PGScalar x, y;
 	auto position = c.BeginPosition();
 	GetPositionFromLineCharacter(position.line, position.position + 1, x, y);
-	PGDisplayPopupMenu(menu, ConvertWindowToScreen(window, 
-		PGPoint(this->X() + x, this->Y() + y + GetTextHeight(textfield_font))), 
+	PGDisplayPopupMenu(menu, ConvertWindowToScreen(window,
+		PGPoint(this->X() + x, this->Y() + y + GetTextHeight(textfield_font))),
 		PGTextAlignLeft | PGTextAlignTop);
 }
 
@@ -319,6 +263,38 @@ void BasicTextField::InitializeKeybindings() {
 		BasicTextField* t = (BasicTextField*)c;
 		t->textfile->DeleteLines();
 	};
+	noargs["offset_start_of_line"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->OffsetStartOfLine();
+	};
+	noargs["select_start_of_line"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->SelectStartOfLine();
+	};
+	noargs["offset_end_of_line"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->OffsetEndOfLine();
+	};
+	noargs["select_end_of_line"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->SelectEndOfLine();
+	};
+	noargs["offset_start_of_file"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->OffsetStartOfFile();
+	};
+	noargs["select_start_of_file"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->SelectStartOfFile();
+	};
+	noargs["offset_end_of_file"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->OffsetEndOfFile();
+	};
+	noargs["select_end_of_file"] = [](Control* c) {
+		BasicTextField* t = (BasicTextField*)c;
+		t->textfile->SelectEndOfFile();
+	};
 	std::map<std::string, PGKeyFunctionArgs>& args = BasicTextField::keybindings_varargs;
 	args["insert"] = [](Control* c, std::map<std::string, std::string> args) {
 		BasicTextField* tf = (BasicTextField*)c;
@@ -326,5 +302,27 @@ void BasicTextField::InitializeKeybindings() {
 			return;
 		}
 		tf->GetTextFile().PasteText(args["characters"]);
+	};
+	args["offset_character"] = [](Control* c, std::map<std::string, std::string> args) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (args.count("direction") == 0) {
+			return;
+		}
+		bool word = args.count("word") != 0;
+		bool selection = args.count("selection") != 0;
+		PGDirection direction = args["direction"] == "left" ? PGDirectionLeft : PGDirectionRight;
+		if (word) {
+			if (selection) {
+				tf->textfile->OffsetSelectionWord(direction);
+			} else {
+				tf->textfile->OffsetWord(direction);
+			}
+		} else {
+			if (selection) {
+				tf->textfile->OffsetSelectionCharacter(direction);
+			} else {
+				tf->textfile->OffsetCharacter(direction);
+			}
+		}
 	};
 }

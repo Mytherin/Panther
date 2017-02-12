@@ -819,59 +819,6 @@ bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
 	if (this->PressKey(TextField::keybindings, button, modifier)) {
 		return true;
 	}
-	switch (button) {
-	case PGButtonDown:
-		if (modifier == PGModifierCtrlShift) {
-			textfile->MoveLines(1);
-		} else if (modifier == PGModifierNone) {
-			textfile->OffsetLine(1);
-		} else if (modifier == PGModifierShift) {
-			textfile->OffsetSelectionLine(1);
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetLineOffset(1);
-		} else {
-			return false;
-		}
-		return true;
-	case PGButtonUp:
-		if (modifier == PGModifierCtrlShift) {
-			textfile->MoveLines(-1);
-		} else if (modifier == PGModifierNone) {
-			textfile->OffsetLine(-1);
-		} else if (modifier == PGModifierShift) {
-			textfile->OffsetSelectionLine(-1);
-		} else if (modifier == PGModifierCtrl) {
-			textfile->OffsetLineOffset(-1);
-		} else {
-			return false;
-		}
-		return true;
-	case PGButtonPageUp:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetLine(-GetLineHeight());
-			return true;
-		}
-		return false;
-	case PGButtonPageDown:
-		if (modifier == PGModifierNone) {
-			textfile->OffsetLine(GetLineHeight());
-			return true;
-		}
-		return false;
-	case PGButtonEnter:
-		if (modifier == PGModifierNone) {
-			this->textfile->AddNewLine();
-		} else if (modifier == PGModifierCtrl) {
-			this->textfile->AddEmptyLine(PGDirectionRight);
-		} else if (modifier == PGModifierCtrlShift) {
-			this->textfile->AddEmptyLine(PGDirectionLeft);
-		} else {
-			return false;
-		}
-		return true;
-	default:
-		break;
-	}
 	return BasicTextField::KeyboardButton(button, modifier);
 }
 
@@ -1259,6 +1206,18 @@ void TextField::InitializeKeybindings() {
 		TextField* tf = (TextField*)c;
 		assert(0);
 	};
+	noargs["swap_line_down"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		assert(0);
+	};
+	noargs["insert_newline_before"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		tf->textfile->AddEmptyLine(PGDirectionLeft);
+	};
+	noargs["insert_newline_after"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		tf->textfile->AddEmptyLine(PGDirectionRight);
+	};
 	std::map<std::string, PGKeyFunctionArgs>& args = TextField::keybindings_varargs;
 	// FIXME: duplicate of BasicTextField::insert
 	args["insert"] = [](Control* c, std::map<std::string, std::string> args) {
@@ -1277,6 +1236,26 @@ void TextField::InitializeKeybindings() {
 		if (offset != 0.0) {
 			tf->GetTextFile().OffsetLineOffset(offset);
 			tf->Invalidate();
+		}
+	};
+	args["offset_line"] = [](Control* c, std::map<std::string, std::string> args) {
+		TextField* tf = (TextField*)c;
+		if (args.count("amount") == 0) {
+			return;
+		}
+		bool selection = args.count("selection") != 0;
+		int offset = atol(args["amount"].c_str());
+		if (args.count("unit")) {
+			if (args["unit"] == "page") {
+				offset = offset * tf->GetLineHeight();
+			}
+		}
+		if (offset != 0.0) {
+			if (selection) {
+				tf->textfile->OffsetSelectionLine((int)offset);
+			} else {
+				tf->textfile->OffsetLine((int)offset);
+			}
 		}
 	};
 }
