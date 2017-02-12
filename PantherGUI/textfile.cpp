@@ -127,7 +127,6 @@ TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename
 		// FIXME: proper error message
 		return nullptr;
 	}
-	// FIXME: guess encoding
 	char* output_text = nullptr;
 	lng output_size = 0;
 	PGFileEncoding result_encoding;

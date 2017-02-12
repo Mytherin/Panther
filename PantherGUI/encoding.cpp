@@ -47,6 +47,8 @@ std::string PGEncodingToString(PGFileEncoding encoding) {
 		return "UTF-32 LE with BOM";
 	case PGEncodingWesternISO8859_1:
 		return "ISO-8859-1";
+	case PGEncodingWesternWindows1252:
+		return "Windows-1252";
 	default:
 		return "Unknown";
 	}
@@ -82,6 +84,10 @@ static const char* GetEncodingName(PGFileEncoding encoding) {
 		return "iso-8859_10-1998";
 	case PGEncodingCelticISO8859_14:
 		return "iso-8859_14-1998";
+	case PGEncodingWesternWindows1252:
+		return "windows-1252";
+	case PGEncodingBinary:
+		return "Binary";
 	default:
 		assert(0);
 	}
@@ -111,9 +117,13 @@ static PGFileEncoding GetEncodingFromName(std::string encoding) {
 		return PGEncodingNordicISO8859_10;
 	} else if (encoding == "iso-8859_14-1998") {
 		return PGEncodingCelticISO8859_14;
+	} else if (encoding == "windows-1252") {
+		return PGEncodingWesternWindows1252;
+	} else if (encoding == "Binary") {
+		return PGEncodingBinary;
 	}
 	assert(0);
-	return PGEncodingUTF8;
+	return PGEncodingBinary;
 }
 
 void LogAvailableEncodings() {

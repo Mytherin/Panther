@@ -912,6 +912,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				entry.data = it->file;
 				entries.push_back(entry);
 			}
+
 			SearchBox* search_box = new SearchBox(this->window, entries);
 			search_box->SetSize(PGSize(this->width * 0.5f, GetTextHeight(textfield_font) + 200));
 			search_box->SetPosition(PGPoint(this->x + this->width * 0.25f, this->y + 25));

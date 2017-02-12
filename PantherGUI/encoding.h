@@ -5,6 +5,7 @@
 #include <string>
 
 typedef enum {
+	PGEncodingBinary,
 	PGEncodingUTF8,
 	PGEncodingUTF8BOM,
 	PGEncodingUTF16,
