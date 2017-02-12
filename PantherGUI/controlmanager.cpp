@@ -242,18 +242,22 @@ void ControlManager::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	LeaveManager();
 }
 
-
-void ControlManager::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
+void ControlManager::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	EnterManager();
-	PGContainer::MouseClick(x, y, button, modifier);
+	PGPoint mouse(x - this->x, y - this->y);
+	time_t time = GetTime();
+	if (time - last_click.time < DOUBLE_CLICK_TIME &&
+		panther::abs(mouse.x - last_click.x) < 2 &&
+		panther::abs(mouse.y - last_click.y) < 2) {
+		last_click.clicks = last_click.clicks == 2 ? 0 : last_click.clicks + 1;
+	} else {
+		last_click.clicks = 0;
+	}
+	last_click.time = time;
+	last_click.x = mouse.x;
+	last_click.y = mouse.y;
+	PGContainer::MouseDown(x, y, button, modifier, last_click.clicks);
 	LeaveManager();
-}
-
-void ControlManager::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
-	EnterManager();
-	PGContainer::MouseDown(x, y, button, modifier);
-	LeaveManager();
-
 }
 
 void ControlManager::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {

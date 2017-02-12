@@ -190,20 +190,6 @@ int BasicTextField::GetLineHeight() {
 	return (int)(GetTextfieldHeight() / GetTextHeight(textfield_font)) - 1;
 }
 
-void BasicTextField::PerformMouseClick(PGPoint mouse) {
-	time_t time = GetTime();
-	if (time - last_click.time < DOUBLE_CLICK_TIME &&
-		panther::abs(mouse.x - last_click.x) < 2 &&
-		panther::abs(mouse.y - last_click.y) < 2) {
-		last_click.clicks = last_click.clicks == 2 ? 0 : last_click.clicks + 1;
-	} else {
-		last_click.clicks = 0;
-	}
-	last_click.time = time;
-	last_click.x = mouse.x;
-	last_click.y = mouse.y;
-}
-
 PGScalar BasicTextField::GetMaxXOffset() {
 	if (textfile->GetWordWrap()) return 0;
 	PGScalar max_textsize = textfile->GetMaxLineWidth(textfield_font);

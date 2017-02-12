@@ -26,11 +26,7 @@ void Control::MouseWheel(int x, int y, double distance, PGModifier modifier) {
 
 }
 
-void Control::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
-
-}
-
-void Control::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+void Control::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 
 }
 
@@ -38,9 +34,6 @@ void Control::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 
 }
 
-void Control::MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier) {
-
-}
 
 void Control::MouseMove(int x, int y, PGMouseButton buttons) {
 

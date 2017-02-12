@@ -443,7 +443,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			PGModifier modifier = 0;
 			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-			handle->manager->MouseDown(x, y, PGLeftMouseButton, modifier);
+			handle->manager->MouseDown(x, y, PGLeftMouseButton, modifier, 0);
 			break;
 		}
 		case WM_LBUTTONUP:
@@ -463,7 +463,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			PGModifier modifier = 0;
 			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-			handle->manager->MouseDown(x, y, PGMiddleMouseButton, modifier);
+			handle->manager->MouseDown(x, y, PGMiddleMouseButton, modifier, 0);
 			break;
 		}
 		case WM_MBUTTONUP:
@@ -484,7 +484,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			PGModifier modifier = 0;
 			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
-			handle->manager->MouseDown(x, y, PGRightMouseButton, modifier);
+			handle->manager->MouseDown(x, y, PGRightMouseButton, modifier, 0);
 			break;
 		}
 		case WM_RBUTTONUP:

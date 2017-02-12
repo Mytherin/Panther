@@ -18,7 +18,7 @@ public:
 	~SimpleTextField();
 
 	void Draw(PGRendererHandle, PGIRect*);
-	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseMove(int x, int y, PGMouseButton buttons);
 

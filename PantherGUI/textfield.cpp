@@ -515,9 +515,6 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	}
 }
 
-void TextField::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
-}
-
 PGScalar TextField::GetTextfieldWidth() {
 	return textfield_region.width;
 	return display_minimap ? this->width - SCROLLBAR_SIZE - GetMinimapWidth() : this->width - SCROLLBAR_SIZE;
@@ -572,7 +569,7 @@ void TextField::SetMinimapOffset(PGScalar offset) {
 	textfile->SetScrollOffset(lineoffset_y);
 }
 
-void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	if (!textfile->IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
 	if (PGRectangleContains(scrollbar->GetRectangle(), mouse)) {
@@ -613,21 +610,18 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 		lng line = 0, character = 0;
 		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
 
-		PerformMouseClick(mouse);
-
-		if (modifier == PGModifierNone && last_click.clicks == 0) {
+		if (modifier == PGModifierNone && click_count == 0) {
 			textfile->SetCursorLocation(line, character);
-
 		} else if (modifier == PGModifierShift) {
 			textfile->GetActiveCursor().SetCursorStartLocation(line, character);
 		} else if (modifier == PGModifierCtrl) {
 			textfile->AddNewCursor(line, character);
-		} else if (last_click.clicks == 1) {
+		} else if (click_count == 1) {
 			textfile->SetCursorLocation(line, character);
 			Cursor& active_cursor = textfile->GetActiveCursor();
 			active_cursor.SelectWord();
 			minimal_selections[textfile->active_cursor] = active_cursor.GetCursorSelection();
-		} else if (last_click.clicks == 2) {
+		} else if (click_count == 2) {
 			textfile->SetCursorLocation(line, character);
 			Cursor& active_cursor = textfile->GetActiveCursor();
 			active_cursor.SelectLine();

@@ -34,7 +34,7 @@ public:
 
 	void PeriodicRender(void);
 
-	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	void MouseWheel(int x, int y, double distance, PGModifier modifier);
@@ -65,7 +65,7 @@ private:
 	};
 
 	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
-	void SelectFile(lng selected_file, PGSelectFileType type);
+	void SelectFile(lng selected_file, PGSelectFileType type, bool open_file);
 
 	lng TotalFiles();
 	lng MaximumScrollOffset();

@@ -79,17 +79,13 @@ void PGContainer::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	}
 }
 
-void PGContainer::MouseClick(int x, int y, PGMouseButton button, PGModifier modifier) {
-	assert(0);
-}
-
-void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
 	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
-			c->MouseDown(mouse.x, mouse.y, button, modifier);
+			c->MouseDown(mouse.x, mouse.y, button, modifier, click_count);
 			if (c->ControlTakesFocus()) {
 				focused_control = c;
 			}

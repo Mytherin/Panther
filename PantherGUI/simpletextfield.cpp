@@ -72,7 +72,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	RenderText(renderer, textfield_font, line + render_start, render_end - render_start, x + character_widths[0], y, max_x);
 }
 
-void SimpleTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+void SimpleTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	if (!textfile->IsLoaded()) return;
 	PGPoint mouse(x - this->x, y - this->y);
 
@@ -82,16 +82,14 @@ void SimpleTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 		lng line = 0, character = 0;
 		_GetCharacterFromPosition(mouse.x, textfile->GetLine(0), character);
 
-		PerformMouseClick(mouse);
-
-		if (modifier == PGModifierNone && last_click.clicks == 0) {
+		if (modifier == PGModifierNone && click_count == 0) {
 			textfile->SetCursorLocation(line, character);
 		} else if (modifier == PGModifierShift) {
 			textfile->GetActiveCursor().SetCursorStartLocation(line, character);
-		} else if (last_click.clicks == 1) {
+		} else if (click_count == 1) {
 			textfile->SetCursorLocation(line, character);
 			textfile->GetActiveCursor().SelectWord();
-		} else if (last_click.clicks == 2) {
+		} else if (click_count == 2) {
 			textfile->SetCursorLocation(line, character);
 			textfile->GetActiveCursor().SelectLine();
 		}

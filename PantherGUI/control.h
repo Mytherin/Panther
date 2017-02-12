@@ -30,10 +30,8 @@ public:
 	virtual void PerformDragDrop(PGDragDropType type, int x, int y, void* data);
 	virtual void ClearDragDrop(PGDragDropType type);
 
-	virtual void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
-	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
-	virtual void MouseDoubleClick(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 	// In order for a control to get MouseEnter() and MouseLeave() events
 	// it must register with the ControlManager

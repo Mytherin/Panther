@@ -511,7 +511,7 @@ int TabControl::GetSelectedTab(int x) {
 	return -1;
 }
 
-void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	x -= this->x; y -= this->y;
 	if (button == PGLeftMouseButton) {
 		int selected_tab = GetSelectedTab(x);

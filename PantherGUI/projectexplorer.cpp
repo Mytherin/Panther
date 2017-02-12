@@ -1,4 +1,5 @@
 
+#include "controlmanager.h"
 #include "projectexplorer.h"
 #include "style.h"
 
@@ -42,7 +43,7 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 	if (selected) {
 		RenderRectangle(renderer, PGRect(x, y, this->width, GetTextHeight(font)), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 	}
-	
+
 	if (file_image) {
 		RenderImage(renderer, file_image, x, y);
 	} else {
@@ -135,7 +136,7 @@ void ProjectExplorer::MouseWheel(int x, int y, double distance, PGModifier modif
 	}
 }
 
-void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	PGPoint mouse(x - this->x, y - this->y);
 	if (mouse.x < this->width - SCROLLBAR_SIZE) {
 		lng selected_file = scrollbar_offset + (mouse.y / GetTextHeight(font));
@@ -155,13 +156,13 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			} else {
 				return;
 			}
-			SelectFile(selected_file, select_type);
-			return;
+			SelectFile(selected_file, select_type, click_count > 0 && modifier == PGModifierNone);
 		} else if (button == PGRightMouseButton) {
 
 		}
+		return;
 	}
-	PGContainer::MouseDown(x, y, button, modifier);
+	PGContainer::MouseDown(x, y, button, modifier, click_count);
 }
 
 void ProjectExplorer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
@@ -203,20 +204,16 @@ void PGDirectory::FindFile(lng file_number, PGDirectory** directory, PGFile* fil
 	lng entry = file_number - file_count;
 	assert(entry >= 0 && entry < files.size());
 	*file = files[entry];
+	file->path = PGPathJoin(this->path, file->path);
 }
 
-void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type) {
+void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool open_file) {
 	if (type == PGSelectSingleFile) {
 		PGFile file;
 		PGDirectory* directory;
 		this->FindFile(selected_file, &directory, &file);
 
-		if (selected_files.size() == 1 && selected_files[0] == selected_file) {
-			if (!directory) {
-				// FIXME: open the file
-
-			}
-		} else if (directory) {
+		if (directory) {
 			// (un)expand the selected directory
 			lng current_count = directory->DisplayedFiles();
 			directory->expanded = !directory->expanded;
@@ -231,10 +228,14 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type) {
 			// simply select the file
 			selected_files.clear();
 			selected_files.push_back(selected_file);
+			if (open_file) {
+				TabControl* t = GetControlManager(this)->active_tabcontrol;
+				t->OpenFile(file.path);
+			}
 		}
 	} else if (type == PGSelectAddRangeFile) {
 		if (selected_files.size() == 0) {
-			SelectFile(selected_file, type);
+			SelectFile(selected_file, type, open_file);
 			return;
 		}
 		lng start = selected_files.back();

@@ -81,7 +81,6 @@ protected:
 	PGScalar text_offset = 0;
 
 	PGDragType drag_type = PGDragNone;
-	MouseClickInstance last_click;
 
 	virtual void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
 	virtual void GetLineFromPosition(PGScalar y, lng& line);
@@ -90,8 +89,6 @@ protected:
 	virtual void GetPositionFromLineCharacter(lng line, lng character, PGScalar& x, PGScalar& y);
 	virtual void GetPositionFromLine(lng line, PGScalar& y);
 	virtual void _GetPositionFromCharacter(lng pos, TextLine line, PGScalar& x);
-
-	void PerformMouseClick(PGPoint mouse);
 
 	std::vector<std::pair<PGControlDataCallback, void*>> selection_changed_callbacks;
 	std::vector<std::pair<PGControlDataCallback, void*>> text_changed_callbacks;

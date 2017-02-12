@@ -21,8 +21,7 @@ public:
 	virtual void PeriodicRender(void);
 	virtual void Draw(PGRendererHandle, PGIRect*);
 
-	virtual void MouseClick(int x, int y, PGMouseButton button, PGModifier modifier);
-	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 

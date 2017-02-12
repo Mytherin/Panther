@@ -38,7 +38,7 @@ public:
 	bool KeyboardCharacter(char character, PGModifier modifier);
 
 	void MouseMove(int x, int y, PGMouseButton buttons);
-	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 
 	bool AcceptsDragDrop(PGDragDropType type);
