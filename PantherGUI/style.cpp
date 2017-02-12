@@ -23,6 +23,7 @@ PGStyleManager::PGStyleManager() {
 	vs.SetColor(PGColorNotificationError, PGColor(190, 17, 0));
 	vs.SetColor(PGColorNotificationWarning, PGColor(255, 140, 0));
 	vs.SetColor(PGColorNotificationButton, PGColor(14, 99, 156));
+	vs.SetColor(PGColorProjectExplorerText, PGColor(222, 222, 222));
 	vs.SetColor(PGColorTextFieldBackground, PGColor(30, 30, 30));
 	vs.SetColor(PGColorTextFieldText, PGColor(200, 200, 182));
 	vs.SetColor(PGColorTextFieldSelection, PGColor(38, 79, 120));

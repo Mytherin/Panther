@@ -10,6 +10,7 @@ enum PGColorType {
 	PGColorNotificationWarning,
 	PGColorNotificationButton,
 	PGColorNotificationText,
+	PGColorProjectExplorerText,
 	PGColorTextFieldBackground,
 	PGColorTextFieldText,
 	PGColorTextFieldSelection,

@@ -421,7 +421,7 @@ next_line:
 		this->minimap_line_height = line_height;
 		if (render_overlay) {
 			// render the overlay for the minimap
-			PGRect rect(position_x_text, initial_position_y + GetMinimapOffset(), this->width - position_x_text, line_height * GetLineHeight());
+			PGRect rect(position_x_text, initial_position_y + GetMinimapOffset(), max_x - position_x_text, line_height * GetLineHeight());
 			RenderRectangle(renderer, rect,
 				this->drag_type == PGDragMinimap ?
 				PGStyleManager::GetColor(PGColorMinimapDrag) :

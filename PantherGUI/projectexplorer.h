@@ -41,6 +41,8 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
+	PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
+
 	void Draw(PGRendererHandle renderer, PGIRect* rect);
 	
 	PG_CONTROL_KEYBINDINGS;

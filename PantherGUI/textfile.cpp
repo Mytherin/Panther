@@ -421,7 +421,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	LockMutex(text_lock);
 	lng linenr = 0;
 	PGTextBuffer* current_buffer = nullptr;
-	PGScalar max_length = 0;
+	PGScalar max_length = -1;
 
 	total_bytes = size;
 	bytes = 0;
@@ -495,6 +495,8 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		current_buffer = new PGTextBuffer("", 1, 0);
 		current_buffer->line_count++;
 		buffers.push_back(current_buffer);
+		max_line_length.buffer = buffers.back();
+		max_line_length.position = 0;
 		linenr++;
 	}
 	linecount = linenr;

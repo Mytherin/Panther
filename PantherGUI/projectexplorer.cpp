@@ -62,7 +62,7 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 			RenderText(renderer, font, extension.c_str(), extension.size(), x + (20 - size) / 2, y + (text_height - GetTextHeight(font)) / 2.0);
 
 			SetTextFontSize(font, font_size);
-			SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+			SetTextColor(font, PGStyleManager::GetColor(PGColorProjectExplorerText));
 		} else {
 			RenderFileIcon(renderer, font, "", x + (20 - 8) / 2.0, y + (text_height - 12) / 2.0, 8, 12,
 				PGColor(255, 255, 255),
@@ -112,7 +112,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
 	// render the background
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
-	SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+	SetTextColor(font, PGStyleManager::GetColor(PGColorProjectExplorerText));
 	lng offset = scrollbar_offset;
 	lng current_offset = 0;
 	lng current_selection = 0;
@@ -138,24 +138,28 @@ void ProjectExplorer::MouseWheel(int x, int y, double distance, PGModifier modif
 void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
 	PGPoint mouse(x - this->x, y - this->y);
 	if (mouse.x < this->width - SCROLLBAR_SIZE) {
-		// FIXME: click on file opens it
-		// FIXME: dragging files
-		// FIXME: right click on files
 		lng selected_file = scrollbar_offset + (mouse.y / GetTextHeight(font));
 		if (selected_file < 0 || selected_file >= TotalFiles()) return;
 
-		PGSelectFileType select_type;
-		if (modifier == PGModifierCtrl) {
-			select_type = PGSelectAddSingleFile;
-		} else if (modifier == PGModifierShift) {
-			select_type = PGSelectAddRangeFile;
-		} else if (modifier == PGModifierNone) {
-			select_type = PGSelectSingleFile;
-		} else {
+		if (button == PGLeftMouseButton) {
+			// FIXME: click on file opens it
+			// FIXME: dragging files
+			// FIXME: right click on files
+			PGSelectFileType select_type;
+			if (modifier == PGModifierCtrl) {
+				select_type = PGSelectAddSingleFile;
+			} else if (modifier == PGModifierShift) {
+				select_type = PGSelectAddRangeFile;
+			} else if (modifier == PGModifierNone) {
+				select_type = PGSelectSingleFile;
+			} else {
+				return;
+			}
+			SelectFile(selected_file, select_type);
 			return;
+		} else if (button == PGRightMouseButton) {
+
 		}
-		SelectFile(selected_file, select_type);
-		return;
 	}
 	PGContainer::MouseDown(x, y, button, modifier);
 }
