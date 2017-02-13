@@ -47,6 +47,7 @@ public:
 	void Draw(PGRendererHandle renderer, PGIRect* rect);
 
 	std::vector<PGFile> GetFiles();
+	std::vector<PGDirectory*>& GetDirectories() { return directories; }
 	
 	PG_CONTROL_KEYBINDINGS;
 private:

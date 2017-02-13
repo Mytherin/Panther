@@ -180,19 +180,32 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			for (auto it = tb->tabs.begin(); it != tb->tabs.end(); it++) {
 				SearchEntry entry;
 				entry.display_name = it->file->GetName();
+				entry.display_subtitle = it->file->GetFullPath();
 				entry.text = it->file->GetFullPath();
 				entry.data = it->file;
 				entries.push_back(entry);
 			}
 			ProjectExplorer* explorer = cm->active_projectexplorer;
 			if (explorer) {
-				auto files = explorer->GetFiles();
-				for (auto it = files.begin(); it != files.end(); it++) {
-					SearchEntry entry;
-					entry.display_name = it->Filename();
-					entry.text = it->path;
-					entry.data = nullptr;
-					entries.push_back(entry);
+				auto directories = explorer->GetDirectories();
+				for (auto it = directories.begin(); it != directories.end(); it++) {
+					std::vector<PGFile> files;
+					(*it)->GetFiles(files);
+					for (auto it2 = files.begin(); it2 != files.end(); it2++) {
+						SearchEntry entry;
+						entry.display_name = it2->Filename();
+						entry.display_subtitle = it2->path;
+						panther::replace(entry.display_subtitle, (*it)->path, "");
+						if (entry.display_subtitle.size() > 1 && entry.display_subtitle[0] == GetSystemPathSeparator()) {
+							entry.display_subtitle = entry.display_subtitle.substr(1);
+						}
+						entry.text = it2->path;
+						entry.data = nullptr;
+						entry.basescore = PGLanguageManager::GetLanguage(it2->Extension()) == nullptr ? 0 : 0.2;
+						entry.multiplier = 1;
+
+						entries.push_back(entry);
+					}
 				}
 			}
 

@@ -7,14 +7,18 @@
 
 struct SearchEntry {
 	std::string display_name;
+	std::string display_subtitle;
 	std::string text;
 	void* data;
+	double multiplier;
+	double basescore;
 };
 
 struct SearchRank {
 	lng index;
 	double score;
 	lng pos;
+	lng subpos;
 	lng text_pos;
 
 	SearchRank(lng index, double score) : index(index), score(score), pos(-1), text_pos(-1) {}

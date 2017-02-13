@@ -143,7 +143,7 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		RenderTextPartialBold(renderer, font, entry.display_name, rank.pos, filter_size, current_x + 5, current_y + 1);
 		current_y += GetTextHeight(font) + 1;
 		SetTextFontSize(font, 11);
-		RenderTextPartialBold(renderer, font, entry.text, rank.text_pos, filter_size, current_x + 5, current_y + 2);
+		RenderTextPartialBold(renderer, font, entry.display_subtitle, rank.subpos, filter_size, current_x + 5, current_y + 2);
 		current_y += GetTextHeight(font) + 1;
 		current_y += 3;
 
@@ -176,26 +176,28 @@ void SearchBox::Close(bool success) {
 void SearchBox::Filter(std::string filter) {
 	filter = utf8_tolower(filter);
 	displayed_entries.clear();
-	lng index = 0;
 	filter_size = filter.size();
 
-	for (auto it = entries.begin(); it != entries.end(); it++) {
-		size_t pos = utf8_tolower(it->display_name).find(filter);
-		size_t textpos = utf8_tolower(it->text).find(filter);
-		if (pos != std::string::npos || textpos != std::string::npos) {
+	for (lng index = 0; index < entries.size(); index++) {
+		SearchEntry& entry = entries[index];
+		size_t pos = utf8_tolower(entry.display_name).find(filter);
+		size_t subpos = utf8_tolower(entry.display_subtitle).find(filter);
+		size_t textpos = utf8_tolower(entry.text).find(filter);
+		if (pos != std::string::npos || subpos != std::string::npos || textpos != std::string::npos) {
 			size_t score_pos = std::min(textpos, pos);
-			double score = score_pos == 0 ? 1 : 1.0 / score_pos;
+			double score = ((score_pos == 0 ? 1.1 : 1.0 / score_pos) * entry.multiplier) + entry.basescore;
 			//displayed_entries.push_back(SearchRank(index, score));
 			if (displayed_entries.size() >= SEARCHBOX_MAX_ENTRIES) {
 				// have to remove an entry
-				if (displayed_entries.back().score < score) {
-					displayed_entries.pop_back();
+				if (displayed_entries.front().score < score) {
+					displayed_entries.erase(displayed_entries.begin());
 				} else {
 					continue;
 				}
 			}
 			SearchRank rank = SearchRank(index, score);
 			rank.pos = pos;
+			rank.subpos = subpos;
 			rank.text_pos = textpos;
 			// insertion sort
 			displayed_entries.insert(
@@ -203,7 +205,6 @@ void SearchBox::Filter(std::string filter) {
 				rank
 				);
 		}
-		index++;
 	}
 	std::reverse(displayed_entries.begin(), displayed_entries.end());
 	selected_entry = 0;
