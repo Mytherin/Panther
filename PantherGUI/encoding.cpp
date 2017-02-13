@@ -19,77 +19,77 @@ struct PGEncoder {
 
 std::string PGEncodingToString(PGFileEncoding encoding) {
 	switch (encoding) {
-	case PGEncodingUTF8:
-		return "UTF-8";
-	case PGEncodingUTF8BOM:
-		return "UTF-8 with BOM";
-	case PGEncodingUTF16:
-		return "UTF-16";
-	case PGEncodingUTF16Platform:
-		return "UTF-16 Platform";
-	case PGEncodingUTF32:
-		return "UTF-32";
-	case PGEncodingUTF16BE:
-		return "UTF-16 BE";
-	case PGEncodingUTF16BEBOM:
-		return "UTF-16 BE with BOM";
-	case PGEncodingUTF16LE:
-		return "UTF-16 LE";
-	case PGEncodingUTF16LEBOM:
-		return "UTF-16 LE with BOM";
-	case PGEncodingUTF32BE:
-		return "UTF-32 BE";
-	case PGEncodingUTF32BEBOM:
-		return "UTF-32 BE with BOM";
-	case PGEncodingUTF32LE:
-		return "UTF-32 LE";
-	case PGEncodingUTF32LEBOM:
-		return "UTF-32 LE with BOM";
-	case PGEncodingWesternISO8859_1:
-		return "ISO-8859-1";
-	case PGEncodingWesternWindows1252:
-		return "Windows-1252";
-	default:
-		return "Unknown";
+		case PGEncodingUTF8:
+			return "UTF-8";
+		case PGEncodingUTF8BOM:
+			return "UTF-8 with BOM";
+		case PGEncodingUTF16:
+			return "UTF-16";
+		case PGEncodingUTF16Platform:
+			return "UTF-16 Platform";
+		case PGEncodingUTF32:
+			return "UTF-32";
+		case PGEncodingUTF16BE:
+			return "UTF-16 BE";
+		case PGEncodingUTF16BEBOM:
+			return "UTF-16 BE with BOM";
+		case PGEncodingUTF16LE:
+			return "UTF-16 LE";
+		case PGEncodingUTF16LEBOM:
+			return "UTF-16 LE with BOM";
+		case PGEncodingUTF32BE:
+			return "UTF-32 BE";
+		case PGEncodingUTF32BEBOM:
+			return "UTF-32 BE with BOM";
+		case PGEncodingUTF32LE:
+			return "UTF-32 LE";
+		case PGEncodingUTF32LEBOM:
+			return "UTF-32 LE with BOM";
+		case PGEncodingWesternISO8859_1:
+			return "ISO-8859-1";
+		case PGEncodingWesternWindows1252:
+			return "Windows-1252";
+		default:
+			return "Unknown";
 	}
 	return "";
 }
 
 static const char* GetEncodingName(PGFileEncoding encoding) {
 	switch (encoding) {
-	case PGEncodingUTF8:
-	case PGEncodingUTF8BOM:
-		return "UTF-8";
-	case PGEncodingUTF16:
-		return "UTF-16";
-	case PGEncodingUTF16Platform:
-		return "UTF16_PlatformEndian";
-	case PGEncodingUTF32:
-		return "UTF-32";
-	case PGEncodingUTF16BE:
-	case PGEncodingUTF16BEBOM:
-		return "UTF-16BE";
-	case PGEncodingUTF16LE:
-	case PGEncodingUTF16LEBOM:
-		return "UTF-16LE";
-	case PGEncodingUTF32BE:
-	case PGEncodingUTF32BEBOM:
-		return "UTF-16BE";
-	case PGEncodingUTF32LE:
-	case PGEncodingUTF32LEBOM:
-		return "UTF-32LE";
-	case PGEncodingWesternISO8859_1:
-		return "ISO-8859-1";
-	case PGEncodingNordicISO8859_10:
-		return "iso-8859_10-1998";
-	case PGEncodingCelticISO8859_14:
-		return "iso-8859_14-1998";
-	case PGEncodingWesternWindows1252:
-		return "windows-1252";
-	case PGEncodingBinary:
-		return "Binary";
-	default:
-		assert(0);
+		case PGEncodingUTF8:
+		case PGEncodingUTF8BOM:
+			return "UTF-8";
+		case PGEncodingUTF16:
+			return "UTF-16";
+		case PGEncodingUTF16Platform:
+			return "UTF16_PlatformEndian";
+		case PGEncodingUTF32:
+			return "UTF-32";
+		case PGEncodingUTF16BE:
+		case PGEncodingUTF16BEBOM:
+			return "UTF-16BE";
+		case PGEncodingUTF16LE:
+		case PGEncodingUTF16LEBOM:
+			return "UTF-16LE";
+		case PGEncodingUTF32BE:
+		case PGEncodingUTF32BEBOM:
+			return "UTF-16BE";
+		case PGEncodingUTF32LE:
+		case PGEncodingUTF32LEBOM:
+			return "UTF-32LE";
+		case PGEncodingWesternISO8859_1:
+			return "ISO-8859-1";
+		case PGEncodingNordicISO8859_10:
+			return "iso-8859_10-1998";
+		case PGEncodingCelticISO8859_14:
+			return "iso-8859_14-1998";
+		case PGEncodingWesternWindows1252:
+			return "windows-1252";
+		case PGEncodingBinary:
+			return "Binary";
+		default:
+			assert(0);
 	}
 	return nullptr;
 }
@@ -122,7 +122,7 @@ static PGFileEncoding GetEncodingFromName(std::string encoding) {
 	} else if (encoding == "Binary") {
 		return PGEncodingBinary;
 	}
-	assert(0);
+	//assert(0);
 	return PGEncodingBinary;
 }
 
@@ -146,19 +146,23 @@ PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding t
 	handle->source_encoding = source_encoding;
 	handle->target_encoding = target_encoding;
 
-	// create the converters
-	handle->source = ucnv_open(GetEncodingName(source_encoding), &error);
-	if (U_FAILURE(error)) {
-		// failed to create a converter
-		delete handle;
-		return nullptr;
-	}
-	handle->target = ucnv_open(GetEncodingName(target_encoding), &error);
-	if (U_FAILURE(error)) {
-		// failed to create a converter
-		ucnv_close(handle->source);
-		delete handle;
-		return nullptr;
+	if (handle->source_encoding != PGEncodingBinary && handle->target_encoding != PGEncodingBinary) {
+		// create the converters
+		// binary encoding is handled by us, not by ICU
+		// so we don't create an ICU converter for that encoding
+		handle->source = ucnv_open(GetEncodingName(source_encoding), &error);
+		if (U_FAILURE(error)) {
+			// failed to create a converter
+			delete handle;
+			return nullptr;
+		}
+		handle->target = ucnv_open(GetEncodingName(target_encoding), &error);
+		if (U_FAILURE(error)) {
+			// failed to create a converter
+			ucnv_close(handle->source);
+			delete handle;
+			return nullptr;
+		}
 	}
 
 	return handle;
@@ -169,6 +173,30 @@ lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng
 }
 
 lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_size, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
+	if (encoder->source_encoding == PGEncodingBinary || encoder->target_encoding == PGEncodingBinary) {
+		if (encoder->source_encoding == PGEncodingBinary) {
+			assert(encoder->target_encoding == PGEncodingUTF8);
+			lng output_buffer_size = input_size * 3 + 1;
+			char* output_buffer = (char*)malloc(output_buffer_size);
+			lng pos = -1;
+			const char * hex = "0123456789ABCDEF";
+			for (lng i = 0; i < input_size; i++) {
+				output_buffer[++pos] = hex[(input_text[i] >> 4) & 0xF];
+				output_buffer[++pos] = hex[input_text[i] & 0xF];
+				output_buffer[++pos] = ' ';
+			}
+			output_buffer[pos] = '\0';
+			assert(pos < output_buffer_size);
+			*output = output_buffer;
+			*output_size = output_buffer_size;
+			return output_buffer_size;
+		} else if (encoder->target_encoding == PGEncodingBinary) {
+			assert(encoder->source_encoding == PGEncodingUTF8);
+			assert(0);
+		}
+	}
+
+
 	lng return_size = -1;
 	char* result_buffer = nullptr;
 	UChar* buffer = nullptr;

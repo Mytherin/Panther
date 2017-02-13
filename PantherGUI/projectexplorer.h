@@ -25,6 +25,7 @@ struct PGDirectory {
 	// Returns the number of files displayed by this directory
 	lng DisplayedFiles();
 	void Update();
+	void GetFiles(std::vector<PGFile>& files);
 };
 
 class ProjectExplorer : public PGContainer {
@@ -44,6 +45,8 @@ public:
 	PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
 
 	void Draw(PGRendererHandle renderer, PGIRect* rect);
+
+	std::vector<PGFile> GetFiles();
 	
 	PG_CONTROL_KEYBINDINGS;
 private:

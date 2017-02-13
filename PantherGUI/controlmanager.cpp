@@ -8,7 +8,8 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
-ControlManager::ControlManager(PGWindowHandle window) : PGContainer(window) {
+ControlManager::ControlManager(PGWindowHandle window) : 
+	PGContainer(window), active_projectexplorer(nullptr) {
 #ifdef PANTHER_DEBUG
 	entrance_count = 0;
 #endif

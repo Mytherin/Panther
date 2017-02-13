@@ -695,6 +695,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_f
 	manager->statusbar = bar;
 	manager->active_textfield = textfield;
 	manager->active_tabcontrol = tabs;
+	manager->active_projectexplorer = explorer;
 	return res;
 }
 

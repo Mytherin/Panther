@@ -866,7 +866,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 
 void TextField::DisplayGotoDialog(PGGotoType goto_type) {
 	PGGotoAnything* goto_anything = new PGGotoAnything(this, this->window, goto_type);
-	goto_anything->SetSize(PGSize(goto_anything->width, GetTextHeight(textfield_font) + 206));
+	goto_anything->SetSize(PGSize(goto_anything->width, GetTextHeight(textfield_font) + 306));
 	goto_anything->SetPosition(PGPoint(this->x + (this->width - goto_anything->width) * 0.5f, this->y));
 	dynamic_cast<PGContainer*>(this->parent)->AddControl(goto_anything);
 }

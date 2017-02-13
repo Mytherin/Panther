@@ -4,6 +4,7 @@
 #include "controlmanager.h"
 #include "textfield.h"
 #include "togglebutton.h"
+#include "projectexplorer.h"
 
 #define HPADDING 25
 #define HPADDING_SMALL 5
@@ -18,7 +19,7 @@ struct ScrollData {
 };
 
 PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGotoType type) :
-	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr) {
+	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), preview(nullptr) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -63,6 +64,7 @@ PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGo
 
 PGGotoAnything::~PGGotoAnything() {
 	if (scroll_data) delete scroll_data;
+	if (preview) delete preview;
 }
 
 void PGGotoAnything::Draw(PGRendererHandle renderer, PGIRect* rect) {
@@ -182,6 +184,17 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				entry.data = it->file;
 				entries.push_back(entry);
 			}
+			ProjectExplorer* explorer = cm->active_projectexplorer;
+			if (explorer) {
+				auto files = explorer->GetFiles();
+				for (auto it = files.begin(); it != files.end(); it++) {
+					SearchEntry entry;
+					entry.display_name = it->Filename();
+					entry.text = it->path;
+					entry.data = nullptr;
+					entries.push_back(entry);
+				}
+			}
 
 			this->box = new SearchBox(this->window, entries);
 			box->SetSize(PGSize(this->width, this->height - (goto_command->y + goto_command->height)));
@@ -189,26 +202,39 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			box->OnRender(
 				[](PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height) {
 				// render the text file icon next to each open file
-				TextFile* file = (TextFile*)entry.data;
-				std::string filename = file->GetName();
-				std::string ext = file->GetExtension();
+				PGFile file = PGFile(entry.text);
+				std::string filename = file.Filename();
+				std::string ext = file.Extension();
 
 				PGScalar file_icon_height = button_height * 0.6;
 				PGScalar file_icon_width = file_icon_height * 0.8;
+
+				PGLanguage* language = PGLanguageManager::GetLanguage(ext);
 
 				PGColor color = GetTextColor(font);
 				x += 2.5f;
 				std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 				RenderFileIcon(renderer, font, ext.c_str(), x, y + (button_height - file_icon_height) / 2, file_icon_width, file_icon_height,
-					file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGColor(30, 30, 30), PGColor(91, 91, 91));
+					language ? language->GetColor() : PGColor(255, 255, 255), PGColor(30, 30, 30), PGColor(91, 91, 91));
 				x += file_icon_width + 2.5f;
 				SetTextColor(font, color);
 			});
 			data = (void*)&textfield->GetTextFile();
 			box->OnSelectionChanged([](SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data) {
 				ControlManager* cm = GetControlManager(searchbox);
-				cm->active_tabcontrol->SwitchToTab((TextFile*)entry.data);
-			}, (void*)textfield);
+				PGGotoAnything* g = (PGGotoAnything*)data;
+				if (entry.data != nullptr) {
+					cm->active_tabcontrol->SwitchToTab((TextFile*)entry.data);
+				} else {
+					if (g->preview) {
+						delete g->preview;
+						g->preview = nullptr;
+					}
+					PGFileError error;
+					g->preview = TextFile::OpenTextFilePreview(g->textfield, entry.text, error);
+					g->textfield->SetTextFile(g->preview ? g->preview : (TextFile*)g->data);
+				}
+			}, (void*)this);
 
 			this->AddControl(box);
 			break;
@@ -241,9 +267,19 @@ void PGGotoAnything::Cancel(bool success) {
 		{
 			assert(box);
 			assert(data);
+			ControlManager* cm = GetControlManager(this);
 			if (!success) {
-				ControlManager* cm = GetControlManager(this);
 				cm->active_tabcontrol->SwitchToTab((TextFile*)data);
+			} else {
+				if (preview) {
+					assert(preview);
+					std::string path = preview->GetFullPath();
+					cm->active_tabcontrol->OpenFile(path);
+				}
+			}
+			if (preview) {
+				delete preview;
+				preview = nullptr;
 			}
 			data = nullptr;
 		}

@@ -186,6 +186,25 @@ void ProjectExplorer::FindFile(lng file_number, PGDirectory** directory, PGFile*
 	}
 }
 
+std::vector<PGFile> ProjectExplorer::GetFiles() {
+	std::vector<PGFile> files;
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->GetFiles(files);
+	}
+	return files;
+}
+
+void PGDirectory::GetFiles(std::vector<PGFile>& result) {
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->GetFiles(result);
+	}
+	for (auto it = files.begin(); it != files.end(); it++) {
+		PGFile file = *it;
+		file.path = PGPathJoin(this->path, file.path);
+		result.push_back(file);
+	}
+}
+
 void PGDirectory::FindFile(lng file_number, PGDirectory** directory, PGFile* file) {
 	if (file_number == 0) {
 		*directory = this;

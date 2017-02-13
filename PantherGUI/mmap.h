@@ -37,5 +37,6 @@ namespace panther {
 	void WriteToFile(PGFileHandle handle, const char* text, lng length);
 	void Flush(PGFileHandle handle);
 	void* ReadFile(std::string filename, lng& result_size, PGFileError& error);
+	void* ReadPreview(std::string filename, lng max_size, lng& result_size, PGFileError& error);
 	void DestroyFileContents(void* address);
 }

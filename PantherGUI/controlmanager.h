@@ -2,6 +2,7 @@
 
 #include "container.h"
 #include "control.h"
+#include "projectexplorer.h"
 #include "tabcontrol.h"
 #include "textfield.h"
 
@@ -52,6 +53,7 @@ public:
 
 	TextField* active_textfield;
 	TabControl* active_tabcontrol;
+	ProjectExplorer* active_projectexplorer;
 	StatusBar* statusbar;
 
 	bool CloseControlManager();

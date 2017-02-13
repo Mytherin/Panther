@@ -39,18 +39,19 @@ SearchBox::~SearchBox() {
 bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
 		switch (button) {
-		case PGButtonDown:
+		case PGButtonUp:
 			if (displayed_entries.size() > 0) {
 				selected_entry--;
-				if (selected_entry <= 0) {
+				if (selected_entry < 0) {
 					selected_entry = displayed_entries.size() - 1;
 				}
 				SearchRank& rank = displayed_entries[selected_entry];
 				SearchEntry& entry = entries[rank.index];
 				selection_changed(this, rank, entry, selection_changed_data);
+				this->Invalidate();
 			}
 			return true;
-		case PGButtonUp:
+		case PGButtonDown:
 			if (displayed_entries.size() > 0) {
 				selected_entry++;
 				if (selected_entry >= displayed_entries.size()) {
@@ -59,6 +60,7 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 				SearchRank& rank = displayed_entries[selected_entry];
 				SearchEntry& entry = entries[rank.index];
 				selection_changed(this, rank, entry, selection_changed_data);
+				this->Invalidate();
 			}
 			return true;
 		default:
@@ -98,8 +100,6 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	lng initial_selection = 0; // FIXME: set to scroll size
 	lng current_selection = initial_selection;
 
-	//RenderRectangle(renderer, PGIRect(0, 30, 200, 30), PGColor(255, 255, 255), PGDrawStyleFill);
-
 
 	PGScalar BUTTON_HEIGHT = 0;
 	{
@@ -127,10 +127,9 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 
 		if (current_selection != initial_selection) {
 			RenderLine(renderer, PGLine(
-				PGPoint(current_x, current_y + 4), 
-				PGPoint(current_x + this->width, current_y + 4)),
+				PGPoint(current_x, current_y), 
+				PGPoint(current_x + this->width, current_y)),
 				PGColor(30, 30, 30), 2);
-			current_y += 4;
 		}
 
 		current_y += 3;

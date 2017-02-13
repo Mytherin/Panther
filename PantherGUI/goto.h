@@ -42,6 +42,7 @@ private:
 	ToggleButton* goto_definition;
 
 	ScrollData* scroll_data = nullptr;
-	void* data;
+	TextFile* preview = nullptr;
+	void* data = nullptr;
 
 };

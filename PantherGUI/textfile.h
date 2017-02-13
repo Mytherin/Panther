@@ -72,6 +72,7 @@ public:
 	~TextFile();
 
 	static TextFile* OpenTextFile(BasicTextField* textfield, std::string filename, PGFileError& error, bool immediate_load = false);
+	static TextFile* OpenTextFilePreview(BasicTextField* textfield, std::string filename, PGFileError& error);
 
 	TextLineIterator* GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll);
 	TextLineIterator* GetLineIterator(BasicTextField* textfield, lng linenumber);
