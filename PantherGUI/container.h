@@ -49,7 +49,7 @@ protected:
 	Control* focused_control = nullptr;
 
 	std::vector<Control*> controls;
-private:
+
 	std::vector<Control*> pending_removes;
 
 	void FlushRemoves();

@@ -4,8 +4,9 @@
 		{ "key": "ctrl+shift+n", "command": "new_window" },
 		{ "key": "ctrl+shift+w", "command": "close_window" },
 
-		{ "key": "ctrl+f", "command": "show_find", "args": {"replace": false} },
-		{ "key": "ctrl+h", "command": "show_find", "args": {"replace": true} }
+		{ "key": "ctrl+f", "command": "show_find", "args": {"type": "find"} },
+		{ "key": "ctrl+h", "command": "show_find", "args": {"type": "findreplace"} },
+		{ "key": "ctrl+shift+f", "command": "show_find", "args": {"type": "findinfiles"} }
 	],
 	"basictextfield": [
 		{ "key": "backspace", "command": "left_delete" },

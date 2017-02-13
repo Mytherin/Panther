@@ -152,9 +152,9 @@ ControlManager* GetControlManager(Control* c) {
 	return (ControlManager*)GetWindowManager(c->window);
 }
 
-void ControlManager::ShowFindReplace(bool replace) {
+void ControlManager::ShowFindReplace(PGFindTextType type) {
 	// Find text
-	FindText* view = new FindText(this->window, replace);
+	FindText* view = new FindText(this->window, type);
 	view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	view->vertical_anchor = statusbar;
 	for (auto it = controls.begin(); it != controls.end(); it++) {
@@ -194,11 +194,15 @@ void ControlManager::InitializeKeybindings() {
 	std::map<std::string, PGKeyFunctionArgs>& args = ControlManager::keybindings_varargs;
 	args["show_find"] = [](Control* c, std::map<std::string, std::string> args) {
 		ControlManager* t = (ControlManager*)c;
-		bool replace = false;
-		if (args.count("replace") > 0) {
-			replace = panther::tolower(args["replace"]) == "true";
+		PGFindTextType type = PGFindSingleFile;
+		if (args.count("type") > 0) {
+			if (args["type"] == "findreplace") {
+				type = PGFindReplaceSingleFile;
+			} else if (args["type"] == "findinfiles") {
+				type = PGFindReplaceManyFiles;
+			}
 		}
-		t->ShowFindReplace(replace);
+		t->ShowFindReplace(type);
 	};
 }
 

@@ -7,7 +7,7 @@
 
 class FindText : public PGContainer {
 public:
-	FindText(PGWindowHandle window, bool replace = false);
+	FindText(PGWindowHandle window, PGFindTextType type);
 	~FindText();
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
@@ -26,13 +26,13 @@ public:
 	void Replace();
 	void ReplaceAll();
 
-	void ToggleReplace();
+	void SetType(PGFindTextType type);
 
 	void Close();
 
 	PG_CONTROL_KEYBINDINGS;
 private:
-	bool replace = false;
+	PGFindTextType type;
 
 	PGScalar hoffset = 0;
 
@@ -49,15 +49,17 @@ private:
 	ToggleButton* toggle_highlight;
 
 	nlohmann::json& GetFindHistory();
-	void SetTextfile(TextFile* textfile);
-
-	PGCursorPosition begin_pos;
-	PGCursorPosition end_pos;
-	TextFile* current_textfile;
 
 	SimpleTextField* replace_field = nullptr;
 	Button* replace_button = nullptr;
 	Button* replace_all_button = nullptr;
+	Button* replace_in_selection_button = nullptr;
+	Button* replace_expand = nullptr;
+
+	SimpleTextField* files_to_include_field = nullptr;
+	ToggleButton* source_files_only = nullptr;
+	ToggleButton* respect_gitignore = nullptr;
+	
 
 
 	lng history_entry = 0;

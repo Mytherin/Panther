@@ -58,7 +58,7 @@ public:
 
 	bool CloseControlManager();
 
-	void ShowFindReplace(bool replace = false);
+	void ShowFindReplace(PGFindTextType type);
 	void CreateNewWindow();
 
 	PG_CONTROL_KEYBINDINGS;

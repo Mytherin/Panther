@@ -18,7 +18,7 @@ static void UpdateHighlight(Control* c, FindText* f) {
 	};
 }
 
-FindText::FindText(PGWindowHandle window, bool replace) :
+FindText::FindText(PGWindowHandle window, PGFindTextType type) :
 	PGContainer(window), history_entry(0) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
@@ -65,15 +65,18 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 
 	PGScalar button_width = MeasureTextWidth(font, "Find Prev") + 2 * HPADDING;
 	PGScalar button_height = field->height;
-	hoffset = (button_width + HPADDING) * 3 + HPADDING * 2 + button_height;
+	hoffset = button_width * 3 + button_height;
 
-	Button* buttons[4];
-	for (int i = 0; i < 4; i++) {
+	Button* buttons[2];
+	for (int i = 0; i < 2; i++) {
 		buttons[i] = new Button(window, this);
 		buttons[i]->SetSize(PGSize(button_width, button_height));
 		buttons[i]->y = VPADDING;
 		this->AddControl(buttons[i]);
 	}
+	find_button = buttons[0];
+	find_expand = buttons[1];
+	find_expand->SetSize(PGSize(button_height, button_height));
 
 	auto workspace = PGGetWorkspace(window);
 	assert(workspace);
@@ -113,11 +116,6 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 		toggles[i]->y = VPADDING;
 		this->AddControl(toggles[i]);
 	}
-	find_button = buttons[0];
-	find_prev = buttons[1];
-	find_all = buttons[2];
-	find_expand = buttons[3];
-	find_expand->SetSize(PGSize(button_height, button_height));
 	toggle_regex = toggles[0];
 	toggle_matchcase = toggles[1];
 	toggle_wholeword = toggles[2];
@@ -125,8 +123,6 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	toggle_highlight = toggles[4];
 
 	find_button->SetText(std::string("Find"), font);
-	find_prev->SetText(std::string("Find Prev"), font);
-	find_all->SetText(std::string("Find All"), font);
 	find_expand->SetText(std::string("v"), font);
 	toggle_regex->SetText(std::string(".*"), font);
 	toggle_matchcase->SetText(std::string("Aa"), font);
@@ -157,31 +153,24 @@ FindText::FindText(PGWindowHandle window, bool replace) :
 	toggle_matchcase->OnToggle(update_highlight, toggle_matchcase_text);
 	toggle_wholeword->OnToggle(update_highlight, toggle_wholeword_text);
 	toggle_wrap->OnToggle(update_highlight, toggle_wrap_text);
-	find_prev->OnPressed([](Button* b, void* data) {
-		((FindText*)data)->Find(PGDirectionLeft);
-	}, this);
-	find_button->OnPressed([](Button* b, void* data) {
-		((FindText*)data)->Find(PGDirectionRight);
-	}, this);
-	find_all->OnPressed([](Button* b, void* data) {
-		FindText* ft = ((FindText*)data);
-		ft->SelectAllMatches();
-		ft->Close();
-	}, this);
-	find_expand->OnPressed([](Button* b, void* data) {
-		FindText* tf = ((FindText*)data);
-		tf->ToggleReplace();
-	}, this);
 
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
-	SetTextfile(&tf);
 
 	manager->active_textfield->OnTextChanged((PGControlDataCallback)UpdateHighlight, this);
 
-	if (replace) {
-		ToggleReplace();
-	}
+	this->replace_field = nullptr;
+	this->replace_button = nullptr;
+	this->replace_all_button = nullptr;
+	this->replace_in_selection_button = nullptr;
+	this->files_to_include_field = nullptr;
+	this->source_files_only = nullptr;
+	this->respect_gitignore = nullptr;
+	this->replace_expand = nullptr;
+	this->find_prev = nullptr;
+	this->find_all = nullptr;
+
+	this->SetType(type);
 }
 
 FindText::~FindText() {
@@ -189,63 +178,208 @@ FindText::~FindText() {
 	manager->active_textfield->UnregisterOnTextChanged((PGControlDataCallback)UpdateHighlight, this);
 }
 
-void FindText::SetTextfile(TextFile* textfile) {
-	this->current_textfile = textfile;
-	begin_pos = textfile->GetActiveCursor().BeginPosition();
-	end_pos = textfile->GetActiveCursor().EndPosition();
-}
+void FindText::SetType(PGFindTextType type) {
+	this->type = type;
 
-void FindText::ToggleReplace() {
-	replace = !replace;
-	if (replace) {
-		PGScalar base_y = field->height + VPADDING * 2;
-		this->fixed_height = 2 * (field->height + VPADDING * 2);
+	// clear current controls
+	std::vector<Control*> controls{ replace_field, replace_button, replace_all_button, replace_in_selection_button,
+		files_to_include_field, source_files_only, respect_gitignore, replace_expand, find_prev, find_all };
 
-		replace_field = new SimpleTextField(window);
-		replace_field->width = this->width - 400;
-		replace_field->x = 150;
-		replace_field->y = base_y;
-		this->AddControl(replace_field);
+
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		if ((*it)) {
+			this->ActuallyRemoveControl(*it);
+		}
+	}
+	this->replace_field = nullptr;
+	this->replace_button = nullptr;
+	this->replace_all_button = nullptr;
+	this->replace_in_selection_button = nullptr;
+	this->files_to_include_field = nullptr;
+	this->source_files_only = nullptr;
+	this->respect_gitignore = nullptr;
+	this->replace_expand = nullptr;
+	this->find_prev = nullptr;
+	this->find_all = nullptr;
+
+	if (type != PGFindReplaceManyFiles) {
 		Button* buttons[2];
 		for (int i = 0; i < 2; i++) {
 			buttons[i] = new Button(window, this);
 			buttons[i]->SetSize(PGSize(find_button->width, find_button->height));
-			buttons[i]->y = base_y;
+			buttons[i]->y = find_button->y;
 			this->AddControl(buttons[i]);
 		}
-		replace_button = buttons[0];
-		replace_all_button = buttons[1];
-		replace_button->SetText(std::string("Replace"), font);
-		replace_all_button->SetText(std::string("Replace All"), font);
+		find_prev = buttons[0];
+		find_all = buttons[1];
 
-		replace_button->OnPressed([](Button* b, void* data) {
-			((FindText*)data)->Replace();
+		find_prev->SetText(std::string("Find Prev"), font);
+		find_all->SetText(std::string("Find All"), font);
+
+		find_prev->OnPressed([](Button* b, void* data) {
+			((FindText*)data)->Find(PGDirectionLeft);
 		}, this);
-		replace_all_button->OnPressed([](Button* b, void* data) {
+
+		find_all->OnPressed([](Button* b, void* data) {
 			FindText* ft = ((FindText*)data);
-			ft->ReplaceAll();
+			ft->SelectAllMatches();
 			ft->Close();
 		}, this);
 
-		find_expand->y = base_y;
-		find_expand->SetText(std::string("^"), font);
+		find_button->OnPressed([](Button* b, void* data) {
+			((FindText*)data)->Find(PGDirectionRight);
+		}, this);
 	} else {
-		this->fixed_height = field->height + VPADDING * 2;
-		auto replace_field = this->replace_field;
-		this->replace_field = nullptr;
-		this->RemoveControl(replace_field);
+		find_button->OnPressed([](Button* b, void* data) {
+			assert(0);
+		}, this);
+	}
 
-		auto replace_button = this->replace_button;
-		this->replace_button = nullptr;
-		this->RemoveControl(replace_button);
+	switch (type) {
+		case PGFindSingleFile:
+		{
+			this->fixed_height = field->height + VPADDING * 2;
 
-		auto replace_all_button = this->replace_all_button;
-		this->replace_all_button = nullptr;
-		this->RemoveControl(replace_all_button);
+			find_expand->y = VPADDING;
+			find_expand->SetText(std::string("v"), font);
+			find_expand->OnPressed([](Button* b, void* data) {
+				FindText* tf = ((FindText*)data);
+				tf->SetType(PGFindReplaceSingleFile);
+			}, this);
+			break;
+		}
+		case PGFindReplaceManyFiles:
+		{
+			PGScalar base_y = 2 * (field->height + VPADDING) + VPADDING;
+			this->fixed_height = 3 * (field->height + VPADDING) + VPADDING;
+
+			files_to_include_field = new SimpleTextField(window);
+			files_to_include_field->width = this->width - 400;
+			files_to_include_field->x = 150;
+			files_to_include_field->y = base_y;
+			this->AddControl(files_to_include_field);
+
+			PGScalar button_width = field->height;
+			PGScalar button_height = field->height;
+
+			auto workspace = PGGetWorkspace(window);
+			assert(workspace);
+			if (workspace->settings.count("find_text") == 0 || !workspace->settings["find_text"].is_object()) {
+				workspace->settings["find_text"] = nlohmann::json::object();
+			}
+			nlohmann::json& find_text = workspace->settings["find_text"];
+			assert(find_text.is_object());
+
+			static char* toggle_source_files_only = "toggle_source_only";
+			static char* toggle_respect_gitignore = "toggle_respect_gitignore";
+
+			bool initial_values[5];
+			initial_values[0] = find_text.get_if_exists(toggle_source_files_only, true);
+			initial_values[1] = find_text.get_if_exists(toggle_respect_gitignore, true);
+
+			ToggleButton* toggles[2];
+			for (int i = 0; i < 2; i++) {
+				toggles[i] = new ToggleButton(window, this, initial_values[i]);
+				toggles[i]->SetSize(PGSize(button_width, button_height));
+				toggles[i]->y = base_y;
+				this->AddControl(toggles[i]);
+			}
+			source_files_only = toggles[0];
+			respect_gitignore = toggles[1];
+			source_files_only->y = field->height + VPADDING * 2;
+			respect_gitignore->y = base_y;
+
+			source_files_only->SetText(std::string("Source Only"), font);
+			respect_gitignore->SetText(std::string(".gitignore"), font);
+
+			auto update_find_text = [](Button* b, bool toggled, void* setting_name) {
+				PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
+			};
+
+			source_files_only->OnToggle(update_find_text, toggle_source_files_only);
+			respect_gitignore->OnToggle(update_find_text, toggle_respect_gitignore);
+		}
+		case PGFindReplaceSingleFile:
+		{
+			PGScalar base_y = field->height + VPADDING * 2;
+			if (type == PGFindReplaceSingleFile) {
+				this->fixed_height = 2 * (field->height + VPADDING * 2);
+			}
+
+			replace_field = new SimpleTextField(window);
+			replace_field->width = this->width - 400;
+			replace_field->x = 150;
+			replace_field->y = base_y;
+			this->AddControl(replace_field);
+
+			Button* buttons[3];
+			int button_count = type == PGFindReplaceSingleFile ? 3 : 1;
+			for (int i = 0; i < button_count; i++) {
+				buttons[i] = new Button(window, this);
+				buttons[i]->SetSize(PGSize(find_button->width, find_button->height));
+				buttons[i]->y = base_y;
+				this->AddControl(buttons[i]);
+			}
+
+			replace_button = buttons[0];
+			replace_button->SetText(std::string("Replace"), font);
+
+			if (type == PGFindReplaceSingleFile) {
+				replace_all_button = buttons[1];
+				replace_in_selection_button = buttons[2];
+
+				replace_all_button->SetText(std::string("Replace All"), font);
+				replace_in_selection_button->SetText(std::string("In Selection"), font);
+
+				replace_all_button->OnPressed([](Button* b, void* data) {
+					FindText* ft = ((FindText*)data);
+					ft->ReplaceAll();
+					ft->Close();
+				}, this);
+				replace_in_selection_button->OnPressed([](Button* b, void* data) {
+					FindText* ft = ((FindText*)data);
+					assert(0);
+				}, this);
 
 
-		find_expand->y = VPADDING;
-		find_expand->SetText(std::string("v"), font);
+				replace_expand = new Button(window, this);
+				replace_expand->SetSize(PGSize(field->height, field->height));
+				replace_expand->y = base_y;
+				this->AddControl(replace_expand);
+				replace_expand->SetText(std::string("v"), font);
+				replace_expand->OnPressed([](Button* b, void* data) {
+					FindText* tf = ((FindText*)data);
+					tf->SetType(PGFindReplaceManyFiles);
+				}, this);
+
+				replace_button->OnPressed([](Button* b, void* data) {
+					((FindText*)data)->Replace();
+				}, this);
+			} else {
+				replace_button->OnPressed([](Button* b, void* data) {
+					FindText* ft = ((FindText*)data);
+					assert(0);
+				}, this);
+
+			}
+
+			find_expand->y = VPADDING;
+			find_expand->SetText(std::string("^"), font);
+			if (type == PGFindReplaceSingleFile) {
+				find_expand->OnPressed([](Button* b, void* data) {
+					FindText* tf = ((FindText*)data);
+					tf->SetType(PGFindSingleFile);
+				}, this);
+			} else {
+				find_expand->OnPressed([](Button* b, void* data) {
+					FindText* tf = ((FindText*)data);
+					tf->SetType(PGFindReplaceSingleFile);
+				}, this);
+			}
+			break;
+		}
+		default:
+			break;
 	}
 	GetControlManager(this)->TriggerResize();
 	GetControlManager(this)->Invalidate();
@@ -256,6 +390,17 @@ void FindText::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	PGScalar y = Y() - rect->y;
 
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
+
+	PGScalar field_offset = MeasureTextWidth(font, "Replace:") + HPADDING_SMALL * 2;
+	x += HPADDING_SMALL;
+	RenderText(renderer, font, "Find:", strlen("Find:"), x + field->x - field_offset, y + field->y + (field->height - GetTextHeight(font)) / 2 - 1);
+	if (replace_field) {
+		RenderText(renderer, font, "Replace:", strlen("Replace:"), x + replace_field->x - field_offset, y + replace_field->y + (replace_field->height - GetTextHeight(font)) / 2 - 1);
+	}
+	if (files_to_include_field) {
+		RenderText(renderer, font, "In Files:", strlen("In Files:"), x + files_to_include_field->x - field_offset, y + files_to_include_field->y + (files_to_include_field->height - GetTextHeight(font)) / 2 - 1);
+	}
+
 	PGContainer::Draw(renderer, rect);
 }
 
@@ -265,23 +410,44 @@ void FindText::OnResize(PGSize old_size, PGSize new_size) {
 	toggle_wholeword->SetPosition(PGPoint(toggle_matchcase->x + toggle_matchcase->width, toggle_wholeword->y));
 	toggle_wrap->SetPosition(PGPoint(toggle_wholeword->x + toggle_wholeword->width + HPADDING_SMALL, toggle_wrap->y));
 	toggle_highlight->SetPosition(PGPoint(toggle_wrap->x + toggle_wrap->width, toggle_highlight->y));
+	if (source_files_only) {
+		source_files_only->SetPosition(PGPoint(toggle_regex->x, source_files_only->y));
+		respect_gitignore->SetPosition(PGPoint(toggle_regex->x, respect_gitignore->y));
+		source_files_only->SetSize(PGSize(toggle_highlight->x + toggle_highlight->width - toggle_regex->x, source_files_only->height));
+		respect_gitignore->SetSize(PGSize(source_files_only->width, respect_gitignore->height));
+	}
 
-	field->x = toggle_highlight->x + toggle_highlight->width + HPADDING_SMALL;
-	field->width = new_size.width - hoffset - field->x;
+	PGScalar field_offset = MeasureTextWidth(font, "In Files:") + HPADDING_SMALL * 2;;
+	field->x = toggle_highlight->x + toggle_highlight->width + HPADDING_SMALL + field_offset;
+	field->width = new_size.width - (type == PGFindReplaceManyFiles ? (find_button->width + HPADDING_SMALL) : hoffset) - field->x - field_offset;
 	if (replace_field) {
 		replace_field->x = field->x;
 		replace_field->width = field->width;
 	}
+	if (files_to_include_field) {
+		files_to_include_field->x = field->x;
+		files_to_include_field->width = field->width;
+	}
 	find_button->SetPosition(PGPoint(field->x + field->width + HPADDING, find_button->y));
 	if (replace_button) {
-		replace_button->SetPosition(PGPoint(field->x + field->width + HPADDING, replace_button->y));
+		replace_button->SetPosition(PGPoint(find_button->x, replace_button->y));
 	}
-	find_prev->SetPosition(PGPoint(find_button->x + find_button->width + HPADDING, find_prev->y));
-	if (replace_all_button) {
-		replace_all_button->SetPosition(PGPoint(find_button->x + find_button->width + HPADDING, replace_all_button->y));
+	PGScalar find_expand_position = find_button->x + find_button->width + HPADDING;
+	if (find_prev) {
+		find_prev->SetPosition(PGPoint(find_button->x + find_button->width + HPADDING, find_prev->y));
+		if (replace_all_button) {
+			replace_all_button->SetPosition(PGPoint(find_prev->x, replace_all_button->y));
+		}
+		find_all->SetPosition(PGPoint(find_prev->x + find_prev->width + HPADDING, find_all->y));
+		if (replace_in_selection_button) {
+			replace_in_selection_button->SetPosition(PGPoint(find_all->x, replace_in_selection_button->y));
+		}
+		find_expand_position = find_all->x + find_all->width + HPADDING;
 	}
-	find_all->SetPosition(PGPoint(find_prev->x + find_prev->width + HPADDING, find_all->y));
-	find_expand->SetPosition(PGPoint(find_all->x + find_all->width + HPADDING, find_expand->y));
+	find_expand->SetPosition(PGPoint(find_expand_position, find_expand->y));
+	if (replace_expand) {
+		replace_expand->SetPosition(PGPoint(find_expand->x, replace_expand->y));
+	}
 }
 
 nlohmann::json& FindText::GetFindHistory() {
@@ -297,7 +463,6 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
-	SetTextfile(&tf);
 
 	std::string search_text = field->GetText();
 	bool found_result = tf.FindMatch(search_text, direction,
@@ -355,9 +520,9 @@ void FindText::FindAll(bool select_first_match) {
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	char* error_message = nullptr;
 	std::string text = field->GetText();
-	if (&tf != current_textfile)
-		SetTextfile(&tf);
 	tf.SetSelectedMatch(0);
+	auto begin_pos = tf.GetActiveCursor().BeginPosition();
+	auto end_pos = tf.GetActiveCursor().EndPosition();
 	tf.FindAllMatches(text, select_first_match,
 		begin_pos.line, begin_pos.position,
 		end_pos.line, end_pos.position,
@@ -375,13 +540,11 @@ void FindText::FindAll(bool select_first_match) {
 void FindText::Replace() {
 	if (!replace_field) return;
 	std::string replacement = replace_field->GetText();
-	// FIXME: only find first time if not already on a found selection
 	if (this->Find(PGDirectionRight, true)) {
 		ControlManager* manager = GetControlManager(this);
 		TextFile& tf = manager->active_textfield->GetTextFile();
 		PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);
 		tf.RegexReplace(regex, replacement);
-		SetTextfile(&tf);
 		if (HighlightMatches()) {
 			this->FindAll(PGDirectionRight);
 		}
@@ -399,7 +562,6 @@ void FindText::ReplaceAll() {
 		// check if there are any matches
 		PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);
 		tf.RegexReplace(regex, replacement);
-		this->SetTextfile(&tf);
 		if (HighlightMatches()) {
 			this->FindAll(false);
 		}
@@ -421,17 +583,26 @@ void FindText::Close() {
 }
 
 void FindText::ShiftTextfieldFocus(PGDirection direction) {
-	if (replace) {
-		// (shift+)tab switches between the two text fields
-		if (focused_control == field) {
-			focused_control = replace_field;
-			replace_field->RefreshCursors();
-			replace_field->Invalidate();
-		} else {
-			focused_control = field;
-			field->RefreshCursors();
-			field->Invalidate();
-		}
+	// (shift+)tab switches between the two text fields
+	SimpleTextField* new_focus = nullptr;
+	SimpleTextField* fields[3] = { field, replace_field, files_to_include_field };
+	lng selected_field = focused_control == files_to_include_field ? 2 : (focused_control == replace_field ? 1 : 0);
+
+	selected_field += direction == PGDirectionRight ? 1 : -1;
+	if (selected_field < 0) {
+		selected_field = 2;
+	} else if (selected_field > 2) {
+		selected_field = 0;
+	}
+	assert(fields[0]);
+	while (fields[selected_field] == nullptr) {
+		selected_field--;
+	}
+	new_focus = fields[selected_field];
+	if (new_focus) {
+		focused_control = new_focus;
+		new_focus->RefreshCursors();
+		new_focus->Invalidate();
 	}
 }
 

@@ -468,3 +468,9 @@ enum PGDirectoryFlags {
 PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files);
 
 std::string PGPathJoin(std::string path_one, std::string path_two);
+
+enum PGFindTextType {
+	PGFindSingleFile,
+	PGFindReplaceSingleFile,
+	PGFindReplaceManyFiles
+};

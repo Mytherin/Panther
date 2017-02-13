@@ -39,8 +39,12 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	lng render_start = 0, render_end = length;
 	auto character_widths = CumulativeCharacterWidths(textfield_font, line, length, xoffset, this->width, render_start, render_end);
 	if (character_widths.size() == 0) {
-		// the entire line is out of bounds, nothing to render
-		return;
+		if (render_start == 0 && render_end == 0) {
+			character_widths.push_back(0);
+		} else {
+			// the entire line is out of bounds, nothing to render
+			return;
+		}
 	}
 
 	auto begin_pos = cursor.BeginPosition();

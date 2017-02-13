@@ -175,7 +175,6 @@ void BasicTextField::UnregisterOnTextChanged(PGControlDataCallback callback, voi
 			return;
 		}
 	}
-	assert(0);
 }
 
 void BasicTextField::PasteHistory() {
