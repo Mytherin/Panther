@@ -98,6 +98,8 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	lng initial_selection = 0; // FIXME: set to scroll size
 	lng current_selection = initial_selection;
 
+	//RenderRectangle(renderer, PGIRect(0, 30, 200, 30), PGColor(255, 255, 255), PGDrawStyleFill);
+
 
 	PGScalar BUTTON_HEIGHT = 0;
 	{

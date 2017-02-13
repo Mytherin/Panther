@@ -13,6 +13,7 @@
 #include "statusbar.h"
 #include "tabcontrol.h"
 
+#include "goto.h"
 #include "notification.h"
 #include "searchbox.h"
 #include "settings.h"
@@ -847,121 +848,6 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 
 			return true;
 		}
-		case 'P': {
-			// Search project files
-			std::vector<SearchEntry> entries;
-			ControlManager* cm = GetControlManager(this);
-			TabControl* tb = cm->active_tabcontrol;
-			for (auto it = tb->tabs.begin(); it != tb->tabs.end(); it++) {
-				SearchEntry entry;
-				entry.display_name = it->file->name;
-				entry.text = it->file->path;
-				entry.data = it->file;
-				entries.push_back(entry);
-			}
-
-			SearchBox* search_box = new SearchBox(this->window, entries);
-			search_box->SetSize(PGSize(this->width * 0.5f, GetTextHeight(textfield_font) + 200));
-			search_box->SetPosition(PGPoint(this->x + this->width * 0.25f, this->y + 25));
-			search_box->OnRender(
-				[](PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height) {
-				// render the text file icon next to each open file
-				TextFile* file = (TextFile*)entry.data;
-				std::string filename = file->GetName();
-				std::string ext = file->GetExtension();
-
-				PGScalar file_icon_height = button_height * 0.6;
-				PGScalar file_icon_width = file_icon_height * 0.8;
-
-				PGColor color = GetTextColor(font);
-				x += 2.5f;
-				std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
-				RenderFileIcon(renderer, font, ext.c_str(), x, y + (button_height - file_icon_height) / 2, file_icon_width, file_icon_height,
-					file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGColor(30, 30, 30), PGColor(91, 91, 91));
-				x += file_icon_width + 2.5f;
-				SetTextColor(font, color);
-			});
-
-			TextFile* active_file = textfile;
-			search_box->OnSelectionChanged([](SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data) {
-				ControlManager* cm = GetControlManager(searchbox);
-				cm->active_tabcontrol->SwitchToTab((TextFile*)entry.data);
-			}, (void*) this);
-			search_box->OnSelectionCancelled([](SearchBox* searchbox, void* data) {
-				ControlManager* cm = GetControlManager(searchbox);
-				cm->active_tabcontrol->SwitchToTab((TextFile*)data);
-			}, (void*)active_file);
-			dynamic_cast<PGContainer*>(this->parent)->AddControl(search_box);
-			return true;
-		}
-		case 'G': {
-			// Go To Line
-			SimpleTextField* field = new SimpleTextField(this->window);
-			field->SetSize(PGSize(this->width * 0.5f, GetTextHeight(textfield_font) + 6));
-			field->SetPosition(PGPoint(this->x + this->width * 0.25f, this->y + 25));
-			struct ScrollData {
-				PGVerticalScroll offset;
-				TextField* tf;
-				std::vector<CursorData> backup_cursors;
-			};
-			ScrollData* data = new ScrollData();
-			data->offset = textfile->GetLineOffset();
-			data->tf = this;
-			data->backup_cursors = textfile->BackupCursors();
-
-			field->OnTextChanged([](Control* c, void* data) {
-				SimpleTextField* input = (SimpleTextField*)c;
-				TextField* tf = (TextField*)data;
-				TextLine textline = input->GetTextFile().GetLine(0);
-				std::string str = std::string(textline.GetLine(), textline.GetLength());
-				const char* line = str.c_str();
-				char* p = nullptr;
-				// attempt to convert the text to a number
-				// FIXME: strtoll (long = 32-bit on windows)
-				long converted = strtol(line, &p, 10);
-				errno = 0;
-				if (p != line) { // if p == line, then line is empty so we do nothing
-					if (*p == '\0') { // if *p == '\0' the entire string was converted
-						bool valid = true;
-						// bounds checking
-						if (converted <= 0) {
-							converted = 1;
-							valid = false;
-						} else if (converted > tf->GetTextFile().GetLineCount()) {
-							converted = tf->GetTextFile().GetLineCount();
-							valid = false;
-						}
-						converted--;
-						// move the cursor and offset of the currently active file
-						tf->GetTextFile().SetLineOffset(std::max(converted - tf->GetLineHeight() / 2, (long)0));
-						tf->GetTextFile().SetCursorLocation(converted, 0);
-						tf->Invalidate();
-						input->SetValidInput(valid);
-						input->Invalidate();
-					} else {
-						// invalid input, notify the user
-						input->SetValidInput(false);
-						input->Invalidate();
-					}
-				}
-			}, (void*) this);
-			field->OnCancel([](Control* c, void* data) {
-				// user pressed escape, cancelling the line
-				// restore cursors and position
-				ScrollData* d = (ScrollData*)data;
-				d->tf->GetTextFile().RestoreCursors(d->backup_cursors);
-				d->tf->GetTextFile().SetLineOffset(d->offset);
-				delete d;
-				dynamic_cast<PGContainer*>(c->parent)->RemoveControl(c);
-			}, (void*)data);
-			field->OnConfirm([](Control* c, void* data) {
-				ScrollData* d = (ScrollData*)data;
-				delete d;
-				dynamic_cast<PGContainer*>(c->parent)->RemoveControl(c);
-			}, (void*)data);
-			dynamic_cast<PGContainer*>(this->parent)->AddControl(field);
-			return true;
-		}
 		}
 	}
 	if (modifier == PGModifierCtrlShift) {
@@ -976,6 +862,13 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 		}
 	}
 	return BasicTextField::KeyboardCharacter(character, modifier);
+}
+
+void TextField::DisplayGotoDialog(PGGotoType goto_type) {
+	PGGotoAnything* goto_anything = new PGGotoAnything(this, this->window, goto_type);
+	goto_anything->SetSize(PGSize(goto_anything->width, GetTextHeight(textfield_font) + 206));
+	goto_anything->SetPosition(PGPoint(this->x + (this->width - goto_anything->width) * 0.5f, this->y));
+	dynamic_cast<PGContainer*>(this->parent)->AddControl(goto_anything);
 }
 
 void TextField::MouseWheel(int x, int y, double distance, PGModifier modifier) {
@@ -1256,6 +1149,17 @@ void TextField::InitializeKeybindings() {
 			} else {
 				tf->textfile->OffsetLine((int)offset);
 			}
+		}
+	};
+	args["show_goto"] = [](Control* c, std::map<std::string, std::string> args) {
+		TextField* tf = (TextField*)c;
+		if (args.count("type") == 0) {
+			return;
+		}
+		if (args["type"] == "line") {
+			tf->DisplayGotoDialog(PGGotoLine);
+		} else if (args["type"] == "file") {
+			tf->DisplayGotoDialog(PGGotoFile);
 		}
 	};
 }

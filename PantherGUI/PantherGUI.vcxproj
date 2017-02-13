@@ -205,6 +205,7 @@
     <ClCompile Include="file.cpp" />
     <ClCompile Include="filemanager.cpp" />
     <ClCompile Include="findtext.cpp" />
+    <ClCompile Include="goto.cpp" />
     <ClCompile Include="keybindings.cpp" />
     <ClCompile Include="keywords.cpp" />
     <ClCompile Include="language.cpp" />
@@ -282,6 +283,7 @@
     <ClInclude Include="filemanager.h" />
     <ClInclude Include="filepattern.h" />
     <ClInclude Include="findtext.h" />
+    <ClInclude Include="goto.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="keybindings.h" />
     <ClInclude Include="keywords.h" />

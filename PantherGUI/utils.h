@@ -40,6 +40,33 @@ namespace panther {
 
 	bool epsilon_equals(double a, double b);
 
+	lng strtolng(const char* text, char** end, size_t length);
+	inline lng strtolng(const char* text, size_t length) {
+		return strtolng(text, nullptr, length);
+	}
+	inline lng strtolng(const char* text, char** end) {
+		return strtolng(text, end, strlen(text));
+	}
+	inline lng strtolng(std::string text) {
+		return strtolng(text.c_str(), text.size());
+	}
+	inline lng strtolng(const char* text) {
+		return strtolng(text, strlen(text));
+	}
+	double strtodbl(const char* text, char** end, size_t length);
+	inline double strtodbl(const char* text, size_t length) {
+		return strtodbl(text, nullptr, length);
+	}
+	inline double strtodbl(const char* text, char** end) {
+		return strtodbl(text, end, strlen(text));
+	}
+	inline double strtodbl(std::string text) {
+		return strtodbl(text.c_str(), text.size());
+	}
+	inline double strtodbl(const char* text) {
+		return strtodbl(text, strlen(text));
+	}
+
 
 	template<class T>
 	T clamped_access(const std::vector<T>& vector, lng index) {

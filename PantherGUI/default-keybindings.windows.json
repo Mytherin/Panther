@@ -62,8 +62,6 @@
 		{ "key": "ctrl+shift+end", "command": "select_end_of_file"}
 	],
 	"simpletextfield": [
-		{ "key": "enter", "command": "confirm" },
-		{ "key": "escape", "command": "cancel" },
 		{ "key": "up", "command": "prev_entry"},
 		{ "key": "down", "command": "next_entry"}
 	],
@@ -122,6 +120,10 @@
 		{"key": "tab", "command": "shift_focus_forward"},
 		{"key": "shift+tab", "command": "shift_focus_backward"},
 		{"key": "escape", "command": "close"}
+	],
+	"goto": [
+		{ "key": "enter", "command": "confirm" },
+		{ "key": "escape", "command": "cancel" }
 	]
 }
 

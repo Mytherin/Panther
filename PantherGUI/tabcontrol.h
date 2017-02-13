@@ -29,6 +29,7 @@ struct PGClosedTab {
 
 class TabControl : public Control {
 	friend class TextField; //FIXME
+	friend class PGGotoAnything;
 public:
 	TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files);
 

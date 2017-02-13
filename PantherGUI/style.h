@@ -5,6 +5,7 @@
 #include <map>
 
 enum PGColorType {
+	PGColorToggleButtonToggled,
 	PGColorNotificationBackground,
 	PGColorNotificationError,
 	PGColorNotificationWarning,

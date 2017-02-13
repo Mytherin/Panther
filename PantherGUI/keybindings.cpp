@@ -6,6 +6,7 @@
 #include "tabcontrol.h"
 #include "simpletextfield.h"
 #include "findtext.h"
+#include "goto.h"
 
 #include "json.h"
 
@@ -19,6 +20,7 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	TabControl::InitializeKeybindings();
 	TextField::InitializeKeybindings();
 	FindText::InitializeKeybindings();
+	PGGotoAnything::InitializeKeybindings();
 
 #ifdef WIN32
 	LoadSettings("default-keybindings." + GetOSName() + ".json");
@@ -202,6 +204,8 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 				INITIALIZE_CONTROL(TabControl);
 			} else if (control == "findtext") {
 				INITIALIZE_CONTROL(FindText);
+			} else if (control == "goto") {
+				INITIALIZE_CONTROL(PGGotoAnything);
 			}
 
 			if (functions && keybindings_noargs && keybindings_varargs) {

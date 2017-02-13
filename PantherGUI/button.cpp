@@ -12,7 +12,7 @@ Button::Button(PGWindowHandle window, Control* parent) :
 	this->background_color = PGStyleManager::GetColor(PGColorTabControlBackground);
 	this->background_color_hover = PGStyleManager::GetColor(PGColorTabControlHover);
 	this->background_color_click = PGStyleManager::GetColor(PGColorTabControlSelected);
-	this->background_stroke_color = PGColor(0, 0, 0);
+	this->background_stroke_color = PGStyleManager::GetColor(PGColorTextFieldCaret);
 	this->text_color = PGStyleManager::GetColor(PGColorTabControlText);
 }
 
@@ -20,7 +20,7 @@ Button::~Button() {
 	GetControlManager(this)->UnregisterControlForMouseEvents(this);
 }
 
-void Button::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+void Button::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	PGPoint mouse = PGPoint(x, y);
 	if (button == PGLeftMouseButton) {
 		Invalidate();
@@ -77,7 +77,7 @@ void Button::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	RenderRectangle(renderer, render_rectangle, background_stroke_color, PGDrawStyleStroke);
 	if (font) {
 		SetTextColor(font, text_color);
-		RenderText(renderer, font, text.c_str(), text.size(), render_rectangle.x + render_rectangle.width / 2, render_rectangle.y + render_rectangle.height / 2 - GetTextHeight(font) / 2 - 1, PGTextAlignHorizontalCenter);
+		RenderText(renderer, font, text.c_str(), text.size(), render_rectangle.x + render_rectangle.width / 2, render_rectangle.y + (render_rectangle.height - GetTextHeight(font)) / 2 - 1, PGTextAlignHorizontalCenter);
 	}
 }
 

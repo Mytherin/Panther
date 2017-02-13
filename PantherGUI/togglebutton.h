@@ -13,6 +13,8 @@ public:
 	void OnToggle(PGToggleCallback callback, void* data = nullptr) { on_toggle = callback; toggle_data = data; }
 	void Toggle();
 	bool IsToggled() { return toggled; }
+	// sets toggled property without triggering the OnToggle events
+	void SetToggled(bool toggled) { this->toggled = toggled; this->Invalidate(); }
 private:
 	PGColor untoggled_color;
 	PGColor toggled_color;

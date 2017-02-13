@@ -18,6 +18,14 @@ struct TextSelection {
 	int character_end;
 };
 
+enum PGGotoType {
+	PGGotoNone,
+	PGGotoCommand,
+	PGGotoLine,
+	PGGotoFile,
+	PGGotoDefinition
+};
+
 #define MAX_MINIMAP_LINE_CACHE 10000
 
 struct RenderedLine {
@@ -72,6 +80,7 @@ public:
 	void IncreaseFontSize(int modifier);
 
 	void DisplayNotification(PGFileError error);
+	void DisplayGotoDialog(PGGotoType goto_type);
 
 	PG_CONTROL_KEYBINDINGS;
 protected:

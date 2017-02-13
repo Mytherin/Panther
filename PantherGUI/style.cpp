@@ -18,6 +18,7 @@ PGColor* PGStyle::GetColor(PGColorType type) {
 PGStyleManager::PGStyleManager() {
 	// standard style set
 	PGStyle vs;
+	vs.SetColor(PGColorToggleButtonToggled, PGColor(51, 51, 51));
 	vs.SetColor(PGColorNotificationBackground, PGColor(51, 51, 51));
 	vs.SetColor(PGColorNotificationText, PGColor(238, 238, 238));
 	vs.SetColor(PGColorNotificationError, PGColor(190, 17, 0));

@@ -11,7 +11,7 @@ ToggleButton::ToggleButton(PGWindowHandle window, Control* parent, bool toggled)
 	});
 
 	untoggled_color = PGStyleManager::GetColor(PGColorTabControlBackground);
-	toggled_color = PGStyleManager::GetColor(PGColorScrollbarForeground);
+	toggled_color = PGStyleManager::GetColor(PGColorToggleButtonToggled);
 }
 
 void ToggleButton::Draw(PGRendererHandle renderer, PGIRect* rect) {
