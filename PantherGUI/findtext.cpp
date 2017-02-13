@@ -338,7 +338,7 @@ void FindText::SetType(PGFindTextType type) {
 				}, this);
 				replace_in_selection_button->OnPressed([](Button* b, void* data) {
 					FindText* ft = ((FindText*)data);
-					assert(0);
+					ft->ReplaceAll(true);
 				}, this);
 
 
@@ -497,7 +497,7 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	return found_result;
 }
 
-void FindText::SelectAllMatches() {
+void FindText::SelectAllMatches(bool in_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 
@@ -513,7 +513,7 @@ void FindText::SelectAllMatches() {
 		this->FindAll(false);
 	}
 	assert(tf.FinishedSearch());
-	tf.SelectMatches();
+	tf.SelectMatches(in_selection);
 }
 void FindText::FindAll(bool select_first_match) {
 	ControlManager* manager = GetControlManager(this);
@@ -551,13 +551,13 @@ void FindText::Replace() {
 	}
 }
 
-void FindText::ReplaceAll() {
+void FindText::ReplaceAll(bool in_selection) {
 	if (!replace_field) return;
 	std::string replacement = replace_field->GetText();
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 
-	this->SelectAllMatches();
+	this->SelectAllMatches(in_selection);
 	if (tf.GetCursors().size() > 0) {
 		// check if there are any matches
 		PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);

@@ -20,11 +20,11 @@ public:
 	
 	void ShiftTextfieldFocus(PGDirection direction);
 
-	void SelectAllMatches();
+	void SelectAllMatches(bool in_selection = false);
 	bool Find(PGDirection direction, bool include_selection = false);
 	void FindAll(bool select_first_match = true);
 	void Replace();
-	void ReplaceAll();
+	void ReplaceAll(bool in_selection = false);
 
 	void SetType(PGFindTextType type);
 

@@ -148,7 +148,7 @@ public:
 	void OffsetEndOfFile();
 	void SelectEndOfFile();
 
-	void SelectMatches();
+	void SelectMatches(bool in_selection);
 	bool FinishedSearch() { return finished_search; }
 
 	bool FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, bool include_selection);

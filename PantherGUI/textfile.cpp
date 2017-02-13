@@ -2428,11 +2428,21 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 	return false;
 }
 
-void TextFile::SelectMatches() {
+void TextFile::SelectMatches(bool in_selection) {
 	assert(matches.size() > 0);
-	ClearCursors();
-	for (auto it = matches.begin(); it != matches.end(); it++) {
-		cursors.push_back(Cursor(this, *it));
+	if (in_selection) {
+		PGTextRange selection = cursors[0].GetCursorSelection();
+		ClearCursors();
+		for (auto it = matches.begin(); it != matches.end(); it++) {
+			if (!(*it < selection || *it > selection)) {
+				cursors.push_back(Cursor(this, *it));
+			}
+		}
+	} else {
+		ClearCursors();
+		for (auto it = matches.begin(); it != matches.end(); it++) {
+			cursors.push_back(Cursor(this, *it));
+		}
 	}
 	active_cursor = 0;
 	VerifyTextfile();
