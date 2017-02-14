@@ -43,11 +43,13 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/file.o \
 		 $(OBJDIR)/filemanager.o \
 		 $(OBJDIR)/findtext.o \
+		 $(OBJDIR)/goto.o \
 		 $(OBJDIR)/keybindings.o \
 		 $(OBJDIR)/keywords.o \
 		 $(OBJDIR)/language.o \
 		 $(OBJDIR)/logger.o \
 		 $(OBJDIR)/notification.o \
+		 $(OBJDIR)/projectexplorer.o \
 		 $(OBJDIR)/regex.o \
 		 $(OBJDIR)/renderer.o \
 		 $(OBJDIR)/scheduler.o \

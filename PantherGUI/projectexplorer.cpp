@@ -7,7 +7,11 @@
 
 ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	PGContainer(window), dragging_scrollbar(false) {
+#ifdef HAVE_WIN32
 	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI"));
+#else
+	this->directories.push_back(new PGDirectory("/Users/myth/Programs/re2"));
+#endif
 	this->directories.back()->expanded = true;
 	font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(font, 12);
@@ -41,7 +45,7 @@ void ProjectExplorer::PeriodicRender(void) {
 
 void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected) {
 	if (selected) {
-		RenderRectangle(renderer, PGRect(x, y, this->width, GetTextHeight(font)), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
+		RenderRectangle(renderer, PGRect(x, y, this->width, file_render_height), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 	}
 
 	if (file_image) {
@@ -54,18 +58,17 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 			extension = "c++";
 			language_color = PGColor(185, 117, 181);
 		}
-		PGScalar text_height = GetTextHeight(font);
 		if (!(language_color.r == 255 && language_color.g == 255 && language_color.b == 255)) {
 			PGScalar font_size = GetTextFontSize(font);
 			SetTextFontSize(font, 10);
 			SetTextColor(font, language_color);
 			PGScalar size = MeasureTextWidth(font, extension.c_str(), extension.size());
-			RenderText(renderer, font, extension.c_str(), extension.size(), x + (20 - size) / 2, y + (text_height - GetTextHeight(font)) / 2.0);
+			RenderText(renderer, font, extension.c_str(), extension.size(), x + (20 - size) / 2, y + (file_render_height - GetTextHeight(font)) / 2.0);
 
 			SetTextFontSize(font, font_size);
 			SetTextColor(font, PGStyleManager::GetColor(PGColorProjectExplorerText));
 		} else {
-			RenderFileIcon(renderer, font, "", x + (20 - 8) / 2.0, y + (text_height - 12) / 2.0, 8, 12,
+			RenderFileIcon(renderer, font, "", x + (20 - 8) / 2.0, y + (file_render_height - 12) / 2.0, 8, 12,
 				PGColor(255, 255, 255),
 				PGStyleManager::GetColor(PGColorTabControlBackground),
 				PGStyleManager::GetColor(PGColorTabControlBorder));
@@ -73,7 +76,7 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 	}
 	x += 24;
 	RenderText(renderer, font, file.path.c_str(), file.path.size(), x, y);
-	y += GetTextHeight(font);
+	y += file_render_height;
 }
 
 void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset, lng& selection) {
@@ -108,6 +111,8 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
 	PGScalar x = X() - rect->x;
 	PGScalar y = Y() - rect->y;
+	file_render_height = std::max(GetTextHeight(font), 16.0f);
+
 	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height));
 
 	// render the background
@@ -139,7 +144,7 @@ void ProjectExplorer::MouseWheel(int x, int y, double distance, PGModifier modif
 void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	PGPoint mouse(x - this->x, y - this->y);
 	if (mouse.x < this->width - SCROLLBAR_SIZE) {
-		lng selected_file = scrollbar_offset + (mouse.y / GetTextHeight(font));
+		lng selected_file = scrollbar_offset + (mouse.y / file_render_height);
 		if (selected_file < 0 || selected_file >= TotalFiles()) return;
 
 		if (button == PGLeftMouseButton) {

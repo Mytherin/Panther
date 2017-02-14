@@ -81,7 +81,7 @@ public:
 	void InsertText(PGUTF8Character character);
 	void InsertText(std::string text);
 	void InsertLines(std::string text, size_t cursor);
-	void TextFile::ReplaceText(std::string replacement_text, size_t i);
+	void ReplaceText(std::string replacement_text, size_t i);
 	bool SplitLines(const std::string& text, std::vector<std::string>&);
 	std::vector<std::string> SplitLines(const std::string& text);
 	void DeleteCharacter(PGDirection direction);

@@ -51,6 +51,8 @@ public:
 	
 	PG_CONTROL_KEYBINDINGS;
 private:
+	PGScalar file_render_height;
+
 	PGFontHandle font;
 
 	std::vector<PGDirectory*> directories;

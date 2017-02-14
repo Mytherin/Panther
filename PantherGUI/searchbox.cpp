@@ -73,22 +73,25 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::string text, lng start_bold, lng bold_size, PGScalar x, PGScalar y) {
 	PGScalar current_position = 0;
 	lng current_character = 0;
-	assert(start_bold == 0 || start_bold < (lng) text.size());
-	if (start_bold > 0) {
+	assert(bold_size == 0 || (start_bold == 0 || start_bold < (lng) text.size()));
+	if (start_bold > 0 && text.size() > 0) {
 		SetTextStyle(font, PGTextStyleNormal);
-		RenderText(renderer, font, text.c_str(), start_bold, x + current_position, y);
-		current_position += MeasureTextWidth(font, text.c_str(), start_bold);
-		current_character += start_bold;
+		lng length = std::min(start_bold, (lng) text.size() - 1);
+		RenderText(renderer, font, text.c_str(), length, x + current_position, y);
+		current_position += MeasureTextWidth(font, text.c_str(), length);
+		current_character += length;
 	}
-	if (start_bold >= 0) {
-		SetTextStyle(font, PGTextStyleBold);
-		RenderText(renderer, font, text.c_str() + current_character, bold_size, x + current_position, y);
-		current_position += MeasureTextWidth(font, text.c_str() + current_character, bold_size);
-		current_character += bold_size;
-	}
-	SetTextStyle(font, PGTextStyleNormal);
-	if (current_character < text.size()) {
-		RenderText(renderer, font, text.c_str() + current_character, text.size() - current_character, x + current_position, y);
+	if (bold_size != 0) {
+		if (start_bold >= 0) {
+			SetTextStyle(font, PGTextStyleBold);
+			RenderText(renderer, font, text.c_str() + current_character, bold_size, x + current_position, y);
+			current_position += MeasureTextWidth(font, text.c_str() + current_character, bold_size);
+			current_character += bold_size;
+		}
+		SetTextStyle(font, PGTextStyleNormal);
+		if (current_character < text.size()) {
+			RenderText(renderer, font, text.c_str() + current_character, text.size() - current_character, x + current_position, y);
+		}
 	}
 
 }

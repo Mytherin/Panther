@@ -95,6 +95,10 @@ void Control::WriteWorkspace(nlohmann::json& j) {
 
 }
 
+void Control::TriggerResize() {
+	this->OnResize(PGSize(this->width, this->height), PGSize(this->width, this->height));
+}
+
 void Control::SetSize(PGSize size) {
 	PGSize oldsize(this->width, this->height);
 	this->width = size.width; 

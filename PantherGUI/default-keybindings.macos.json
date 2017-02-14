@@ -34,19 +34,40 @@
 
 		{ "key": "cmd+a", "command": "select_all" },
 
-		{ "key": "insert", "command": "toggle_overwrite" }
+		{ "key": "insert", "command": "toggle_overwrite" },
+
+		{ "key": "cmd+backspace", "command": "delete_word", "args": { "forward": false } },
+		{ "key": "cmd+shift+backspace", "command": "delete_line", "args": { "forward": false } },
+		{ "key": "cmd+delete", "command": "delete_word", "args": { "forward": true } },
+		{ "key": "cmd+shift+delete", "command": "delete_line", "args": { "forward": true } },
+
+		{ "key": "left", "command": "offset_character", "args": {"direction": "left"}},
+		{ "key": "right", "command": "offset_character", "args": {"direction": "right"}},
+		{ "key": "shift+left", "command": "offset_character", "args": {"direction": "left", "selection": true}},
+		{ "key": "shift+right", "command": "offset_character", "args": {"direction": "right", "selection": true}},
+
+		{ "key": "cmd+left", "command": "offset_character", "args": {"direction": "left", "word": true}},
+		{ "key": "cmd+right", "command": "offset_character", "args": {"direction": "right", "word": true}},
+		{ "key": "cmd+shift+left", "command": "offset_character", "args": {"direction": "left", "selection": true, "word": true}},
+		{ "key": "cmd+shift+right", "command": "offset_character", "args": {"direction": "right", "selection": true, "word": true}},
+
+		{ "key": "ctrl+a", "command": "offset_start_of_line"},
+		{ "key": "ctrl+shift+a", "command": "select_start_of_line"},
+
+		{ "key": "ctrl+e", "command": "offset_end_of_line"},
+		{ "key": "ctrl+shift+e", "command": "select_end_of_line"}
 	],
 	"simpletextfield": [
-		{ "key": "enter", "command": "confirm" },
-		{ "key": "escape", "command": "cancel" },
 		{ "key": "up", "command": "prev_entry"},
 		{ "key": "down", "command": "next_entry"}
 	],
 	"textfield": [
 		{ "key": "cmd+s", "command": "save" },
 		{ "key": "cmd+shift+s", "command": "save_as" },
+
 		{ "key": "ctrl+g", "command": "show_goto", "args": {"type": "line"} },
 		{ "key": "cmd+p", "command": "show_goto", "args": {"type": "file"} },
+
 		{ "key": "enter", "command": "insert", "args": { "characters": "\n" } },
 		{ "key": "shift+enter", "command": "insert", "args": { "characters": "\n" } },
 		{ "key": "ctrl+alt+up", "command": "swap_line_up" },
@@ -62,7 +83,17 @@
 		{ "key": "cmd+shift+equals", "command": "decrease_font_size" },
 		{ "key": "cmd+shift+keypad_plus", "command": "decrease_font_size" },
 		{ "key": "cmd+up", "command": "scroll_lines", "args": {"amount": -1.0 } },
-		{ "key": "cmd+down", "command": "scroll_lines", "args": {"amount": 1.0 } }
+		{ "key": "cmd+down", "command": "scroll_lines", "args": {"amount": 1.0 } },
+
+		{ "key": "up", "command": "offset_line", "args": {"amount": -1.0 } },
+		{ "key": "shift+up", "command": "offset_line", "args": {"amount": -1.0, "selection": true } },
+		{ "key": "down", "command": "offset_line", "args": {"amount": 1.0 } },
+		{ "key": "shift+down", "command": "offset_line", "args": {"amount": 1.0, "selection": true } },
+
+		{ "key": "pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page" } },
+		{ "key": "shift+pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page", "selection": true } },
+		{ "key": "pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page" } },
+		{ "key": "shift+pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page", "selection": true } }
 
 	],
 	"tabcontrol": [
@@ -83,6 +114,10 @@
 		{"key": "tab", "command": "shift_focus_forward"},
 		{"key": "shift+tab", "command": "shift_focus_backward"},
 		{"key": "escape", "command": "close"}
+	],
+	"goto": [
+		{ "key": "enter", "command": "confirm" },
+		{ "key": "escape", "command": "cancel" }
 	]
 }
 

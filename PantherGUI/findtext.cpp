@@ -188,7 +188,7 @@ void FindText::SetType(PGFindTextType type) {
 
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)) {
-			this->ActuallyRemoveControl(*it);
+			this->RemoveControl(*it);
 		}
 	}
 	this->replace_field = nullptr;

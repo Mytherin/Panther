@@ -102,7 +102,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		tabbed->width = 0;
 		tabbed->height = TEXT_TAB_HEIGHT;
 		TextField* textfield = new TextField(handle, textfiles[0]);
-		textfield->SetAnchor(PGAnchorTop);
+		textfield->SetAnchor(PGAnchorTop | PGAnchorLeft);
 		textfield->percentage_height = 1;
 		textfield->percentage_width = 1;
 		TabControl* tabs = new TabControl(handle, textfield, textfiles);
@@ -112,6 +112,15 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		tabbed->AddControl(tabs);
 		tabbed->AddControl(textfield);
 		textfield->vertical_anchor = tabs;
+
+
+		ProjectExplorer* explorer = new ProjectExplorer(handle);
+		explorer->SetAnchor(PGAnchorTop | PGAnchorLeft);
+		explorer->vertical_anchor = tabs;
+		explorer->fixed_width = 200;
+		explorer->percentage_height = 1;
+		tabbed->AddControl(explorer);
+		textfield->horizontal_anchor = explorer;
 
 		StatusBar* bar = new StatusBar(handle, textfield);
 		bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
@@ -127,10 +136,12 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 		manager->AddControl(tabbed);
 		manager->AddControl(bar);
+		manager->AddControl(explorer);
 
 		manager->statusbar = bar;
 		manager->active_textfield = textfield;
 		manager->active_tabcontrol = tabs;
+		manager->active_projectexplorer = explorer;
 		
 		manager->SetPosition(PGPoint(0, 0));
 		manager->SetSize(PGSize(rect.size.width, rect.size.height));
@@ -214,7 +225,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 - (void)mouseDown:(NSEvent *)event { 
 	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	handle->manager->MouseDown(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
+	handle->manager->MouseDown(flags.x, flags.y, PGLeftMouseButton, flags.modifiers, 0);
 }
 
 - (void)mouseUp:(NSEvent *)event {
@@ -226,7 +237,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 - (void)rightMouseDown:(NSEvent *)event {
 	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	handle->manager->MouseDown(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
+	handle->manager->MouseDown(flags.x, flags.y, PGRightMouseButton, flags.modifiers, 0);
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
@@ -239,7 +250,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 	// FIXME: not just middle mouse button
 	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	handle->manager->MouseDown(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
+	handle->manager->MouseDown(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers, 0);
 }
 
 - (void)otherMouseUp:(NSEvent *)event {
@@ -758,5 +769,31 @@ PGFileInformation PGGetFileFlags(std::string path) {
 	info.modification_time = (lng) stat_info.st_mtime;
 
 	return info;
+}
+
+#include <dirent.h>
+
+PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files) {
+	DIR *dp;
+	struct dirent *ep;
+	dp = opendir(directory.c_str());
+	if (dp == NULL) {
+		return PGDirectoryNotFound;
+	}
+
+	while ((ep = readdir(dp))) {
+		std::string filename = ep->d_name;
+		if (filename[0] == '.') continue;
+
+		if (ep->d_type == DT_DIR) {
+			directories.push_back(PGFile(filename));
+		} else if (ep->d_type == DT_REG) {
+			files.push_back(PGFile(filename));
+		}
+	}
+
+	(void)closedir(dp);
+
+	return PGDirectorySuccess;
 }
 

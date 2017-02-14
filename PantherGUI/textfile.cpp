@@ -208,6 +208,7 @@ TextFile::~TextFile() {
 	}
 	if (highlighter) {
 		delete highlighter;
+		highlighter = nullptr;
 	}
 	if (default_font) {
 		PGDestroyFont(default_font);

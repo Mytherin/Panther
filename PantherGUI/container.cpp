@@ -218,14 +218,9 @@ bool PGContainer::IsDragging() {
 
 }
 
+
 void PGContainer::AddControl(Control* control) {
-	FlushRemoves();
-	assert(control);
-	control->parent = this;
-	controls.push_back(control);
-	if (control->ControlTakesFocus()) {
-		this->focused_control = control;
-	}
+	pending_additions.push_back(control);
 }
 
 void PGContainer::RemoveControl(Control* control) {
@@ -238,6 +233,25 @@ void PGContainer::FlushRemoves() {
 	pending_removes.clear();
 	for (auto it = removals.begin(); it != removals.end(); it++) {
 		ActuallyRemoveControl(*it);
+	}
+	std::vector<Control*> additions = pending_additions;
+	pending_additions.clear();
+	for (auto it = additions.begin(); it != additions.end(); it++) {
+		ActuallyAddControl(*it);
+	}
+
+	if (pending_resize) {
+		pending_resize = false;
+		Control::TriggerResize();
+	}
+}
+
+void PGContainer::ActuallyAddControl(Control* control) {
+	assert(control);
+	control->parent = this;
+	controls.push_back(control);
+	if (control->ControlTakesFocus()) {
+		this->focused_control = control;
 	}
 }
 

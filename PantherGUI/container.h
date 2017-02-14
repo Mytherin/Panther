@@ -31,6 +31,7 @@ public:
 	virtual void ClearDragDrop(PGDragDropType type);
 
 	virtual void OnResize(PGSize old_size, PGSize new_size);
+	virtual void TriggerResize() { pending_resize = true; }
 
 	virtual void LoadWorkspace(nlohmann::json& j);
 	virtual void WriteWorkspace(nlohmann::json& j);
@@ -50,8 +51,12 @@ protected:
 
 	std::vector<Control*> controls;
 
+private:
+	bool pending_resize;
 	std::vector<Control*> pending_removes;
+	std::vector<Control*> pending_additions;
 
 	void FlushRemoves();
+	void ActuallyAddControl(Control* control);
 	void ActuallyRemoveControl(Control* control);
 };

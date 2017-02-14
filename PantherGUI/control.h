@@ -60,7 +60,7 @@ public:
 	}
 
 	virtual void OnResize(PGSize old_size, PGSize new_size);
-	void TriggerResize() { this->OnResize(PGSize(this->width, this->height), PGSize(this->width, this->height)); }
+	virtual void TriggerResize();
 
 	virtual void ResolveSize(PGSize new_size);
 
