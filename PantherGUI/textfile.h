@@ -162,8 +162,6 @@ public:
 	std::vector<CursorData> BackupCursors();
 	CursorData BackupCursor(int i);
 
-	void ReplaceText(PGTextBuffer* buffer, size_t initial_offset, std::vector<Cursor>& cursors, size_t start_cursor, size_t end_cursor, const std::string& replacement_text);
-
 	void RestoreCursors(std::vector<CursorData>& data);
 	Cursor RestoreCursor(CursorData data);
 	// same as RestoreCursor, but selections are replaced by the LOWEST value

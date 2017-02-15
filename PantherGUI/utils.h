@@ -36,11 +36,6 @@ namespace panther {
 	unsigned char chartoupper(unsigned char character);
 	unsigned char is_digit(unsigned char character);
 
-	// compute the offset from inserting <text>
-	// line_offset is the amount of newlines in <text>
-	// character_offset is the amount of characters after the last newline
-	//    (or start of string if no newlines are present)
-	void get_text_offset(std::string text, lng& line_offset, lng& character_offset);
 	void replace(std::string& source, std::string from, std::string to);
 
 	bool epsilon_equals(double a, double b);
@@ -71,6 +66,7 @@ namespace panther {
 	inline double strtodbl(const char* text) {
 		return strtodbl(text, strlen(text));
 	}
+
 
 	template<class T>
 	T clamped_access(const std::vector<T>& vector, lng index) {
