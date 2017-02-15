@@ -1752,23 +1752,92 @@ void TextFile::PerformOperation(TextDelta* delta) {
 	InvalidateParsing();
 }
 
+void TextFile::ReplaceText(PGTextBuffer* buffer, size_t initial_offset, std::vector<Cursor>& cursors, size_t start_cursor, size_t end_cursor, const std::string& replacement_text) {
+	// create a new buffer area
+	char* new_buffer = (char*)malloc(buffer->buffer_size * sizeof(char));
+
+	size_t current_position = 0;
+	// now loop over all the replacements
+	for(size_t i = start_cursor; i < end_cursor; i++) {
+		// first copy over the text before the current cursor, if any
+		PGTextPosition pos = cursors[i].BeginCursorPosition();
+		PGTextPosition endpos = cursors[i].EndCursorPosition();
+		assert(pos.buffer == buffer);
+		if (initial_offset != pos.position) {
+			memcpy(new_buffer + current_position, buffer->buffer + initial_offset, pos.position - initial_offset);
+			current_position += pos.position - initial_offset;
+			initial_offset = pos.position;
+		}
+		// now copy the replacement text into the buffer, if any
+		if (replacement_text.size() > 0) {
+			memcpy(new_buffer + current_position, replacement_text.c_str(), replacement_text.size());
+			current_position += replacement_text.size();
+		}
+		cursors[i].start_buffer_position = current_position;
+		cursors[i].end_buffer_position = current_position;
+		initial_offset = endpos.position;
+	}
+	// if there is any leftover text, copy it into the buffer
+	memcpy(new_buffer + current_position, buffer->buffer + initial_offset, buffer->current_size - initial_offset);
+	current_position += buffer->current_size - initial_offset;
+	free(buffer->buffer);
+	buffer->buffer = new_buffer;
+	buffer->current_size = current_position;
+}
+
 bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 	switch (delta->type) {
 		case PGDeltaReplaceText:
 		{
 			PGReplaceText* replace = (PGReplaceText*)delta;
-			for (size_t i = 0; i < cursors.size(); i++) {
-				if (!redo) {
+			if (!redo) {
+				lng replacement_line_offset = 0, replacement_character_offset = 0;
+				// first scan the replacement text for the line/character offset
+				panther::get_text_offset(replace->text, replacement_line_offset, replacement_character_offset);
+				// now create a backup of all the cursors
+				lng current_line = -1;
+				lng line_offset = 0, character_offset = 0;
+				for (size_t i = 0; i < cursors.size(); i++) {
+					lng cursor_line_offset = 0, cursor_character_offset = 0;
 					if (!cursors[i].SelectionIsEmpty()) {
 						replace->removed_text.push_back(cursors[i].GetText());
+						panther::get_text_offset(replace->removed_text.back(), cursor_line_offset, cursor_character_offset);
 					} else {
 						replace->removed_text.push_back("");
 					}
+					auto cursor_data = BackupCursor(i);
+					if (current_line == cursor_data.start_line) {
+						// there was a previous cursor on this line
+						// we have to offset the characters
+						cursor_data.start_position += character_offset;
+						cursor_data.start_line += line_offset;
+						line_offset += replacement_line_offset - cursor_line_offset;
+						character_offset += replacement_character_offset - cursor_character_offset;
+					} else {
+						// there was no previous cursor on this line
+						// we only have to offset the lines
+						current_line = cursor_data.start_line;
+						cursor_data.start_line += line_offset;
+						line_offset += replacement_line_offset - cursor_line_offset;
+						character_offset = replacement_character_offset - cursor_character_offset;
+					}
+					cursor_data.end_line = cursor_data.start_line + replacement_line_offset;
+					cursor_data.end_position = cursor_data.end_line == cursor_data.start_line ? 
+						cursor_data.start_position + replacement_character_offset : replacement_character_offset;
+					replace->stored_cursors.push_back(cursor_data);
 				}
-				ReplaceText(replace->text, i);
-				if (!redo) {
-					replace->stored_cursors.push_back(BackupCursor(i));
-				}
+			}
+			PGTextBuffer* current_buffer = nullptr;
+			for (size_t i = 0; i < cursors.size();) {
+				PGTextPosition cursor_position = cursors[i].BeginCursorPosition();
+				PGTextBuffer* cursor_buffer = cursor_position.buffer;
+				size_t start = i;
+				i++;
+				while(i < cursors.size() && cursors[i].BeginCursorPosition().buffer == cursor_buffer) i++;
+				size_t end = i;
+				// replace text in buffer
+				// FIXME: initial offset should be set if cursors[end].EndCursorPosition().buffer != cursor_buffer
+				ReplaceText(cursor_buffer, 0, cursors, start, end, replace->text);
 			}
 			break;
 		}

@@ -84,6 +84,19 @@ namespace panther {
 		}
 	}
 
+	void get_text_offset(std::string text, lng& line_offset, lng& character_offset) {
+		line_offset = 0;
+		character_offset = 0;
+		for(size_t i = 0; i < text.size(); i++) {
+			if (text[i] == '\n') {
+				line_offset++;
+				character_offset = 0;
+			} else {
+				character_offset++;
+			}
+		}
+	}
+
 	bool epsilon_equals(double a, double b) {
 		return abs(a - b) < 0.00001;
 	}

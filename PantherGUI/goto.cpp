@@ -19,7 +19,7 @@ struct ScrollData {
 };
 
 PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGotoType type) :
-	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), preview(nullptr) {
+	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), preview(nullptr), scroll_data(nullptr) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
