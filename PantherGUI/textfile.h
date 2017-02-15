@@ -297,9 +297,9 @@ private:
 	PGFontHandle default_font = nullptr;
 
 	PGLanguage* language = nullptr;
-	SyntaxHighlighter* highlighter = nullptr;
+	std::unique_ptr<SyntaxHighlighter> highlighter = nullptr;
 
-	PGMutexHandle text_lock;
+	std::unique_ptr<PGMutex> text_lock;
 	int shared_counter = 0;
 
 	void ApplySettings(PGTextFileSettings& settings);
