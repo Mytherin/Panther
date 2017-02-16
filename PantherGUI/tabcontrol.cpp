@@ -622,9 +622,11 @@ bool TabControl::CloseTabConfirmation(int tab) {
 
 void TabControl::ActuallyCloseTab(int tab) {
 	bool close_window = false;
-	if (tab == active_tab && active_tab > 0) {
+	if (tab <= active_tab && active_tab > 0) {
+		if (tab == active_tab) {
+			SwitchToFile(tabs[active_tab - 1].file);
+		}
 		active_tab--;
-		SwitchToFile(tabs[active_tab].file);
 	} else if (tab == active_tab) {
 		if (tabs.size() == 1) {
 			close_window = true;
