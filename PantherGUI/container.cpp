@@ -207,6 +207,17 @@ PGCursorType PGContainer::GetCursor(PGPoint mouse) {
 	return PGCursorNone;
 }
 
+PGCursorType PGContainer::GetDraggingCursor() {
+	FlushRemoves();
+	for (lng i = controls.size() - 1; i >= 0; i--) {
+		Control* c = controls[i];
+		if (c->IsDragging()) {
+			return c->GetDraggingCursor();
+		}
+	}
+	return PGCursorStandard;
+}
+
 bool PGContainer::IsDragging() {
 	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {

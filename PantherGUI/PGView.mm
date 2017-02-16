@@ -540,6 +540,25 @@ bool WindowHasFocus(PGWindowHandle window) {
 }
 
 void SetCursor(PGWindowHandle window, PGCursorType type) {
+	switch (type) {
+		case PGCursorStandard:
+			[[NSCursor arrowCursor] set];
+			break;
+		case PGCursorCrosshair:
+			[[NSCursor crosshairCursor] set];
+			break;
+		case PGCursorHand:
+			[[NSCursor pointingHandCursor] set];
+			break;
+		case PGCursorIBeam:
+			[[NSCursor IBeamCursor] set];
+			break;
+		case PGCursorWait:
+			[[NSCursor arrowCursor] set];
+			break;
+		default:
+			break;
+	}
 	return;
 }
 

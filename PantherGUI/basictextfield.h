@@ -47,6 +47,7 @@ public:
 	std::shared_ptr<TextFile> GetTextfilePointer() { return textfile; }
 
 	virtual bool IsDragging() { return drag_type != PGDragNone; }
+	PGCursorType GetDraggingCursor() { return drag_type == PGDragSelection ? PGCursorIBeam : PGCursorStandard; }
 
 	int GetLineHeight();
 

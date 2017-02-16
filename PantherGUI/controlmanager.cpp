@@ -62,6 +62,8 @@ void ControlManager::PeriodicRender(void) {
 	PGCursorType cursor = PGCursorStandard;
 	if (!is_dragging) {
 		cursor = GetCursor(mouse);
+	} else {
+		cursor = GetDraggingCursor();
 	}
 	SetCursor(this->window, cursor);
 	// after the periodic render, render anything that needs to be rerendered (if any)

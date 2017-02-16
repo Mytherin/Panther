@@ -42,6 +42,7 @@ public:
 	Control* GetActiveControl() { return focused_control; }
 
 	PGCursorType GetCursor(PGPoint mouse);
+	PGCursorType GetDraggingCursor();
 	bool IsDragging();
 
 	void AddControl(Control* control);
