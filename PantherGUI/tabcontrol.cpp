@@ -114,7 +114,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		if (!active_tab_hidden || index != active_tab) {
 			if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x && !rendered) {
 				rendered = true;
-				position_x += MeasureTabWidth(dragging_tab);
+				position_x += MeasureTabWidth(dragging_tab) + 15;
 			}
 			it->target_x = position_x;
 			if (panther::epsilon_equals(it->x, -1)) {
@@ -227,7 +227,7 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 				new_index = current_index;
 				break;
 			}
-			position_x += width + tab_padding * 2;
+			position_x += width + 15;
 			current_index++;
 		}
 		if (this == td->tabs) {
@@ -246,6 +246,7 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 			// we have to open the file
 			this->OpenFile(td->file, new_index);
 		}
+		active_tab_hidden = false;
 	}
 	dragging_tab.x = -1;
 	dragging_tab.file = nullptr;
