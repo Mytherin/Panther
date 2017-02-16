@@ -338,9 +338,9 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					if (it->end <= position) {
 						continue;
 					}
-					if (it->end >= render_start && position <= render_end) {
+					if (it->end >= render_start && position < render_end) {
 						lng spos = std::max(position, render_start);
-						lng epos = std::min(it->end, render_end);
+						lng epos = std::min(it->end, render_end - 1);
 						if (it->type == PGSyntaxError) {
 							squiggles = true;
 						} else if (it->type == PGSyntaxNone) {
