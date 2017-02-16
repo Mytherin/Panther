@@ -60,7 +60,7 @@ struct PGTextRange {
 	lng start_position;
 	PGTextBuffer* end_buffer;
 	lng end_position;
-	std::shared_ptr<PGTextBuffer> owned_data;
+	std::shared_ptr<PGTextBuffer> owned_data; // probably should not be here
 
 	PGTextRange(std::string text);
 	PGTextRange(PGTextPosition start, PGTextPosition end);

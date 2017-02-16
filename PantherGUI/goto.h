@@ -42,7 +42,7 @@ private:
 	ToggleButton* goto_definition;
 
 	ScrollData* scroll_data = nullptr;
-	TextFile* preview = nullptr;
-	void* data = nullptr;
+	std::shared_ptr<TextFile> preview = nullptr;
+	std::shared_ptr<TextFile> current_textfile = nullptr;
 
 };

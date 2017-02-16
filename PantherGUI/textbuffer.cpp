@@ -30,7 +30,7 @@ PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
 
 PGTextBuffer::~PGTextBuffer() {
 	if (buffer) {
-		delete buffer;
+		free(buffer);
 	}
 }
 

@@ -29,7 +29,7 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 	this->InvalidateMinimap();
 }
 
-TextField::TextField(PGWindowHandle window, TextFile* file) :
+TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), display_linenumbers(true), notification(nullptr) {
 	textfile->SetTextField(this);
 
@@ -731,7 +731,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				if (minimal_selections.count(textfile->active_cursor) > 0) {
 					active_cursor.ApplyMinimalSelection(minimal_selections[textfile->active_cursor]);
 				}
-				Cursor::NormalizeCursors(textfile, textfile->GetCursors());
+				Cursor::NormalizeCursors(textfile.get(), textfile->GetCursors());
 			}
 		} else if (drag_type == PGDragMinimap) {
 			PGVerticalScroll current_scroll = textfile->GetLineOffset();
@@ -789,7 +789,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 						start_position = end_position;
 					}
 
-					Cursor cursor = Cursor(textfile, iterator_line, iterator_character + end_position, iterator_line, iterator_character + start_position);
+					Cursor cursor = Cursor(textfile.get(), iterator_line, iterator_character + end_position, iterator_line, iterator_character + start_position);
 					if (backwards) {
 						cursors.insert(cursors.begin(), cursor);
 					} else {
@@ -899,7 +899,7 @@ void TextField::InvalidateMinimap() {
 	this->Invalidate(PGRect(this->width - SCROLLBAR_SIZE - minimap_width, 0, minimap_width, this->height));
 }
 
-void TextField::SetTextFile(TextFile* textfile) {
+void TextField::SetTextFile(std::shared_ptr<TextFile> textfile) {
 	if (this->textfile != textfile) {
 		this->textfile->last_modified_deletion = false;
 		this->textfile->last_modified_notification = this->textfile->last_modified_time;
@@ -961,7 +961,7 @@ void TextField::SelectionChanged() {
 							if (!((TextFile*)data)->Reload(error)) {
 								((TextField*)control)->DisplayNotification(error);
 							}
-						}, this, textfile, "Reload");
+						}, this, textfile.get(), "Reload");
 						ShowNotification();
 					}
 				}

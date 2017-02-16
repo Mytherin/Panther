@@ -109,8 +109,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// "E:\\killinginthenameof.xml"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
 	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
-	TextFile* textfile = new TextFile(nullptr);
-	std::vector<TextFile*> files;
+	auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
+	std::vector<std::shared_ptr<TextFile>> files;
 	files.push_back(textfile);
 
 	PGWindowHandle handle = PGCreateWindow(files);
@@ -597,11 +597,11 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files) {
+PGWindowHandle PGCreateWindow(std::vector<std::shared_ptr<TextFile>> initial_files) {
 	return PGCreateWindow(PGPoint(CW_USEDEFAULT, CW_USEDEFAULT), initial_files);
 }
 
-PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_files) {
+PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<TextFile>> initial_files) {
 	assert(initial_files.size() > 0);
 	HINSTANCE hInstance = GetModuleHandle(nullptr);
 	// The parameters to CreateWindow explained:

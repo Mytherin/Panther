@@ -6,7 +6,7 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(BasicTextField);
 
-BasicTextField::BasicTextField(PGWindowHandle window, TextFile* textfile) :
+BasicTextField::BasicTextField(PGWindowHandle window, std::shared_ptr<TextFile> textfile) :
 	Control(window), textfile(textfile), prev_loaded(false) {
 	if (textfile)
 		textfile->SetTextField(this);

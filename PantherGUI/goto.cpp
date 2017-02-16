@@ -64,7 +64,6 @@ PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGo
 
 PGGotoAnything::~PGGotoAnything() {
 	if (scroll_data) delete scroll_data;
-	if (preview) delete preview;
 }
 
 void PGGotoAnything::Draw(PGRendererHandle renderer, PGIRect* rect) {
@@ -111,7 +110,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 		delete scroll_data;
 		scroll_data = nullptr;
 	}
-	data = nullptr;
+	current_textfile = nullptr;
 
 	goto_line->SetToggled(false);
 	goto_file->SetToggled(false);
@@ -127,7 +126,8 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			field->SetPosition(PGPoint(0, goto_line->y + goto_line->height));
 
 			this->scroll_data = new ScrollData();
-			TextFile* tf = &textfield->GetTextFile();
+			std::shared_ptr<TextFile> tf = textfield->GetTextfilePointer();
+			assert(tf.get());
 			scroll_data->offset = tf->GetLineOffset();
 			scroll_data->tf = textfield;
 			scroll_data->backup_cursors = tf->BackupCursors();
@@ -232,20 +232,16 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				x += file_icon_width + 2.5f;
 				SetTextColor(font, color);
 			});
-			data = (void*)&textfield->GetTextFile();
+			current_textfile = textfield->GetTextfilePointer();
 			box->OnSelectionChanged([](SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data) {
 				ControlManager* cm = GetControlManager(searchbox);
 				PGGotoAnything* g = (PGGotoAnything*)data;
 				if (entry.data != nullptr) {
-					cm->active_tabcontrol->SwitchToTab((TextFile*)entry.data);
+					cm->active_tabcontrol->SwitchToTab(entry.data);
 				} else {
-					if (g->preview) {
-						delete g->preview;
-						g->preview = nullptr;
-					}
 					PGFileError error;
-					g->preview = TextFile::OpenTextFilePreview(g->textfield, entry.text, error);
-					g->textfield->SetTextFile(g->preview ? g->preview : (TextFile*)g->data);
+					g->preview = std::shared_ptr<TextFile>(TextFile::OpenTextFilePreview(g->textfield, entry.text, error));
+					g->textfield->SetTextFile(g->preview ? g->preview : g->current_textfile);
 				}
 			}, (void*)this);
 
@@ -279,22 +275,19 @@ void PGGotoAnything::Cancel(bool success) {
 		case PGGotoFile:
 		{
 			assert(box);
-			assert(data);
+			assert(current_textfile);
 			ControlManager* cm = GetControlManager(this);
 			if (!success) {
-				cm->active_tabcontrol->SwitchToTab((TextFile*)data);
+				cm->active_tabcontrol->SwitchToTab(current_textfile);
 			} else {
 				if (preview) {
 					assert(preview);
 					std::string path = preview->GetFullPath();
 					cm->active_tabcontrol->OpenFile(path);
+					preview = nullptr;
 				}
 			}
-			if (preview) {
-				delete preview;
-				preview = nullptr;
-			}
-			data = nullptr;
+			current_textfile = nullptr;
 		}
 		default:
 			break;
