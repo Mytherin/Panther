@@ -109,13 +109,13 @@ void PGContainer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifie
 	}
 }
 
-void PGContainer::MouseWheel(int x, int y, double distance, PGModifier modifier) {
+void PGContainer::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
 	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
-			c->MouseWheel(x, y, distance, modifier);
+			c->MouseWheel(x, y, hdistance, distance, modifier);
 			return;
 		}
 	}

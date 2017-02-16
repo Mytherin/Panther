@@ -38,7 +38,7 @@ public:
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseMove(int x, int y, PGMouseButton buttons);
-	void MouseWheel(int x, int y, double distance, PGModifier modifier);
+	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 
 	void OnResize(PGSize old_size, PGSize new_size);
 

@@ -22,7 +22,7 @@ void Control::Draw(PGRendererHandle handle, PGIRect* rectangle) {
 void Control::PeriodicRender(void) {
 }
 
-void Control::MouseWheel(int x, int y, double distance, PGModifier modifier) {
+void Control::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 
 }
 

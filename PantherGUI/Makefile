@@ -29,7 +29,7 @@ LDFLAGS=-framework AppKit -lobjc -L/opt/local/lib $(ICU_LDFLAGS) $(SKIA_LDFLAGS)
 INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) -Ithird_party/re2
 
 ifneq ($(OPTIMIZE), true)
-	CPPFLAGS+=-DPANTHER_DEBUG -DPANTHER_TESTS
+	CPPFLAGS+=-DPANTHER_DEBUG -DPANTHER_TESTS  -fsanitize=address
 endif
 
 COBJECTS=$(OBJDIR)/basictextfield.o \

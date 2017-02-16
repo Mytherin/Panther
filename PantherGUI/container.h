@@ -14,7 +14,7 @@ public:
 	PGContainer(PGWindowHandle window);
 	virtual ~PGContainer();
 
-	virtual void MouseWheel(int x, int y, double distance, PGModifier modifier);
+	virtual void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	virtual bool KeyboardButton(PGButton button, PGModifier modifier);
 	virtual bool KeyboardCharacter(char character, PGModifier modifier);
 	virtual bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);

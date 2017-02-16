@@ -133,7 +133,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
 	ClearRenderBounds(renderer);
 }
 
-void ProjectExplorer::MouseWheel(int x, int y, double distance, PGModifier modifier) {
+void ProjectExplorer::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
 		scrollbar_offset = std::min((double)MaximumScrollOffset(), std::max(0.0, scrollbar_offset - distance));
 		scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);

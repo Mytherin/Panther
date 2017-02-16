@@ -28,7 +28,7 @@ public:
 
 	void PeriodicRender(void);
 
-	void MouseWheel(int x, int y, double distance, PGModifier modifier);
+	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 	void Draw(PGRendererHandle, PGIRect*);

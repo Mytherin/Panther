@@ -209,20 +209,20 @@ void ControlManager::InitializeKeybindings() {
 void ControlManager::EnterManager() {
 #ifdef PANTHER_DEBUG
 	entrance_count++;
-	//assert(entrance_count == 1);
+	assert(entrance_count == 1);
 #endif
 }
 
 void ControlManager::LeaveManager() {
 #ifdef PANTHER_DEBUG
 	entrance_count--;
-	//assert(entrance_count == 0);
+	assert(entrance_count == 0);
 #endif
 }
 
-void ControlManager::MouseWheel(int x, int y, double distance, PGModifier modifier) {
+void ControlManager::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	EnterManager();
-	PGContainer::MouseWheel(x, y, distance, modifier);
+	PGContainer::MouseWheel(x, y, hdistance, distance, modifier);
 	LeaveManager();
 }
 

@@ -311,7 +311,11 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 							current_match++;
 							continue;
 						}
+					} else if (end < render_start) {
+						current_match++;
+						continue;
 					}
+
 					break;
 				}
 			}
@@ -466,6 +470,9 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 			if (xoffset > max_xoffset) {
 				xoffset = max_xoffset;
 				this->textfile->SetXOffset(max_xoffset);
+			} else if (xoffset < 0) {
+				xoffset = 0;
+				this->textfile->SetXOffset(xoffset);
 			}
 		}
 		// render the actual text field
@@ -871,9 +878,15 @@ void TextField::DisplayGotoDialog(PGGotoType goto_type) {
 	dynamic_cast<PGContainer*>(this->parent)->AddControl(goto_anything);
 }
 
-void TextField::MouseWheel(int x, int y, double distance, PGModifier modifier) {
+void TextField::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
-		textfile->OffsetLineOffset(-distance);
+		if (distance != 0) {
+			textfile->OffsetLineOffset(-distance);
+			this->Invalidate();
+		}
+	}
+	if (hdistance != 0) {
+		textfile->SetXOffset(textfile->GetXOffset() - hdistance);
 		this->Invalidate();
 	}
 }

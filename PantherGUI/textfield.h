@@ -43,7 +43,7 @@ public:
 
 	void PeriodicRender(void);
 	void Draw(PGRendererHandle, PGIRect*);
-	void MouseWheel(int x, int y, double distance, PGModifier modifier);
+	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseMove(int x, int y, PGMouseButton buttons);
