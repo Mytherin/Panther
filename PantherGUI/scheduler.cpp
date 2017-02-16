@@ -9,19 +9,18 @@ Scheduler::Scheduler() {
 void Scheduler::RunThread() {
 	Scheduler& scheduler = Scheduler::GetInstance();
 	while (scheduler.running) {
-		Task* task = nullptr;
+		std::shared_ptr<Task> task = nullptr;
 		if (!scheduler.urgent_queue.wait_dequeue_timed(task, std::chrono::milliseconds(50))) {
 			// nothing found
 			if (!scheduler.nonurgent_queue.try_dequeue(task)) {
 				task = nullptr;
 			}
 		}
-		if (task != nullptr) {
+		if (task) {
 			// task found, run the task
 			if (task->active) {
 				task->function(task, task->parameter);
 			}
-			delete task;
 		}
 	}
 }
@@ -35,7 +34,7 @@ void Scheduler::_SetThreadCount(lng threads) {
 	}
 }
 
-void Scheduler::_RegisterTask(Task* task, PGTaskUrgency urgency) {
+void Scheduler::_RegisterTask(std::shared_ptr<Task> task, PGTaskUrgency urgency) {
 	if (urgency == PGTaskUrgent) {
 		urgent_queue.enqueue(task);
 	} else {

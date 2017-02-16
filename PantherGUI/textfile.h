@@ -204,8 +204,8 @@ public:
 	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }
 
-	PGTextRange FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
-	PGTextRange FindMatch(std::string text, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task);
+	PGTextRange FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, std::shared_ptr<Task> current_task);
+	PGTextRange FindMatch(std::string text, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, std::shared_ptr<Task> current_task);
 
 	void SetSettings(PGTextFileSettings settings);
 private:
@@ -264,12 +264,12 @@ private:
 	bool PerformOperation(TextDelta* delta, bool redo);
 	std::vector<Interval> GetCursorIntervals();
 
-	Task* current_task = nullptr;
-	static void RunHighlighter(Task* task, TextFile* textfile);
-	static void OpenFileAsync(Task* task, void* info);
+	std::shared_ptr<Task> current_task = nullptr;
+	static void RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile);
+	static void OpenFileAsync(std::shared_ptr<Task> task, void* info);
 
-	Task* find_task = nullptr;
-	static void RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character, bool select_first_match);
+	std::shared_ptr<Task> find_task = nullptr;
+	static void RunTextFinder(std::shared_ptr<Task> task, TextFile* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character, bool select_first_match);
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateBuffers();

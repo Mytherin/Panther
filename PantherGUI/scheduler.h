@@ -7,7 +7,7 @@
 
 struct Task;
 
-typedef void(*PGThreadFunctionParams)(Task*, void*);
+typedef void(*PGThreadFunctionParams)(std::shared_ptr<Task>, void*);
 
 enum PGTaskUrgency {
 	PGTaskUrgent,
@@ -31,11 +31,11 @@ public:
 
 	static bool IsRunning() { return GetInstance().running; }
 
-	static void RegisterTask(Task* task, PGTaskUrgency urgency) { GetInstance()._RegisterTask(task, urgency); }
+	static void RegisterTask(std::shared_ptr<Task> task, PGTaskUrgency urgency) { GetInstance()._RegisterTask(task, urgency); }
 private:
 	Scheduler();
 	void _SetThreadCount(lng threads);
-	void _RegisterTask(Task* task, PGTaskUrgency);
+	void _RegisterTask(std::shared_ptr<Task> task, PGTaskUrgency);
 	static void RunThread(void);
 	static Scheduler& GetInstance()
 	{
@@ -44,7 +44,7 @@ private:
 	}
 
 	bool running = true;
-	moodycamel::BlockingConcurrentQueue<Task*> urgent_queue;
-	moodycamel::ConcurrentQueue<Task*> nonurgent_queue;
+	moodycamel::BlockingConcurrentQueue<std::shared_ptr<Task>> urgent_queue;
+	moodycamel::ConcurrentQueue<std::shared_ptr<Task>> nonurgent_queue;
 	std::vector<PGThreadHandle> threads;
 };

@@ -18,7 +18,7 @@ struct OpenFileInformation {
 	OpenFileInformation(TextFile* file, char* base, lng size, bool delete_file) : textfile(file), base(base), size(size), delete_file(delete_file) {}
 };
 
-void TextFile::OpenFileAsync(Task* task, void* inp) {
+void TextFile::OpenFileAsync(std::shared_ptr<Task> task, void* inp) {
 	OpenFileInformation* info = (OpenFileInformation*)inp;
 	info->textfile->OpenFile(info->base, info->size, info->delete_file);
 	delete info;
@@ -65,7 +65,7 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 	// FIXME: switch to immediate_load for small files
 	if (!immediate_load) {
 		OpenFileInformation* info = new OpenFileInformation(this, base, size, delete_file);
-		this->current_task = new Task((PGThreadFunctionParams)OpenFileAsync, info);
+		this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)OpenFileAsync, info));
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
 		OpenFile(base, size, delete_file);
@@ -214,7 +214,7 @@ PGTextBuffer* TextFile::GetBuffer(lng line) {
 	return buffers[PGTextBuffer::GetBuffer(buffers, line)];
 }
 
-void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
+void TextFile::RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile) {
 	for (lng i = 0; i < (lng)textfile->buffers.size(); i++) {
 		if (!textfile->buffers[i]->parsed) {
 			// if we encounter a non-parsed block, parse it and any subsequent blocks that have to be parsed
@@ -351,7 +351,7 @@ void TextFile::InvalidateParsing() {
 
 	if (!highlighter) return;
 
-	this->current_task = new Task((PGThreadFunctionParams)RunHighlighter, (void*) this);
+	this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)RunHighlighter, (void*) this));
 	Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 }
 
@@ -552,7 +552,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		highlighter->DeleteParserState(state);
 		if (buffers.size() > 10) {
 			is_loaded = true;
-			this->current_task = new Task((PGThreadFunctionParams)RunHighlighter, (void*) this);
+			this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)RunHighlighter, (void*) this));
 			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 		}
 	}
@@ -2172,7 +2172,7 @@ Cursor TextFile::RestoreCursorPartial(CursorData data) {
 	return Cursor(this, data);
 }
 
-PGTextRange TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
+PGTextRange TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, std::shared_ptr<Task> current_task) {
 	PGTextBuffer* start_buffer = buffers[PGTextBuffer::GetBuffer(buffers, start_line)];
 	PGTextBuffer* end_buffer = buffers[PGTextBuffer::GetBuffer(buffers, end_line)];
 	lng start_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
@@ -2180,7 +2180,7 @@ PGTextRange TextFile::FindMatch(std::string text, PGDirection direction, lng sta
 	return FindMatch(text, direction, start_buffer, start_position, end_buffer, end_position, error_message, match_case, wrap, regex, current_task);
 }
 
-PGTextRange TextFile::FindMatch(std::string pattern, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, Task* current_task) {
+PGTextRange TextFile::FindMatch(std::string pattern, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, std::shared_ptr<Task> current_task) {
 	// we start "outside" of the current selection
 	// e.g. if we go right, we start at the end and continue right
 	// if we go left, we start at the beginning and go left
@@ -2224,7 +2224,7 @@ struct FindInformation {
 	lng start_character;
 };
 
-void TextFile::RunTextFinder(Task* task, TextFile* textfile, PGRegexHandle regex_handle, lng current_line, lng current_character, bool select_first_match) {
+void TextFile::RunTextFinder(std::shared_ptr<Task> task, TextFile* textfile, PGRegexHandle regex_handle, lng current_line, lng current_character, bool select_first_match) {
 	textfile->Lock(PGWriteLock);
 	textfile->finished_search = false;
 	textfile->matches.clear();
