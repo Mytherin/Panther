@@ -12,17 +12,13 @@ static bool KeywordCharacter(char c) {
 	return c == '#' || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57);
 } 
 
-PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState s, PGParseErrors& errors) {
+PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState s, PGParseErrors& errors, PGSyntax& current) {
 	assert(is_generated);
 	KWParserState* state = (KWParserState*)s;
 	char* text = line.GetLine();
 	lng size = line.GetLength();
 	// free the current syntax of this line
-	PGSyntax* current = &line.syntax;
-	PGSyntax* prev = nullptr;
-	PGSyntax* next = current->next;
-	current->next = nullptr;
-	current->end = -1;
+	current.syntax.clear();
 	bool escaped = false;
 	// parse the actual keywords
 	for (lng i = 0; i < size; i++) {
@@ -41,17 +37,11 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 				std::string kw = std::string(text + start, i - start);
 				if (keyword_index.find(kw) != keyword_index.end()) {
  					PGSyntaxType type = keyword_index[kw];
-					if (start > 0 && (!prev || prev->end < start)) {
-						current->type = PGSyntaxNone;
-						current->end = start;
-						current->next = new PGSyntax();
-						current = current->next;
+					if (start > 0 && 
+						(current.syntax.size() == 0 || current.syntax.back().end < start)) {
+						current.syntax.push_back(PGSyntaxNode(PGSyntaxNone, start));
 					}
-					current->type = type;
-					current->end = i;
-					current->next = new PGSyntax();
-					prev = current;
-					current = current->next;
+					current.syntax.push_back(PGSyntaxNode(type, i));
 				}
 			} else {
 				char entry = text[i];
@@ -70,12 +60,9 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 							}
 						}
 						if (found) {
-							if (i > 0 && (!prev || prev->end < i)) {
-								current->type = PGSyntaxNone;
-								current->end = i;
-								current->next = new PGSyntax();
-								prev = current;
-								current = current->next;
+							if (i > 0 && 
+								(current.syntax.size() == 0 || current.syntax.back().end < i)) {
+								current.syntax.push_back(PGSyntaxNode(PGSyntaxNone, i));
 							}
 							state->end = it->end;
 							state->state = it->state;
@@ -108,11 +95,8 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 				}
 				if (found) {
 					i = i + state->end.size() - 1;
-					current->type = (state->state == PGParserKWSLComment || state->state == PGParserKWMLComment) ? PGSyntaxComment : PGSyntaxString;
-					current->end = i + 1;
-					current->next = new PGSyntax();
-					prev = current;
-					current = current->next;
+					PGSyntaxType type = (state->state == PGParserKWSLComment || state->state == PGParserKWMLComment) ? PGSyntaxComment : PGSyntaxString;
+					current.syntax.push_back(PGSyntaxNode(type, i + 1));
 					state->state = PGParserKWDefault;
 					state->end = "";
 					state->escape = '\0';
@@ -123,11 +107,7 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 		}
 	}
 	if (state->state == PGParserKWSLComment || state->state == PGParserKWMLComment) {
-		current->type = PGSyntaxComment;
-		current->end = size;
-		current->next = new PGSyntax();
-		prev = current;
-		current = current->next;
+		current.syntax.push_back(PGSyntaxNode(PGSyntaxComment, size));
 		if (state->state == PGParserKWSLComment) {
 			if (state->end.size() != 0) {
 				errors.errors.push_back(PGParseError(size - 1, size - 1, linenr, "Expected " + state->end));
@@ -137,11 +117,7 @@ PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linen
 			state->escape = '\0';
 		}
 	} else if (state->state == PGParserKWSLString || state->state == PGParserKWMLString) {
-		current->type = PGSyntaxString;
-		current->end = size;
-		current->next = new PGSyntax();
-		prev = current;
-		current = current->next;
+		current.syntax.push_back(PGSyntaxNode(PGSyntaxString, size));
 		if (state->state == PGParserKWSLString) {
 			if (state->end.size() != 0) {
 				errors.errors.push_back(PGParseError(size - 1, size - 1, linenr, "Expected " + state->end));

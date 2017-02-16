@@ -20,7 +20,7 @@
 -(void)performClose;
 -(ControlManager*)getManager;
 -(PGWindowHandle)getHandle;
-- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(std::vector<TextFile*>)textfiles;
+- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(std::vector<std::shared_ptr<TextFile>>)textfiles;
 -(NSRect)getBounds;
 - (void)targetMethod:(NSTimer*)timer;
 - (PGTimerHandle)scheduleTimer:(PGWindowHandle)handle :(int)ms :(PGTimerCallback)callback :(PGTimerFlags)flags;

@@ -6,8 +6,9 @@ struct TextLine {
 	friend class TextLineIterator;
 	friend class WrappedTextLineIterator;
 public:
-	TextLine() : line(nullptr), length(0) { syntax.end = -1; }
-	TextLine(char* line, lng length, PGSyntax syntax) : line(line), length(length), syntax(syntax) { }
+	TextLine() : line(nullptr), length(0) { }
+	TextLine(char* line, lng length) : line(line), length(length), syntax(nullptr) { }
+	TextLine(char* line, lng length, PGSyntax* syntax) : line(line), length(length), syntax(syntax) { }
 	TextLine(PGTextBuffer* buffer, lng line, lng max_line);
 
 	lng GetLength(void) { return length; }
@@ -20,8 +21,7 @@ public:
 	static lng* WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, char* line, lng length, PGFontHandle font, PGScalar wrap_width);
 	static lng RenderedLines(PGTextBuffer* buffer, lng linenr, lng total_lines, char* line, lng length, PGFontHandle font, PGScalar wrap_width);
 
-	PGSyntax syntax;
-
+	PGSyntax* syntax;
 private:
 	char* line;
 	lng length;

@@ -9,7 +9,6 @@ WrappedTextLineIterator::WrappedTextLineIterator(PGFontHandle font, TextFile* te
 	font(font), wrap_width(wrap_width), start_wrap(0) {
 	lng current_line = scroll.linenumber;
 	this->Initialize(textfile, current_line);
-	delete_syntax = false;
 
 	SetCurrentScrollOffset(scroll);
 }
@@ -81,45 +80,34 @@ void WrappedTextLineIterator::SetCurrentScrollOffset(PGVerticalScroll scroll) {
 
 void WrappedTextLineIterator::SetLineFromOffsets() {
 	if (textline.line == nullptr) return;
-	if (delete_syntax) {
-		wrapped_line.syntax.Delete();
-		wrapped_line.syntax.next = nullptr;
-		delete_syntax = false;
-	}
 	wrapped_line.line = textline.line + start_wrap;
 	wrapped_line.length = end_wrap - start_wrap;
 	assert(end_wrap >= start_wrap);
-	wrapped_line.syntax.end = -1;
+	wrapped_line.syntax = nullptr;
+
+	this->syntax.syntax.clear();
 	if (start_wrap == 0 && end_wrap == textline.length) {
 		// the wrapped line is the entire line, we can directly use the textline syntax
-		delete_syntax = false;
 		wrapped_line.syntax = textline.syntax;
-	} else if (textline.syntax.end > 0) {
-		delete_syntax = true;
+	} else if (textline.syntax && textline.syntax->syntax.size() > 0 && textline.syntax->syntax[0].end >= 0) {
 		// we have to split the syntax into separate parts
+		size_t i = 0;
+		PGSyntax* current = textline.syntax;
 		if (start_wrap > 0) {
 			// we have to find the start syntax
-			PGSyntax* syntax = &textline.syntax;
-			while (syntax->next && syntax->end >= 0 && syntax->end < start_wrap) {
-				syntax = syntax->next;
+			// FIXME: binary search?
+			for(i = 0; i < current->syntax.size(); i++) {
+				if (current->syntax[i].end < 0 || current->syntax[i].end >= start_wrap)
+					break;
 			}
-			wrapped_line.syntax.next = syntax->next;
-			wrapped_line.syntax.end = syntax->end;
-			wrapped_line.syntax.type = syntax->type;
-		} else {
-			wrapped_line.syntax.next = textline.syntax.next;
-			wrapped_line.syntax.end = textline.syntax.end;
-			wrapped_line.syntax.type = textline.syntax.type;
 		}
-		PGSyntax* syntax = &wrapped_line.syntax;
-		while (syntax->next) {
-			syntax->end -= start_wrap;
-			syntax->end = std::min(syntax->end, wrapped_line.length);
-			if (syntax->end >= end_wrap) break;
-			syntax->next = new PGSyntax(*syntax->next);
-			syntax = syntax->next;
+		for(; i < current->syntax.size(); i++) {
+			PGSyntaxNode node;
+			node.type = current->syntax[i].type;
+			node.end = std::min(current->syntax[i].end - start_wrap, wrapped_line.length);
+			this->syntax.syntax.push_back(node);
+			if (current->syntax[i].end >= end_wrap) break;
 		}
-		syntax->end = std::min(syntax->end, wrapped_line.length);
-		syntax->next = nullptr;
+		wrapped_line.syntax = &this->syntax;
 	}
 }

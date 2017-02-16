@@ -28,10 +28,11 @@ TextLine::TextLine(PGTextBuffer* buffer, lng line, lng max_line) {
 			i += offset;
 		}
 	}
-	if (buffer->syntax && buffer->parsed) {
-		this->syntax = PGSyntax(buffer->syntax[line - buffer->start_line]);
+	if (buffer->syntax.size() > 0 && buffer->parsed) {
+		assert(buffer->syntax.size() > line - buffer->start_line);
+		this->syntax = &buffer->syntax[line - buffer->start_line];
 	} else {
-		this->syntax.end = -1;
+		this->syntax = nullptr;
 	}
 }
 

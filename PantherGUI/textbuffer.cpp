@@ -9,13 +9,13 @@ lng TEXT_BUFFER_SIZE = 4096;
 
 PGTextBuffer::PGTextBuffer() : 
 	buffer(nullptr), buffer_size(0), current_size(0), start_line(0), 
-	state(nullptr), syntax(nullptr), cumulative_width(0),
+	state(nullptr), cumulative_width(0), syntax(),
 	width(0), line_count(0), index(0), wrap_width(0) {
 
 }
 
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
-	current_size(size), start_line(start_line), state(nullptr), syntax(nullptr), 
+	current_size(size), start_line(start_line), state(nullptr), syntax(), 
 	cumulative_width(0), width(0), line_count(0), index(0), wrap_width(0) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {
 		buffer_size = TEXT_BUFFER_SIZE;
@@ -50,7 +50,8 @@ std::vector<TextLine> PGTextBuffer::GetLines() {
 	for (lng i = 0; i < current_size; ) {
 		int offset = utf8_character_length(buffer[i]);
 		if (offset == 1 && buffer[i] == '\n') {
-			PGSyntax syntax = parsed ? this->syntax[line] : PGSyntax();
+			assert(!parsed || (line >= 0 && line < this->syntax.size()));
+			PGSyntax* syntax = parsed ? &this->syntax[line] : nullptr;
 			lines.push_back(TextLine(buffer + current_position, i - current_position, syntax));
 			current_position = i + 1;
 			line++;
@@ -65,27 +66,7 @@ TextLine PGTextBuffer::GetLineFromPosition(ulng pos) {
 	lng start = line_pos == 0 ? 0 : line_start[line_pos - 1];
 	lng end = (line_pos == line_start.size() ? current_size : line_start[line_pos]) - 1;
 	// FIXME: do we want to get the correct syntax for the line?
-	PGSyntax syntax;
-	syntax.end = -1;
-	return TextLine(buffer + start, end - start, syntax);
-	/*
-
-
-	char* position = buffer + pos;
-	if (pos > 0) {
-		if (*position == '\n') position--;
-		while (position > buffer && *position != '\n') {
-			position--;
-		}
-		if (*position == '\n') position++;
-	}
-	char* end = buffer + pos;
-	while (end < buffer + current_size && *end != '\n') {
-		end++;
-	}
-	PGSyntax syntax;
-	syntax.end = -1;
-	return TextLine(position, end - position, syntax);*/
+	return TextLine(buffer + start, end - start, nullptr);
 }
 
 void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& character) {
@@ -104,35 +85,6 @@ void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& cha
 ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 	lng start = line == start_line ? 0 : line_start[line - start_line - 1];
 	return start + position;
-	/*
-
-	lng current_line = start_line;
-	lng current_character = 0;
-	if (current_line == line && current_character == position) {
-		return 0;
-	}
-	ulng i = 0;
-	for (i = 0; i < current_size; ) {
-		if (current_line == line && current_character == position) {
-			return i;
-		}
-		int offset = utf8_character_length(buffer[i]);
-		if (offset == 1 && buffer[i] == '\n') {
-			if (current_line == line) {
-				return i;
-			}
-			current_character = 0;
-			current_line++;
-		} else {
-			current_character += offset;
-		}
-		i += offset;
-	}
-	if (current_line == line) {
-		return i;
-	}
-	assert(0);
-	return 0;*/
 }
 
 PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position, lng total_lines) {
@@ -159,43 +111,6 @@ PGCharacterPosition PGTextBuffer::GetCharacterFromPosition(ulng position) {
 		i += offset;
 	}
 	return pos;
-
-/*
-	lng cache_entry = TEXT_BUFFER_SIZE == 0 ? 0 : (position / TEXT_BUFFER_SIZE) - 1;
-	if (cache_entry >= 0) {
-		if (cache_entry < cached_positions.size()) {
-			// cache entry exists
-			pos = cached_positions[cache_entry];
-			i = pos.position;
-		} else if (cached_positions.size() > 0) {
-			// no exact entry exists, but we can use the closest one
-			cache_entry = cached_positions.size() - 1;
-			pos = cached_positions.back();
-			i = pos.position;
-		} else {
-			cache_entry = 0;
-		}
-	}
-
-	for (; i < position; ) {
-		int offset = utf8_character_length(buffer[i]);
-		if (offset == 1 && buffer[i] == '\n') {
-			pos.line++;
-			pos.character = 0;
-			pos.position = 0;
-		} else {
-			pos.character++;
-			pos.position += offset;
-		}
-		i += offset;
-		if (TEXT_BUFFER_SIZE > 0 && i / TEXT_BUFFER_SIZE > cache_entry) {
-			cache_entry++;
-			if (cached_positions.size() <= cache_entry) {
-				cached_positions.push_back(pos);	
-			}
-		}
-	}
-	return pos;*/
 }
 
 void PGTextBuffer::Extend(ulng new_size) {

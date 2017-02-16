@@ -330,53 +330,53 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 
 			PGScalar bitmap_x = position_x_text + character_widths[0];
 			PGScalar bitmap_y = position_y;
-			PGSyntax* syntax = &current_line.syntax;
-			while (syntax && syntax->end > 0) {
-				bool squiggles = false;
-				//assert(syntax->end > position);
-				if (syntax->end <= position) {
-					syntax = syntax->next;
-					continue;
-				}
-				if (syntax->end >= render_start && position <= render_end) {
-					lng spos = std::max(position, render_start);
-					lng epos = std::min(syntax->end, render_end);
-					if (syntax->type == PGSyntaxError) {
-						squiggles = true;
-					} else if (syntax->type == PGSyntaxNone) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-					} else if (syntax->type == PGSyntaxString) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
-					} else if (syntax->type == PGSyntaxConstant) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
-					} else if (syntax->type == PGSyntaxComment) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
-					} else if (syntax->type == PGSyntaxOperator) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
-					} else if (syntax->type == PGSyntaxFunction) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
-					} else if (syntax->type == PGSyntaxKeyword) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
-					} else if (syntax->type == PGSyntaxClass1) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
-					} else if (syntax->type == PGSyntaxClass2) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
-					} else if (syntax->type == PGSyntaxClass3) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
-					} else if (syntax->type == PGSyntaxClass4) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
-					} else if (syntax->type == PGSyntaxClass5) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
-					} else if (syntax->type == PGSyntaxClass6) {
-						SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
+			PGSyntax* syntax = current_line.syntax;
+			if (syntax) {
+				for(auto it = syntax->syntax.begin(); it != syntax->syntax.end(); it++) {
+					bool squiggles = false;
+					//assert(syntax->end > position);
+					if (it->end <= position) {
+						continue;
 					}
-					RenderText(renderer, font, line + spos, epos - spos, bitmap_x, bitmap_y);
+					if (it->end >= render_start && position <= render_end) {
+						lng spos = std::max(position, render_start);
+						lng epos = std::min(it->end, render_end);
+						if (it->type == PGSyntaxError) {
+							squiggles = true;
+						} else if (it->type == PGSyntaxNone) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
+						} else if (it->type == PGSyntaxString) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxString));
+						} else if (it->type == PGSyntaxConstant) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxConstant));
+						} else if (it->type == PGSyntaxComment) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxComment));
+						} else if (it->type == PGSyntaxOperator) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxOperator));
+						} else if (it->type == PGSyntaxFunction) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxFunction));
+						} else if (it->type == PGSyntaxKeyword) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxKeyword));
+						} else if (it->type == PGSyntaxClass1) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass1));
+						} else if (it->type == PGSyntaxClass2) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass2));
+						} else if (it->type == PGSyntaxClass3) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass3));
+						} else if (it->type == PGSyntaxClass4) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass4));
+						} else if (it->type == PGSyntaxClass5) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass5));
+						} else if (it->type == PGSyntaxClass6) {
+							SetTextColor(font, PGStyleManager::GetColor(PGColorSyntaxClass6));
+						}
+						RenderText(renderer, font, line + spos, epos - spos, bitmap_x, bitmap_y);
 
-					PGScalar text_width = character_widths[epos - render_start] - character_widths[spos - render_start];
-					bitmap_x += text_width;
+						PGScalar text_width = character_widths[epos - render_start] - character_widths[spos - render_start];
+						bitmap_x += text_width;
+					}
+					position = it->end;
 				}
-				position = syntax->end;
-				syntax = syntax->next;
 			}
 
 			if (render_end > position) {

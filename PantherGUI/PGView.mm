@@ -85,7 +85,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 @implementation PGView : NSView
 
-- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(std::vector<TextFile*>)textfiles
+- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(std::vector<std::shared_ptr<TextFile>>)textfiles
 {
 	if(self = [super initWithFrame:frameRect]) {
 		NSRect rect = [self getBounds];
@@ -442,7 +442,7 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> textfiles) {
+PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<TextFile>> textfiles) {
 	PGNSWindow *window;
     NSRect contentSize = NSMakeRect(0, 0, 1000.0, 700.0);
     NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
@@ -460,7 +460,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> textfiles
 	return [(PGView*)view getHandle];
 }
 
-PGWindowHandle PGCreateWindow(std::vector<TextFile*> textfiles) {
+PGWindowHandle PGCreateWindow(std::vector<std::shared_ptr<TextFile>> textfiles) {
 	return PGCreateWindow(PGPoint(20, 20), textfiles);
 }
 

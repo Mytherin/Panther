@@ -30,7 +30,7 @@ struct PGKWEntry {
 
 class KeywordHighlighter : public SyntaxHighlighter {
 public:
-	virtual PGParserState IncrementalParseLine(TextLine& line, lng linenr, PGParserState state, PGParseErrors& errors);
+	virtual PGParserState IncrementalParseLine(TextLine& line, lng linenr, PGParserState state, PGParseErrors& errors, PGSyntax& syntax);
 	virtual PGParserState GetDefaultState();
 	virtual PGParserState CopyParserState(const PGParserState state);
 	virtual bool StateEquivalent(const PGParserState a, const PGParserState b);

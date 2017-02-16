@@ -27,10 +27,9 @@ protected:
 	lng max_inner_line;
 	lng* wrap_positions;
 	TextLine wrapped_line;
+	PGSyntax syntax;
 
 private:
-	bool delete_syntax = false;
-
 	void SetCurrentScrollOffset(PGVerticalScroll scroll);
 
 	void SetLineFromOffsets();

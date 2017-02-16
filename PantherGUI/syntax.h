@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.h"
+#include <vector>
 
 typedef void* PGParserState;
 typedef short PGSyntaxType;
@@ -22,21 +23,14 @@ extern const PGSyntaxType PGSyntaxClass4;
 extern const PGSyntaxType PGSyntaxClass5;
 extern const PGSyntaxType PGSyntaxClass6;
 
-struct PGSyntax {
+struct PGSyntaxNode {
 	PGSyntaxType type;
 	lng end = -1;
-	PGSyntax* next = nullptr;
 
-	PGSyntax() : type(0), end(-1), next(nullptr) { }
-	~PGSyntax() { }
+	PGSyntaxNode() : type(PGSyntaxNone), end(-1) { }
+	PGSyntaxNode(PGSyntaxType type, lng end) : type(type), end(end) { }
+};
 
-	void Delete() {
-		PGSyntax* next = this->next;
-		while (next) {
-			assert(next->next != next);
-			PGSyntax* tmp = next->next;
-			delete next;
-			next = tmp;
-		}
-	}
+struct PGSyntax {
+	std::vector<PGSyntaxNode> syntax;
 };

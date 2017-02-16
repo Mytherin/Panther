@@ -22,7 +22,7 @@ SyntaxHighlighter::~SyntaxHighlighter() {
 
 }
 
-PGParserState SyntaxHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState state, PGParseErrors& errors) {
+PGParserState SyntaxHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState state, PGParseErrors& errors, PGSyntax& syntax) {
 	return PGParserErrorState;
 }
 

@@ -30,8 +30,8 @@ int main(int argc, const char *argv[])
     Scheduler::SetThreadCount(8);
 
     TextFile* textfile = new TextFile(nullptr);
-    std::vector<TextFile*> files;
-    files.push_back(textfile);
+    std::vector<std::shared_ptr<TextFile>> files;
+    files.push_back(std::shared_ptr<TextFile>(textfile));
 
     PGWindowHandle window = PGCreateWindow(files);
     ShowWindow(window);

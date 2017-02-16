@@ -34,7 +34,7 @@ public:
 	// Parses a line with a given input state, places the parsed tokens in the TextLine and returns an output state
 	// This is the basic function that every syntax highlighter should provide
 	// Parsers that only provide this function require the entire file to be parsed
-	virtual PGParserState IncrementalParseLine(TextLine& line, lng linenr, PGParserState state, PGParseErrors& errors);
+	virtual PGParserState IncrementalParseLine(TextLine& line, lng linenr, PGParserState state, PGParseErrors& errors, PGSyntax& syntax);
 	// Returns the initial parser state
 	virtual PGParserState GetDefaultState();
 	// Returns a copy of the specified parser state

@@ -234,21 +234,16 @@ void TextFile::RunHighlighter(Task* task, TextFile* textfile) {
 
 				lng linecount = buffer->GetLineCount(textfile->GetLineCount());
 				assert(linecount > 0);
-				if (buffer->syntax) {
-					for (ulng j = 0; j < buffer->syntax_count; j++) {
-						buffer->syntax[j].Delete();
-					}
-					free(buffer->syntax);
-					buffer->syntax = nullptr;
-				}
-				buffer->syntax_count = linecount;
-				buffer->syntax = (PGSyntax*)calloc(linecount, sizeof(PGSyntax));
+
+				buffer->syntax.clear();
 
 				int index = 0;
 				for (auto it = TextLineIterator(textfile, textfile->buffers[current_block]); ; it++) {
 					TextLine line = it.GetLine();
-					state = textfile->highlighter->IncrementalParseLine(line, i, state, errors);
-					buffer->syntax[index++] = line.syntax;
+					PGSyntax syntax;
+					state = textfile->highlighter->IncrementalParseLine(line, i, state, errors, syntax);
+					buffer->syntax.push_back(syntax);
+					index++;
 					if (index == linecount) break;
 				}
 				buffer->parsed = true;
@@ -310,10 +305,8 @@ void TextFile::InvalidateBuffers() {
 			buffer->line_lengths.resize(buffer->line_start.size() + 1);
 			for (size_t i = 0; i <= buffer->line_start.size(); i++) {
 				lng end_index = ((i == buffer->line_start.size()) ? buffer->current_size : buffer->line_start[i]) - 1;
-				PGSyntax syntax;
-				syntax.end = -1;
 				char* current_ptr = buffer->buffer + end_index;
-				TextLine line = TextLine(ptr, current_ptr - ptr, syntax);
+				TextLine line = TextLine(ptr, current_ptr - ptr);
 
 				ptr = current_ptr + 1;
 				PGScalar line_width = MeasureTextWidth(default_font, line.GetLine(), line.GetLength());
@@ -546,11 +539,12 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		PGParserState state = highlighter->GetDefaultState();
 		for (lng i = 0; i < (lng)std::min((size_t)10, buffers.size()); i++) {
 			auto lines = buffers[i]->GetLines();
-			buffers[i]->syntax = (PGSyntax*)malloc(sizeof(PGSyntax) * lines.size());
+			buffers[i]->syntax.clear();
 			int index = 0;
 			for (auto it = lines.begin(); it != lines.end(); it++) {
-				state = highlighter->IncrementalParseLine(*it, i, state, errors);
-				buffers[i]->syntax[index++] = (*it).syntax;
+				PGSyntax syntax;
+				state = highlighter->IncrementalParseLine(*it, i, state, errors, syntax);
+				buffers[i]->syntax.push_back(syntax);
 			}
 			buffers[i]->state = highlighter->CopyParserState(state);
 			buffers[i]->parsed = true;
@@ -1596,10 +1590,8 @@ void TextFile::VerifyTextfile() {
 		char* ptr = buffer->buffer;
 		for (lng j = 0; j < buffer->current_size; j++) {
 			if (buffer->buffer[j] == '\n') {
-				PGSyntax syntax;
-				syntax.end = -1;
 				char* current_ptr = buffer->buffer + j;
-				TextLine line = TextLine(ptr, current_ptr - ptr, syntax);
+				TextLine line = TextLine(ptr, current_ptr - ptr);
 
 				ptr = buffer->buffer + j + 1;
 

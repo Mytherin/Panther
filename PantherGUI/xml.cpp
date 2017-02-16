@@ -31,16 +31,12 @@ struct XMLParserState {
 	std::vector<XMLToken> open_tokens;
 };
 
-PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState s, PGParseErrors& errors) {
+PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState s, PGParseErrors& errors, PGSyntax& current) {
 	XMLParserState* state = (XMLParserState*)s;
 	char* text = line.GetLine();
 	lng size = line.GetLength();
 	// free the current syntax of this line
-	PGSyntax* current = &line.syntax;
-	PGSyntax* prev = nullptr;
-	PGSyntax* next = current->next;
-	current->next = nullptr;
-	current->end = -1;
+	current.syntax.clear();
 	for (lng i = 0; i < size; i++) {
 		int utf8_length = utf8_character_length(text[i]);
 		if (utf8_length > 1) {
@@ -50,11 +46,7 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 		}
 		if (text[i] == '<') {
 			if (state->state == PGParserXMLDefault) {
-				current->type = PGSyntaxNone;
-				current->end = i + 1;
-				current->next = new PGSyntax();
-				prev = current;
-				current = current->next;
+				current.syntax.push_back(PGSyntaxNode(PGSyntaxNone, i + 1));
 				state->state = PGParserXMLElementName;
 			} else if (state->state != PGParserXMLComment && state->state != PGParserXMLOpenValue && state->state != PGParserXMLDefault) {
 				// Parse Error
@@ -63,21 +55,10 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 		} else if (text[i] == '>') {
 			if (state->state == PGParserXMLInElement) {
 				state->state = PGParserXMLDefault;
-				current->type = PGSyntaxNone;
-				current->end = i + 1;
-				prev = current;
-				current->next = new PGSyntax();
-				current = current->next;
+				current.syntax.push_back(PGSyntaxNode(PGSyntaxNone, i + 1));
 			} else if (state->state == PGParserXMLElementName || state->state == PGParserXMLSpecialName) {
-				current->type = PGXMLElementName;
-				current->end = i;
-				current->next = new PGSyntax();
-				current = current->next;
-				current->type = PGSyntaxNone;
-				current->end = i + 1;
-				prev = current;
-				current->next = new PGSyntax();
-				current = current->next;
+				current.syntax.push_back(PGSyntaxNode(PGXMLElementName, i));
+				current.syntax.push_back(PGSyntaxNode(PGSyntaxNone, i + 1));
 				state->state = PGParserXMLDefault;
 			} else if (state->state != PGParserXMLComment && state->state != PGParserXMLOpenValue) {
 				// Parse Error
@@ -85,39 +66,22 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 			}
 		} else if (text[i] == ' ' || text[i] == '\t') {
 			if (state->state == PGParserXMLElementName || state->state == PGParserXMLSpecialName) {
-				// Element Name
-				current->type = PGXMLElementName;
-				current->end = i;
-				prev = current;
-				current->next = new PGSyntax();
-				current = current->next;
+				current.syntax.push_back(PGSyntaxNode(PGXMLElementName, i));
 				state->state = PGParserXMLInElement;
 			}
 		} else if (text[i] == '=') {
 			if (state->state == PGParserXMLInElement) {
 				// Attribute Name
-				current->type = PGXMLAttributeName;
-				current->end = i;
-				prev = current;
-				current->next = new PGSyntax();
-				current = current->next;
+				current.syntax.push_back(PGSyntaxNode(PGXMLAttributeName, i));
 				state->state = PGParserXMLStartValue;
 			}
 		} else if (text[i] == '"' || text[i] == '\'') {
 			if (state->state == PGParserXMLStartValue) {
-				current->type = PGSyntaxNone;
-				current->end = i;
-				prev = current;
-				current->next = new PGSyntax();
-				current = current->next;
+				current.syntax.push_back(PGSyntaxNode(PGSyntaxNone, i));
 				state->state = PGParserXMLOpenValue;
 			} else if (state->state == PGParserXMLOpenValue) {
 				// Attribute Value
-				current->type = PGSyntaxString;
-				current->end = i + 1;
-				prev = current;
-				current->next = new PGSyntax();
-				current = current->next;
+				current.syntax.push_back(PGSyntaxNode(PGSyntaxString, i + 1));
 				state->state = PGParserXMLInElement;
 			} else if (state->state != PGParserXMLComment && state->state != PGParserXMLOpenValue && state->state != PGParserXMLDefault) {
 				// Parse Error
@@ -136,20 +100,13 @@ PGParserState XMLHighlighter::IncrementalParseLine(TextLine& line, lng linenr, P
 				if (i + 2 < size && text[i + 1] == '-' && text[i + 2] == '>') {
 					state->state = PGParserXMLDefault;
 					i += 2;
-					current->type = PGSyntaxComment;
-					current->end = i;
-					prev = current;
-					current->next = new PGSyntax();
-					current = current->next;
+					current.syntax.push_back(PGSyntaxNode(PGSyntaxComment, i));
 				}
 			}
 		}
 	}
 	if (state->state == PGParserXMLComment) {
-		current->type = PGSyntaxComment;
-		current->end = size;
-		current->next = new PGSyntax();
-		current = current->next;
+		current.syntax.push_back(PGSyntaxNode(PGSyntaxComment, size));
 	} else {
 		// FIXME: error
 		state->state = PGParserXMLDefault;

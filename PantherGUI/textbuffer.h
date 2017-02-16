@@ -52,8 +52,6 @@ public:
 	ulng start_line = 0;
 	ulng line_count = 0;
 
-	ulng syntax_count = 0;
-	PGSyntax* syntax = nullptr;
 	PGParserState state = nullptr;
 	bool parsed = false;
 
@@ -64,6 +62,7 @@ public:
 	double cumulative_width = -1;
 	PGScalar wrap_width;
 
+	std::vector<PGSyntax> syntax;
 	std::vector<lng> line_start;
 	std::vector<PGScalar> line_lengths;
 	std::vector<PGLineWrap> line_wraps;

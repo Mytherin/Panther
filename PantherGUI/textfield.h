@@ -33,8 +33,6 @@ struct RenderedLine {
 	lng line;
 	lng position;
 	RenderedLine(TextLine tline, lng line, lng position) : tline(tline), line(line), position(position) {
-		this->tline.syntax.next = nullptr;
-		this->tline.syntax.end = -1;
 	}
 };
 
