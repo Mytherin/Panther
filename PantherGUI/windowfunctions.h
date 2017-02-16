@@ -226,8 +226,8 @@ std::string GetModifierName(PGModifier);
 class TextFile;
 
 // Window Functions
-PGWindowHandle PGCreateWindow(PGPoint position, std::vector<TextFile*> initial_files);
-PGWindowHandle PGCreateWindow(std::vector<TextFile*> initial_files);
+PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<TextFile>> initial_files);
+PGWindowHandle PGCreateWindow(std::vector<std::shared_ptr<TextFile>> initial_files);
 void PGCloseWindow(PGWindowHandle window);
 void ShowWindow(PGWindowHandle window);
 void HideWindow(PGWindowHandle window);

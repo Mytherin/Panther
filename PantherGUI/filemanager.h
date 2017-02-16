@@ -9,14 +9,16 @@ public:
 	FileManager();
 	~FileManager();
 
-	TextFile* OpenFile();
-	TextFile* OpenFile(std::string path, PGFileError& error);
-	TextFile* OpenFile(TextFile* textfile);
-	void CloseFile(TextFile*);
+	std::shared_ptr<TextFile> OpenFile();
+	std::shared_ptr<TextFile> OpenFile(std::string path, PGFileError& error);
+	std::shared_ptr<TextFile> OpenFile(std::shared_ptr<TextFile> textfile);
+	void CloseFile(std::shared_ptr<TextFile>);
 	void ClearFiles();
 
-	std::vector<TextFile*>& GetFiles() { return open_files; }
+	std::vector<std::shared_ptr<TextFile>>& GetFiles() { return open_files; }
 private:
 	TextField* textfield;
-	std::vector<TextFile*> open_files;
+	std::vector<std::shared_ptr<TextFile>> open_files;
+
+	std::shared_ptr<TextFile> OpenFile(TextFile* textfile);
 };

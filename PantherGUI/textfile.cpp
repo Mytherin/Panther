@@ -30,7 +30,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 	last_modified_deletion(false), saved_undo_count(0) {
 	this->path = "";
 	this->name = std::string("untitled");
-	this->text_lock = CreateMutex();
+	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
 	default_font = PGCreateFont();
 	SetTextFontSize(default_font, 10);
 	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
@@ -53,13 +53,13 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 	lng pos = path.find_last_of('.');
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
 	this->current_task = nullptr;
-	this->text_lock = CreateMutex();
+	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
 	default_font = PGCreateFont();
 	SetTextFontSize(default_font, 10);
 
 	this->language = PGLanguageManager::GetLanguage(ext);
 	if (this->language) {
-		highlighter = this->language->CreateHighlighter();
+		highlighter = std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter());
 	}
 	unsaved_changes = false;
 	// FIXME: switch to immediate_load for small files
@@ -194,9 +194,8 @@ TextFile::~TextFile() {
 		Lock(PGWriteLock);
 	} else {
 		// otherwise we only need the text_lock, which is used by the loading code
-		LockMutex(text_lock);
+		LockMutex(text_lock.get());
 	}
-	DestroyMutex(text_lock);
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		delete *it;
 	}
@@ -205,10 +204,6 @@ TextFile::~TextFile() {
 	}
 	for (auto it = redos.begin(); it != redos.end(); it++) {
 		delete (it)->delta;
-	}
-	if (highlighter) {
-		delete highlighter;
-		highlighter = nullptr;
 	}
 	if (default_font) {
 		PGDestroyFont(default_font);
@@ -372,9 +367,9 @@ void TextFile::Lock(PGLockType type) {
 	if (type == PGWriteLock) {
 		while (true) {
 			if (shared_counter == 0) {
-				LockMutex(text_lock);
+				LockMutex(text_lock.get());
 				if (shared_counter != 0) {
-					UnlockMutex(text_lock);
+					UnlockMutex(text_lock.get());
 				} else {
 					break;
 				}
@@ -382,22 +377,22 @@ void TextFile::Lock(PGLockType type) {
 		}
 	} else if (type == PGReadLock) {
 		// ensure there are no write operations by locking the TextLock
-		LockMutex(text_lock);
+		LockMutex(text_lock.get());
 		// notify threads we are only reading by incrementing the shared counter
 		shared_counter++;
-		UnlockMutex(text_lock);
+		UnlockMutex(text_lock.get());
 	}
 }
 
 void TextFile::Unlock(PGLockType type) {
 	assert(is_loaded);
 	if (type == PGWriteLock) {
-		UnlockMutex(text_lock);
+		UnlockMutex(text_lock.get());
 	} else if (type == PGReadLock) {
-		LockMutex(text_lock);
+		LockMutex(text_lock.get());
 		// decrement the shared counter
 		shared_counter--;
-		UnlockMutex(text_lock);
+		UnlockMutex(text_lock.get());
 	}
 }
 
@@ -448,7 +443,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	char* ptr = base;
 	size_t prev = 0;
 	int offset = 0;
-	LockMutex(text_lock);
+	LockMutex(text_lock.get());
 	lng linenr = 0;
 	PGTextBuffer* current_buffer = nullptr;
 	PGScalar max_length = -1;
@@ -471,7 +466,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 				panther::DestroyFileContents(base);
 			}
 			bytes = -1;
-			UnlockMutex(text_lock);
+			UnlockMutex(text_lock.get());
 			return;
 		}
 		if (ptr[bytes] == '\n') {
@@ -511,7 +506,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 				if (delete_file) {
 					panther::DestroyFileContents(base);
 				}
-				UnlockMutex(text_lock);
+				UnlockMutex(text_lock.get());
 				bytes = -1;
 				return;
 			}
@@ -569,7 +564,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	}
 
 	ApplySettings(this->settings);
-	UnlockMutex(text_lock);
+	UnlockMutex(text_lock.get());
 }
 
 void TextFile::SetWordWrap(bool wordwrap, PGScalar wrap_width) {

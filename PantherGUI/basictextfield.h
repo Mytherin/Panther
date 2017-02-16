@@ -31,7 +31,7 @@ typedef void(*PGTextFieldCallback)(BasicTextField* textfield);
 
 class BasicTextField : public Control {
 public:
-	BasicTextField(PGWindowHandle, TextFile* textfile);
+	BasicTextField(PGWindowHandle, std::shared_ptr<TextFile> textfile);
 	~BasicTextField();
 
 	virtual void PeriodicRender(void);
@@ -44,6 +44,7 @@ public:
 	virtual PGCursorType GetCursor(PGPoint mouse);
 
 	TextFile& GetTextFile() { return *textfile; }
+	std::shared_ptr<TextFile> GetTextfilePointer() { return textfile; }
 
 	virtual bool IsDragging() { return drag_type != PGDragNone; }
 
@@ -69,7 +70,7 @@ public:
 
 	PG_CONTROL_KEYBINDINGS;
 protected:
-	TextFile* textfile = nullptr;
+	std::shared_ptr<TextFile> textfile = nullptr;
 	PGFontHandle textfield_font = nullptr;
 
 	int display_carets_count = 0;

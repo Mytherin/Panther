@@ -7,12 +7,12 @@
 
 struct Tab {
 	lng id = 0;
-	TextFile* file;
+	std::shared_ptr<TextFile> file;
 	PGScalar width;
 	PGScalar x = -1;
 	PGScalar target_x = -1;
 
-	Tab(TextFile* file, lng id) : file(file), x(-1), target_x(-1), id(id) { }
+	Tab(std::shared_ptr<TextFile> file, lng id) : file(file), x(-1), target_x(-1), id(id) { }
 };
 
 struct PGClosedTab {
@@ -31,7 +31,7 @@ class TabControl : public Control {
 	friend class TextField; //FIXME
 	friend class PGGotoAnything;
 public:
-	TabControl(PGWindowHandle window, TextField* textfield, std::vector<TextFile*> files);
+	TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files);
 
 	void PeriodicRender(void);
 
@@ -54,17 +54,17 @@ public:
 	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, bool selected_tab);
 
 	void OpenFile(std::string path);
-	void OpenFile(TextFile* textfile);
-	void OpenFile(TextFile* textfile, lng index);
+	void OpenFile(std::shared_ptr<TextFile> textfile);
+	void OpenFile(std::shared_ptr<TextFile> textfile, lng index);
 	void PrevTab();
 	void NextTab();
 	void CloseTab(int tab);
-	void CloseTab(TextFile* textfile);
+	void CloseTab(std::shared_ptr<TextFile> textfile);
 	bool CloseAllTabs();
-	void AddTab(TextFile* textfile);
-	void AddTab(TextFile* file, lng index);
+	void AddTab(std::shared_ptr<TextFile> textfile);
+	void AddTab(std::shared_ptr<TextFile> file, lng index);
 	void NewTab();
-	void SwitchToTab(TextFile* file);
+	void SwitchToTab(std::shared_ptr<TextFile> file);
 	void ReopenLastFile();
 
 
@@ -78,13 +78,13 @@ public:
 protected:
 	void ReopenFile(PGClosedTab tab);
 
-	void AddTab(TextFile* file, lng id, lng neighborid);
+	void AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid);
 
 	bool CloseTabConfirmation(int tab);
 	void ActuallyCloseTab(int tab);
-	void ActuallyCloseTab(TextFile* textfile);
+	void ActuallyCloseTab(std::shared_ptr<TextFile> textfile);
 
-	Tab OpenTab(TextFile* textfile);
+	Tab OpenTab(std::shared_ptr<TextFile> textfile);
 
 	PGScalar MeasureTabWidth(Tab& tab);
 
@@ -101,7 +101,7 @@ protected:
 
 	TextField* textfield;
 
-	void SwitchToFile(TextFile* file);
+	void SwitchToFile(std::shared_ptr<TextFile> file);
 
 	PGScalar tab_offset;
 	int active_tab;

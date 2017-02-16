@@ -7,7 +7,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(SimpleTextField);
 
 SimpleTextField::SimpleTextField(PGWindowHandle window) :
-	BasicTextField(window, new TextFile(nullptr)), valid_input(true), 
+	BasicTextField(window, std::shared_ptr<TextFile>(new TextFile(nullptr))), valid_input(true),
 	on_user_cancel(), on_user_confirm(), on_prev_entry(), on_next_entry() {
 	this->height = GetTextHeight(textfield_font) + 6;
 }
@@ -141,7 +141,7 @@ void SimpleTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			Cursor& active_cursor = textfile->GetActiveCursor();
 			if (active_cursor.SelectedCharacterPosition().character != character) {
 				active_cursor.SetCursorStartLocation(0, character);
-				Cursor::NormalizeCursors(textfile, textfile->GetCursors());
+				Cursor::NormalizeCursors(textfile.get(), textfile->GetCursors());
 				this->Invalidate();
 			}
 		}

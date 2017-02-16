@@ -7,7 +7,7 @@
 
 ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	PGContainer(window), dragging_scrollbar(false) {
-#ifdef HAVE_WIN32
+#ifdef WIN32
 	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI"));
 #else
 	this->directories.push_back(new PGDirectory("/Users/myth/Programs/re2"));

@@ -168,8 +168,8 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 }
 
 void ControlManager::CreateNewWindow() {
-	std::vector<TextFile*> files;
-	files.push_back(new TextFile(nullptr));
+	std::vector<std::shared_ptr<TextFile>> files;
+	files.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
 	PGWindowHandle new_window = PGCreateWindow(files);
 	ShowWindow(new_window);
 }
@@ -209,14 +209,14 @@ void ControlManager::InitializeKeybindings() {
 void ControlManager::EnterManager() {
 #ifdef PANTHER_DEBUG
 	entrance_count++;
-	assert(entrance_count == 1);
+	//assert(entrance_count == 1);
 #endif
 }
 
 void ControlManager::LeaveManager() {
 #ifdef PANTHER_DEBUG
 	entrance_count--;
-	assert(entrance_count == 0);
+	//assert(entrance_count == 0);
 #endif
 }
 

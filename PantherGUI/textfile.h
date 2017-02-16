@@ -200,10 +200,7 @@ public:
 	void ClearMatches();
 	const std::vector<PGTextRange>& GetFindMatches() { return matches; }
 	void SetSelectedMatch(lng selected_match) { selected_match = selected_match; }
-
-	void AddRef() { refcount++; }
-	bool DecRef() { return --refcount == 0; }
-
+	
 	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }
 
@@ -297,15 +294,13 @@ private:
 	PGFontHandle default_font = nullptr;
 
 	PGLanguage* language = nullptr;
-	SyntaxHighlighter* highlighter = nullptr;
+	std::unique_ptr<SyntaxHighlighter> highlighter = nullptr;
 
-	PGMutexHandle text_lock;
+	std::unique_ptr<PGMutex> text_lock;
 	int shared_counter = 0;
 
 	void ApplySettings(PGTextFileSettings& settings);
 	PGTextFileSettings settings;
-
-	lng refcount = 0;
-
+	
 	void _InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 };

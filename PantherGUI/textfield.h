@@ -40,7 +40,7 @@ struct RenderedLine {
 
 class TextField : public BasicTextField {
 public:
-	TextField(PGWindowHandle, TextFile* file);
+	TextField(PGWindowHandle, std::shared_ptr<TextFile> file);
 	~TextField();
 
 	void PeriodicRender(void);
@@ -62,7 +62,7 @@ public:
 
 	bool IsDragging();
 
-	void SetTextFile(TextFile* textfile);
+	void SetTextFile(std::shared_ptr<TextFile> textfile);
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
