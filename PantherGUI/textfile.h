@@ -27,10 +27,10 @@ typedef enum {
 
 struct RedoStruct {
 	std::vector<CursorData> cursors;
-	TextDelta* delta;
+	std::unique_ptr<TextDelta> delta;
 
-	RedoStruct(TextDelta* delta, std::vector<CursorData> cursors) : 
-		delta(delta), cursors(cursors) { }
+	RedoStruct(std::vector<CursorData> cursors) :
+		delta(nullptr), cursors(cursors) { }
 };
 
 PGLineEnding GetSystemLineEnding();
@@ -285,7 +285,7 @@ private:
 	PGTextPosition max_line_length;
 
 	std::vector<PGTextBuffer*> buffers;
-	std::vector<TextDelta*> deltas;
+	std::vector<std::unique_ptr<TextDelta>> deltas;
 	std::vector<RedoStruct> redos;
 	PGLineEnding lineending;
 	PGLineIndentation indentation;

@@ -199,12 +199,6 @@ TextFile::~TextFile() {
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		delete *it;
 	}
-	for (auto it = deltas.begin(); it != deltas.end(); it++) {
-		delete *it;
-	}
-	for (auto it = redos.begin(); it != redos.end(); it++) {
-		delete (it)->delta;
-	}
 	if (default_font) {
 		PGDestroyFont(default_font);
 	}
@@ -1656,7 +1650,7 @@ void TextFile::Undo() {
 	if (!is_loaded) return;
 
 	if (this->deltas.size() == 0) return;
-	TextDelta* delta = this->deltas.back();
+	TextDelta* delta = this->deltas.back().get();
 	Lock(PGWriteLock);
 	VerifyTextfile();
 	this->Undo(delta);
@@ -1664,8 +1658,9 @@ void TextFile::Undo() {
 	VerifyTextfile();
 	Cursor::NormalizeCursors(this, cursors, true);
 	Unlock(PGWriteLock);
+	this->redos.push_back(RedoStruct(BackupCursors()));
+	this->redos.back().delta = std::move(this->deltas.back());
 	this->deltas.pop_back();
-	this->redos.push_back(RedoStruct(delta, BackupCursors()));
 	if (this->textfield) {
 		this->textfield->TextChanged();
 	}
@@ -1676,8 +1671,8 @@ void TextFile::Undo() {
 void TextFile::Redo() {
 	if (!is_loaded) return;
 	if (this->redos.size() == 0) return;
-	RedoStruct redo = this->redos.back();
-	TextDelta* delta = redo.delta;
+	RedoStruct& redo = this->redos.back();
+	TextDelta* delta = redo.delta.get();
 	current_task = nullptr;
 	// lock the blocks
 	Lock(PGWriteLock);
@@ -1690,8 +1685,8 @@ void TextFile::Redo() {
 	VerifyTextfile();
 	Cursor::NormalizeCursors(this, cursors, true);
 	Unlock(PGWriteLock);
+	this->deltas.push_back(std::move(redo.delta));
 	this->redos.pop_back();
-	this->deltas.push_back(delta);
 	SetUnsavedChanges(saved_undo_count != deltas.size());
 	if (this->textfield) {
 		this->textfield->TextChanged();
@@ -1702,11 +1697,8 @@ void TextFile::Redo() {
 
 void TextFile::AddDelta(TextDelta* delta) {
 	if (!is_loaded) return;
-	for (auto it = redos.begin(); it != redos.end(); it++) {
-		delete (it)->delta;
-	}
 	redos.clear();
-	this->deltas.push_back(delta);
+	this->deltas.push_back(std::unique_ptr<TextDelta>(delta));
 }
 
 void TextFile::PerformOperation(TextDelta* delta) {
@@ -1821,9 +1813,9 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			Cursor::NormalizeCursors(this, cursors, false);
 			if (!redo) {
-				remove->next = new RemoveText();
+				remove->next = std::unique_ptr<TextDelta>(new RemoveText());
 			}
-			return PerformOperation(remove->next, redo);
+			return PerformOperation(remove->next.get(), redo);
 		}
 		case PGDeltaRemoveWord:
 		{
@@ -1841,9 +1833,9 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			Cursor::NormalizeCursors(this, cursors, false);
 			if (!redo) {
-				remove->next = new RemoveText();
+				remove->next = std::unique_ptr<TextDelta>(new RemoveText());
 			}
-			return PerformOperation(remove->next, redo);
+			return PerformOperation(remove->next.get(), redo);
 		}
 		case PGDeltaRemoveCharacter:
 		{
@@ -1861,9 +1853,9 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			Cursor::NormalizeCursors(this, cursors, false);
 			if (!redo) {
-				remove->next = new RemoveText();
+				remove->next = std::unique_ptr<TextDelta>(new RemoveText());
 			}
-			return PerformOperation(remove->next, redo);
+			return PerformOperation(remove->next.get(), redo);
 		}
 		case PGDeltaAddEmptyLine:
 		{
@@ -1880,9 +1872,9 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			Cursor::NormalizeCursors(this, cursors, false);
 			if (!redo) {
-				ins->next = new PGReplaceText("\n");
+				ins->next = std::unique_ptr<TextDelta>(new PGReplaceText("\n"));
 			}
-			return PerformOperation(ins->next, redo);
+			return PerformOperation(ins->next.get(), redo);
 		}
 		default:
 			assert(0);
@@ -1973,7 +1965,7 @@ void TextFile::Undo(TextDelta* delta) {
 		{
 			RemoveSelection* remove = (RemoveSelection*)delta;
 			assert(remove->next);
-			Undo(remove->next);
+			Undo(remove->next.get());
 			RestoreCursors(remove->stored_cursors);
 			return;
 		}
@@ -1981,7 +1973,7 @@ void TextFile::Undo(TextDelta* delta) {
 		{
 			InsertLineBefore* ins = (InsertLineBefore*)delta;
 			assert(ins->next);
-			Undo(ins->next);
+			Undo(ins->next.get());
 			RestoreCursors(ins->stored_cursors);
 			return;
 		}
@@ -1990,7 +1982,7 @@ void TextFile::Undo(TextDelta* delta) {
 			break;
 	}
 	if (delta->next) {
-		Undo(delta->next);
+		Undo(delta->next.get());
 	}
 }
 
