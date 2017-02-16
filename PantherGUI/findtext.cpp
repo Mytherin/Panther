@@ -462,6 +462,7 @@ nlohmann::json& FindText::GetFindHistory() {
 bool FindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
+	if (!tf.IsLoaded()) return false;
 	char* error_message = nullptr;
 
 	std::string search_text = field->GetText();
@@ -500,6 +501,7 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 void FindText::SelectAllMatches(bool in_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
+	if (!tf.IsLoaded()) return;
 
 	if (HighlightMatches()) {
 		// toggle-highlight is turned on
@@ -518,6 +520,7 @@ void FindText::SelectAllMatches(bool in_selection) {
 void FindText::FindAll(bool select_first_match) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
+	if (!tf.IsLoaded()) return;
 	char* error_message = nullptr;
 	std::string text = field->GetText();
 	tf.SetSelectedMatch(0);
@@ -556,6 +559,7 @@ void FindText::ReplaceAll(bool in_selection) {
 	std::string replacement = replace_field->GetText();
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
+	if (!tf.IsLoaded()) return;
 
 	this->SelectAllMatches(in_selection);
 	if (tf.GetCursors().size() > 0) {
