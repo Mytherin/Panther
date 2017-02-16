@@ -46,6 +46,11 @@ PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexF
 		handle->needle = pattern;
 		if (flags & PGRegexCaseInsensitive) {
 			handle->needle = panther::tolower(handle->needle);
+			if (handle->needle == pattern) {
+				// case insensitive is toggled on, but there are no ASCII letters in the search pattern
+				// toggle off case-insensitive search because it makes no difference
+				handle->flags = PGRegexFlagsNone;
+			}
 		}
 		handle->table = PGPreprocessTextSearch(handle->needle);
 		std::string reverse_needle = handle->needle;
