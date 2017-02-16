@@ -252,7 +252,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					if (selected_position >= current_range.startpos() && selected_position <= current_range.endpos()) {
 						// render the caret on the selected line
 						lng render_position = selected_position.position - current_range.start_position;
-						if (render_position >= render_start && render_position <= render_end) {
+						if (render_position >= render_start && render_position < render_end) {
 							// check if the caret is in the rendered area first
 							RenderCaret(renderer,
 								font,
@@ -515,8 +515,10 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 			PGScalar padding = 1;
 			double load_percentage = textfile->LoadPercentage();
 
-			RenderRectangle(renderer, PGRect(offset - padding, this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGDrawStyleFill);
-			RenderRectangle(renderer, PGRect(offset, this->height / 2 - height / 2, width * load_percentage, height), PGColor(20, 60, 255), PGDrawStyleFill);
+			PGScalar x = X() - r->x, y = Y() - r->y;
+
+			RenderRectangle(renderer, PGRect(x + offset - padding, y + this->height / 2 - height / 2 - padding, width + 2 * padding, height + 2 * padding), PGColor(191, 191, 191), PGDrawStyleFill);
+			RenderRectangle(renderer, PGRect(x + offset, y + this->height / 2 - height / 2, width * load_percentage, height), PGColor(20, 60, 255), PGDrawStyleFill);
 		} else {
 			// error loading file: display nothing
 		}
