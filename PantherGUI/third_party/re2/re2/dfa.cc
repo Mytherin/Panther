@@ -1341,8 +1341,6 @@ inline bool DFA::InlinedSearchLoop(SearchParams* params,
         // so use optimized assembly in memchr to skip ahead.
         // If firstbyte isn't found, we can skip to the end
         // of the string.
-
-        // FIXME: use memchr on buffers
         if (run_forward) {
           PGTextRange remaining_text(PGTextPosition(current_buffer, (char*)p), piece->endpos());
           PGTextPosition position = remaining_text._memchr(params->firstbyte);

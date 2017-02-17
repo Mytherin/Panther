@@ -185,10 +185,12 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			// find the part of the line that we actually have to render
 			lng render_start = 0, render_end = length;
 			auto character_widths = CumulativeCharacterWidths(font, line, length, xoffset, render_width, render_start, render_end);
+			render_end = render_start + character_widths.size();
 			if (character_widths.size() == 0) {
 				if (render_start == 0 && render_end == 0) {
 					// empty line, render cursor/selections
 					character_widths.push_back(0);
+					render_end = 1;
 				} else {
 					// the entire line is out of bounds, nothing to render
 					goto next_line;

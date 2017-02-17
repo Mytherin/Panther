@@ -456,7 +456,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
     [window registerPGView:(PGView*)view];
 
     [window cascadeTopLeftFromPoint:NSMakePoint(position.x, position.y)];
-    [window setTitle:@"PantherGUI"];
+    [window setTitle:@"Panther"];
 	return [(PGView*)view getHandle];
 }
 
