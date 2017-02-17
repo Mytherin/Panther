@@ -28,10 +28,11 @@ class TextDelta {
 public:
 	PGTextType type;
 	std::vector<CursorData> stored_cursors;
-	TextDelta* next = nullptr;
+	std::unique_ptr<TextDelta> next = nullptr;
 
 	TextDelta(PGTextType type) : 
 		type(type), next(nullptr) { }
+	virtual ~TextDelta() { }
 	PGTextType TextDeltaType() { return type; }
 	static std::vector<TextDelta*> LoadWorkspace(nlohmann::json& j);
 	virtual void WriteWorkspace(nlohmann::json& j) {};
