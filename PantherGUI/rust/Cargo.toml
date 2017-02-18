@@ -1,0 +1,17 @@
+[package]
+name = "pgrust"
+version = "0.0.1"
+authors = [ "Mark Raasveldt <mark.raasveldt@gmail.com>" ]
+
+[lib]
+name="pgrust"
+crate-type = ["staticlib"]
+path = "src/lib.rs"
+
+[dependencies]
+rand= "^0.3"
+regex= "^0.2"
+grep= "^0.1"
+memchr = "^0.1"
+memmap = "^0.5"
+globset= "^0.1"

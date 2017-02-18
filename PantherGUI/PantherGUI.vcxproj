@@ -103,16 +103,16 @@
     <LibraryPath>C:\Users\wieis\Skia\src\skia\out\Static;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;D:\icu\x64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;D:\icu\x64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-x64-Release-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Tests|x64'">
-    <IncludePath>$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;D:\icu\x64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;D:\icu\x64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-x64-Release-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;D:\icu\x64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Skia\src\skia\out\Skia-x64-Release;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;D:\icu\x64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-x64-Release;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(MSBuildProjectDirectory)\third_party\re2;D:\Skia\src\skia\include\core;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\effects;$(IncludePath)</IncludePath>
@@ -147,7 +147,7 @@
       <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgregex.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Tests|x64'">
@@ -160,7 +160,7 @@
       <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;PANTHER_TESTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgregex.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -190,7 +190,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgregex.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

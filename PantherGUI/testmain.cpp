@@ -2,6 +2,7 @@
 #include "textfield.h"
 #include "tester.h"
 #include <iostream>
+#include <rust/globset.h>
 
 std::string DoNothing(TextFile* textfile);
 std::string SimpleDeletion(TextFile* textfile);
@@ -275,6 +276,34 @@ void RunTests() {
 		}
 		return std::string("");
 	}, "aaahello worldaaa\n12345aaa\nhello world\ntest123", "aaahello worldaaa\n12345aaa\nhello world\ntest123");
+
+	tester.RunTextFileTest("Globset Test", [](TextFile* textfile) -> std::string {
+		std::string text = textfile->GetText();
+
+		PGGlobBuilder glob_builder = PGCreateGlobBuilder();
+		if (PGGlobBuilderAddGlob(glob_builder, "*.cpp") != 0) {
+			return std::string("Failed to compile glob.");
+		}
+		if (PGGlobBuilderAddGlob(glob_builder, "*.c") != 0) {
+			return std::string("Failed to compile glob.");
+		}
+		PGGlobSet glob_set = PGCompileGlobBuilder(glob_builder);
+		if (!glob_set) {
+			return std::string("Failed to compile glob builder.");
+		}
+		if (!PGGlobSetMatches(glob_set, text.c_str())) {
+			return std::string("*.cpp did not match hello.cpp");
+		}
+		if (!PGGlobSetMatches(glob_set, "hello.c")) {
+			return std::string("*.c did not match hello.c");
+		}
+		if (PGGlobSetMatches(glob_set, "hello.py")) {
+			return std::string("*.c matched hello.py");
+		}
+		PGDestroyGlobSet(glob_set);
+		PGDestroyGlobBuilder(glob_builder);
+		return std::string("");
+	}, "hello.cpp", "hello.cpp");
 
 
 	//tester.RunTextFileFileTest("Testerino", Testerino, "mserver.txt", "");
