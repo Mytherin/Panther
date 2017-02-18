@@ -388,7 +388,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			if (render_end > position) {
 				position = std::max(position, render_start);
 				SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
-				RenderText(renderer, font, line + position, render_end - position, bitmap_x, bitmap_y);
+				RenderText(renderer, font, line + position, render_end - position - 1, bitmap_x, bitmap_y);
 			}
 			
 			if ((lng)selected_word.size() > 0 && length >= (lng)selected_word.size()) {

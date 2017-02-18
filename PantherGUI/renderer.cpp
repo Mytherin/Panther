@@ -359,9 +359,6 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 		int regular_elements = 0;
 		for (size_t i = 0; i < length; ) {
 			if (text_size - xoffset > maximum_width) {
-				if (render_end == length) {
-					render_end = i;
-				}
 				return cumulative_widths;
 			}
 			PGScalar current_width = text_size;
@@ -405,9 +402,6 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 		// main font is not monospace
 		for (size_t i = 0; i < length; ) {
 			if (text_size - xoffset > maximum_width) {
-				if (render_end == length) {
-					render_end = i;
-				}
 				return cumulative_widths;
 			}
 			PGScalar current_width = text_size;
