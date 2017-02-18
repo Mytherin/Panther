@@ -152,17 +152,6 @@ int PGTextRange::_memcmp(const char* data, size_t length) const {
 	return _buffer_comparison<memcmp>(data, length);
 }
 
-#if !defined(__linux__)  /* only Linux seems to have memrchr */
-static void* memrchr(const void* s, int c, size_t n) {
-	const unsigned char* p = (const unsigned char*)s;
-	for (p += n; n > 0; n--)
-		if (*--p == c)
-			return (void*)p;
-
-	return NULL;
-}
-#endif
-
 static void* memcasechr(const void* s, int c, size_t n) {
 	int upper = panther::chartoupper(c);
 	const unsigned char* p = (const unsigned char*)s;
@@ -203,7 +192,7 @@ PGTextPosition PGTextRange::_reverse_buffer_lookup(int value) const {
 }
 
 PGTextPosition PGTextRange::_memrchr(int value) const {
-	return _reverse_buffer_lookup<memrchr>(value);
+	return _reverse_buffer_lookup<panther::memrchr>(value);
 }
 
 PGTextPosition PGTextRange::_memcaserchr(int value) const {

@@ -97,5 +97,14 @@ namespace panther {
 		double d = strtod(text, end);
 		return d;
 	}
+
+	void* memrchr(const void* s, int c, size_t n) {
+		const unsigned char* p = (const unsigned char*)s;
+		for (p += n; n > 0; n--)
+			if (*--p == c)
+				return (void*)p;
+
+		return NULL;
+	}
 }
 

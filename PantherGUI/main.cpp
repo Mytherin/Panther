@@ -20,6 +20,7 @@
 #include "projectexplorer.h"
 
 #include "c.h"
+#include "findresults.h"
 #include "xml.h"
 
 #include <malloc.h>
@@ -98,6 +99,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	PGLanguageManager::AddLanguage(new CLanguage());
 	PGLanguageManager::AddLanguage(new XMLLanguage());
+	PGLanguageManager::AddLanguage(new FindResultsLanguage());
 
 	PGSettingsManager::Initialize();
 	PGKeyBindingsManager::Initialize();

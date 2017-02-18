@@ -15,7 +15,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(PGGotoAnything);
 struct ScrollData {
 	PGVerticalScroll offset;
 	TextField* tf;
-	std::vector<CursorData> backup_cursors;
+	std::vector<PGCursorRange> backup_cursors;
 };
 
 PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGotoType type) :

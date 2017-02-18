@@ -16,13 +16,14 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
-	bool HighlightMatches() { return toggle_highlight && toggle_highlight->IsToggled(); }
+	bool HighlightMatches() { return type != PGFindReplaceManyFiles && toggle_highlight && toggle_highlight->IsToggled(); }
 	
 	void ShiftTextfieldFocus(PGDirection direction);
 
 	void SelectAllMatches(bool in_selection = false);
 	bool Find(PGDirection direction, bool include_selection = false);
 	void FindAll(bool select_first_match = true);
+	void FindInFiles();
 	void Replace();
 	void ReplaceAll(bool in_selection = false);
 

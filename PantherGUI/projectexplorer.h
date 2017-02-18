@@ -4,29 +4,10 @@
 
 #include "button.h"
 #include "container.h"
+#include "directory.h"
 #include "simpletextfield.h"
 #include "togglebutton.h"
 #include "scrollbar.h"
-
-struct PGDirectory;
-
-struct PGDirectory {
-	std::string path;
-	std::vector<PGDirectory*> directories;
-	std::vector<PGFile> files;
-	lng last_modified_time;
-	bool loaded_files;
-	bool expanded;
-
-	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
-
-	PGDirectory(std::string path);
-	~PGDirectory();
-	// Returns the number of files displayed by this directory
-	lng DisplayedFiles();
-	void Update();
-	void GetFiles(std::vector<PGFile>& files);
-};
 
 class ProjectExplorer : public PGContainer {
 public:

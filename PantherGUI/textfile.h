@@ -26,10 +26,10 @@ typedef enum {
 } PGLineEnding;
 
 struct RedoStruct {
-	std::vector<CursorData> cursors;
+	std::vector<PGCursorRange> cursors;
 	std::unique_ptr<TextDelta> delta;
 
-	RedoStruct(std::vector<CursorData> cursors) :
+	RedoStruct(std::vector<PGCursorRange> cursors) :
 		delta(nullptr), cursors(cursors) { }
 };
 
@@ -55,7 +55,7 @@ struct PGTextFileSettings {
 	double xoffset = -1;
 	PGVerticalScroll yoffset = PGVerticalScroll(-1, -1);
 	bool wordwrap;
-	std::vector<CursorData> cursor_data;
+	std::vector<PGCursorRange> cursor_data;
 
 	PGTextFileSettings() : line_ending(PGLineEndingUnknown), xoffset(-1), yoffset(-1, -1), wordwrap(false), cursor_data() { }
 };
@@ -116,6 +116,7 @@ public:
 	PGLineEnding GetLineEnding() { return lineending; }
 	PGLineIndentation GetLineIndentation() { return indentation; }
 	PGLanguage* GetLanguage() { return language; }
+	void SetLanguage(PGLanguage* language);
 
 	lng GetLineCount();
 	lng GetMaxYScroll();
@@ -151,21 +152,21 @@ public:
 	void SelectMatches(bool in_selection);
 	bool FinishedSearch() { return finished_search; }
 
-	bool FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, bool include_selection);
-	void FindAllMatches(std::string& text, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex);
-
+	bool FindMatch(PGRegexHandle regex_handle, PGDirection direction, bool wrap, bool include_selection);
+	void FindAllMatches(PGRegexHandle regex_handle, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap);
+	void FindAllMatches(PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data);
 	int GetLineHeight();
 
 	void VerifyPartialTextfile();
 	void VerifyTextfile();
 
-	std::vector<CursorData> BackupCursors();
-	CursorData BackupCursor(int i);
+	std::vector<PGCursorRange> BackupCursors();
+	PGCursorRange BackupCursor(int i);
 
-	void RestoreCursors(std::vector<CursorData>& data);
-	Cursor RestoreCursor(CursorData data);
+	void RestoreCursors(std::vector<PGCursorRange>& data);
+	Cursor RestoreCursor(PGCursorRange data);
 	// same as RestoreCursor, but selections are replaced by the LOWEST value
-	Cursor RestoreCursorPartial(CursorData data);
+	Cursor RestoreCursorPartial(PGCursorRange data);
 
 	PGScalar GetMaxLineWidth(PGFontHandle font);
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
@@ -184,7 +185,11 @@ public:
 	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
+	void SetName(std::string name) { this->name = name; }
 	std::string GetExtension() { return ext; }
+	void SetExtension(std::string extension) { this->ext = extension; }
+	bool GetReadOnly() { return read_only; }
+	void SetReadOnly(bool read_only) { this->read_only = read_only; }
 
 	enum PGStoreFileType {
 		PGStoreFileBuffer,
@@ -204,10 +209,13 @@ public:
 	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }
 
-	PGTextRange FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, std::shared_ptr<Task> current_task);
-	PGTextRange FindMatch(std::string text, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, std::shared_ptr<Task> current_task);
+	PGTextRange FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap, std::shared_ptr<Task> current_task);
+	PGTextRange FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap, std::shared_ptr<Task> current_task);
 
 	void SetSettings(PGTextFileSettings settings);
+
+	// only used for "Find Results"
+	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
 private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);
@@ -218,6 +226,8 @@ private:
 	void InsertText(std::string text, size_t cursornr);
 
 	void DeleteSelection(int cursornr);
+
+	bool read_only = false;
 
 	bool finished_search = false;
 	std::vector<PGTextRange> matches;

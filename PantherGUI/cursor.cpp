@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-void Cursor::StoreCursors(nlohmann::json& j, std::vector<CursorData>& cursors) {
+void Cursor::StoreCursors(nlohmann::json& j, std::vector<PGCursorRange>& cursors) {
 	j["cursors"] = nlohmann::json::array();
 	nlohmann::json& cursor = j["cursors"];
 	lng index = 0;
@@ -23,7 +23,7 @@ void Cursor::StoreCursors(nlohmann::json& j, std::vector<CursorData>& cursors) {
 	}
 }
 
-void Cursor::LoadCursors(nlohmann::json& j, std::vector<CursorData>& stored_cursors) {
+void Cursor::LoadCursors(nlohmann::json& j, std::vector<PGCursorRange>& stored_cursors) {
 	if (j.count("cursors") > 0) {
 		nlohmann::json& cursors = j["cursors"];
 		if (cursors.is_array()) {
@@ -37,7 +37,7 @@ void Cursor::LoadCursors(nlohmann::json& j, std::vector<CursorData>& stored_curs
 					int end_line = (*it)[2];
 					int end_pos = (*it)[3];
 
-					stored_cursors.push_back(CursorData(start_line, start_pos, end_line, end_pos));
+					stored_cursors.push_back(PGCursorRange(start_line, start_pos, end_line, end_pos));
 				}
 			}
 		}
@@ -71,18 +71,18 @@ Cursor::Cursor(TextFile* file, lng start_line, lng start_character, lng end_line
 	assert(end_buffer_position >= 0);
 }
 
-Cursor::Cursor(TextFile* file, CursorData data) : 
+Cursor::Cursor(TextFile* file, PGCursorRange data) : 
    Cursor(file, data.start_line, data.start_position, data.end_line, data.end_position) {
 }
 
-CursorData Cursor::GetCursorData() const {
+PGCursorRange Cursor::GetCursorData() const {
 	PGCursorPosition start = this->SelectedPosition();
 	PGCursorPosition end = this->UnselectedPosition();
-	return CursorData(start.line, start.position, end.line, end.position);
+	return PGCursorRange(start.line, start.position, end.line, end.position);
 }
 
-std::vector<CursorData> Cursor::GetCursorData(const std::vector<Cursor>& cursors) {
-	std::vector<CursorData> data;
+std::vector<PGCursorRange> Cursor::GetCursorData(const std::vector<Cursor>& cursors) {
+	std::vector<PGCursorRange> data;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		data.push_back(it->GetCursorData());
 	}

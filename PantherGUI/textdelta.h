@@ -27,7 +27,7 @@ typedef enum {
 class TextDelta {
 public:
 	PGTextType type;
-	std::vector<CursorData> stored_cursors;
+	std::vector<PGCursorRange> stored_cursors;
 	std::unique_ptr<TextDelta> next = nullptr;
 
 	TextDelta(PGTextType type) : 

@@ -76,13 +76,11 @@ PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context, PGDirection
 	}
 }
 
-PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& context, PGDirection direction) {
-	assert(0);
-	// FIXME: the return value cannot be correct because it points into the below PGTextBuffer
-	// which will be deleted after the function exists
+PGRegexMatch PGMatchRegex(PGRegexHandle handle, const char* data, lng size, PGDirection direction) {
 	PGTextBuffer buffer;
-	buffer.buffer = (char*) context.data();
-	buffer.current_size = context.size();
+	buffer.buffer = (char*) data;
+	buffer.current_size = size;
+	buffer.buffer_size = size;
 	buffer.start_line = 0;
 	buffer.prev = nullptr;
 	buffer.next = nullptr;
@@ -93,9 +91,22 @@ PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& context, PGDirectio
 	text.end_buffer = &buffer;
 	text.end_position = buffer.current_size;
 	PGRegexMatch match = PGMatchRegex(handle, text, direction);
+	for (int i = 0; i < PGREGEX_MAXIMUM_MATCHES; i++) {
+		if (match.groups[i].start_buffer == nullptr) {
+			match.groups[i].start_position = -1;
+			match.groups[i].end_position = -1;
+		} else {
+			match.groups[i].start_buffer = nullptr;
+			match.groups[i].end_buffer = nullptr;
+		}
+	}
 	buffer.buffer = nullptr;
 	buffer.current_size = 0;
 	return match;
+}
+
+PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& context, PGDirection direction) {
+	return PGMatchRegex(handle, context.c_str(), context.size(), direction);
 }
 
 void PGDeleteRegex(PGRegexHandle handle) {

@@ -147,7 +147,7 @@
       <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgregex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgrust.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Tests|x64'">
@@ -160,7 +160,7 @@
       <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;PANTHER_TESTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgregex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgrust.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -190,7 +190,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgregex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgrust.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -200,10 +200,12 @@
     <ClCompile Include="control.cpp" />
     <ClCompile Include="controlmanager.cpp" />
     <ClCompile Include="cursor.cpp" />
+    <ClCompile Include="directory.cpp" />
     <ClCompile Include="droptarget.cpp" />
     <ClCompile Include="encoding.cpp" />
     <ClCompile Include="file.cpp" />
     <ClCompile Include="filemanager.cpp" />
+    <ClCompile Include="findresults.cpp" />
     <ClCompile Include="findtext.cpp" />
     <ClCompile Include="goto.cpp" />
     <ClCompile Include="keybindings.cpp" />
@@ -277,11 +279,13 @@
     <ClInclude Include="control.h" />
     <ClInclude Include="controlmanager.h" />
     <ClInclude Include="cursor.h" />
+    <ClInclude Include="directory.h" />
     <ClInclude Include="dirent.h" />
     <ClInclude Include="droptarget.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
     <ClInclude Include="filepattern.h" />
+    <ClInclude Include="findresults.h" />
     <ClInclude Include="findtext.h" />
     <ClInclude Include="goto.h" />
     <ClInclude Include="json.h" />
@@ -295,6 +299,7 @@
     <ClInclude Include="projectexplorer.h" />
     <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="rust\include\rust\globset.h" />
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="scrollbar.h" />
     <ClInclude Include="searchbox.h" />
@@ -348,6 +353,10 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="logo.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="rust\src\globs.rs" />
+    <None Include="rust\src\lib.rs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

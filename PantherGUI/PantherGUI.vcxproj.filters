@@ -28,6 +28,12 @@
     <Filter Include="Source Files\regex">
       <UniqueIdentifier>{bd90b255-32b6-46df-bc6d-428d022cb9b3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\rust">
+      <UniqueIdentifier>{f8b63edf-af16-40db-b6a4-352ead811dd1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rust">
+      <UniqueIdentifier>{87f0d99d-b976-4009-afbf-9781a5ce6250}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -245,6 +251,12 @@
     </ClCompile>
     <ClCompile Include="goto.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="directory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="findresults.cpp">
+      <Filter>Source Files\parsers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -479,10 +491,27 @@
     <ClInclude Include="goto.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="rust\include\rust\globset.h">
+      <Filter>Header Files\rust</Filter>
+    </ClInclude>
+    <ClInclude Include="directory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="findresults.h">
+      <Filter>Header Files\parsers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="logo.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="rust\src\globs.rs">
+      <Filter>Source Files\rust</Filter>
+    </None>
+    <None Include="rust\src\lib.rs">
+      <Filter>Source Files\rust</Filter>
+    </None>
   </ItemGroup>
 </Project>

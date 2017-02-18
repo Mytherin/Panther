@@ -11,21 +11,6 @@
 class TextFile;
 class TextField;
 
-struct CursorData {
-	lng start_line;
-	lng start_position;
-	lng end_line;
-	lng end_position;
-
-	CursorData() :
-		start_line(0), start_position(0), end_line(0), end_position(0) { 
-	}
-
-	CursorData(lng start_line, lng start_position, lng end_line, lng end_position) :
-		start_line(start_line), start_position(start_position), end_line(end_line), end_position(end_position) {
-	}
-};
-
 class Cursor {
 	friend class TextFile;
 public:
@@ -33,12 +18,12 @@ public:
 	Cursor(TextFile* file);
 	Cursor(TextFile* file, lng start_line, lng start_character);
 	Cursor(TextFile* file, lng start_line, lng start_character, lng end_line, lng end_character);
-	Cursor(TextFile* file, CursorData data);
+	Cursor(TextFile* file, PGCursorRange data);
 	Cursor(TextFile* file, PGTextRange range);
 
-	static std::vector<CursorData> GetCursorData(const std::vector<Cursor>& cursors);
+	static std::vector<PGCursorRange> GetCursorData(const std::vector<Cursor>& cursors);
 
-	CursorData GetCursorData() const;
+	PGCursorRange GetCursorData() const;
 	PGTextRange GetCursorSelection() const;
 
 	void OffsetLine(lng offset);
@@ -86,8 +71,8 @@ public:
 	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, bool scroll_textfield = true);
 	static bool CursorOccursFirst(const Cursor& a, const Cursor& b);
 
-	static void LoadCursors(nlohmann::json& j, std::vector<CursorData>& stored_cursors);
-	static void StoreCursors(nlohmann::json& j, std::vector<CursorData>& cursors);
+	static void LoadCursors(nlohmann::json& j, std::vector<PGCursorRange>& stored_cursors);
+	static void StoreCursors(nlohmann::json& j, std::vector<PGCursorRange>& cursors);
 
 	void SetCursorStartLocation(lng linenr, lng characternr);
 	void SetCursorLocation(lng linenr, lng characternr);

@@ -1,4 +1,4 @@
-
+  
 #include "searchbox.h"
 #include "style.h"
 #include "unicode.h"

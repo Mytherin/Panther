@@ -4,6 +4,8 @@
 #include "style.h"
 #include "workspace.h"
 
+#include "findresults.h"
+
 #define HPADDING 10
 #define HPADDING_SMALL 5
 #define VPADDING 4
@@ -231,7 +233,7 @@ void FindText::SetType(PGFindTextType type) {
 		}, this);
 	} else {
 		find_button->OnPressed([](Button* b, void* data) {
-			assert(0);
+			((FindText*)data)->FindInFiles();
 		}, this);
 	}
 
@@ -465,10 +467,16 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	if (!tf.IsLoaded()) return false;
 	char* error_message = nullptr;
 
-	std::string search_text = field->GetText();
-	bool found_result = tf.FindMatch(search_text, direction,
-		&error_message,
-		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled(),
+	std::string pattern = field->GetText();
+	PGRegexHandle regex_handle = PGCompileRegex(pattern, toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	if (!regex_handle) {
+		// FIXME: throw an error, regex was not compiled properly
+		error_message = panther::strdup("Error");
+		return false;
+	}
+
+	bool found_result = tf.FindMatch(regex_handle, direction,
+		toggle_wrap->IsToggled(),
 		include_selection);
 
 	nlohmann::json& find_history = GetFindHistory();
@@ -498,6 +506,51 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	return found_result;
 }
 
+void FindText::FindInFiles() {
+	// FIXME: account for regex/not regex toggle
+	// FIXME: white/black list
+	// FIXME: don't hardcode path/globs
+	PGGlobBuilder glob_builder = PGCreateGlobBuilder();
+	if (PGGlobBuilderAddGlob(glob_builder, "*.cpp") != 0) {
+		assert(0);
+		return;
+	}
+
+	PGGlobSet globset = PGCompileGlobBuilder(glob_builder);
+	if (!globset) {
+		// failed to compile glob builder
+		assert(0);
+		return;
+	}
+	std::string regex_pattern = field->GetText();
+	PGRegexHandle regex = PGCompileRegex(regex_pattern, true, PGRegexFlagsNone); // FIXME
+	if (!regex) {
+		// failed to compile regex
+		assert(0);
+		return;
+	}
+	// FIXME: this should be non-blocking I think
+
+	ControlManager* manager = GetControlManager(this);
+	auto& directories = manager->active_projectexplorer->GetDirectories();
+	auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
+	textfile->SetReadOnly(true);
+
+	textfile->SetName("Find Results");
+	textfile->SetLanguage(PGLanguageManager::GetLanguage("findresults"));
+	manager->active_tabcontrol->OpenFile(textfile);
+
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->FindInDirectory(regex, globset, 2, 
+			[](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
+			TextFile* textfile = (TextFile*)data;
+			textfile->AddFindMatches(filename, lines, matches, start_line);
+		}, textfile.get());
+	}
+	PGDestroyGlobSet(globset);
+	PGDestroyGlobBuilder(glob_builder);
+}
+
 void FindText::SelectAllMatches(bool in_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
@@ -522,15 +575,20 @@ void FindText::FindAll(bool select_first_match) {
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	if (!tf.IsLoaded()) return;
 	char* error_message = nullptr;
-	std::string text = field->GetText();
 	tf.SetSelectedMatch(0);
 	auto begin_pos = tf.GetActiveCursor().BeginPosition();
 	auto end_pos = tf.GetActiveCursor().EndPosition();
-	tf.FindAllMatches(text, select_first_match,
+	std::string text = field->GetText();
+	PGRegexHandle regex_handle = PGCompileRegex(text, toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	if (!regex_handle) {
+		// FIXME: throw an error, regex was not compiled properly
+		error_message = panther::strdup("Error");
+		return;
+	}
+	tf.FindAllMatches(regex_handle, select_first_match,
 		begin_pos.line, begin_pos.position,
 		end_pos.line, end_pos.position,
-		&error_message,
-		toggle_matchcase->IsToggled(), toggle_wrap->IsToggled(), toggle_regex->IsToggled());
+		toggle_wrap->IsToggled());
 	if (!error_message) {
 		this->field->SetValidInput(true);
 		this->Invalidate();

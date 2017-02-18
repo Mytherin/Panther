@@ -27,7 +27,7 @@ void TextFile::OpenFileAsync(std::shared_ptr<Task> task, void* inp) {
 TextFile::TextFile(BasicTextField* textfield) :
 	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr),
 	bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
-	last_modified_deletion(false), saved_undo_count(0) {
+	last_modified_deletion(false), saved_undo_count(0), read_only(false) {
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
@@ -41,13 +41,14 @@ TextFile::TextFile(BasicTextField* textfield) :
 	cursors.push_back(Cursor(this));
 	this->linecount = 1;
 	is_loaded = true;
-	unsaved_changes = true;
+	unsaved_changes = false;
+	saved_undo_count = 0;
 }
 
 TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
 	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr),
 	bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0, 0), last_modified_time(-1),
-	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0) {
+	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
@@ -73,6 +74,20 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 	}
 }
 
+void TextFile::SetLanguage(PGLanguage* language) {
+	this->language = language;
+	this->highlighter = std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter());
+	if (this->is_loaded) {
+		this->Lock(PGWriteLock);
+		for (auto it = buffers.begin(); it != buffers.end(); it++) {
+			(*it)->parsed = false;
+		}
+		this->Unlock(PGWriteLock);
+		this->InvalidateParsing();
+	}
+
+
+}
 
 bool TextFile::Reload(PGFileError& error) {
 	if (!is_loaded) return true;
@@ -1648,6 +1663,7 @@ void TextFile::SetUnsavedChanges(bool changes) {
 
 void TextFile::Undo() {
 	if (!is_loaded) return;
+	if (read_only) return;
 
 	if (this->deltas.size() == 0) return;
 	TextDelta* delta = this->deltas.back().get();
@@ -1670,6 +1686,7 @@ void TextFile::Undo() {
 
 void TextFile::Redo() {
 	if (!is_loaded) return;
+	if (read_only) return;
 	if (this->redos.size() == 0) return;
 	RedoStruct& redo = this->redos.back();
 	TextDelta* delta = redo.delta.get();
@@ -1702,6 +1719,9 @@ void TextFile::AddDelta(TextDelta* delta) {
 }
 
 void TextFile::PerformOperation(TextDelta* delta) {
+	if (read_only) {
+		return;
+	}
 	// set the current_task to the nullptr, this will cause any active syntax highlighting to end
 	// this prevents long syntax highlighting tasks (e.g. highlighting a long document) from 
 	// locking us out of editing until they're finished
@@ -2128,19 +2148,19 @@ void TextFile::RemoveTrailingWhitespace() {
 
 }
 
-std::vector<CursorData> TextFile::BackupCursors() {
-	std::vector<CursorData> backup;
+std::vector<PGCursorRange> TextFile::BackupCursors() {
+	std::vector<PGCursorRange> backup;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		backup.push_back(it->GetCursorData());
 	}
 	return backup;
 }
 
-CursorData TextFile::BackupCursor(int i) {
+PGCursorRange TextFile::BackupCursor(int i) {
 	return cursors[i].GetCursorData();
 }
 
-void TextFile::RestoreCursors(std::vector<CursorData>& data) {
+void TextFile::RestoreCursors(std::vector<PGCursorRange>& data) {
 	ClearCursors();
 	for (auto it = data.begin(); it != data.end(); it++) {
 		cursors.push_back(Cursor(this, *it));
@@ -2148,11 +2168,11 @@ void TextFile::RestoreCursors(std::vector<CursorData>& data) {
 	Cursor::NormalizeCursors(this, cursors);
 }
 
-Cursor TextFile::RestoreCursor(CursorData data) {
+Cursor TextFile::RestoreCursor(PGCursorRange data) {
 	return Cursor(this, data);
 }
 
-Cursor TextFile::RestoreCursorPartial(CursorData data) {
+Cursor TextFile::RestoreCursorPartial(PGCursorRange data) {
 	if (data.start_line < data.end_line ||
 		(data.start_line == data.end_line && data.start_position < data.end_position)) {
 		data.end_line = data.start_line;
@@ -2164,15 +2184,15 @@ Cursor TextFile::RestoreCursorPartial(CursorData data) {
 	return Cursor(this, data);
 }
 
-PGTextRange TextFile::FindMatch(std::string text, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex, std::shared_ptr<Task> current_task) {
+PGTextRange TextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap, std::shared_ptr<Task> current_task) {
 	PGTextBuffer* start_buffer = buffers[PGTextBuffer::GetBuffer(buffers, start_line)];
 	PGTextBuffer* end_buffer = buffers[PGTextBuffer::GetBuffer(buffers, end_line)];
 	lng start_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
 	lng end_position = end_buffer->GetBufferLocationFromCursor(end_line, end_character);
-	return FindMatch(text, direction, start_buffer, start_position, end_buffer, end_position, error_message, match_case, wrap, regex, current_task);
+	return FindMatch(regex_handle, direction, start_buffer, start_position, end_buffer, end_position, wrap, current_task);
 }
 
-PGTextRange TextFile::FindMatch(std::string pattern, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, char** error_message, bool match_case, bool wrap, bool regex, std::shared_ptr<Task> current_task) {
+PGTextRange TextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap, std::shared_ptr<Task> current_task) {
 	// we start "outside" of the current selection
 	// e.g. if we go right, we start at the end and continue right
 	// if we go left, we start at the beginning and go left
@@ -2180,12 +2200,6 @@ PGTextRange TextFile::FindMatch(std::string pattern, PGDirection direction, PGTe
 	lng begin_position = direction == PGDirectionLeft ? start_position : end_position;
 	int offset = direction == PGDirectionLeft ? -1 : 1;
 	PGTextBuffer* end = direction == PGDirectionLeft ? buffers.front() : buffers.back();
-	PGRegexHandle regex_handle = PGCompileRegex(pattern, regex, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
-	if (!regex_handle) {
-		// FIXME: throw an error, regex was not compiled properly
-		*error_message = panther::strdup("Error");
-		return PGTextRange();
-	}
 	PGTextRange bounds = direction == PGDirectionLeft ?
 		PGTextRange(end, 0, begin_buffer, begin_position) :
 		PGTextRange(begin_buffer, begin_position, buffers.back(), end->current_size - 1);
@@ -2296,14 +2310,74 @@ void TextFile::ClearMatches() {
 	textfield->Invalidate();
 }
 
-void TextFile::FindAllMatches(std::string& text, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, char** error_message, bool match_case, bool wrap, bool regex) {
-	PGRegexHandle handle = PGCompileRegex(text, regex, match_case ? PGRegexFlagsNone : PGRegexCaseInsensitive);
-	if (!handle) {
-		*error_message = "Error";
-		return;
+void TextFile::FindAllMatches(PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data) {
+	PGTextBuffer* current_buffer = buffers.front();
+	lng current_position = 0;
+	std::vector<PGCursorRange> matches;
+	lng start_line = -1;
+	lng end_line = -1;
+	while (true) {
+		PGTextRange match = FindMatch(regex_handle, PGDirectionRight, current_buffer, current_position, current_buffer, current_position, false, nullptr);
+		if (match.start_buffer == nullptr) {
+			// no more matches found
+			// if there are any matches stored, report them now
+			if (matches.size() > 0) {
+				std::vector<std::string> context;
+				for (lng current_line = start_line; current_line < end_line; current_line++) {
+					TextLine line = this->GetLine(current_line);
+					context.push_back(std::string(line.GetLine(), line.GetLength()));
+				}
+				callback(data, this->path.size() == 0 ? this->name : this->path, context, matches, start_line);
+			}
+			return;
+		}
+		// found a match
+		// get the position of the match in the file
+		lng line = 0, character = 0;
+		lng cursor_end_line = 0, cursor_end_character = 0;
+		match.start_buffer->GetCursorFromBufferLocation(match.start_position, line, character);
+		match.end_buffer->GetCursorFromBufferLocation(match.end_position, cursor_end_line, cursor_end_character);
+		PGCursorRange range = PGCursorRange(line, character, cursor_end_line, cursor_end_character);
+		if (start_line < 0) {
+			// there is no previous match
+			// set the start_line and end_line
+			start_line = std::max((lng)0, line - context_lines);
+			end_line = std::min(linecount, cursor_end_line + context_lines + 1);
+			matches.push_back(range);
+		} else {
+			// there is already a context from a previous match
+			// first check if this match is part of that context
+			if (line <= end_line) {
+				// the line is part of the previous context
+				// we extend the current context and add the current match
+				end_line = cursor_end_line + context_lines;
+				matches.push_back(range);
+			} else {
+				// the line is not part of the previous context
+				// report on the previously found context first
+				std::vector<std::string> context;
+				for (lng current_line = start_line; current_line < end_line; current_line++) {
+					TextLine line = this->GetLine(current_line);
+					context.push_back(std::string(line.GetLine(), line.GetLength()));
+				}
+				callback(data, this->path.size() == 0 ? this->name : this->path, context, matches, start_line);
+
+				// now create a new context for the current match
+				matches.clear();
+				start_line = std::max((lng)0, line - context_lines);
+				end_line = std::min(linecount, cursor_end_line + context_lines + 1);
+				matches.push_back(range);
+			}
+
+		}
+		current_buffer = match.end_buffer;
+		current_position = match.end_position;
 	}
+}
+
+void TextFile::FindAllMatches(PGRegexHandle handle, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap) {
 	if (!is_loaded) return;
-	if (text.size() == 0) {
+	if (!handle) {
 		Lock(PGWriteLock);
 		matches.clear();
 		Unlock(PGWriteLock);
@@ -2331,7 +2405,7 @@ void TextFile::FindAllMatches(std::string& text, bool select_first_match, lng st
 	Scheduler::RegisterTask(this->find_task, PGTaskUrgent);*/
 }
 
-bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_message, bool match_case, bool wrap, bool regex, bool include_selection) {
+bool TextFile::FindMatch(PGRegexHandle handle, PGDirection direction, bool wrap, bool include_selection) {
 	if (!is_loaded) return false;
 	PGTextRange match;
 	if (selected_match >= 0) {
@@ -2374,7 +2448,7 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 		Unlock(PGWriteLock);
 		return true;
 	}
-	if (text.size() == 0) {
+	if (!handle) {
 		Lock(PGWriteLock);
 		matches.clear();
 		Unlock(PGWriteLock);
@@ -2382,29 +2456,27 @@ bool TextFile::FindMatch(std::string text, PGDirection direction, char** error_m
 		return false;
 	}
 	// otherwise, search only for the next match in either direction
-	*error_message = nullptr;
 	Lock(PGReadLock);
 	auto begin = GetActiveCursor().BeginCursorPosition();
 	auto end = GetActiveCursor().EndCursorPosition();
-	match = this->FindMatch(text, direction,
+	match = this->FindMatch(handle, direction,
 		include_selection ? end.buffer : begin.buffer,
 		include_selection ? end.position : begin.position,
 		include_selection ? begin.buffer : end.buffer,
-		include_selection ? begin.position : end.position,
-		error_message, match_case, wrap, regex, nullptr);
+		include_selection ? begin.position : end.position, wrap, nullptr);
 	Unlock(PGReadLock);
-	if (!(*error_message)) {
-		Lock(PGWriteLock);
-		if (match.start_buffer != nullptr) {
-			SetCursorLocation(match);
-		}
-		matches.clear();
-		if (match.start_buffer != nullptr) {
-			matches.push_back(match);
-		}
-		Unlock(PGWriteLock);
-		return match.start_buffer != nullptr;
+
+	Lock(PGWriteLock);
+	if (match.start_buffer != nullptr) {
+		SetCursorLocation(match);
 	}
+	matches.clear();
+	if (match.start_buffer != nullptr) {
+		matches.push_back(match);
+	}
+	Unlock(PGWriteLock);
+	return match.start_buffer != nullptr;
+
 	return false;
 }
 
@@ -2520,4 +2592,36 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 		}
 		settings.cursor_data.clear();
 	}
+}
+
+void TextFile::AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
+	std::string text;
+	lng current_line = this->linecount;
+	if (ext != filename) {
+		text = "\nFile: " + filename + "\n";
+		ext = filename;
+		current_line++;
+	} else {
+		text = std::string(std::to_string(start_line).size(), '.') + "\n";
+	}
+	lng linecount = 0;
+	for (auto it = lines.begin(); it != lines.end(); it++) {
+		text += std::to_string(start_line + linecount) + ": " + *it + "\n";
+		linecount++;
+	}
+	this->Lock(PGWriteLock);
+	cursors[0].SelectEndOfFile();
+	this->InsertLines(text, 0);
+	for (auto it = matches.begin(); it != matches.end(); it++) {
+		PGCursorRange data = *it;
+		data.start_position += std::to_string(data.start_line).size() + 2;
+		data.end_position += std::to_string(data.start_line).size() + 2;
+		data.start_line += current_line - start_line;
+		data.end_line += current_line - start_line;
+		Cursor c = Cursor(this, data.start_line, data.start_position, data.end_line, data.end_position);
+		this->matches.push_back(c.GetCursorSelection());
+	}
+	this->Unlock(PGWriteLock);
+
+	this->InvalidateParsing();
 }
