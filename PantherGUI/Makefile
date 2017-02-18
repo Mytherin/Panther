@@ -22,15 +22,21 @@ SKIA_LDFLAGS=-L/Users/myth/Sources/skia/skia/out/Static-Release-PNG -lskia
 ICU_INCLUDE_FLAGS=
 ICU_LDFLAGS=-licuuc -licutu -liculx -licuio -licule -licudata -licui18n
 
-
 CPPFLAGS=-std=c++11
 OBJCFLAGS=-fobjc-arc
-LDFLAGS=-framework AppKit -lobjc -L/opt/local/lib $(ICU_LDFLAGS) $(SKIA_LDFLAGS)
-INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) -Ithird_party/re2
 
 ifneq ($(OPTIMIZE), true)
 	CPPFLAGS+=-DPANTHER_DEBUG -DPANTHER_TESTS  -fsanitize=address
+	CARGO_FLAGS=
+	RUST_LDFLAGS=-Lrust/target/debug -lpgrust
+else
+	CARGO_FLAGS=--release
+	RUST_LDFLAGS=-Lrust/target/release -lpgrust
 endif
+
+LDFLAGS=-framework AppKit -lobjc -L/opt/local/lib $(ICU_LDFLAGS) $(SKIA_LDFLAGS) $(RUST_LDFLAGS)
+INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) -Irust/include -Ithird_party/re2
+
 
 COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/button.o \
@@ -110,9 +116,9 @@ MAINOBJECTS=$(OBJDIR)/main.o
 TESTOBJECTS=$(OBJDIR)/testmain.o \
 			$(OBJDIR)/tester.o
 
-all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(MAINOBJECTS) panther.app
+all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(MAINOBJECTS) rust.app panther.app
 
-test: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(TESTOBJECTS) test_output
+test: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(TESTOBJECTS) rust.app test_output
 
 
 clean:
@@ -127,6 +133,9 @@ create_build_directory:
 
 DEPS = $(shell find $(DEPSDIR) -name "*.d")
 -include $(DEPS)
+
+rust.app:
+	cd rust && cargo build $(CARGO_FLAGS) && cd ..
 
 $(OBJDIR)/%.o: third_party/re2/re2/%.cc
 	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),re2,$(subst .o,.cc,$@)) -o $@
