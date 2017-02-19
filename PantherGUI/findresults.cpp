@@ -37,15 +37,26 @@ PGParserState FindResultsHighlighter::IncrementalParseLine(TextLine& line, lng l
 		}
 		PGSyntaxNode node;
 		node.end = -1;
-		if (ptr < size && text[ptr] == ':') {
+		bool is_match = false;
+		if (ptr < size && (text[ptr] == ':' || text[ptr] == '>')) {
+			is_match = text[ptr] == '>';
 			node = PGSyntaxNode(PGSyntaxConstant, ++ptr);
+			node.transparent = !is_match;
 		}
 		++ptr;
 		if (state->highlighter && ptr < size) {
 			TextLine shifted_line(text + ptr, size - ptr);
 			state->highlighter->IncrementalParseLine(shifted_line, linenr, state->parser_state, errors, current);
 			for (auto it = current.syntax.begin(); it != current.syntax.end(); it++) {
+				it->transparent = !is_match;
 				it->end += ptr;
+			}
+		}
+		if (!is_match) {
+			if (current.syntax.size() == 0 || current.syntax.back().end < size) {
+				auto node = PGSyntaxNode(PGSyntaxNone, size);
+				node.transparent = true;
+				current.syntax.push_back(node);
 			}
 		}
 		if (node.end >= 0) {

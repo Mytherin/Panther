@@ -216,6 +216,7 @@ public:
 
 	// only used for "Find Results"
 	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
+	std::string current_find_file;
 private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);

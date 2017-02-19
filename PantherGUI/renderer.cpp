@@ -695,6 +695,7 @@ void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *te
 	int state = -1;
 	
 	while (true) {
+		if (current_size <= 4 || current_size >= 100) break;
 		if (text_height > 0.5f * height || text_width > 0.8f * width) {
 			if (state == 0)
 				break;

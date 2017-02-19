@@ -400,7 +400,7 @@ void FindText::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		RenderText(renderer, font, "Replace:", strlen("Replace:"), x + replace_field->x - field_offset, y + replace_field->y + (replace_field->height - GetTextHeight(font)) / 2 - 1);
 	}
 	if (files_to_include_field) {
-		RenderText(renderer, font, "In Files:", strlen("In Files:"), x + files_to_include_field->x - field_offset, y + files_to_include_field->y + (files_to_include_field->height - GetTextHeight(font)) / 2 - 1);
+		RenderText(renderer, font, "Filter:", strlen("Filter:"), x + files_to_include_field->x - field_offset, y + files_to_include_field->y + (files_to_include_field->height - GetTextHeight(font)) / 2 - 1);
 	}
 
 	PGContainer::Draw(renderer, rect);
@@ -507,30 +507,45 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 }
 
 void FindText::FindInFiles() {
-	// FIXME: account for regex/not regex toggle
 	// FIXME: white/black list
-	// FIXME: don't hardcode path/globs
-	PGGlobBuilder glob_builder = PGCreateGlobBuilder();
-	if (PGGlobBuilderAddGlob(glob_builder, "*.cpp") != 0) {
-		assert(0);
-		return;
-	}
-
-	PGGlobSet globset = PGCompileGlobBuilder(glob_builder);
-	if (!globset) {
-		// failed to compile glob builder
-		assert(0);
-		return;
-	}
+	// first compile the regex
 	std::string regex_pattern = field->GetText();
-	PGRegexHandle regex = PGCompileRegex(regex_pattern, true, PGRegexFlagsNone); // FIXME
+	PGRegexHandle regex = PGCompileRegex(regex_pattern, toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexFlagsNone : PGRegexCaseInsensitive);
 	if (!regex) {
 		// failed to compile regex
-		assert(0);
 		return;
+	}
+	// then compile the globset
+	assert(files_to_include_field);
+	std::string file_filter = files_to_include_field->GetText();
+	auto split = panther::split(file_filter, ',');
+	for (lng i = 0; i < split.size(); i++) {
+		split[i] = panther::trim(split[i]);
+		if (split[i].size() == 0) {
+			split.erase(split.begin() + i);
+			i--;
+		}
+	}
+	PGGlobSet globset = nullptr;
+	if (split.size() > 0) {
+		PGGlobBuilder glob_builder = PGCreateGlobBuilder();
+		for (auto it = split.begin(); it != split.end(); it++) {
+			if (PGGlobBuilderAddGlob(glob_builder, it->c_str()) != 0) {
+				// failed to compile glob
+				continue;
+			}
+		}
+		globset = PGCompileGlobBuilder(glob_builder);
+		PGDestroyGlobBuilder(glob_builder);
+		if (!globset) {
+			// failed to compile glob builder
+			assert(0);
+			return;
+		}
 	}
 	// FIXME: this should be non-blocking I think
 
+	// now execute the actual search
 	ControlManager* manager = GetControlManager(this);
 	auto& directories = manager->active_projectexplorer->GetDirectories();
 	auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
@@ -547,8 +562,9 @@ void FindText::FindInFiles() {
 			textfile->AddFindMatches(filename, lines, matches, start_line);
 		}, textfile.get());
 	}
-	PGDestroyGlobSet(globset);
-	PGDestroyGlobBuilder(glob_builder);
+	if (globset) {
+		PGDestroyGlobSet(globset);
+	}
 }
 
 void FindText::SelectAllMatches(bool in_selection) {

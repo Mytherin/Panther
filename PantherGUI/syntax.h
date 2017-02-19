@@ -25,10 +25,11 @@ extern const PGSyntaxType PGSyntaxClass6;
 
 struct PGSyntaxNode {
 	PGSyntaxType type;
+	bool transparent = false;
 	lng end = -1;
 
-	PGSyntaxNode() : type(PGSyntaxNone), end(-1) { }
-	PGSyntaxNode(PGSyntaxType type, lng end) : type(type), end(end) { }
+	PGSyntaxNode() : type(PGSyntaxNone), end(-1), transparent(false) { }
+	PGSyntaxNode(PGSyntaxType type, lng end) : type(type), end(end), transparent(false) { }
 };
 
 struct PGSyntax {

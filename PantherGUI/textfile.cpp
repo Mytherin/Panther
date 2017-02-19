@@ -2347,7 +2347,7 @@ void TextFile::FindAllMatches(PGRegexHandle regex_handle, int context_lines, PGM
 		} else {
 			// there is already a context from a previous match
 			// first check if this match is part of that context
-			if (line <= end_line) {
+			if (line - context_lines <= end_line) {
 				// the line is part of the previous context
 				// we extend the current context and add the current match
 				end_line = cursor_end_line + context_lines;
@@ -2597,16 +2597,23 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 void TextFile::AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
 	std::string text;
 	lng current_line = this->linecount;
-	if (ext != filename) {
+	if (current_find_file != filename) {
 		text = "\nFile: " + filename + "\n";
-		ext = filename;
+		current_find_file = filename;
 		current_line++;
 	} else {
 		text = std::string(std::to_string(start_line).size(), '.') + "\n";
 	}
 	lng linecount = 0;
 	for (auto it = lines.begin(); it != lines.end(); it++) {
-		text += std::to_string(start_line + linecount) + ": " + *it + "\n";
+		bool is_match_line = false;
+		for (auto it2 = matches.begin(); it2 != matches.end(); it2++) {
+			if (it2->start_line == start_line + linecount) {
+				is_match_line = true;
+				break;
+			}
+		}
+		text += std::to_string(start_line + linecount) + (is_match_line ? "> " : ": ") + *it + "\n";
 		linecount++;
 	}
 	this->Lock(PGWriteLock);

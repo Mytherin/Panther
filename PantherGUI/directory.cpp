@@ -86,13 +86,11 @@ lng PGDirectory::DisplayedFiles() {
 }
 
 void PGDirectory::FindInDirectory(PGRegexHandle regex, PGGlobSet globset, int context_lines, PGMatchCallback callback, void* data) {
-	for (auto it = directories.begin(); it != directories.end(); it++) {
-		(*it)->FindInDirectory(regex, globset, context_lines, callback, data);
-	}
 	for (auto it = files.begin(); it != files.end(); it++) {
 		auto file = (*it);
+		std::string path = PGPathJoin(this->path, file.path);
 		if (globset) {
-			if (!PGGlobSetMatches(globset, file.path.c_str())) {
+			if (!PGGlobSetMatches(globset, path.c_str())) {
 				// FIXME: if black list, then ignore files that match instead of files that do not
 				// ignore this file
 				continue;
@@ -101,11 +99,14 @@ void PGDirectory::FindInDirectory(PGRegexHandle regex, PGGlobSet globset, int co
 		lng size;
 		PGFileError error = PGFileSuccess;
 		// FIXME: use streaming textfile instead
-		TextFile* textfile = TextFile::OpenTextFile(nullptr, file.path, error, true);
+		TextFile* textfile = TextFile::OpenTextFile(nullptr, path, error, true);
 		if (error != PGFileSuccess || !textfile) {
 			continue;
 		}
 		textfile->FindAllMatches(regex, context_lines, callback, data);
 		delete textfile;
+	}
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->FindInDirectory(regex, globset, context_lines, callback, data);
 	}
 }

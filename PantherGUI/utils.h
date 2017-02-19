@@ -30,6 +30,10 @@ namespace panther {
 
 	char* strdup(const char* source);
 
+	std::vector<std::string> split(std::string, char delimiter);
+	std::string ltrim(std::string);
+	std::string rtrim(std::string);
+	std::string trim(std::string);
 	std::string tolower(std::string str);
 	std::string toupper(std::string str);
 	unsigned char chartolower(unsigned char character);
