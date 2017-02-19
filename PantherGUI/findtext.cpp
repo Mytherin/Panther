@@ -543,28 +543,26 @@ void FindText::FindInFiles() {
 			return;
 		}
 	}
-	// FIXME: this should be non-blocking I think
 
-	// now execute the actual search
+	// create a textfile for us to store the search results
 	ControlManager* manager = GetControlManager(this);
-	auto& directories = manager->active_projectexplorer->GetDirectories();
 	auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
+
 	textfile->SetReadOnly(true);
 
 	textfile->SetName("Find Results");
 	textfile->SetLanguage(PGLanguageManager::GetLanguage("findresults"));
 	manager->active_tabcontrol->OpenFile(textfile);
 
+	// first find the list of files we want to search
+	std::vector<PGFile> files;
+	auto& directories = manager->active_projectexplorer->GetDirectories();
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		(*it)->FindInDirectory(regex, globset, 2, 
-			[](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
-			TextFile* textfile = (TextFile*)data;
-			textfile->AddFindMatches(filename, lines, matches, start_line);
-		}, textfile.get());
+		(*it)->ListFiles(files, globset);
 	}
-	if (globset) {
-		PGDestroyGlobSet(globset);
-	}
+
+	// now schedule the actual search
+	textfile->FindAllMatchesAsync(files, regex, globset, 2);
 }
 
 void FindText::SelectAllMatches(bool in_selection) {

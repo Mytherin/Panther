@@ -2604,15 +2604,14 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 	} else {
 		text = std::string(std::to_string(start_line).size(), '.') + "\n";
 	}
+	std::vector<bool> line_is_match(lines.size(), false);
+	for (auto it = matches.begin(); it != matches.end(); it++) {
+		assert(it->start_line - start_line >= 0 && it->start_line - start_line < line_is_match.size());
+		line_is_match[it->start_line - start_line] = true;
+	}
 	lng linecount = 0;
 	for (auto it = lines.begin(); it != lines.end(); it++) {
-		bool is_match_line = false;
-		for (auto it2 = matches.begin(); it2 != matches.end(); it2++) {
-			if (it2->start_line == start_line + linecount) {
-				is_match_line = true;
-				break;
-			}
-		}
+		bool is_match_line = line_is_match[linecount];
 		text += std::to_string(start_line + linecount) + (is_match_line ? "> " : ": ") + *it + "\n";
 		linecount++;
 	}
@@ -2631,4 +2630,55 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 	this->Unlock(PGWriteLock);
 
 	this->InvalidateParsing();
+}
+
+struct FindAllInformation {
+	TextFile* textfile;
+	PGRegexHandle regex_handle;
+	PGGlobSet globset;
+	std::vector<PGFile> files;
+	int context_lines;
+	std::shared_ptr<Task> task;
+};
+
+void TextFile::FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, PGGlobSet globset, int context_lines) {
+	FindAllInformation* info = new FindAllInformation();
+	info->textfile = this;
+	info->regex_handle = regex_handle;
+	info->globset = globset;
+	info->files = files;
+	info->context_lines = context_lines;
+
+	this->find_task = std::shared_ptr<Task>(new Task([](std::shared_ptr<Task> task, void* inp) {
+		FindAllInformation* info = (FindAllInformation*)inp;
+		for (auto it = info->files.begin(); it != info->files.end(); it++) {
+			lng size;
+			PGFileError error = PGFileSuccess;
+			// FIXME: use streaming textfile instead
+			TextFile* textfile = TextFile::OpenTextFile(nullptr, it->path, error, true);
+			if (error != PGFileSuccess || !textfile) {
+				continue;
+			}
+			textfile->FindAllMatches(info->regex_handle, info->context_lines, [](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
+				FindAllInformation* info = (FindAllInformation*) data;
+				if (!info->task->active) {
+					return;
+				}
+				info->textfile->AddFindMatches(filename, lines, matches, start_line);
+			}, info);
+			delete textfile;
+			if (!info->task->active) {
+				break;
+			}
+		}
+		if (info->regex_handle) {
+			PGDeleteRegex(info->regex_handle);
+		}
+		if (info->globset) {
+			PGDestroyGlobSet(info->globset);
+		}
+		delete info;
+	}, info));
+	info->task = find_task;
+	Scheduler::RegisterTask(this->find_task, PGTaskUrgent);
 }

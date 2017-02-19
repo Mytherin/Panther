@@ -14,6 +14,7 @@ struct PGDirectory {
 	bool loaded_files;
 	bool expanded;
 
+	void ListFiles(std::vector<PGFile>& result_files, PGGlobSet globset);
 	void FindInDirectory(PGRegexHandle regex, PGGlobSet glob_match, int context_lines, PGMatchCallback callback, void* data);
 	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
 
