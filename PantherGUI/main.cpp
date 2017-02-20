@@ -5,7 +5,6 @@
 #include "control.h"
 #include "scheduler.h"
 #include "filemanager.h"
-#include "controlmanager.h"
 #include "container.h"
 #include "droptarget.h"
 #include "encoding.h"

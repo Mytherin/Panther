@@ -19,7 +19,7 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	SimpleTextField::InitializeKeybindings();
 	TabControl::InitializeKeybindings();
 	TextField::InitializeKeybindings();
-	FindText::InitializeKeybindings();
+	PGFindText::InitializeKeybindings();
 	PGGotoAnything::InitializeKeybindings();
 
 #ifdef WIN32
@@ -203,7 +203,7 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 			} else if (control == "tabcontrol") {
 				INITIALIZE_CONTROL(TabControl);
 			} else if (control == "findtext") {
-				INITIALIZE_CONTROL(FindText);
+				INITIALIZE_CONTROL(PGFindText);
 			} else if (control == "goto") {
 				INITIALIZE_CONTROL(PGGotoAnything);
 			}

@@ -1,7 +1,7 @@
 
 #include "controlmanager.h"
-#include "findtext.h"
 #include "statusbar.h"
+#include "findtext.h"
 #include "filemanager.h"
 #include "tabcontrol.h"
 #include "textfield.h"
@@ -9,7 +9,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
 ControlManager::ControlManager(PGWindowHandle window) : 
-	PGContainer(window), active_projectexplorer(nullptr) {
+	PGContainer(window), active_projectexplorer(nullptr), active_findtext(nullptr){
 #ifdef PANTHER_DEBUG
 	entrance_count = 0;
 #endif
@@ -156,7 +156,12 @@ ControlManager* GetControlManager(Control* c) {
 
 void ControlManager::ShowFindReplace(PGFindTextType type) {
 	// Find text
-	FindText* view = new FindText(this->window, type);
+	if (active_findtext) {
+		active_findtext->SetType(type);
+		return;
+	}
+	PGFindText* view = new PGFindText(this->window, type);
+	this->active_findtext = view;
 	view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	view->vertical_anchor = statusbar;
 	for (auto it = controls.begin(); it != controls.end(); it++) {

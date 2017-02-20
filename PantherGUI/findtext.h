@@ -5,10 +5,10 @@
 #include "simpletextfield.h"
 #include "togglebutton.h"
 
-class FindText : public PGContainer {
+class PGFindText : public PGContainer {
 public:
-	FindText(PGWindowHandle window, PGFindTextType type);
-	~FindText();
+	PGFindText(PGWindowHandle window, PGFindTextType type);
+	~PGFindText();
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	

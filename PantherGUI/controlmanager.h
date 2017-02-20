@@ -20,6 +20,7 @@ struct PGMouseRegion {
 
 class TextField;
 class StatusBar;
+class PGFindText;
 
 class ControlManager : public PGContainer {
 public:
@@ -53,6 +54,7 @@ public:
 
 	TextField* active_textfield;
 	ProjectExplorer* active_projectexplorer;
+	PGFindText* active_findtext;
 	StatusBar* statusbar;
 
 	bool CloseControlManager();

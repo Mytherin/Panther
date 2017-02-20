@@ -12,15 +12,15 @@
 
 #define MAXIMUM_FIND_HISTORY 5
 
-PG_CONTROL_INITIALIZE_KEYBINDINGS(FindText);
+PG_CONTROL_INITIALIZE_KEYBINDINGS(PGFindText);
 
-static void UpdateHighlight(Control* c, FindText* f) {
+static void UpdateHighlight(Control* c, PGFindText* f) {
 	if (f->HighlightMatches()) {
 		f->FindAll(false);
 	};
 }
 
-FindText::FindText(PGWindowHandle window, PGFindTextType type) :
+PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	PGContainer(window), history_entry(0) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
@@ -31,7 +31,7 @@ FindText::FindText(PGWindowHandle window, PGFindTextType type) :
 	field->x = 150;
 	field->y = VPADDING;
 	field->OnPrevEntry([](Control* c, void* data) {
-		FindText* f = (FindText*)data;
+		PGFindText* f = (PGFindText*)data;
 		nlohmann::json& find_history = f->GetFindHistory();
 		if (find_history.size() > f->history_entry + 1) {
 			f->history_entry++;
@@ -39,7 +39,7 @@ FindText::FindText(PGWindowHandle window, PGFindTextType type) :
 		}
 	}, this);
 	field->OnNextEntry([](Control* c, void* data) {
-		FindText* f = (FindText*)data;
+		PGFindText* f = (PGFindText*)data;
 		nlohmann::json& find_history = f->GetFindHistory();
 		if (f->history_entry > 0) {
 			f->history_entry--;
@@ -54,7 +54,7 @@ FindText::FindText(PGWindowHandle window, PGFindTextType type) :
 	}, this);
 	field->OnTextChanged([](Control* c, void* data) {
 		// if HighlightMatches is turned on, we search as soon as text is entered
-		FindText* f = (FindText*)data;
+		PGFindText* f = (PGFindText*)data;
 		if (f->HighlightMatches()) {
 			f->FindAll(true);
 		}
@@ -134,7 +134,7 @@ FindText::FindText(PGWindowHandle window, PGFindTextType type) :
 
 	toggle_highlight->OnToggle([](Button* b, bool toggled, void* setting_name) {
 		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
-		FindText* f = dynamic_cast<FindText*>(b->parent);
+		PGFindText* f = dynamic_cast<PGFindText*>(b->parent);
 		if (toggled) {
 			f->FindAll(true);
 		} else {
@@ -146,7 +146,7 @@ FindText::FindText(PGWindowHandle window, PGFindTextType type) :
 	}, toggle_highlight_text);
 	auto update_highlight = [](Button* b, bool toggled, void* setting_name) {
 		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
-		FindText* f = dynamic_cast<FindText*>(b->parent);
+		PGFindText* f = dynamic_cast<PGFindText*>(b->parent);
 		if (f->HighlightMatches()) {
 			f->FindAll(true);
 		}};
@@ -175,12 +175,13 @@ FindText::FindText(PGWindowHandle window, PGFindTextType type) :
 	this->SetType(type);
 }
 
-FindText::~FindText() {
+PGFindText::~PGFindText() {
 	ControlManager* manager = GetControlManager(this);
+	manager->active_findtext = nullptr;
 	manager->active_textfield->UnregisterOnTextChanged((PGControlDataCallback)UpdateHighlight, this);
 }
 
-void FindText::SetType(PGFindTextType type) {
+void PGFindText::SetType(PGFindTextType type) {
 	this->type = type;
 
 	// clear current controls
@@ -219,21 +220,21 @@ void FindText::SetType(PGFindTextType type) {
 		find_all->SetText(std::string("Find All"), font);
 
 		find_prev->OnPressed([](Button* b, void* data) {
-			((FindText*)data)->Find(PGDirectionLeft);
+			((PGFindText*)data)->Find(PGDirectionLeft);
 		}, this);
 
 		find_all->OnPressed([](Button* b, void* data) {
-			FindText* ft = ((FindText*)data);
+			PGFindText* ft = ((PGFindText*)data);
 			ft->SelectAllMatches();
 			ft->Close();
 		}, this);
 
 		find_button->OnPressed([](Button* b, void* data) {
-			((FindText*)data)->Find(PGDirectionRight);
+			((PGFindText*)data)->Find(PGDirectionRight);
 		}, this);
 	} else {
 		find_button->OnPressed([](Button* b, void* data) {
-			((FindText*)data)->FindInFiles();
+			((PGFindText*)data)->FindInFiles();
 		}, this);
 	}
 
@@ -245,7 +246,7 @@ void FindText::SetType(PGFindTextType type) {
 			find_expand->y = VPADDING;
 			find_expand->SetText(std::string("v"), font);
 			find_expand->OnPressed([](Button* b, void* data) {
-				FindText* tf = ((FindText*)data);
+				PGFindText* tf = ((PGFindText*)data);
 				tf->SetType(PGFindReplaceSingleFile);
 			}, this);
 			break;
@@ -334,12 +335,12 @@ void FindText::SetType(PGFindTextType type) {
 				replace_in_selection_button->SetText(std::string("In Selection"), font);
 
 				replace_all_button->OnPressed([](Button* b, void* data) {
-					FindText* ft = ((FindText*)data);
+					PGFindText* ft = ((PGFindText*)data);
 					ft->ReplaceAll();
 					ft->Close();
 				}, this);
 				replace_in_selection_button->OnPressed([](Button* b, void* data) {
-					FindText* ft = ((FindText*)data);
+					PGFindText* ft = ((PGFindText*)data);
 					ft->ReplaceAll(true);
 				}, this);
 
@@ -350,16 +351,16 @@ void FindText::SetType(PGFindTextType type) {
 				this->AddControl(replace_expand);
 				replace_expand->SetText(std::string("v"), font);
 				replace_expand->OnPressed([](Button* b, void* data) {
-					FindText* tf = ((FindText*)data);
+					PGFindText* tf = ((PGFindText*)data);
 					tf->SetType(PGFindReplaceManyFiles);
 				}, this);
 
 				replace_button->OnPressed([](Button* b, void* data) {
-					((FindText*)data)->Replace();
+					((PGFindText*)data)->Replace();
 				}, this);
 			} else {
 				replace_button->OnPressed([](Button* b, void* data) {
-					FindText* ft = ((FindText*)data);
+					PGFindText* ft = ((PGFindText*)data);
 					assert(0);
 				}, this);
 
@@ -369,12 +370,12 @@ void FindText::SetType(PGFindTextType type) {
 			find_expand->SetText(std::string("^"), font);
 			if (type == PGFindReplaceSingleFile) {
 				find_expand->OnPressed([](Button* b, void* data) {
-					FindText* tf = ((FindText*)data);
+					PGFindText* tf = ((PGFindText*)data);
 					tf->SetType(PGFindSingleFile);
 				}, this);
 			} else {
 				find_expand->OnPressed([](Button* b, void* data) {
-					FindText* tf = ((FindText*)data);
+					PGFindText* tf = ((PGFindText*)data);
 					tf->SetType(PGFindReplaceSingleFile);
 				}, this);
 			}
@@ -387,7 +388,7 @@ void FindText::SetType(PGFindTextType type) {
 	GetControlManager(this)->Invalidate();
 }
 
-void FindText::Draw(PGRendererHandle renderer, PGIRect* rect) {
+void PGFindText::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	PGScalar x = X() - rect->x;
 	PGScalar y = Y() - rect->y;
 
@@ -406,7 +407,7 @@ void FindText::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	PGContainer::Draw(renderer, rect);
 }
 
-void FindText::OnResize(PGSize old_size, PGSize new_size) {
+void PGFindText::OnResize(PGSize old_size, PGSize new_size) {
 	toggle_regex->SetPosition(PGPoint(HPADDING_SMALL, toggle_regex->y));
 	toggle_matchcase->SetPosition(PGPoint(toggle_regex->x + toggle_regex->width, toggle_matchcase->y));
 	toggle_wholeword->SetPosition(PGPoint(toggle_matchcase->x + toggle_matchcase->width, toggle_wholeword->y));
@@ -452,7 +453,7 @@ void FindText::OnResize(PGSize old_size, PGSize new_size) {
 	}
 }
 
-nlohmann::json& FindText::GetFindHistory() {
+nlohmann::json& PGFindText::GetFindHistory() {
 	auto workspace = PGGetWorkspace(window);
 	nlohmann::json& find_text = workspace->settings["find_text"];
 	nlohmann::json& find_history = find_text["find_history"];
@@ -461,7 +462,7 @@ nlohmann::json& FindText::GetFindHistory() {
 	return find_history;
 }
 
-bool FindText::Find(PGDirection direction, bool include_selection) {
+bool PGFindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	if (!tf.IsLoaded()) return false;
@@ -506,7 +507,7 @@ bool FindText::Find(PGDirection direction, bool include_selection) {
 	return found_result;
 }
 
-void FindText::FindInFiles() {
+void PGFindText::FindInFiles() {
 	// FIXME: white/black list
 	// first compile the regex
 	std::string regex_pattern = field->GetText();
@@ -566,7 +567,7 @@ void FindText::FindInFiles() {
 	textfile->FindAllMatchesAsync(files, regex, globset, 2);
 }
 
-void FindText::SelectAllMatches(bool in_selection) {
+void PGFindText::SelectAllMatches(bool in_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	if (!tf.IsLoaded()) return;
@@ -585,7 +586,7 @@ void FindText::SelectAllMatches(bool in_selection) {
 	assert(tf.FinishedSearch());
 	tf.SelectMatches(in_selection);
 }
-void FindText::FindAll(bool select_first_match) {
+void PGFindText::FindAll(bool select_first_match) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	if (!tf.IsLoaded()) return;
@@ -613,7 +614,7 @@ void FindText::FindAll(bool select_first_match) {
 	}
 }
 
-void FindText::Replace() {
+void PGFindText::Replace() {
 	if (!replace_field) return;
 	std::string replacement = replace_field->GetText();
 	if (this->Find(PGDirectionRight, true)) {
@@ -627,7 +628,7 @@ void FindText::Replace() {
 	}
 }
 
-void FindText::ReplaceAll(bool in_selection) {
+void PGFindText::ReplaceAll(bool in_selection) {
 	if (!replace_field) return;
 	std::string replacement = replace_field->GetText();
 	ControlManager* manager = GetControlManager(this);
@@ -645,21 +646,21 @@ void FindText::ReplaceAll(bool in_selection) {
 	}
 }
 
-bool FindText::KeyboardButton(PGButton button, PGModifier modifier) {
-	if (this->PressKey(FindText::keybindings, button, modifier)) {
+bool PGFindText::KeyboardButton(PGButton button, PGModifier modifier) {
+	if (this->PressKey(PGFindText::keybindings, button, modifier)) {
 		return true;
 	}
 	return PGContainer::KeyboardButton(button, modifier);
 }
 
-void FindText::Close() {
+void PGFindText::Close() {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	tf.ClearMatches();
 	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
 }
 
-void FindText::ShiftTextfieldFocus(PGDirection direction) {
+void PGFindText::ShiftTextfieldFocus(PGDirection direction) {
 	// (shift+)tab switches between the two text fields
 	SimpleTextField* new_focus = nullptr;
 	SimpleTextField* fields[3] = { field, replace_field, files_to_include_field };
@@ -683,21 +684,21 @@ void FindText::ShiftTextfieldFocus(PGDirection direction) {
 	}
 }
 
-void FindText::InitializeKeybindings() {
-	std::map<std::string, PGKeyFunction>& noargs = FindText::keybindings_noargs;
+void PGFindText::InitializeKeybindings() {
+	std::map<std::string, PGKeyFunction>& noargs = PGFindText::keybindings_noargs;
 	noargs["find_next"] = [](Control* c) {
-		((FindText*)c)->Find(PGDirectionRight);
+		((PGFindText*)c)->Find(PGDirectionRight);
 	};
 	noargs["find_prev"] = [](Control* c) {
-		((FindText*)c)->Find(PGDirectionLeft);
+		((PGFindText*)c)->Find(PGDirectionLeft);
 	};
 	noargs["close"] = [](Control* c) {
-		((FindText*)c)->Close();
+		((PGFindText*)c)->Close();
 	};
 	noargs["shift_focus_forward"] = [](Control* c) {
-		((FindText*)c)->ShiftTextfieldFocus(PGDirectionRight);
+		((PGFindText*)c)->ShiftTextfieldFocus(PGDirectionRight);
 	};
 	noargs["shift_focus_backward"] = [](Control* c) {
-		((FindText*)c)->ShiftTextfieldFocus(PGDirectionLeft);
+		((PGFindText*)c)->ShiftTextfieldFocus(PGDirectionLeft);
 	};
 }
