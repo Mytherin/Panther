@@ -396,12 +396,12 @@ void PGFindText::Draw(PGRendererHandle renderer, PGIRect* rect) {
 
 	PGScalar field_offset = MeasureTextWidth(font, "Replace:") + HPADDING_SMALL * 2;
 	x += HPADDING_SMALL;
-	RenderText(renderer, font, "Find:", strlen("Find:"), x + field->x - field_offset, y + field->y + (field->height - GetTextHeight(font)) / 2 - 1);
+	RenderString(renderer, font, "Find:", x + field->x - field_offset, y + field->y + (field->height - GetTextHeight(font)) / 2 - 1);
 	if (replace_field) {
-		RenderText(renderer, font, "Replace:", strlen("Replace:"), x + replace_field->x - field_offset, y + replace_field->y + (replace_field->height - GetTextHeight(font)) / 2 - 1);
+		RenderString(renderer, font, "Replace:", x + replace_field->x - field_offset, y + replace_field->y + (replace_field->height - GetTextHeight(font)) / 2 - 1);
 	}
 	if (files_to_include_field) {
-		RenderText(renderer, font, "Filter:", strlen("Filter:"), x + files_to_include_field->x - field_offset, y + files_to_include_field->y + (files_to_include_field->height - GetTextHeight(font)) / 2 - 1);
+		RenderString(renderer, font, "Filter:", x + files_to_include_field->x - field_offset, y + files_to_include_field->y + (files_to_include_field->height - GetTextHeight(font)) / 2 - 1);
 	}
 
 	PGContainer::Draw(renderer, rect);

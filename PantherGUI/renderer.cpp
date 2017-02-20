@@ -289,6 +289,14 @@ PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *te
 	return width;
 }
 
+PGScalar RenderString(PGRendererHandle renderer, PGFontHandle font, const std::string& text, PGScalar x, PGScalar y, PGTextAlign alignment) {
+	return RenderText(renderer, font, text.c_str(), text.size(), x, y, alignment);
+}
+
+void RenderString(PGRendererHandle renderer, PGFontHandle font, const std::string& text, PGScalar x, PGScalar y, PGScalar max_position) {
+	RenderText(renderer, font, text.c_str(), text.size(), x, y, max_position);
+}
+
 void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y, PGScalar max_position) {
 	renderer->canvas->drawBitmap(*image->bitmap, x, y);
 
