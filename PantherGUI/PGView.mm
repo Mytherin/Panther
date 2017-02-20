@@ -288,6 +288,8 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 			button = PGButtonBackspace;
 		} else if (keyChar == '\r') {
 			button = PGButtonEnter;
+		} else if (keyChar == '\t' || keyChar == 25) {
+			button = PGButtonTab;
 		} else if (keyChar == NSLeftArrowFunctionKey) {
 			button = PGButtonLeft;
 		} else if (keyChar == NSRightArrowFunctionKey) {
@@ -321,6 +323,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		} else if (keyChar == NSFindFunctionKey) {
 			assert(0);
 		}
+
 		if (button != PGButtonNone) {
 			handle->manager->KeyboardButton(button, modifiers);
 		} else if (keyChar >= 0x20 && keyChar <= 0x7E) {
