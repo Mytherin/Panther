@@ -52,7 +52,6 @@ public:
 	void DropFile(std::string filename);
 
 	TextField* active_textfield;
-	TabControl* active_tabcontrol;
 	ProjectExplorer* active_projectexplorer;
 	StatusBar* statusbar;
 

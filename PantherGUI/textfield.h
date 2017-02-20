@@ -62,6 +62,9 @@ public:
 
 	void SetTextFile(std::shared_ptr<TextFile> textfile);
 
+	void SetTabControl(TabControl* tabs) { tabcontrol = tabs; }
+	TabControl* GetTabControl() { return tabcontrol; }
+
 	void OnResize(PGSize old_size, PGSize new_size);
 
 	PGCursorType GetCursor(PGPoint mouse);
@@ -88,6 +91,8 @@ protected:
 	void GetPositionFromLineCharacter(lng line, lng character, PGScalar& x, PGScalar& y);
 	void GetPositionFromLine(lng line, PGScalar& y);
 private:
+	TabControl* tabcontrol;
+
 	Scrollbar* scrollbar;
 	Scrollbar* horizontal_scrollbar;
 

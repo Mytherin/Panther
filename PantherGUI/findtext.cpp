@@ -546,13 +546,14 @@ void FindText::FindInFiles() {
 
 	// create a textfile for us to store the search results
 	ControlManager* manager = GetControlManager(this);
+	TextField* textfield = manager->active_textfield;
 	auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
 
 	textfile->SetReadOnly(true);
 
 	textfile->SetName("Find Results");
 	textfile->SetLanguage(PGLanguageManager::GetLanguage("findresults"));
-	manager->active_tabcontrol->OpenFile(textfile);
+	textfield->GetTabControl()->OpenFile(textfile);
 
 	// first find the list of files we want to search
 	std::vector<PGFile> files;

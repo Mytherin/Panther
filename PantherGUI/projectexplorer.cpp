@@ -221,7 +221,7 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 			selected_files.clear();
 			selected_files.push_back(selected_file);
 			if (open_file) {
-				TabControl* t = GetControlManager(this)->active_tabcontrol;
+				TabControl* t = GetControlManager(this)->active_textfield->GetTabControl();
 				t->OpenFile(file.path);
 			}
 		}

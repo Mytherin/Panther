@@ -12,6 +12,9 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files) :
 	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1), active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr) {
+		if (textfield) {
+		textfield->SetTabControl(this);
+	}
 
 	if (files.size() == 0)
 		files.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));

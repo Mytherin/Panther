@@ -66,8 +66,7 @@ PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGo
 PGGotoAnything::~PGGotoAnything() {
 	if (scroll_data) delete scroll_data;
 	if (preview) {
-		ControlManager* cm = GetControlManager(this);
-		cm->active_tabcontrol->CloseTemporaryFile();
+		this->textfield->GetTabControl()->CloseTemporaryFile();
 	}
 }
 
@@ -180,8 +179,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 		{
 			goto_file->SetToggled(true);
 			std::vector<SearchEntry> entries;
-			ControlManager* cm = GetControlManager(this);
-			TabControl* tb = cm->active_tabcontrol;
+			TabControl* tb = textfield->GetTabControl();
 			for (auto it = tb->tabs.begin(); it != tb->tabs.end(); it++) {
 				SearchEntry entry;
 				entry.display_name = it->file->GetName();
@@ -192,6 +190,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				entry.multiplier = 1.5;
 				entries.push_back(entry);
 			}
+			ControlManager* cm = GetControlManager(this);
 			ProjectExplorer* explorer = cm->active_projectexplorer;
 			if (explorer) {
 				auto directories = explorer->GetDirectories();
@@ -241,18 +240,18 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			});
 			current_textfile = textfield->GetTextfilePointer();
 			box->OnSelectionChanged([](SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data) {
-				ControlManager* cm = GetControlManager(searchbox);
 				PGGotoAnything* g = (PGGotoAnything*)data;
+				TabControl* tabs = g->textfield->GetTabControl();
 				if (g->preview) {
 					g->preview = nullptr;
-					cm->active_tabcontrol->CloseTemporaryFile();
+					tabs->CloseTemporaryFile();
 				}
 				if (entry.data != nullptr) {
-					cm->active_tabcontrol->SwitchToTab(entry.data);
+					tabs->SwitchToTab(entry.data);
 				} else {
 					PGFileError error;
 					g->preview = std::shared_ptr<TextFile>(TextFile::OpenTextFilePreview(g->textfield, entry.text, error));
-					cm->active_tabcontrol->OpenTemporaryFile(g->preview);
+					tabs->OpenTemporaryFile(g->preview);
 				}
 			}, (void*)this);
 
@@ -287,15 +286,15 @@ void PGGotoAnything::Cancel(bool success) {
 		{
 			assert(box);
 			assert(current_textfile);
-			ControlManager* cm = GetControlManager(this);
+			TabControl* tabs = this->textfield->GetTabControl();
 			if (!success) {
-				cm->active_tabcontrol->SwitchToTab(current_textfile);
+				tabs->SwitchToTab(current_textfile);
 			} else {
 				if (preview) {
 					assert(preview);
 					std::string path = preview->GetFullPath();
-					cm->active_tabcontrol->OpenFile(path);
-					cm->active_tabcontrol->CloseTemporaryFile();
+					tabs->OpenFile(path);
+					tabs->CloseTemporaryFile();
 					preview = nullptr;
 				}
 			}

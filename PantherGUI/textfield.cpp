@@ -30,7 +30,8 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 }
 
 TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
-	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), display_linenumbers(true), notification(nullptr) {
+	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), 
+	display_linenumbers(true), notification(nullptr), tabcontrol(nullptr) {
 	textfile->SetTextField(this);
 
 	ControlManager* manager = GetControlManager(this);

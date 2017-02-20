@@ -147,7 +147,7 @@ void ControlManager::UnregisterControlForMouseEvents(Control* control) {
 }
 
 void ControlManager::DropFile(std::string filename) {
-	active_tabcontrol->OpenFile(filename);
+	active_textfield->GetTabControl()->OpenFile(filename);
 }
 
 ControlManager* GetControlManager(Control* c) {
@@ -177,8 +177,8 @@ void ControlManager::CreateNewWindow() {
 }
 
 bool ControlManager::CloseControlManager() {
-	if (active_tabcontrol) {
-		return active_tabcontrol->CloseAllTabs();
+	if (active_textfield) {
+		return active_textfield->GetTabControl()->CloseAllTabs();
 	}
 	return true;
 }
