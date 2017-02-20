@@ -11,7 +11,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files) :
-	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1), active_tab_hidden(false), drag_tab(false), current_id(0) {
+	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1), active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr) {
 
 	if (files.size() == 0)
 		files.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
@@ -127,6 +127,14 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	if (dragging_tab.file != nullptr) {
 		position_x = dragging_tab.x;
 		RenderTab(renderer, dragging_tab, position_x, x, y, true);
+	}
+	if (temporary_textfile) {
+		Tab tab = Tab(temporary_textfile, -1);
+		tab.width = MeasureTabWidth(tab);
+		position_x = x + this->width - (tab.width + 30);
+		tab.x = position_x;
+		tab.target_x = position_x;
+		RenderTab(renderer, tab, position_x, x, y, true);	
 	}
 	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1), PGColor(80, 150, 200), 2);
 }
@@ -443,6 +451,18 @@ void TabControl::OpenFile(std::string path) {
 	} else if (textfield) {
 		this->textfield->DisplayNotification(error);
 	}
+}
+
+void TabControl::OpenTemporaryFile(std::shared_ptr<TextFile> textfile) {
+	this->temporary_textfile = textfile;
+	SwitchToFile(temporary_textfile);
+}
+
+void TabControl::CloseTemporaryFile() {
+	if (textfield->GetTextfilePointer() == temporary_textfile) {
+		SwitchToFile(tabs[active_tab].file);
+	}
+	this->temporary_textfile = nullptr;
 }
 
 

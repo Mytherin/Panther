@@ -19,7 +19,8 @@ struct ScrollData {
 };
 
 PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGotoType type) :
-	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), preview(nullptr), scroll_data(nullptr) {
+	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), 
+	preview(nullptr), scroll_data(nullptr) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -64,6 +65,10 @@ PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGo
 
 PGGotoAnything::~PGGotoAnything() {
 	if (scroll_data) delete scroll_data;
+	if (preview) {
+		ControlManager* cm = GetControlManager(this);
+		cm->active_tabcontrol->CloseTemporaryFile();
+	}
 }
 
 void PGGotoAnything::Draw(PGRendererHandle renderer, PGIRect* rect) {
@@ -236,12 +241,16 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			box->OnSelectionChanged([](SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data) {
 				ControlManager* cm = GetControlManager(searchbox);
 				PGGotoAnything* g = (PGGotoAnything*)data;
+				if (g->preview) {
+					g->preview = nullptr;
+					cm->active_tabcontrol->CloseTemporaryFile();
+				}
 				if (entry.data != nullptr) {
 					cm->active_tabcontrol->SwitchToTab(entry.data);
 				} else {
 					PGFileError error;
 					g->preview = std::shared_ptr<TextFile>(TextFile::OpenTextFilePreview(g->textfield, entry.text, error));
-					g->textfield->SetTextFile(g->preview ? g->preview : g->current_textfile);
+					cm->active_tabcontrol->OpenTemporaryFile(g->preview);
 				}
 			}, (void*)this);
 
@@ -284,6 +293,7 @@ void PGGotoAnything::Cancel(bool success) {
 					assert(preview);
 					std::string path = preview->GetFullPath();
 					cm->active_tabcontrol->OpenFile(path);
+					cm->active_tabcontrol->CloseTemporaryFile();
 					preview = nullptr;
 				}
 			}

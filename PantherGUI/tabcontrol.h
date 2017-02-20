@@ -67,6 +67,8 @@ public:
 	void SwitchToTab(std::shared_ptr<TextFile> file);
 	void ReopenLastFile();
 
+	void OpenTemporaryFile(std::shared_ptr<TextFile> textfile);
+	void CloseTemporaryFile();
 
 	bool IsDragging() {
 		return drag_tab;
@@ -114,4 +116,6 @@ protected:
 	PGScalar file_icon_width = 0;
 
 	lng current_id = 0;
+
+	std::shared_ptr<TextFile> temporary_textfile = nullptr;
 };
