@@ -188,6 +188,8 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				entry.display_subtitle = it->file->GetFullPath();
 				entry.text = it->file->GetFullPath();
 				entry.data = it->file;
+				entry.basescore = it->file->GetLanguage() == nullptr ? 0 : 0.2;
+				entry.multiplier = 1.5;
 				entries.push_back(entry);
 			}
 			ProjectExplorer* explorer = cm->active_projectexplorer;

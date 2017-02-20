@@ -81,17 +81,15 @@ void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::st
 		current_position += MeasureTextWidth(font, text.c_str(), length);
 		current_character += length;
 	}
-	if (bold_size != 0) {
-		if (start_bold >= 0) {
-			SetTextStyle(font, PGTextStyleBold);
-			RenderText(renderer, font, text.c_str() + current_character, bold_size, x + current_position, y);
-			current_position += MeasureTextWidth(font, text.c_str() + current_character, bold_size);
-			current_character += bold_size;
-		}
+	if (bold_size > 0 && start_bold >= 0) {
+		SetTextStyle(font, PGTextStyleBold);
+		RenderText(renderer, font, text.c_str() + current_character, bold_size, x + current_position, y);
+		current_position += MeasureTextWidth(font, text.c_str() + current_character, bold_size);
+		current_character += bold_size;
+	}
+	if (current_character < text.size()) {
 		SetTextStyle(font, PGTextStyleNormal);
-		if (current_character < text.size()) {
-			RenderText(renderer, font, text.c_str() + current_character, text.size() - current_character, x + current_position, y);
-		}
+		RenderText(renderer, font, text.c_str() + current_character, text.size() - current_character, x + current_position, y);
 	}
 
 }
