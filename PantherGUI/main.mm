@@ -4,6 +4,7 @@
 #include "windowfunctions.h"
 #include "xml.h"
 #include "c.h"
+#include "findresults.h"
 #include "scheduler.h"
 
 #include "settings.h"
@@ -22,6 +23,7 @@ int main(int argc, const char *argv[])
             
     PGLanguageManager::AddLanguage(new CLanguage());
     PGLanguageManager::AddLanguage(new XMLLanguage());
+    PGLanguageManager::AddLanguage(new FindResultsLanguage());
 
     PGSettingsManager::Initialize();
     PGKeyBindingsManager::Initialize();

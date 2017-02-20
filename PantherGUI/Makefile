@@ -45,7 +45,9 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/control.o \
 		 $(OBJDIR)/controlmanager.o \
 		 $(OBJDIR)/cursor.o \
+		 $(OBJDIR)/directory.o \
 		 $(OBJDIR)/encoding.o \
+		 $(OBJDIR)/findresults.o \
 		 $(OBJDIR)/file.o \
 		 $(OBJDIR)/filemanager.o \
 		 $(OBJDIR)/findtext.o \

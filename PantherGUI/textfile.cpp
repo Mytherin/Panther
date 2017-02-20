@@ -76,7 +76,7 @@ TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng 
 
 void TextFile::SetLanguage(PGLanguage* language) {
 	this->language = language;
-	this->highlighter = std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter());
+	this->highlighter = this->language ? std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter()) : nullptr;
 	if (this->is_loaded) {
 		this->Lock(PGWriteLock);
 		for (auto it = buffers.begin(); it != buffers.end(); it++) {
@@ -2627,6 +2627,8 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 		Cursor c = Cursor(this, data.start_line, data.start_position, data.end_line, data.end_position);
 		this->matches.push_back(c.GetCursorSelection());
 	}
+	InvalidateBuffers();
+	VerifyTextfile();
 	this->Unlock(PGWriteLock);
 
 	this->InvalidateParsing();
