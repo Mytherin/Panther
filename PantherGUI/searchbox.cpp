@@ -5,13 +5,13 @@
 
 SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0) {
+	/*
 	lng index = 0;
 	for (auto it = this->entries.begin(); it != this->entries.end(); it++) {
 		if (displayed_entries.size() < SEARCHBOX_MAX_ENTRIES)
-			// FIXME: score based on previous selections or some other criteria
-			displayed_entries.push_back(SearchRank(index, 0));
+			displayed_entries.push_back(SearchRank(index, it->basescore + it->multiplier));
 		index++;
-	}
+	}*/
 	font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -30,6 +30,7 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 		((SearchBox*)data)->Filter(((SimpleTextField*)c)->GetText());
 	}, (void*) this);
 	this->AddControl(field);
+	this->Filter("");
 }
 
 SearchBox::~SearchBox() {
@@ -209,7 +210,7 @@ void SearchBox::Filter(std::string filter) {
 	}
 	std::reverse(displayed_entries.begin(), displayed_entries.end());
 	selected_entry = 0;
-	if (displayed_entries.size() > 0) {
+	if (selection_changed && displayed_entries.size() > 0) {
 		SearchRank& rank = displayed_entries[selected_entry];
 		SearchEntry& entry = entries[rank.index];
 		selection_changed(this, rank, entry, selection_changed_data);

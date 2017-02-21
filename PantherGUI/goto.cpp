@@ -6,6 +6,8 @@
 #include "togglebutton.h"
 #include "projectexplorer.h"
 
+#include <unordered_set>
+
 #define HPADDING 25
 #define HPADDING_SMALL 5
 #define VPADDING 5
@@ -195,6 +197,14 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			if (explorer) {
 				auto directories = explorer->GetDirectories();
 				for (auto it = directories.begin(); it != directories.end(); it++) {
+					// get a list of all whitelisted files (files not ignored by .gitignore/.hgignore/etc)
+					std::vector<PGFile> whitelisted_files;
+					std::unordered_set<std::string> whitelisted;
+					(*it)->ListFiles(whitelisted_files, nullptr);
+					for (auto it = whitelisted_files.begin(); it != whitelisted_files.end(); it++) {
+						whitelisted.insert(it->path);
+					}
+					// get a list of all files in the directory
 					std::vector<PGFile> files;
 					(*it)->GetFiles(files);
 					for (auto it2 = files.begin(); it2 != files.end(); it2++) {
@@ -205,10 +215,17 @@ void PGGotoAnything::SetType(PGGotoType type) {
 						if (entry.display_subtitle.size() > 1 && entry.display_subtitle[0] == GetSystemPathSeparator()) {
 							entry.display_subtitle = entry.display_subtitle.substr(1);
 						}
+						// check if the file is ignored by .gitignore/.hgignore/etc
+						// if it is we give it a lower score
+						bool ignored = whitelisted.find(it2->path) == whitelisted.end();
 						entry.text = it2->path;
 						entry.data = nullptr;
 						entry.basescore = PGLanguageManager::GetLanguage(it2->Extension()) == nullptr ? 0 : 0.2;
 						entry.multiplier = 1;
+						if (ignored) {
+							entry.basescore = -1;
+							entry.multiplier = 0.5;
+						}
 
 						entries.push_back(entry);
 					}

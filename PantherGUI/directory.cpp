@@ -101,26 +101,4 @@ void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet whiteli
 		}
 		result_files.push_back(PGFile(*it));
 	}
-	/*
-	for (auto it = files.begin(); it != files.end(); it++) {
-		auto file = (*it);
-		std::string path = PGPathJoin(this->path, file.path);
-		if (whitelist && !PGGlobSetMatches(whitelist, path.c_str())) {
-			// file does not match whitelist, ignore it
-			continue;
-		} else if (whitelist) {
-			// we have a whitelist and file matches the whitelist, always add it
-		} else if (blacklist && PGGlobSetMatches(blacklist, path.c_str())) {
-			// file matches blacklist, ignore it
-			continue;
-		}
-		result_files.push_back(PGFile(path));
-	}
-	for (auto it = directories.begin(); it != directories.end(); it++) {
-		if (path_blacklist && PGGlobSetMatches(path_blacklist, (*it)->path.c_str())) {
-			// path is blacklisted, do not traverse into directory
-			continue;
-		}
-		(*it)->ListFiles(result_files, whitelist, blacklist);
-	}*/
 }
