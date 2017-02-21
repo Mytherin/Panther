@@ -2,6 +2,7 @@
 
 #include "button.h"
 #include "container.h"
+#include "scrollbar.h"
 #include "simpletextfield.h"
 #include "togglebutton.h"
 
@@ -65,7 +66,9 @@ private:
 
 	PGFontHandle font;
 	SimpleTextField* field;
+	Scrollbar* scrollbar;
 
+	lng scroll_position = 0;
 	lng selected_entry;
 	lng filter_size;
 	SearchBoxRenderFunction render_function = nullptr;

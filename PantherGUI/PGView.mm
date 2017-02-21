@@ -140,7 +140,6 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 		manager->statusbar = bar;
 		manager->active_textfield = textfield;
-		manager->active_tabcontrol = tabs;
 		manager->active_projectexplorer = explorer;
 		
 		manager->SetPosition(PGPoint(0, 0));

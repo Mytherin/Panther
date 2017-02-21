@@ -11,6 +11,8 @@
 
 #include <map>
 
+class TabControl;
+
 struct TextSelection {
 	int line_start;
 	int character_start;

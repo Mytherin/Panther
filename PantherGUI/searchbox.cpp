@@ -1,17 +1,10 @@
-  
+
 #include "searchbox.h"
 #include "style.h"
 #include "unicode.h"
 
 SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0) {
-	/*
-	lng index = 0;
-	for (auto it = this->entries.begin(); it != this->entries.end(); it++) {
-		if (displayed_entries.size() < SEARCHBOX_MAX_ENTRIES)
-			displayed_entries.push_back(SearchRank(index, it->basescore + it->multiplier));
-		index++;
-	}*/
 	font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
