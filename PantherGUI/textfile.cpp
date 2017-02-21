@@ -2637,17 +2637,15 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 struct FindAllInformation {
 	TextFile* textfile;
 	PGRegexHandle regex_handle;
-	PGGlobSet globset;
 	std::vector<PGFile> files;
 	int context_lines;
 	std::shared_ptr<Task> task;
 };
 
-void TextFile::FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, PGGlobSet globset, int context_lines) {
+void TextFile::FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, int context_lines) {
 	FindAllInformation* info = new FindAllInformation();
 	info->textfile = this;
 	info->regex_handle = regex_handle;
-	info->globset = globset;
 	info->files = files;
 	info->context_lines = context_lines;
 
@@ -2675,9 +2673,6 @@ void TextFile::FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle reg
 		}
 		if (info->regex_handle) {
 			PGDeleteRegex(info->regex_handle);
-		}
-		if (info->globset) {
-			PGDestroyGlobSet(info->globset);
 		}
 		delete info;
 	}, info));

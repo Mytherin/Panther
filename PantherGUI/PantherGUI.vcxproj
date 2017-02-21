@@ -284,7 +284,6 @@
     <ClInclude Include="droptarget.h" />
     <ClInclude Include="encoding.h" />
     <ClInclude Include="filemanager.h" />
-    <ClInclude Include="filepattern.h" />
     <ClInclude Include="findresults.h" />
     <ClInclude Include="findtext.h" />
     <ClInclude Include="goto.h" />
@@ -299,6 +298,7 @@
     <ClInclude Include="projectexplorer.h" />
     <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="rust\include\rust\gitignore.h" />
     <ClInclude Include="rust\include\rust\globset.h" />
     <ClInclude Include="scheduler.h" />
     <ClInclude Include="scrollbar.h" />

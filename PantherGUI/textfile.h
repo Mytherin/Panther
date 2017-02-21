@@ -17,8 +17,6 @@
 
 #include "assert.h"
 
-#include <rust/globset.h>
-
 typedef enum {
 	PGLineEndingWindows,
 	PGLineEndingMacOS,
@@ -220,7 +218,7 @@ public:
 	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
 	std::string current_find_file;
 
-	void FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, PGGlobSet globset, int context_lines);
+	void FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, int context_lines);
 private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);

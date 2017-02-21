@@ -416,9 +416,6 @@
     <ClInclude Include="textbuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="filepattern.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="third_party\re2\re2\re2.h">
       <Filter>Header Files\regex</Filter>
     </ClInclude>
@@ -499,6 +496,9 @@
     </ClInclude>
     <ClInclude Include="findresults.h">
       <Filter>Header Files\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="rust\include\rust\gitignore.h">
+      <Filter>Header Files\rust</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

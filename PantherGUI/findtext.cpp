@@ -527,7 +527,7 @@ void PGFindText::FindInFiles() {
 			i--;
 		}
 	}
-	PGGlobSet globset = nullptr;
+	PGGlobSet whitelist = nullptr;
 	if (split.size() > 0) {
 		PGGlobBuilder glob_builder = PGCreateGlobBuilder();
 		for (auto it = split.begin(); it != split.end(); it++) {
@@ -536,9 +536,9 @@ void PGFindText::FindInFiles() {
 				continue;
 			}
 		}
-		globset = PGCompileGlobBuilder(glob_builder);
+		whitelist = PGCompileGlobBuilder(glob_builder);
 		PGDestroyGlobBuilder(glob_builder);
-		if (!globset) {
+		if (!whitelist) {
 			// failed to compile glob builder
 			assert(0);
 			return;
@@ -560,11 +560,14 @@ void PGFindText::FindInFiles() {
 	std::vector<PGFile> files;
 	auto& directories = manager->active_projectexplorer->GetDirectories();
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		(*it)->ListFiles(files, globset);
+		(*it)->ListFiles(files, whitelist);
 	}
 
+	if (whitelist) {
+		PGDestroyGlobSet(whitelist);
+	}
 	// now schedule the actual search
-	textfile->FindAllMatchesAsync(files, regex, globset, 2);
+	textfile->FindAllMatchesAsync(files, regex, 2);
 }
 
 void PGFindText::SelectAllMatches(bool in_selection) {

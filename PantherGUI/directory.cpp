@@ -2,6 +2,8 @@
 #include "directory.h"
 #include "textfile.h"
 
+#include <rust/gitignore.h>
+
 void PGDirectory::GetFiles(std::vector<PGFile>& result) {
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		(*it)->GetFiles(result);
@@ -85,20 +87,40 @@ lng PGDirectory::DisplayedFiles() {
 	}
 }
 
-void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet globset) {
+void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist) {
+	std::vector<std::string> files;
+	PGListFiles(this->path.c_str(), [](void* data, const char* path) {
+		auto files = (std::vector<std::string>*)data;
+		files->push_back(path);
+	}, &files);
+
+	for (auto it = files.begin(); it != files.end(); it++) {
+		if (whitelist && !PGGlobSetMatches(whitelist, it->c_str())) {
+			// file does not match whitelist, ignore it
+			continue;
+		}
+		result_files.push_back(PGFile(*it));
+	}
+	/*
 	for (auto it = files.begin(); it != files.end(); it++) {
 		auto file = (*it);
 		std::string path = PGPathJoin(this->path, file.path);
-		if (globset) {
-			if (!PGGlobSetMatches(globset, path.c_str())) {
-				// FIXME: if black list, then ignore files that match instead of files that do not
-				// ignore this file
-				continue;
-			}
+		if (whitelist && !PGGlobSetMatches(whitelist, path.c_str())) {
+			// file does not match whitelist, ignore it
+			continue;
+		} else if (whitelist) {
+			// we have a whitelist and file matches the whitelist, always add it
+		} else if (blacklist && PGGlobSetMatches(blacklist, path.c_str())) {
+			// file matches blacklist, ignore it
+			continue;
 		}
 		result_files.push_back(PGFile(path));
 	}
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		(*it)->ListFiles(result_files, globset);
-	}
+		if (path_blacklist && PGGlobSetMatches(path_blacklist, (*it)->path.c_str())) {
+			// path is blacklisted, do not traverse into directory
+			continue;
+		}
+		(*it)->ListFiles(result_files, whitelist, blacklist);
+	}*/
 }
