@@ -294,7 +294,7 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 						// mouse button press
 						std::string keys = panther::tolower(keybinding["mouse"]);
 						std::string command = panther::tolower(keybinding["command"]);
-						int clicks = keybinding.find("clicks") == keybinding.end() ? 0 : keybinding["clicks"] - 1;
+						int clicks = keybinding.find("clicks") == keybinding.end() ? 0 : ((int)keybinding["clicks"]) - 1;
 						clicks = std::abs(clicks);
 
 						// parse the key

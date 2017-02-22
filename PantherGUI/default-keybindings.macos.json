@@ -56,7 +56,14 @@
 		{ "key": "ctrl+shift+a", "command": "select_start_of_line"},
 
 		{ "key": "ctrl+e", "command": "offset_end_of_line"},
-		{ "key": "ctrl+shift+e", "command": "select_end_of_line"}
+		{ "key": "ctrl+shift+e", "command": "select_end_of_line"},
+
+		{ "mouse": "cmd+left", "command": "select_word" },
+		{ "mouse": "shift+left", "command": "set_cursor_selection" },
+		{ "mouse": "left", "clicks": 1, "command": "set_cursor_location" },
+		{ "mouse": "left", "clicks": 2, "command": "select_word" },
+		{ "mouse": "left", "clicks": 3, "command": "select_line" }
+
 	],
 	"simpletextfield": [
 		{ "key": "up", "command": "prev_entry"},
@@ -94,7 +101,9 @@
 		{ "key": "pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page" } },
 		{ "key": "shift+pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page", "selection": true } },
 		{ "key": "pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page" } },
-		{ "key": "shift+pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page", "selection": true } }
+		{ "key": "shift+pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page", "selection": true } },
+
+		{ "mouse": "middle", "command": "drag_region" }
 
 	],
 	"tabcontrol": [
