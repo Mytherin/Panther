@@ -4,7 +4,8 @@
 #include "unicode.h"
 
 SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
-	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0) {
+	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0),
+	scrollbar(nullptr), scroll_position(0) {
 	font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -24,10 +25,39 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 	}, (void*) this);
 	this->AddControl(field);
 	this->Filter("");
+
+	scrollbar = new Scrollbar(this, window, false, false);
+	scrollbar->bottom_padding = 0;
+	scrollbar->top_padding = SCROLLBAR_SIZE;
+	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, field->height));
+	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
+		((SearchBox*)scroll->parent)->scroll_position = value;
+	});
+	this->AddControl(scrollbar);
 }
 
-SearchBox::~SearchBox() {
+void SearchBox::SetSelectedEntry(lng entry) {
+	selected_entry = entry;
+	if (selected_entry < 0) {
+		selected_entry = displayed_entries.size() - 1;
+	}
+	if (selected_entry >= displayed_entries.size()) {
+		selected_entry = 0;
+	}
+	if (selected_entry - (GetRenderedEntries() - 1) > scroll_position) {
+		SetScrollPosition(selected_entry - (GetRenderedEntries() - 1));
+	}
+	if (selected_entry < scroll_position) {
+		SetScrollPosition(selected_entry);
+	}
+}
 
+lng SearchBox::GetRenderedEntries() {
+	return (lng) std::floor((this->height - field->height) / entry_height);
+}
+
+void SearchBox::SetScrollPosition(lng position) {
+	scroll_position = std::min((lng) displayed_entries.size() - GetRenderedEntries(), std::max(position, (lng) 0));
 }
 
 bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -35,10 +65,7 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 		switch (button) {
 		case PGButtonUp:
 			if (displayed_entries.size() > 0) {
-				selected_entry--;
-				if (selected_entry < 0) {
-					selected_entry = displayed_entries.size() - 1;
-				}
+				SetSelectedEntry(selected_entry - 1);
 				SearchRank& rank = displayed_entries[selected_entry];
 				SearchEntry& entry = entries[rank.index];
 				selection_changed(this, rank, entry, selection_changed_data);
@@ -47,10 +74,7 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 			return true;
 		case PGButtonDown:
 			if (displayed_entries.size() > 0) {
-				selected_entry++;
-				if (selected_entry >= displayed_entries.size()) {
-					selected_entry = 0;
-				}
+				SetSelectedEntry(selected_entry + 1);
 				SearchRank& rank = displayed_entries[selected_entry];
 				SearchEntry& entry = entries[rank.index];
 				selection_changed(this, rank, entry, selection_changed_data);
@@ -63,6 +87,17 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 	}
 	return PGContainer::KeyboardButton(button, modifier);
 }
+
+void SearchBox::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
+	if (modifier == PGModifierNone) {
+		if (distance != 0) {
+			lng offset = (distance < 0 ? -1 : 1) * std::ceil(std::abs(distance));
+			SetScrollPosition(scroll_position - offset);
+			this->Invalidate();
+		}
+	}
+}
+
 
 void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::string text, lng start_bold, lng bold_size, PGScalar x, PGScalar y) {
 	PGScalar current_position = 0;
@@ -91,22 +126,20 @@ void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::st
 void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	PGScalar x = X() - rect->x, y = Y() - rect->y;
 	PGScalar current_x = x;
-	PGScalar current_y = y + field->height;
-	lng initial_selection = 0; // FIXME: set to scroll size
+	PGScalar initial_y = y + field->height;
+	PGScalar current_y = initial_y;
+	lng initial_selection = scroll_position;
 	lng current_selection = initial_selection;
-
-
-	PGScalar BUTTON_HEIGHT = 0;
+	entry_height = 0;
 	{
-		BUTTON_HEIGHT += 6;
-		BUTTON_HEIGHT += 8;
+		entry_height += 10;
 		SetTextFontSize(font, 13);
-		BUTTON_HEIGHT += GetTextHeight(font) + 1;
+		entry_height += GetTextHeight(font) + 1;
 		SetTextFontSize(font, 11);
-		BUTTON_HEIGHT += GetTextHeight(font) + 1;
+		entry_height += GetTextHeight(font) + 1;
 	}
 
-	while ((current_y - y) + BUTTON_HEIGHT < this->height) {
+	while ((current_y - y) + entry_height < this->height) {
 		if (current_selection >= displayed_entries.size()) break;
 
 		// render the background
@@ -118,7 +151,7 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		if (current_selection != initial_selection) {
 			current_y += 4;
 		}
-		RenderRectangle(renderer, PGRect(current_x, current_y, this->width, BUTTON_HEIGHT), background_color, PGDrawStyleFill);
+		RenderRectangle(renderer, PGRect(current_x, current_y, this->width, entry_height), background_color, PGDrawStyleFill);
 
 		if (current_selection != initial_selection) {
 			RenderLine(renderer, PGLine(
@@ -131,7 +164,7 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		SearchRank& rank = displayed_entries[current_selection];
 		SearchEntry& entry = entries[rank.index];
 		if (render_function) {
-			render_function(renderer, font, rank, entry, current_x, current_y, BUTTON_HEIGHT - 6);
+			render_function(renderer, font, rank, entry, current_x, current_y, entry_height - 6);
 		}
 		// render the text
 		SetTextFontSize(font, 13);
@@ -145,11 +178,15 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		current_x = x;
 		current_selection++;
 	}
+	scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, field->height + SCROLLBAR_PADDING));
+	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, current_y - initial_y - 2 * SCROLLBAR_PADDING - 7));
+	scrollbar->UpdateValues(0, displayed_entries.size() - GetRenderedEntries(), GetRenderedEntries(), scroll_position);
 	PGContainer::Draw(renderer, rect);
 }
 
 void SearchBox::OnResize(PGSize old_size, PGSize new_size) {
 	field->width = new_size.width;
+	PGContainer::OnResize(old_size, new_size);
 }
 
 void SearchBox::Close(bool success) {

@@ -46,9 +46,10 @@ typedef void(*SearchBoxSelectionCancelledFunction)(SearchBox* searchbox, void* d
 class SearchBox : public PGContainer {
 public:
 	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries);
-	~SearchBox();
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
+
+	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 
 	void Draw(PGRendererHandle renderer, PGIRect* rect);
 
@@ -68,6 +69,7 @@ private:
 	SimpleTextField* field;
 	Scrollbar* scrollbar;
 
+	PGScalar entry_height = 0;
 	lng scroll_position = 0;
 	lng selected_entry;
 	lng filter_size;
@@ -78,6 +80,11 @@ private:
 	void* selection_confirmed_data = nullptr;
 	SearchBoxSelectionCancelledFunction selection_cancelled = nullptr;
 	void* selection_cancelled_data = nullptr;
+
+	PGScalar GetEntryHeight() { return entry_height; }
+	lng GetRenderedEntries();
+	void SetScrollPosition(lng entry);
+	void SetSelectedEntry(lng entry);
 
 	void Filter(std::string filter);
 };

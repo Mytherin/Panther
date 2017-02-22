@@ -34,6 +34,7 @@ Scrollbar::Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bo
 
 Scrollbar::~Scrollbar() {
 	ControlManager* cm = GetControlManager(this);
+	cm->UnregisterMouseRegion(&scrollbar_area);
 	if (arrows) {
 		cm->UnregisterMouseRegion(&arrow_regions[0]);
 		cm->UnregisterMouseRegion(&arrow_regions[1]);
