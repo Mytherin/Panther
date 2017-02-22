@@ -593,12 +593,12 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	PGPoint mouse(x - this->x, y - this->y);
 	if (PGRectangleContains(scrollbar->GetRectangle(), mouse)) {
 		scrollbar->UpdateValues(0, textfile->GetMaxYScroll(), GetLineHeight(), textfile->GetLineOffset().linenumber);
-		scrollbar->MouseDown(mouse.x, mouse.y, button, modifier);
+		scrollbar->MouseDown(mouse.x, mouse.y, button, modifier, click_count);
 		return;
 	}
 	if (PGRectangleContains(horizontal_scrollbar->GetRectangle(), mouse)) {
 		horizontal_scrollbar->UpdateValues(0, max_xoffset, GetTextfieldWidth(), textfile->GetXOffset());
-		horizontal_scrollbar->MouseDown(mouse.x, mouse.y, button, modifier);
+		horizontal_scrollbar->MouseDown(mouse.x, mouse.y, button, modifier, click_count);
 		return;
 	}
 	if (button == PGLeftMouseButton) {

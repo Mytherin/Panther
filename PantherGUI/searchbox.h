@@ -40,8 +40,6 @@ class SearchBox;
 
 typedef void(*SearchBoxRenderFunction)(PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height);
 typedef void(*SearchBoxSelectionChangedFunction)(SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data);
-typedef void(*SearchBoxSelectionConfirmedFunction)(SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data);
-typedef void(*SearchBoxSelectionCancelledFunction)(SearchBox* searchbox, void* data);
 
 class SearchBox : public PGContainer {
 public:
@@ -51,7 +49,11 @@ public:
 
 	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 
+	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
+	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	void Draw(PGRendererHandle renderer, PGIRect* rect);
+
+	PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
@@ -59,8 +61,6 @@ public:
 
 	void OnRender(SearchBoxRenderFunction func) { render_function = func; }
 	void OnSelectionChanged(SearchBoxSelectionChangedFunction func, void* data) { selection_changed = func; selection_changed_data = data; }
-	void OnSelectionConfirmed(SearchBoxSelectionConfirmedFunction func, void* data) { selection_confirmed = func; selection_confirmed_data = data; }
-	void OnSelectionCancelled(SearchBoxSelectionCancelledFunction func, void* data) { selection_cancelled = func; selection_cancelled_data = data; }
 private:
 	std::vector<SearchEntry> entries;
 	std::vector<SearchRank> displayed_entries;
@@ -76,10 +76,6 @@ private:
 	SearchBoxRenderFunction render_function = nullptr;
 	SearchBoxSelectionChangedFunction selection_changed = nullptr;
 	void* selection_changed_data = nullptr;
-	SearchBoxSelectionConfirmedFunction selection_confirmed = nullptr;
-	void* selection_confirmed_data = nullptr;
-	SearchBoxSelectionCancelledFunction selection_cancelled = nullptr;
-	void* selection_cancelled_data = nullptr;
 
 	PGScalar GetEntryHeight() { return entry_height; }
 	lng GetRenderedEntries();

@@ -740,6 +740,7 @@ void TabControl::SwitchToTab(std::shared_ptr<TextFile> textfile) {
 
 void TabControl::SwitchToFile(std::shared_ptr<TextFile> file) {
 	textfield->SetTextFile(file);
+	this->Invalidate();
 }
 
 void TabControl::InitializeKeybindings() {

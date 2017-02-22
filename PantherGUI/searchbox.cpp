@@ -2,6 +2,7 @@
 #include "searchbox.h"
 #include "style.h"
 #include "unicode.h"
+#include "goto.h"
 
 SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
 	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0),
@@ -50,6 +51,11 @@ void SearchBox::SetSelectedEntry(lng entry) {
 	if (selected_entry < scroll_position) {
 		SetScrollPosition(selected_entry);
 	}
+	if (displayed_entries.size() > 0 && selection_changed) {
+		SearchRank& rank = displayed_entries[selected_entry];
+		SearchEntry& search_entry = entries[rank.index];
+		selection_changed(this, rank, search_entry, selection_changed_data);
+	}
 }
 
 lng SearchBox::GetRenderedEntries() {
@@ -57,7 +63,7 @@ lng SearchBox::GetRenderedEntries() {
 }
 
 void SearchBox::SetScrollPosition(lng position) {
-	scroll_position = std::min((lng) displayed_entries.size() - GetRenderedEntries(), std::max(position, (lng) 0));
+	scroll_position = std::max(std::min((lng) displayed_entries.size() - GetRenderedEntries(), position), (lng) 0);
 }
 
 bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -66,18 +72,12 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 		case PGButtonUp:
 			if (displayed_entries.size() > 0) {
 				SetSelectedEntry(selected_entry - 1);
-				SearchRank& rank = displayed_entries[selected_entry];
-				SearchEntry& entry = entries[rank.index];
-				selection_changed(this, rank, entry, selection_changed_data);
 				this->Invalidate();
 			}
 			return true;
 		case PGButtonDown:
 			if (displayed_entries.size() > 0) {
 				SetSelectedEntry(selected_entry + 1);
-				SearchRank& rank = displayed_entries[selected_entry];
-				SearchEntry& entry = entries[rank.index];
-				selection_changed(this, rank, entry, selection_changed_data);
 				this->Invalidate();
 			}
 			return true;
@@ -86,6 +86,36 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 		}
 	}
 	return PGContainer::KeyboardButton(button, modifier);
+}
+
+void SearchBox::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
+	PGPoint mouse(x - this->x, y - this->y);
+	if (button & PGLeftMouseButton && y > field->height) {
+		if (!scrollbar->visible || mouse.x < this->width - scrollbar->width) {
+			lng selected_entry = (mouse.y - field->height) / entry_height;
+			if (selected_entry >= 0 && selected_entry < GetRenderedEntries()) {
+				SetSelectedEntry(scroll_position + selected_entry);
+			}
+			return;
+		}
+	}
+	PGContainer::MouseDown(x, y, button, modifier, click_count);
+}
+
+void SearchBox::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+	PGPoint mouse(x - this->x, y - this->y);
+	if (button & PGLeftMouseButton && y > field->height) {
+		if (!scrollbar->visible || mouse.x < this->width - scrollbar->width) {
+			lng selected_entry = (mouse.y - field->height) / entry_height;
+			if (selected_entry >= 0 && selected_entry < GetRenderedEntries()) {
+				if (scroll_position + selected_entry == this->selected_entry) {
+					this->Close(true);
+				}
+			}
+			return;
+		}
+	}
+	PGContainer::MouseUp(x, y, button, modifier);
 }
 
 void SearchBox::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
@@ -178,9 +208,14 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		current_x = x;
 		current_selection++;
 	}
-	scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, field->height + SCROLLBAR_PADDING));
-	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, current_y - initial_y - 2 * SCROLLBAR_PADDING - 7));
-	scrollbar->UpdateValues(0, displayed_entries.size() - GetRenderedEntries(), GetRenderedEntries(), scroll_position);
+	if (GetRenderedEntries() >= displayed_entries.size()) {
+		scrollbar->visible = false;
+	} else {
+		scrollbar->visible = true;
+		scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, field->height + SCROLLBAR_PADDING));
+		scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, current_y - initial_y - 2 * SCROLLBAR_PADDING - 7));
+		scrollbar->UpdateValues(0, displayed_entries.size() - GetRenderedEntries(), GetRenderedEntries(), scroll_position);
+	}
 	PGContainer::Draw(renderer, rect);
 }
 
@@ -190,6 +225,8 @@ void SearchBox::OnResize(PGSize old_size, PGSize new_size) {
 }
 
 void SearchBox::Close(bool success) {
+	dynamic_cast<PGGotoAnything*>(this->parent)->Close(success);
+	/*
 	if (success && displayed_entries.size() > 0) {
 		if (selection_confirmed) {
 			SearchRank& rank = displayed_entries[selected_entry];
@@ -201,7 +238,7 @@ void SearchBox::Close(bool success) {
 			selection_cancelled(this, selection_cancelled_data);
 		}
 	}
-	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
+	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);*/
 }
 
 void SearchBox::Filter(std::string filter) {
@@ -238,11 +275,6 @@ void SearchBox::Filter(std::string filter) {
 		}
 	}
 	std::reverse(displayed_entries.begin(), displayed_entries.end());
-	selected_entry = 0;
-	if (selection_changed && displayed_entries.size() > 0) {
-		SearchRank& rank = displayed_entries[selected_entry];
-		SearchEntry& entry = entries[rank.index];
-		selection_changed(this, rank, entry, selection_changed_data);
-	}
+	SetSelectedEntry(0);
 	this->Invalidate();
 }

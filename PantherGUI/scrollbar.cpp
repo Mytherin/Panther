@@ -42,6 +42,7 @@ Scrollbar::~Scrollbar() {
 }
 
 void Scrollbar::Draw(PGRendererHandle renderer, PGIRect* rect) {
+	if (!visible) return;
 	PGScalar x = X() - rect->x;
 	PGScalar y = Y() - rect->y;
 	// render the background
@@ -162,7 +163,7 @@ void Scrollbar::SetScrollbarOffset(PGScalar offset) {
 }
 
 
-void Scrollbar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier) {
+void Scrollbar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	PGPoint mouse = PGPoint(x - this->x, y - this->y);
 	if (button == PGLeftMouseButton) {
 		if (arrows) {

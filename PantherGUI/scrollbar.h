@@ -28,7 +28,7 @@ public:
 	void Draw(PGRendererHandle renderer, PGIRect* rect);
 
 	void MouseMove(int x, int y, PGMouseButton buttons);
-	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 
 	bool IsDragging() { return drag_type != PGScrollbarDragNone; }
