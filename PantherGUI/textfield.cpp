@@ -624,48 +624,15 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				return;
 			}
 		}
-		if (drag_type == PGDragSelectionCursors) return;
-		drag_type = PGDragSelection;
-		lng line = 0, character = 0;
-		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-
-		if (modifier == PGModifierNone && click_count == 0) {
-			textfile->SetCursorLocation(line, character);
-		} else if (modifier == PGModifierShift) {
-			textfile->GetActiveCursor().SetCursorStartLocation(line, character);
-		} else if (modifier == PGModifierCtrl) {
-			textfile->AddNewCursor(line, character);
-		} else if (click_count == 1) {
-			textfile->SetCursorLocation(line, character);
-			Cursor& active_cursor = textfile->GetActiveCursor();
-			active_cursor.SelectWord();
-			minimal_selections[textfile->active_cursor] = active_cursor.GetCursorSelection();
-		} else if (click_count == 2) {
-			textfile->SetCursorLocation(line, character);
-			Cursor& active_cursor = textfile->GetActiveCursor();
-			active_cursor.SelectLine();
-			minimal_selections[textfile->active_cursor] = active_cursor.GetCursorSelection();
-		}
-	} else if (button == PGMiddleMouseButton) {
-		if (drag_type == PGDragSelection) return;
-		drag_type = PGDragSelectionCursors;
-		drag_offset = mouse.x;
-		lng line, character;
-		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-		textfile->SetCursorLocation(line, character);
-	} else if (button == PGRightMouseButton) {
-		/*
-		if (drag_type != PGDragNone) return;
-		lng line, character;
-		GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-		textfile->ClearExtraCursors();
-		textfile->SetCursorLocation(line, character);*/
 	}
-}
-
-void TextField::ClearDragging() {
-	minimal_selections.clear();
-	drag_type = PGDragNone;
+	lng line, character;
+	GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
+	if (this->PressMouseButton(TextField::mousebindings, button, mouse, modifier, click_count, line, character)) {
+		return;
+	}
+	if (this->PressMouseButton(BasicTextField::mousebindings, button, mouse, modifier, click_count, line, character)) {
+		return;
+	}
 }
 
 void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
@@ -680,16 +647,7 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		horizontal_scrollbar->MouseUp(mouse.x, mouse.y, button, modifier);
 		return;
 	}
-	if (button & PGLeftMouseButton) {
-		if (drag_type != PGDragSelectionCursors) {
-			ClearDragging();
-			this->Invalidate();
-		}
-	} else if (button & PGMiddleMouseButton) {
-		if (drag_type == PGDragSelectionCursors) {
-			drag_type = PGDragNone;
-		}
-	} else if (button & PGRightMouseButton) {
+	if (button & PGRightMouseButton) {
 		if (!(mouse.x <= GetTextfieldWidth() && mouse.y <= GetTextfieldHeight())) return;
 		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
 		PGPopupMenuInsertEntry(menu, "Show Unsaved Changes...", nullptr, PGPopupMenuGrayed);
@@ -719,7 +677,9 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		}, flags);
 		PGPopupMenuInsertEntry(menu, "Reveal in Side Bar", nullptr, flags);
 		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
+		return;
 	}
+	BasicTextField::MouseUp(x, y, button, modifier);
 }
 
 void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
@@ -735,103 +695,88 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 		horizontal_scrollbar->MouseMove(mouse.x, mouse.y, buttons);
 		return;
 	}
-	if (buttons & PGLeftMouseButton) {
-		if (drag_type == PGDragSelection) {
-			// FIXME: when having multiple cursors and we are altering the active cursor,
-			// the active cursor can never "consume" the other selections (they should always stay)
-			lng line, character;
-			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-			Cursor& active_cursor = textfile->GetActiveCursor();
-			auto selected_pos = active_cursor.SelectedCharacterPosition();
-			if (selected_pos.line != line || selected_pos.character != character) {
-				lng old_line = selected_pos.line;
-				active_cursor.SetCursorStartLocation(line, character);
-				if (minimal_selections.count(textfile->active_cursor) > 0) {
-					active_cursor.ApplyMinimalSelection(minimal_selections[textfile->active_cursor]);
-				}
-				Cursor::NormalizeCursors(textfile.get(), textfile->GetCursors());
-			}
-		} else if (drag_type == PGDragMinimap) {
-			PGVerticalScroll current_scroll = textfile->GetLineOffset();
-			SetMinimapOffset(mouse.y - drag_offset);
-			if (current_scroll != textfile->GetLineOffset())
-				this->Invalidate();
-		}
-	} else if (buttons & PGMiddleMouseButton) {
-		if (drag_type == PGDragSelectionCursors) {
-			lng line, character;
-			mouse.x = mouse.x - text_offset + textfile->GetXOffset();
-			GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-			std::vector<Cursor>& cursors = textfile->GetCursors();
-			Cursor& active_cursor = textfile->GetActiveCursor();
-			auto end_pos = active_cursor.UnselectedPosition();
-			auto start_scroll = textfile->GetVerticalScroll(end_pos.line, end_pos.position);
-			textfile->ClearCursors();
-			bool backwards = end_pos.line > line || (end_pos.line == line && end_pos.position > character);
-			bool first = true;
-			PGScalar start_x;
-			bool single_cursor = false;
-			auto iterator = textfile->GetScrollIterator(this, start_scroll);
-			while (true) {
-				TextLine textline = iterator->GetLine();
-				if (!textline.IsValid()) break;
 
-				lng iterator_line = iterator->GetCurrentLineNumber();
-				lng iterator_character = iterator->GetCurrentCharacterNumber();
+	if (this->drag_type != PGDragNone) {
+		if (buttons & drag_button) {
+			if (drag_type == PGDragMinimap) {
+				PGVerticalScroll current_scroll = textfile->GetLineOffset();
+				SetMinimapOffset(mouse.y - drag_offset);
+				if (current_scroll != textfile->GetLineOffset())
+					this->Invalidate();
+				return;
+			} else if (drag_type == PGDragSelectionCursors) {
+				// FIXME: this should be moved inside the textfile
+				lng line, character;
+				mouse.x = mouse.x - text_offset + textfile->GetXOffset();
+				GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
+				std::vector<Cursor>& cursors = textfile->GetCursors();
+				Cursor& active_cursor = textfile->GetActiveCursor();
+				auto end_pos = active_cursor.UnselectedPosition();
+				auto start_scroll = textfile->GetVerticalScroll(end_pos.line, end_pos.position);
+				textfile->ClearCursors();
+				bool backwards = end_pos.line > line || (end_pos.line == line && end_pos.position > character);
+				bool first = true;
+				PGScalar start_x;
+				bool single_cursor = false;
+				auto iterator = textfile->GetScrollIterator(this, start_scroll);
+				while (true) {
+					TextLine textline = iterator->GetLine();
+					if (!textline.IsValid()) break;
 
-				if (!first) {
-					if (backwards) {
-						if (iterator_line < line ||
-							(iterator_line == line && iterator_character + textline.GetLength() < character))
-							break;
+					lng iterator_line = iterator->GetCurrentLineNumber();
+					lng iterator_character = iterator->GetCurrentCharacterNumber();
+
+					if (!first) {
+						if (backwards) {
+							if (iterator_line < line ||
+								(iterator_line == line && iterator_character + textline.GetLength() < character))
+								break;
+						} else {
+							if (iterator_line > line ||
+								(iterator_line == line && iterator_character > character))
+								break;
+						}
+					}
+
+					lng end_position = GetPositionInLine(textfield_font, mouse.x, textline.GetLine(), textline.GetLength());
+					lng start_position;
+					if (first) {
+						start_position = end_pos.position - iterator_character;
+						single_cursor = start_position == end_position;
+						start_x = MeasureTextWidth(textfield_font, textline.GetLine(), start_position);
+						first = false;
 					} else {
-						if (iterator_line > line ||
-							(iterator_line == line && iterator_character > character))
-							break;
-					}
-				}
-
-				lng end_position = GetPositionInLine(textfield_font, mouse.x, textline.GetLine(), textline.GetLength());
-				lng start_position;
-				if (first) {
-					start_position = end_pos.position - iterator_character;
-					single_cursor = start_position == end_position;
-					start_x = MeasureTextWidth(textfield_font, textline.GetLine(), start_position);
-					first = false;
-				} else {
-					start_position = GetPositionInLine(textfield_font, start_x, textline.GetLine(), textline.GetLength());
-				}
-
-				if (single_cursor || start_position != end_position) {
-					if (single_cursor) {
-						start_position = end_position;
+						start_position = GetPositionInLine(textfield_font, start_x, textline.GetLine(), textline.GetLength());
 					}
 
-					Cursor cursor = Cursor(textfile.get(), iterator_line, iterator_character + end_position, iterator_line, iterator_character + start_position);
+					if (single_cursor || start_position != end_position) {
+						if (single_cursor) {
+							start_position = end_position;
+						}
+
+						Cursor cursor = Cursor(textfile.get(), iterator_line, iterator_character + end_position, iterator_line, iterator_character + start_position);
+						if (backwards) {
+							cursors.insert(cursors.begin(), cursor);
+						} else {
+							cursors.push_back(cursor);
+						}
+					}
+
 					if (backwards) {
-						cursors.insert(cursors.begin(), cursor);
+						(*iterator)--;
 					} else {
-						cursors.push_back(cursor);
+						(*iterator)++;
 					}
 				}
-
 				if (backwards) {
-					(*iterator)--;
-				} else {
-					(*iterator)++;
+					textfile->active_cursor = cursors.size() - 1;
 				}
+				this->Invalidate();
+				return;
 			}
-			if (backwards) {
-				textfile->active_cursor = cursors.size() - 1;
-			}
-			this->Invalidate();
-		}
-	} else {
-		ClearDragging();
-		if (this->display_minimap && mouse.x >= this->width - SCROLLBAR_SIZE - GetMinimapWidth() && mouse.x <= this->width - SCROLLBAR_SIZE) {
-			this->InvalidateMinimap();
 		}
 	}
+	BasicTextField::MouseMove(x, y, buttons);
 }
 
 bool TextField::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -1185,6 +1130,14 @@ void TextField::InitializeKeybindings() {
 		} else if (args["type"] == "file") {
 			tf->DisplayGotoDialog(PGGotoFile);
 		}
+	};
+	std::map<std::string, PGMouseFunction>& mouse_bindings = TextField::mousebindings_noargs;
+	mouse_bindings["drag_region"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
+		TextField* tf = (TextField*)c;
+		if (tf->drag_type != PGDragNone) return;
+		tf->StartDragging(PGMiddleMouseButton, PGDragSelectionCursors);
+		tf->drag_offset = mouse.x;
+		tf->GetTextFile().SetCursorLocation(line, character);
 	};
 }
 

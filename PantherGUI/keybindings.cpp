@@ -131,10 +131,36 @@ bool PGKeyBindingsManager::ParseKeyPress(std::string keys, PGKeyPress& keypress)
 	return false;
 }
 
+bool PGKeyBindingsManager::ParseMousePress(std::string keys, PGMousePress& keypress) {
+	PGModifier modifier = PGModifierNone;
+
+	ExtractModifier(keys, modifier, "ctrl+", PGModifierCtrl);
+	ExtractModifier(keys, modifier, "shift+", PGModifierShift);
+	ExtractModifier(keys, modifier, "alt+", PGModifierAlt);
+	ExtractModifier(keys, modifier, "option+", PGModifierAlt);
+	ExtractModifier(keys, modifier, "cmd+", PGModifierCmd);
+	ExtractModifier(keys, modifier, "super+", PGModifierCmd);
+
+	keypress.modifier = modifier;
+	// FIXME: support other mouse buttons
+	if (keys == "left") {
+		keypress.button = PGLeftMouseButton;
+	} else if (keys == "right") {
+		keypress.button = PGRightMouseButton;
+	} else if (keys == "middle") {
+		keypress.button = PGMiddleMouseButton;
+	} else {
+		return false;
+	}
+	return true;
+}
+
 #define INITIALIZE_CONTROL(control)       \
 	functions = &(control::keybindings);   \
 	keybindings_noargs = &(control::keybindings_noargs);  \
-	keybindings_varargs = &(control::keybindings_varargs)
+	keybindings_varargs = &(control::keybindings_varargs);  \
+	mousebindings_noargs = &(control::mousebindings_noargs);  \
+	mousebindings = &(control::mousebindings)
 
 std::string ParseEscapeCharacters(std::string str) {
 	if (str.size() == 0) return "";
@@ -191,6 +217,8 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 			std::map<PGKeyPress, PGKeyFunctionCall>* functions = nullptr;
 			std::map<std::string, PGKeyFunction>* keybindings_noargs = nullptr;
 			std::map<std::string, PGKeyFunctionArgs>* keybindings_varargs = nullptr;
+			std::map<std::string, PGMouseFunction>* mousebindings_noargs = nullptr;
+			std::map<PGMousePress, PGMouseFunctionCall>* mousebindings = nullptr;
 
 			if (control == "global") {
 				INITIALIZE_CONTROL(ControlManager);
@@ -211,48 +239,81 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 			if (functions && keybindings_noargs && keybindings_varargs) {
 				for (auto key = keys.begin(); key != keys.end(); key++) {
 					auto keybinding = key.value();
+					bool mouse = false;
 					if (keybinding.find("key") == keybinding.end()) {
 						// no key found
-						continue;
+						if (keybinding.find("mouse") == keybinding.end()) {
+							// no mouse found
+							continue;
+						} else {
+							// mouse command
+							mouse = true;
+						}
 					}
 					if (keybinding.find("command") == keybinding.end()) {
 						// no command found
 						continue;
 					}
-					std::string keys = panther::tolower(keybinding["key"]);
-					std::string command = panther::tolower(keybinding["command"]);
-					// parse the key
-					PGKeyPress keypress;
-					if (!ParseKeyPress(keys, keypress)) {
-						// could not parse key press
-						continue;
-					}
-
-					PGKeyFunctionCall function;
-					if (keybinding.find("args") == keybinding.end()) {
-						// command without args
-						if (keybindings_noargs->count(command) != 0) {
-							function.has_args = false;
-							function.function = (void*)(*keybindings_noargs)[command];
-						} else {
-							// command not found
+					if (!mouse) {
+						// regular keypress
+						std::string keys = panther::tolower(keybinding["key"]);
+						std::string command = panther::tolower(keybinding["command"]);
+						// parse the key
+						PGKeyPress keypress;
+						if (!ParseKeyPress(keys, keypress)) {
+							// could not parse key press
 							continue;
 						}
-					} else {
-						// command with args
-						if (keybindings_varargs->count(command) != 0) {
-							function.has_args = true;
-							function.function = (void*)(*keybindings_varargs)[command];
-							auto args = keybinding["args"];
-							for (auto arg = args.begin(); arg != args.end(); arg++) {
-								function.arguments[arg.key()] = ParseEscapeCharacters(StripQuotes(arg.value().dump()));
+
+						PGKeyFunctionCall function;
+						if (keybinding.find("args") == keybinding.end()) {
+							// command without args
+							if (keybindings_noargs->count(command) != 0) {
+								function.has_args = false;
+								function.function = (void*)(*keybindings_noargs)[command];
+							} else {
+								// command not found
+								continue;
 							}
 						} else {
+							// command with args
+							if (keybindings_varargs->count(command) != 0) {
+								function.has_args = true;
+								function.function = (void*)(*keybindings_varargs)[command];
+								auto args = keybinding["args"];
+								for (auto arg = args.begin(); arg != args.end(); arg++) {
+									function.arguments[arg.key()] = ParseEscapeCharacters(StripQuotes(arg.value().dump()));
+								}
+							} else {
+								// command not found
+								continue;
+							}
+						}
+						(*functions)[keypress] = function;
+					} else {
+						// mouse button press
+						std::string keys = panther::tolower(keybinding["mouse"]);
+						std::string command = panther::tolower(keybinding["command"]);
+						int clicks = keybinding.find("clicks") == keybinding.end() ? 0 : keybinding["clicks"] - 1;
+						clicks = std::abs(clicks);
+
+						// parse the key
+						PGMousePress mousepress;
+						if (!ParseMousePress(keys, mousepress)) {
+							// could not parse mouse button press
+							continue;
+						}
+						mousepress.clicks = clicks;
+
+						PGMouseFunctionCall function;
+						if (mousebindings_noargs->count(command) != 0) {
+							function.function = (void*)(*mousebindings_noargs)[command];
+						} else {
 							// command not found
 							continue;
 						}
+						(*mousebindings)[mousepress] = function;
 					}
-					(*functions)[keypress] = function;
 				}
 			} else {
 				// FIXME: unrecognized control type

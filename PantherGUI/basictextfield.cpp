@@ -201,6 +201,68 @@ void BasicTextField::PasteHistory() {
 		PGTextAlignLeft | PGTextAlignTop);
 }
 
+
+void BasicTextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+	if (drag_type != PGDragNone && button == this->drag_button) {
+		this->ClearDragging();
+	}
+}
+
+void BasicTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
+	PGPoint mouse(x - this->x, y - this->y);
+	lng line, character;
+	GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
+	if (this->PressMouseButton(BasicTextField::mousebindings, button, mouse, modifier, click_count, line, character)) {
+		return;
+	}
+	return;
+}
+
+void BasicTextField::MouseMove(int x, int y, PGMouseButton buttons) {
+	PGPoint mouse(x - this->x, y - this->y);
+	if (this->drag_type != PGDragNone) {
+		if (buttons & drag_button) {
+			if (drag_type == PGDragSelection) {
+				// FIXME: when having multiple cursors and we are altering the active cursor,
+				// the active cursor can never "consume" the other selections (they should always stay)
+				// FIXME: this should be done in the textfile
+				lng line, character;
+				GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
+				Cursor& active_cursor = textfile->GetActiveCursor();
+				auto selected_pos = active_cursor.SelectedCharacterPosition();
+				if (selected_pos.line != line || selected_pos.character != character) {
+					lng old_line = selected_pos.line;
+					active_cursor.SetCursorStartLocation(line, character);
+					if (minimal_selections.count(textfile->GetActiveCursorIndex()) > 0) {
+						active_cursor.ApplyMinimalSelection(minimal_selections[textfile->GetActiveCursorIndex()]);
+					}
+					Cursor::NormalizeCursors(textfile.get(), textfile->GetCursors());
+				}
+			}
+		} else {
+			this->ClearDragging();
+			this->Invalidate();
+		}
+	}
+}
+
+void BasicTextField::StartDragging(PGMouseButton button, PGDragType drag_type) {
+	if (this->drag_type == PGDragNone) {
+		this->drag_button = button;
+		this->drag_type = drag_type;
+		auto cursors = textfile->GetCursors();
+		for (lng i = 0; i < cursors.size(); i++) {
+			minimal_selections[i] = cursors[i].GetCursorSelection();
+		}
+		this->Invalidate();
+	}
+}
+
+void BasicTextField::ClearDragging() {
+	minimal_selections.clear();
+	drag_type = PGDragNone;
+}
+
 void BasicTextField::InitializeKeybindings() {
 	std::map<std::string, PGKeyFunction>& noargs = BasicTextField::keybindings_noargs;
 	noargs["undo"] = [](Control* c) {
@@ -323,5 +385,38 @@ void BasicTextField::InitializeKeybindings() {
 				tf->textfile->OffsetCharacter(direction);
 			}
 		}
+	};
+	std::map<std::string, PGMouseFunction>& mouse_bindings = BasicTextField::mousebindings_noargs;
+	mouse_bindings["add_cursor"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (tf->drag_type != PGDragNone) return;
+		tf->GetTextFile().AddNewCursor(line, character);
+		tf->StartDragging(button, PGDragSelection);
+	};
+	mouse_bindings["set_cursor_location"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (tf->drag_type != PGDragNone) return;
+		tf->GetTextFile().SetCursorLocation(line, character);
+		tf->StartDragging(button, PGDragSelection);
+	};
+	mouse_bindings["set_cursor_selection"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (tf->drag_type != PGDragNone) return;
+		tf->GetTextFile().GetActiveCursor().SetCursorStartLocation(line, character);
+		tf->StartDragging(button, PGDragSelection);
+	};
+	mouse_bindings["select_word"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (tf->drag_type != PGDragNone) return;
+		tf->GetTextFile().SetCursorLocation(line, character);
+		tf->GetTextFile().GetActiveCursor().SelectWord();
+		tf->StartDragging(button, PGDragSelection);
+	};
+	mouse_bindings["select_line"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (tf->drag_type != PGDragNone) return;
+		tf->GetTextFile().SetCursorLocation(line, character);
+		tf->GetTextFile().GetActiveCursor().SelectLine();
+		tf->StartDragging(button, PGDragSelection);
 	};
 }

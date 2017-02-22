@@ -1413,6 +1413,12 @@ void TextFile::ClearCursors() {
 	active_cursor = -1;
 }
 
+lng TextFile::GetActiveCursorIndex() {
+	if (active_cursor < 0)
+		active_cursor = 0;
+	return active_cursor;
+}
+
 Cursor& TextFile::GetActiveCursor() {
 	if (active_cursor < 0)
 		active_cursor = 0;

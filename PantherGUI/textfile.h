@@ -181,6 +181,7 @@ public:
 	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset);
 	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset, lng& lines_offset);
 	Cursor& GetActiveCursor();
+	lng GetActiveCursorIndex();
 	std::vector<Cursor>& GetCursors() { return cursors; }
 	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
 	std::string GetFullPath() { return path; }

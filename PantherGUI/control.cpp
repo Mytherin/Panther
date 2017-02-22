@@ -239,3 +239,15 @@ bool Control::PressCharacter(std::map<PGKeyPress, PGKeyFunctionCall>& keybinding
 	}
 	return false;
 }
+
+bool Control::PressMouseButton(std::map<PGMousePress, PGMouseFunctionCall>& mousebindings, PGMouseButton button, PGPoint mouse, PGModifier modifier, int clicks, lng line, lng character) {
+	PGMousePress press;
+	press.button = button;
+	press.modifier = modifier;
+	press.clicks = clicks;
+	if (mousebindings.find(press) != mousebindings.end()) {
+		mousebindings[press].Call(this, button, mouse, line, character);
+		return true;
+	}
+	return false;
+}

@@ -39,6 +39,13 @@ public:
 	virtual bool KeyboardCharacter(char character, PGModifier modifier);
 	virtual bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 
+	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
+	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
+	virtual void MouseMove(int x, int y, PGMouseButton buttons);
+
+	void StartDragging(PGMouseButton button, PGDragType drag_type);
+	void ClearDragging();
+
 	virtual bool ControlTakesFocus() { return true; }
 	
 	virtual PGCursorType GetCursor(PGPoint mouse);
@@ -82,6 +89,8 @@ protected:
 
 	PGScalar text_offset = 0;
 
+	std::map<lng, PGTextRange> minimal_selections;
+	PGMouseButton drag_button = PGButtonNone;
 	PGDragType drag_type = PGDragNone;
 
 	virtual void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);

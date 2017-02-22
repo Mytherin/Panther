@@ -164,7 +164,6 @@ void SearchBox::Close(bool success) {
 			selection_cancelled(this, selection_cancelled_data);
 		}
 	}
-
 	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
 }
 

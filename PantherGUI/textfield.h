@@ -112,11 +112,8 @@ private:
 	bool display_scrollbar;
 	bool display_horizontal_scrollbar = false;
 	PGScalar drag_offset;
-	std::map<lng, PGTextRange> minimal_selections;
 
 	std::vector<RenderedLine> rendered_lines;
-
-	void ClearDragging();
 
 	PGScalar max_xoffset;
 

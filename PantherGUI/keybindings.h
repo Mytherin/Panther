@@ -9,18 +9,23 @@
 static void InitializeKeybindings();									\
 static std::map<std::string, PGKeyFunction> keybindings_noargs;			\
 static std::map<std::string, PGKeyFunctionArgs> keybindings_varargs;	\
-static std::map<PGKeyPress, PGKeyFunctionCall> keybindings
+static std::map<std::string, PGMouseFunction> mousebindings_noargs;	    \
+static std::map<PGKeyPress, PGKeyFunctionCall> keybindings;             \
+static std::map<PGMousePress, PGMouseFunctionCall> mousebindings
 
 
 #define PG_CONTROL_INITIALIZE_KEYBINDINGS(control)								\
 std::map<std::string, PGKeyFunction> control::keybindings_noargs;				\
 std::map<std::string, PGKeyFunctionArgs> control::keybindings_varargs;			\
-std::map<PGKeyPress, PGKeyFunctionCall> control::keybindings					\
+std::map<std::string, PGMouseFunction> control::mousebindings_noargs;	        \
+std::map<PGKeyPress, PGKeyFunctionCall> control::keybindings;					\
+std::map<PGMousePress, PGMouseFunctionCall> control::mousebindings
 
 class Control;
 
 typedef void(*PGKeyFunction)(Control*);
 typedef void(*PGKeyFunctionArgs)(Control*, std::map<std::string, std::string>);
+typedef void(*PGMouseFunction)(Control*, PGMouseButton button, PGPoint mouse, lng line, lng character);
 
 struct PGKeyPress {
 	PGModifier modifier = PGModifierNone;
@@ -40,6 +45,24 @@ struct PGKeyPress {
 	}
 };
 
+struct PGMousePress {
+	PGModifier modifier = PGModifierNone;
+	PGMouseButton button = PGMouseButtonNone;
+	int clicks = 0;
+
+	PGMousePress() :
+		modifier(PGModifierNone), button(PGMouseButtonNone), clicks(0) {
+	}
+
+	// comparison function needed for std::map
+	friend bool operator< (const PGMousePress& lhs, const PGMousePress& rhs) {
+		return (static_cast<int>(lhs.button) < static_cast<int>(rhs.button)) ||
+			((lhs.button == rhs.button) &&
+			((lhs.modifier < rhs.modifier) ||
+				(lhs.modifier == rhs.modifier && lhs.clicks < rhs.clicks)));
+	}
+};
+
 struct PGKeyFunctionCall {
 	void* function;
 	bool has_args;
@@ -51,6 +74,14 @@ struct PGKeyFunctionCall {
 		} else {
 			((PGKeyFunction)function)(c);
 		}
+	}
+};
+
+struct PGMouseFunctionCall {
+	void* function;
+
+	void Call(Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
+		((PGMouseFunction)function)(c, button, mouse, line, character);
 	}
 };
 
@@ -66,6 +97,7 @@ private:
 	PGKeyBindingsManager();
 
 	bool ParseKeyPress(std::string keys, PGKeyPress& keypress);
+	bool ParseMousePress(std::string keys, PGMousePress& keypress);
 	void LoadSettings(std::string file);
 };
 
