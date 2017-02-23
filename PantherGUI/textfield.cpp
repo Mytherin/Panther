@@ -1080,6 +1080,14 @@ void TextField::InitializeKeybindings() {
 		TextField* tf = (TextField*)c;
 		tf->textfile->AddEmptyLine(PGDirectionRight);
 	};
+	noargs["increase_indent"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		tf->textfile->IndentText(PGDirectionRight);
+	};
+	noargs["decrease_indent"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		tf->textfile->IndentText(PGDirectionLeft);
+	};
 	std::map<std::string, PGKeyFunctionArgs>& args = TextField::keybindings_varargs;
 	// FIXME: duplicate of BasicTextField::insert
 	args["insert"] = [](Control* c, std::map<std::string, std::string> args) {

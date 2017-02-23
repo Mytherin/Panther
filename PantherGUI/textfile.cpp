@@ -1443,7 +1443,7 @@ std::vector<Interval> TextFile::GetCursorIntervals() {
 	std::vector<Interval> intervals;
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		auto begin_position = it->BeginPosition();
-		auto end_position = it->BeginPosition();
+		auto end_position = it->EndPosition();
 		intervals.push_back(Interval(begin_position.line, end_position.line, &*it));
 	}
 	// if we get here we know the movement is possible
@@ -1477,6 +1477,29 @@ void TextFile::DeleteLines() {
 	assert(0);
 }
 
+
+void TextFile::IndentText(PGDirection direction) {
+	bool contains_selection = CursorsContainSelection(cursors);
+	if (!contains_selection) {
+		InsertText("\t");
+	} else {
+		auto intervals = GetCursorIntervals();
+		for(auto it = intervals.begin(); it != intervals.end(); it++) {
+			for(lng line = it->start_line; line <= it->end_line; line++) {
+				if (direction == PGDirectionRight) {
+					PGTextBuffer* buffer = GetBuffer(line);
+					lng position = buffer->GetBufferLocationFromCursor(line, 0);
+					InsertText("\t", buffer, position);
+				} else {
+
+				}	
+			}
+		}
+		InvalidateBuffers();
+		VerifyTextfile();
+	}
+}
+
 void TextFile::DeleteLine(PGDirection direction) {
 	if (!is_loaded) return;
 
@@ -1489,6 +1512,205 @@ void TextFile::AddEmptyLine(PGDirection direction) {
 
 	TextDelta* delta = new InsertLineBefore(direction);
 	PerformOperation(delta);
+}
+
+void TextFile::InsertText(std::string text, PGTextBuffer* buffer, lng insert_point) {
+	// invalidate parsing of the current buffer
+	buffer->parsed = false;
+	// insert the actual text
+	PGBufferUpdate update = PGTextBuffer::InsertText(buffers, buffer, insert_point, text, this->linecount);
+
+	// now we need to update the cursors
+	// we only need to consider cursors that currently point to "buffer"
+	// first find the first cursor that points to buffer (if any) 
+  	lng cursor_position = Cursor::FindFirstCursorInBuffer(cursors, buffer);
+  	if (cursor_position < cursors.size()) {
+		for(lng i = cursor_position; i < cursors.size(); i++) {
+			Cursor& c = cursors[i];
+			if (c.start_buffer != buffer && c.end_buffer != buffer) break;
+
+			for(int bufpos = 0; bufpos < 2; bufpos++) {
+				if (update.new_buffer == nullptr) {
+					if (c.BUFPOS(bufpos) >= insert_point) {
+						c.BUFPOS(bufpos) += update.split_point;
+					}
+				} else {
+					if (c.BUFPOS(bufpos) >= update.split_point) {
+						// cursor moves to new buffer
+						c.BUF(bufpos) = update.new_buffer;
+						c.BUFPOS(bufpos) -= update.split_point;
+						if (insert_point >= update.split_point) {
+							c.BUFPOS(bufpos) += text.size();
+						}
+					} else if (c.BUFPOS(bufpos) >= insert_point) {
+						c.BUFPOS(bufpos) += text.size();
+					}
+				}
+			}
+			assert(c.start_buffer_position < c.start_buffer->current_size);
+			assert(c.end_buffer_position < c.end_buffer->current_size);
+		}
+  	}
+	if (update.new_buffer != nullptr) {
+		for (lng index = buffer->index + 1; index < buffers.size(); index++) {
+			buffers[index]->index = index;
+		}
+	}
+	InvalidateBuffer(buffer);
+	buffer->VerifyBuffer();
+	VerifyPartialTextfile();
+}
+
+void TextFile::DeleteText(PGTextRange range) {
+	auto begin = range.startpos();
+	auto end = range.endpos();
+
+	begin.buffer->parsed = false;
+	end.buffer->parsed = false;
+
+	PGTextBuffer* buffer = begin.buffer;
+	lng lines_deleted = 0;
+	lng buffers_deleted = 0;
+	lng delete_size;
+	lng start_index = begin.buffer->index + 1;
+
+	lng split_point = -1;
+
+	std::vector<std::unique_ptr<PGTextBuffer>> deleted_buffers;
+	if (end.buffer != begin.buffer) {
+		lines_deleted += begin.buffer->DeleteLines(begin.position);
+		begin.buffer->line_count -= lines_deleted;
+
+		buffer = buffer->next;
+
+		lng buffer_position = PGTextBuffer::GetBuffer(buffers, begin.buffer);
+		while (buffer != end.buffer) {
+			if (buffer == max_line_length.buffer) {
+				max_line_length.buffer = nullptr;
+			}
+			lines_deleted += buffer->GetLineCount(this->GetLineCount());
+			buffers_deleted++;
+			buffers.erase(buffers.begin() + buffer_position + 1);
+			PGTextBuffer* next = buffer->next;
+			deleted_buffers.push_back(std::unique_ptr<PGTextBuffer>(buffer));
+			buffer = next;
+		}
+
+		// we need to move everything that is AFTER the selection
+		// but IN the current line from "endbuffer" to "beginbuffer"
+		// look for the first newline character in "endbuffer"
+		split_point = end.position;
+		for (int i = split_point; i < buffer->current_size; i++) {
+			if (buffer->buffer[i] == '\n') {
+				// copy the text into beginbuffer
+				// for implementation simplicity, we don't split on this insertion
+				// if the text does not fit in beginbuffer, we simply extend beginbuffer
+				if (i > split_point) {
+					std::string text = std::string(buffer->buffer + split_point, i - split_point);
+					if (begin.buffer->current_size + text.size() >= begin.buffer->buffer_size) {
+						begin.buffer->Extend(begin.buffer->current_size + text.size() + 10);
+					}
+					begin.buffer->InsertText(begin.position, text);
+				}
+				split_point = i;
+				break;
+			}
+		}
+		if (split_point < buffer->current_size - 1) {
+			// only deleting part of end buffer
+			// first adjust start_line of end buffer based on previously deleted lines
+			end.buffer->start_line -= lines_deleted;
+			// now delete the lines in end_buffer and update the line_count
+			lng deleted_lines_in_end_buffer = buffer->DeleteLines(0, split_point + 1);
+			lines_deleted += deleted_lines_in_end_buffer;
+			end.buffer->line_count -= deleted_lines_in_end_buffer;
+			// set the index, in case there were any deleted buffers
+			end.buffer->index = begin.buffer->index + 1;
+			begin.buffer->next = end.buffer;
+			end.buffer->prev = begin.buffer;
+			start_index = end.buffer->index + 1;
+			InvalidateBuffer(end.buffer);
+
+			end.buffer->VerifyBuffer();
+		} else {
+			// have to delete entire end buffer
+			if (end.buffer == max_line_length.buffer) {
+				max_line_length.buffer = nullptr;
+			}
+			lines_deleted += end.buffer->GetLineCount(this->GetLineCount());
+			begin.buffer->next = end.buffer->next;
+			if (begin.buffer->next) begin.buffer->next->prev = begin.buffer;
+			buffers_deleted++;
+			buffers.erase(buffers.begin() + buffer_position + 1);
+			deleted_buffers.push_back(std::unique_ptr<PGTextBuffer>(end.buffer));
+		}
+	} else {
+		// begin buffer = end buffer
+		lng deleted_text = end.position - begin.position;
+		// in this case, we only need to update cursors in this buffer
+		lines_deleted += begin.buffer->DeleteLines(begin.position, end.position);
+		begin.buffer->line_count -= lines_deleted;
+	}
+	// update the cursors
+	lng cursor_position = Cursor::FindFirstCursorInBuffer(cursors, begin.buffer);
+	for(lng i = cursor_position; i < cursors.size(); i++) {
+		Cursor& c = cursors[i];
+		if (c.start_buffer->index > end.buffer->index && 
+			c.end_buffer->index > end.buffer->index) break;
+		for(int bufpos = 0; bufpos < 2; bufpos++) {
+			if (c.BUF(bufpos) == begin.buffer && 
+				c.BUFPOS(bufpos) < begin.position) {
+				// cursor is in begin buffer, but before the deleted text
+				// do nothing
+			} else if (c.BUF(bufpos) == end.buffer && 
+					   c.BUFPOS(bufpos) > end.position) {
+				// cursor is in the end buffer AFTER the deleted text
+				if (split_point < 0) {
+					// begin buffer = end buffer
+					// simply offset the cursor by the deleted text
+					c.BUF(bufpos) = begin.buffer;
+					c.BUFPOS(bufpos) -= end.position - begin.position;
+				} else {
+					// 
+/*					if (cursors[j].BUF(bufpos) == end.buffer) {
+						if (cursors[j].BUFPOS(bufpos) < split_point) {
+							// the cursor occurs on the text we moved to the begin line
+							// this means we have to move the cursor the begin buffer
+							cursors[j].BUF(bufpos) = begin.buffer;
+							cursors[j].BUFPOS(bufpos) = cursors[j].BUFPOS(bufpos) + begin.position - end.position;
+						} else {
+							// otherwise, we offset the cursor by the deleted amount
+							cursors[j].BUFPOS(bufpos) -= split_point + 1;
+						}
+					}*/
+
+					c.BUF(bufpos) = begin.buffer;
+					c.BUFPOS(bufpos) -= end.position - begin.position;
+				}
+			} else {
+				// the cursor falls within the deleted text, move to delete position
+				c.BUF(bufpos) = begin.buffer;
+				c.BUFPOS(bufpos) = begin.position;
+			}
+		}
+
+	}
+	// delete linecount from line_lengths
+	// recompute line_lengths and cumulative width for begin buffer and end buffer
+	InvalidateBuffer(begin.buffer);
+
+	begin.buffer->VerifyBuffer();
+
+	if (buffers_deleted > 0 || lines_deleted > 0) {
+		for (lng i = start_index; i < buffers.size(); i++) {
+			buffers[i]->index = i;
+			buffers[i]->start_line -= lines_deleted;
+			buffers[i]->VerifyBuffer();
+		}
+		linecount -= lines_deleted;
+	}
+	VerifyPartialTextfile();
+	// FIXME
 }
 
 std::string TextFile::CutText() {
