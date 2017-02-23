@@ -123,7 +123,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 			if (panther::epsilon_equals(it->x, -1)) {
 				it->x = position_x;
 			}
-			RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && index == active_tab);
+			RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab);
 		}
 		index++;
 	}
