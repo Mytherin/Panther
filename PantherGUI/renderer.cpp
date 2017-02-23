@@ -694,14 +694,16 @@ void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *te
 	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y), PGPoint(x + width * 0.8f, y + height * 0.2f)), edge_color, 1);
 	RenderLine(renderer, PGLine(PGPoint(x + width * 0.8f, y + height * 0.2f), PGPoint(x + width, y + height * 0.2f)), edge_color, 1);
 	// render the file extension
-	if (strlen(text) == 0) return;
+	size_t length = strlen(text);
+	if (length == 0) return;
+	if (length > 4) length = 4;
 	SetTextColor(font, text_color);
 	PGScalar original_size = GetTextFontSize(font);
 	PGScalar current_size = original_size;
 	PGScalar text_width = MeasureTextWidth(font, text);
 	PGScalar text_height = GetTextHeight(font);
 	int state = -1;
-	
+	// FIXME: font size should not be determined like this constantly
 	while (true) {
 		if (current_size <= 4 || current_size >= 100) break;
 		if (text_height > 0.5f * height || text_width > 0.8f * width) {
