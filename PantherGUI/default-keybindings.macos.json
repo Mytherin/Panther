@@ -18,9 +18,6 @@
 		{ "key": "cmd+shift+delete", "command": "right_delete_line" },
 		{ "key": "shift+delete", "command": "delete_selected_lines" },
 
-
-		{ "key": "tab", "command": "insert", "args": { "characters": "\t" } },
-
 		{ "key": "cmd+z", "command": "undo" },
 		{ "key": "cmd+shift+z", "command": "redo" },
 		{ "key": "cmd+y", "command": "redo" },
@@ -102,6 +99,9 @@
 		{ "key": "shift+pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page", "selection": true } },
 		{ "key": "pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page" } },
 		{ "key": "shift+pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page", "selection": true } },
+
+		{ "key": "tab", "command": "increase_indent"},
+		{ "key": "shift+tab", "command": "decrease_indent"},
 
 		{ "mouse": "middle", "command": "drag_region" }
 

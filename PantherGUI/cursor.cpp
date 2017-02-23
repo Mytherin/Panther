@@ -680,6 +680,27 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, 
 	}
 }
 
+lng Cursor::FindFirstCursorInBuffer(std::vector<Cursor>& cursors, PGTextBuffer* buffer) {
+	lng limit = cursors.size() - 1;
+	lng first = 0;
+	lng last = limit;
+	lng middle = (first + last) / 2;
+	// binary search to find the first cursor that points to buffer, if any
+	while (first <= last) {
+		if (middle != limit && buffer->index > cursors[middle + 1].start_buffer->index) {
+			first = middle + 1;
+		} else if (buffer->index >= cursors[middle].start_buffer->index &&
+			(middle == 0 || buffer->index > cursors[middle - 1].start_buffer->index)) {
+			return middle;
+		} else {
+			last = middle - 1;
+		}
+		middle = (first + last) / 2;
+	}
+	return cursors.size();
+}
+
+
 PGTextRange Cursor::GetCursorSelection() const {
 	if (CursorPositionOccursFirst(start_buffer, start_buffer_position, end_buffer, end_buffer_position)) {
 		return PGTextRange(start_buffer, start_buffer_position, end_buffer, end_buffer_position);

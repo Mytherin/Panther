@@ -70,6 +70,10 @@ public:
 
 	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, bool scroll_textfield = true);
 	static bool CursorOccursFirst(const Cursor& a, const Cursor& b);
+	// returns the index of the first cursor that points to <buffer>
+	// <cursors> is assumed to be sorted
+	// returns cursors.size() if no cursor points to <buffer>
+	static lng FindFirstCursorInBuffer(std::vector<Cursor>& cursors, PGTextBuffer* buffer);
 
 	static void LoadCursors(nlohmann::json& j, std::vector<PGCursorRange>& stored_cursors);
 	static void StoreCursors(nlohmann::json& j, std::vector<PGCursorRange>& cursors);
@@ -100,3 +104,4 @@ private:
 
 	PGScalar x_position;
 };
+

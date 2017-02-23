@@ -149,6 +149,8 @@ public:
 	void OffsetEndOfFile();
 	void SelectEndOfFile();
 
+	void IndentText(PGDirection direction);
+
 	void SelectMatches(bool in_selection);
 	bool FinishedSearch() { return finished_search; }
 
@@ -228,8 +230,12 @@ private:
 
 	// insert text at the specified cursor number, text must not include newlines
 	void InsertText(std::string text, size_t cursornr);
-
+	// insert text at the specified position, text must not include newlines
+	void InsertText(std::string text, PGTextBuffer* buffer, lng position);
+	// delete the selection of the specified cursor number, cursor selection must not be empty
 	void DeleteSelection(int cursornr);
+	// delete the specified text range
+	void DeleteText(PGTextRange);
 
 	bool read_only = false;
 
