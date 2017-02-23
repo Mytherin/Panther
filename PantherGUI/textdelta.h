@@ -13,6 +13,8 @@ class TextDelta;
 class TextFile;
 
 typedef enum {
+	PGDeltaAddTextPosition,
+	PGDeltaRemoveTextPosition,
 	PGDeltaReplaceText,
 	PGDeltaRegexReplace,
 	PGDeltaRemoveText,
@@ -92,4 +94,31 @@ public:
 		TextDelta(PGDeltaAddEmptyLine), direction(direction) { }
 	void WriteWorkspace(nlohmann::json& j);
 	size_t SerializedSize();
+};
+
+
+class AddTextPosition : public TextDelta {
+public:
+	struct AddTextPositionData {
+		std::string text;
+		lng line;
+		lng character;
+
+		AddTextPositionData(std::string text, lng line, lng character) : 
+			text(text), line(line), character(character) {  }
+	};
+
+	std::vector<AddTextPositionData> data;
+	AddTextPosition() :
+		TextDelta(PGDeltaAddTextPosition) {
+	}
+};
+
+class RemoveTextPosition : public TextDelta {
+public:
+	std::vector<PGCursorRange> data;
+	std::vector<std::string> text;
+	RemoveTextPosition() :
+		TextDelta(PGDeltaRemoveTextPosition) {
+	}
 };

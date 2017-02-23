@@ -1484,19 +1484,24 @@ void TextFile::IndentText(PGDirection direction) {
 		InsertText("\t");
 	} else {
 		auto intervals = GetCursorIntervals();
-		for(auto it = intervals.begin(); it != intervals.end(); it++) {
-			for(lng line = it->start_line; line <= it->end_line; line++) {
-				if (direction == PGDirectionRight) {
-					PGTextBuffer* buffer = GetBuffer(line);
-					lng position = buffer->GetBufferLocationFromCursor(line, 0);
-					InsertText("\t", buffer, position);
-				} else {
 
-				}	
+		if (direction == PGDirectionRight) {
+			AddTextPosition* add = new AddTextPosition();
+			for (auto it = intervals.begin(); it != intervals.end(); it++) {
+				for (lng line = it->start_line; line <= it->end_line; line++) {
+					add->data.push_back(AddTextPosition::AddTextPositionData("\t", line, 0));
+				}
 			}
+			this->PerformOperation(add);
+		} else {
+			RemoveTextPosition* remove = new RemoveTextPosition();
+			for (auto it = intervals.begin(); it != intervals.end(); it++) {
+				for (lng line = it->start_line; line <= it->end_line; line++) {
+					remove->data.push_back(PGCursorRange(line, 0, line, 1));
+				}
+			}
+			this->PerformOperation(remove);
 		}
-		InvalidateBuffers();
-		VerifyTextfile();
 	}
 }
 
@@ -2124,6 +2129,39 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			return PerformOperation(ins->next.get(), redo);
 		}
+		case PGDeltaAddTextPosition:
+		{
+			// FIXME: add text in reverse order
+			AddTextPosition* add = (AddTextPosition*)delta;
+			if (!redo) {
+				add->stored_cursors = BackupCursors();
+			}
+			for (auto it = add->data.begin(); it != add->data.end(); it++) {
+				PGTextBuffer* buffer = GetBuffer(it->line);
+				lng position = buffer->GetBufferLocationFromCursor(it->line, it->character);
+				InsertText(it->text, buffer, position);
+			}
+			return true;
+		}
+		case PGDeltaRemoveTextPosition:
+		{
+			// FIXME: delete in reverse order
+			RemoveTextPosition* remove = (RemoveTextPosition*)delta;
+			if (!redo) {
+				remove->stored_cursors = BackupCursors();
+			}
+			for (auto it = remove->data.begin(); it != remove->data.end(); it++) {
+				PGTextBuffer* start_buffer = GetBuffer(it->start_line);
+				lng start_position = start_buffer->GetBufferLocationFromCursor(it->start_line, it->start_position);
+				PGTextBuffer* end_buffer = GetBuffer(it->end_line);
+				lng end_position = end_buffer->GetBufferLocationFromCursor(it->end_line, it->end_position);
+				if (!redo) {
+					// FIXME: save deleted text
+				}
+				DeleteText(PGTextRange(start_buffer, start_position, end_buffer, end_position));
+			}
+			return true;
+		}
 		default:
 			assert(0);
 			return false;
@@ -2223,6 +2261,34 @@ void TextFile::Undo(TextDelta* delta) {
 			assert(ins->next);
 			Undo(ins->next.get());
 			RestoreCursors(ins->stored_cursors);
+			return;
+		}
+		case PGDeltaAddTextPosition:
+		{
+			AddTextPosition* add = (AddTextPosition*)delta;
+			// FIXME: delete in reverse order
+			for (auto it = add->data.begin(); it != add->data.end(); it++) {
+				PGTextBuffer* start_buffer = GetBuffer(it->line);
+				lng start_position = start_buffer->GetBufferLocationFromCursor(it->line, it->character);
+				DeleteText(PGTextRange(start_buffer, start_position, start_buffer, start_position + it->text.size()));
+			}
+			RestoreCursors(add->stored_cursors);
+			return;
+		}
+		case PGDeltaRemoveTextPosition:
+		{
+			assert(0);
+			break;
+			RemoveTextPosition* remove = (RemoveTextPosition*)delta;
+			for (auto it = remove->data.begin(); it != remove->data.end(); it++) {
+				// FIXME: add removed text back at each location
+				// InsertText(, it->start_line, it->start_character);
+				/*
+				PGTextBuffer* start_buffer = GetBuffer(it->line);
+				lng start_position = start_buffer->GetBufferLocationFromCursor(it->line, it->character);
+				DeleteText(PGTextRange(start_buffer, start_position, start_buffer, start_position + it->text.size()));*/
+			}
+			RestoreCursors(remove->stored_cursors);
 			return;
 		}
 		default:
