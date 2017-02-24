@@ -264,6 +264,7 @@ void PGContainer::ActuallyAddControl(Control* control) {
 	if (control->ControlTakesFocus()) {
 		this->focused_control = control;
 	}
+	this->Invalidate();
 }
 
 void PGContainer::ActuallyRemoveControl(Control* control) {
@@ -293,6 +294,7 @@ void PGContainer::ActuallyRemoveControl(Control* control) {
 	if (trigger_resize)
 		this->TriggerResize();
 	delete control;
+	this->Invalidate();
 }
 
 Control* PGContainer::GetMouseOverControl(int x, int y) {

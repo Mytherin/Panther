@@ -1497,7 +1497,10 @@ void TextFile::IndentText(PGDirection direction) {
 			RemoveTextPosition* remove = new RemoveTextPosition();
 			for (auto it = intervals.begin(); it != intervals.end(); it++) {
 				for (lng line = it->start_line; line <= it->end_line; line++) {
-					remove->data.push_back(PGCursorRange(line, 0, line, 1));
+					TextLine tl= GetLine(line);
+					if (tl.GetLength() > 0) {
+						remove->data.push_back(PGCursorRange(line, 0, line, 1));
+					}
 				}
 			}
 			this->PerformOperation(remove);
@@ -1535,20 +1538,22 @@ void TextFile::InsertText(std::string text, PGTextBuffer* buffer, lng insert_poi
 			if (c.start_buffer != buffer && c.end_buffer != buffer) break;
 
 			for(int bufpos = 0; bufpos < 2; bufpos++) {
-				if (update.new_buffer == nullptr) {
-					if (c.BUFPOS(bufpos) >= insert_point) {
-						c.BUFPOS(bufpos) += update.split_point;
-					}
-				} else {
-					if (c.BUFPOS(bufpos) >= update.split_point) {
-						// cursor moves to new buffer
-						c.BUF(bufpos) = update.new_buffer;
-						c.BUFPOS(bufpos) -= update.split_point;
-						if (insert_point >= update.split_point) {
+				if (c.BUF(bufpos) == buffer) {
+					if (update.new_buffer == nullptr) {
+						if (c.BUFPOS(bufpos) >= insert_point) {
+							c.BUFPOS(bufpos) += update.split_point;
+						}
+					} else {
+						if (c.BUFPOS(bufpos) >= update.split_point) {
+							// cursor moves to new buffer
+							c.BUF(bufpos) = update.new_buffer;
+							c.BUFPOS(bufpos) -= update.split_point;
+							if (insert_point >= update.split_point) {
+								c.BUFPOS(bufpos) += text.size();
+							}
+						} else if (c.BUFPOS(bufpos) >= insert_point) {
 							c.BUFPOS(bufpos) += text.size();
 						}
-					} else if (c.BUFPOS(bufpos) >= insert_point) {
-						c.BUFPOS(bufpos) += text.size();
 					}
 				}
 			}
@@ -1676,23 +1681,10 @@ void TextFile::DeleteText(PGTextRange range) {
 					c.BUF(bufpos) = begin.buffer;
 					c.BUFPOS(bufpos) -= end.position - begin.position;
 				} else {
-					// 
-/*					if (cursors[j].BUF(bufpos) == end.buffer) {
-						if (cursors[j].BUFPOS(bufpos) < split_point) {
-							// the cursor occurs on the text we moved to the begin line
-							// this means we have to move the cursor the begin buffer
-							cursors[j].BUF(bufpos) = begin.buffer;
-							cursors[j].BUFPOS(bufpos) = cursors[j].BUFPOS(bufpos) + begin.position - end.position;
-						} else {
-							// otherwise, we offset the cursor by the deleted amount
-							cursors[j].BUFPOS(bufpos) -= split_point + 1;
-						}
-					}*/
-
 					c.BUF(bufpos) = begin.buffer;
 					c.BUFPOS(bufpos) -= end.position - begin.position;
 				}
-			} else {
+			} else if (c.BUF(bufpos)->index >= begin.buffer->index && c.BUF(bufpos)->index <= end.buffer->index) {
 				// the cursor falls within the deleted text, move to delete position
 				c.BUF(bufpos) = begin.buffer;
 				c.BUFPOS(bufpos) = begin.position;
@@ -2131,34 +2123,39 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 		}
 		case PGDeltaAddTextPosition:
 		{
-			// FIXME: add text in reverse order
 			AddTextPosition* add = (AddTextPosition*)delta;
 			if (!redo) {
 				add->stored_cursors = BackupCursors();
 			}
-			for (auto it = add->data.begin(); it != add->data.end(); it++) {
-				PGTextBuffer* buffer = GetBuffer(it->line);
-				lng position = buffer->GetBufferLocationFromCursor(it->line, it->character);
-				InsertText(it->text, buffer, position);
+			for (lng i = add->data.size() - 1; i >= 0; i--) {
+				PGTextBuffer* buffer = GetBuffer(add->data[i].line);
+				lng position = buffer->GetBufferLocationFromCursor(add->data[i].line, add->data[i].character);
+				InsertText(add->data[i].text, buffer, position);
 			}
 			return true;
 		}
 		case PGDeltaRemoveTextPosition:
 		{
-			// FIXME: delete in reverse order
 			RemoveTextPosition* remove = (RemoveTextPosition*)delta;
 			if (!redo) {
 				remove->stored_cursors = BackupCursors();
 			}
-			for (auto it = remove->data.begin(); it != remove->data.end(); it++) {
-				PGTextBuffer* start_buffer = GetBuffer(it->start_line);
-				lng start_position = start_buffer->GetBufferLocationFromCursor(it->start_line, it->start_position);
-				PGTextBuffer* end_buffer = GetBuffer(it->end_line);
-				lng end_position = end_buffer->GetBufferLocationFromCursor(it->end_line, it->end_position);
+			remove->removed_text.resize(remove->data.size());
+			for (lng i = remove->data.size() - 1; i >= 0; i--) {
+				PGTextBuffer* start_buffer = GetBuffer(remove->data[i].start_line);
+				lng start_position = start_buffer->GetBufferLocationFromCursor(remove->data[i].start_line, remove->data[i].start_position);
+				PGTextBuffer* end_buffer = GetBuffer(remove->data[i].end_line);
+				lng end_position = end_buffer->GetBufferLocationFromCursor(remove->data[i].end_line, remove->data[i].end_position);
+				PGTextRange range = PGTextRange(start_buffer, start_position, end_buffer, end_position);
 				if (!redo) {
-					// FIXME: save deleted text
+					Cursor c = Cursor(this, range);
+					if (c.SelectionIsEmpty()) {
+						remove->removed_text[i] = "";
+					} else {
+						remove->removed_text[i] = c.GetText();
+					}
 				}
-				DeleteText(PGTextRange(start_buffer, start_position, end_buffer, end_position));
+				DeleteText(range);
 			}
 			return true;
 		}
@@ -2266,27 +2263,21 @@ void TextFile::Undo(TextDelta* delta) {
 		case PGDeltaAddTextPosition:
 		{
 			AddTextPosition* add = (AddTextPosition*)delta;
-			// FIXME: delete in reverse order
-			for (auto it = add->data.begin(); it != add->data.end(); it++) {
-				PGTextBuffer* start_buffer = GetBuffer(it->line);
-				lng start_position = start_buffer->GetBufferLocationFromCursor(it->line, it->character);
-				DeleteText(PGTextRange(start_buffer, start_position, start_buffer, start_position + it->text.size()));
+			for (lng i = add->data.size() - 1; i >= 0; i--) {
+				PGTextBuffer* start_buffer = GetBuffer(add->data[i].line);
+				lng start_position = start_buffer->GetBufferLocationFromCursor(add->data[i].line, add->data[i].character);
+				DeleteText(PGTextRange(start_buffer, start_position, start_buffer, start_position + add->data[i].text.size()));
 			}
 			RestoreCursors(add->stored_cursors);
 			return;
 		}
 		case PGDeltaRemoveTextPosition:
 		{
-			assert(0);
-			break;
 			RemoveTextPosition* remove = (RemoveTextPosition*)delta;
-			for (auto it = remove->data.begin(); it != remove->data.end(); it++) {
-				// FIXME: add removed text back at each location
-				// InsertText(, it->start_line, it->start_character);
-				/*
-				PGTextBuffer* start_buffer = GetBuffer(it->line);
-				lng start_position = start_buffer->GetBufferLocationFromCursor(it->line, it->character);
-				DeleteText(PGTextRange(start_buffer, start_position, start_buffer, start_position + it->text.size()));*/
+			for (lng i = remove->data.size() - 1; i >= 0; i--) {
+				PGTextBuffer* start_buffer = GetBuffer(remove->data[i].start_line);
+				lng start_position = start_buffer->GetBufferLocationFromCursor(remove->data[i].start_line, remove->data[i].start_position);
+				InsertText(remove->removed_text[i], start_buffer, start_position);
 			}
 			RestoreCursors(remove->stored_cursors);
 			return;

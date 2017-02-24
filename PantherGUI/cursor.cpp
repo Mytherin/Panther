@@ -687,10 +687,10 @@ lng Cursor::FindFirstCursorInBuffer(std::vector<Cursor>& cursors, PGTextBuffer* 
 	lng middle = (first + last) / 2;
 	// binary search to find the first cursor that points to buffer, if any
 	while (first <= last) {
-		if (middle != limit && buffer->index > cursors[middle + 1].start_buffer->index) {
+		if (middle != limit && buffer->index > std::min(cursors[middle + 1].start_buffer->index, cursors[middle + 1].end_buffer->index)) {
 			first = middle + 1;
-		} else if (buffer->index >= cursors[middle].start_buffer->index &&
-			(middle == 0 || buffer->index > cursors[middle - 1].start_buffer->index)) {
+		} else if (buffer->index >= std::min(cursors[middle].start_buffer->index, cursors[middle].end_buffer->index) &&
+			(middle == 0 || buffer->index > std::min(cursors[middle - 1].start_buffer->index, cursors[middle - 1].end_buffer->index))) {
 			return middle;
 		} else {
 			last = middle - 1;

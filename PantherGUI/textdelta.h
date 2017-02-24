@@ -117,7 +117,7 @@ public:
 class RemoveTextPosition : public TextDelta {
 public:
 	std::vector<PGCursorRange> data;
-	std::vector<std::string> text;
+	std::vector<std::string> removed_text;
 	RemoveTextPosition() :
 		TextDelta(PGDeltaRemoveTextPosition) {
 	}
