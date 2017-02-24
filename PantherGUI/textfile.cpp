@@ -1498,6 +1498,10 @@ void TextFile::IndentText(PGDirection direction) {
 					add->data.push_back(AddTextPosition::AddTextPositionData(added_indentation, line, 0));
 				}
 			}
+			if (add->data.size() == 0) {
+				delete add;
+				return;
+			}
 			this->PerformOperation(add);
 		} else {
 			RemoveTextPosition* remove = new RemoveTextPosition();
@@ -1515,6 +1519,8 @@ void TextFile::IndentText(PGDirection direction) {
 							for(int i = 0; i < std::min(length, (lng) this->tabwidth); i++) {
 								if (text[i] == ' ') {
 									end = i + 1;
+								} else {
+									break;
 								}
 							}
 						}
@@ -1523,6 +1529,10 @@ void TextFile::IndentText(PGDirection direction) {
 						}
 					}
 				}
+			}
+			if (remove->data.size() == 0) {
+				delete remove;
+				return;
 			}
 			this->PerformOperation(remove);
 		}
