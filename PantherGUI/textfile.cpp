@@ -441,7 +441,9 @@ void TextFile::_InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_le
 
 void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	this->lineending = PGLineEndingUnknown;
-	this->indentation = PGIndentionTabs;
+	this->indentation = PGIndentionTabs; // FIXME: default from settings
+	this->tabwidth = 4; // FIXME: default tabwidth
+
 	char* ptr = base;
 	size_t prev = 0;
 	int offset = 0;
@@ -1480,8 +1482,12 @@ void TextFile::DeleteLines() {
 
 void TextFile::IndentText(PGDirection direction) {
 	bool contains_selection = CursorsContainSelection(cursors);
+	std::string added_indentation = "\t";
+	if (indentation == PGIndentionSpaces) {
+		added_indentation = std::string(' ', this->tabwidth);
+	}
 	if (!contains_selection) {
-		InsertText("\t");
+		InsertText(added_indentation);
 	} else {
 		auto intervals = GetCursorIntervals();
 
@@ -1489,7 +1495,7 @@ void TextFile::IndentText(PGDirection direction) {
 			AddTextPosition* add = new AddTextPosition();
 			for (auto it = intervals.begin(); it != intervals.end(); it++) {
 				for (lng line = it->start_line; line <= it->end_line; line++) {
-					add->data.push_back(AddTextPosition::AddTextPositionData("\t", line, 0));
+					add->data.push_back(AddTextPosition::AddTextPositionData(added_indentation, line, 0));
 				}
 			}
 			this->PerformOperation(add);
@@ -1497,9 +1503,24 @@ void TextFile::IndentText(PGDirection direction) {
 			RemoveTextPosition* remove = new RemoveTextPosition();
 			for (auto it = intervals.begin(); it != intervals.end(); it++) {
 				for (lng line = it->start_line; line <= it->end_line; line++) {
-					TextLine tl= GetLine(line);
-					if (tl.GetLength() > 0) {
-						remove->data.push_back(PGCursorRange(line, 0, line, 1));
+					TextLine tl = GetLine(line);
+					int start = 0;
+					int end = 0;
+					lng length = tl.GetLength();
+					if (length > 0) {
+						char* text = tl.GetLine();
+						if (text[0] == '\t') {
+							end = 1;
+						} else {
+							for(int i = 0; i < std::min(length, (lng) this->tabwidth); i++) {
+								if (text[i] == ' ') {
+									end = i + 1;
+								}
+							}
+						}
+						if (start != end) {
+							remove->data.push_back(PGCursorRange(line, 0, line, end));
+						}
 					}
 				}
 			}

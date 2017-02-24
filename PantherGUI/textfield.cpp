@@ -110,6 +110,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 		// start line of the minimap
 		start_line = GetMinimapStartLine();
 	}
+	// set tab width
+	SetTextTabWidth(font, textfile->GetTabWidth());
 
 	std::string selected_word = std::string();
 	if (!minimap) {

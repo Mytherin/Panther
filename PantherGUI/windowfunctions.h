@@ -323,6 +323,7 @@ PGColor GetTextColor(PGFontHandle font);
 void SetTextFontSize(PGFontHandle font, PGScalar height);
 PGScalar GetTextFontSize(PGFontHandle font);
 void SetTextStyle(PGFontHandle font, PGTextStyle style);
+void SetTextTabWidth(PGFontHandle font, int tabwidth);
 
 Control* GetFocusedControl(PGWindowHandle window);
 bool WindowHasFocus(PGWindowHandle window);

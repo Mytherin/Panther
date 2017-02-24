@@ -194,6 +194,8 @@ public:
 	bool GetReadOnly() { return read_only; }
 	void SetReadOnly(bool read_only) { this->read_only = read_only; }
 
+	int GetTabWidth() { return tabwidth; }
+
 	enum PGStoreFileType {
 		PGStoreFileBuffer,
 		PGStoreFileDeltas,
@@ -310,6 +312,7 @@ private:
 	PGLineEnding lineending;
 	PGLineIndentation indentation;
 	PGFileEncoding encoding;
+	int tabwidth = 0;
 
 	PGFontHandle default_font = nullptr;
 

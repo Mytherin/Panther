@@ -671,6 +671,10 @@ void SetTextFontSize(PGFontHandle font, PGScalar height) {
 	}
 }
 
+void SetTextTabWidth(PGFontHandle font, int tabwidth) {
+	font->tabwidth = tabwidth;
+}
+
 PGScalar GetTextFontSize(PGFontHandle font) {
 	return font->textpaint->getTextSize();
 }
