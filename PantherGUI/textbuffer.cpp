@@ -83,7 +83,9 @@ void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& cha
 }
 
 ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
+	if (line < start_line || line >= line_start.size()) return current_size - 1;
 	lng start = line == start_line ? 0 : line_start[line - start_line - 1];
+	if (start + position >= current_size) return current_size - 1;
 	return start + position;
 }
 
@@ -299,8 +301,7 @@ lng PGTextBuffer::GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line) {
 		}
 		middle = (first + last) / 2;
 	}
-	assert(0);
-	return 0;
+	return buffers.size() - 1;
 }
 
 void PGTextBuffer::InsertText(ulng position, std::string text) {
