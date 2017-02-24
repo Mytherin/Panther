@@ -83,7 +83,7 @@ void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& cha
 }
 
 ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
-	if (line < start_line || line >= line_start.size()) return current_size - 1;
+	if (line < start_line || (line - start_line - 1) >= line_start.size()) return current_size - 1;
 	lng start = line == start_line ? 0 : line_start[line - start_line - 1];
 	if (start + position >= current_size) return current_size - 1;
 	return start + position;
