@@ -914,8 +914,6 @@ void TextFile::ReplaceText(std::string replacement_text, size_t i) {
 		linecount += inserted_lines;
 	}
 
-
-
 	// move the cursor to the end and select the remaining text (if any)
 	cursor.start_buffer = curpos.buffer;
 	cursor.start_buffer_position = curpos.position;
@@ -1479,12 +1477,11 @@ void TextFile::DeleteLines() {
 	assert(0);
 }
 
-
 void TextFile::IndentText(PGDirection direction) {
 	bool contains_selection = CursorsContainSelection(cursors);
 	std::string added_indentation = "\t";
 	if (indentation == PGIndentionSpaces) {
-		added_indentation = std::string(' ', this->tabwidth);
+		added_indentation = std::string(this->tabwidth, ' ');
 	}
 	if (!contains_selection) {
 		InsertText(added_indentation);
@@ -1516,7 +1513,7 @@ void TextFile::IndentText(PGDirection direction) {
 						if (text[0] == '\t') {
 							end = 1;
 						} else {
-							for(int i = 0; i < std::min(length, (lng) this->tabwidth); i++) {
+							for (int i = 0; i < std::min(length, (lng) this->tabwidth); i++) {
 								if (text[i] == ' ') {
 									end = i + 1;
 								} else {
@@ -1537,6 +1534,57 @@ void TextFile::IndentText(PGDirection direction) {
 			this->PerformOperation(remove);
 		}
 	}
+}
+
+void TextFile::ConvertToIndentation(PGLineIndentation indentation) {
+	ReplaceTextPosition* replace = new ReplaceTextPosition();
+	for (auto iterator = TextLineIterator(this, (lng)0);; iterator++) {
+		TextLine line = iterator.GetLine();
+		if (!line.IsValid()) break;
+		char* data = line.GetLine();
+		lng length = line.GetLength();
+		int spaces = 0;
+
+		int start = 0;
+		int end = length;
+		std::string inserted_text = "";
+
+		bool found_replacement = false;
+		for (lng i = 0; i < length; i++) {
+			if (data[i] == ' ') {
+				if (indentation == PGIndentionTabs) {
+					spaces++;
+					if (spaces == this->tabwidth) {
+						inserted_text += "\t";
+						spaces = 0;
+						found_replacement = true;
+					}
+				} else {
+					inserted_text += " ";
+				}
+			} else if (data[i] == '\t') {
+				if (indentation == PGIndentionSpaces) {
+					found_replacement = true;
+					inserted_text += std::string(this->tabwidth, ' ');
+				} else {
+					inserted_text += "\t";
+				}
+			} else {
+				end = i;
+				break;
+			}
+		}
+		if (found_replacement) {
+			lng linenumber = iterator.GetCurrentLineNumber();
+			replace->data.push_back(PGCursorRange(linenumber, start, linenumber, end));
+			replace->replacement_text.push_back(inserted_text);
+		}
+	}
+	if (replace->data.size() == 0) {
+		delete replace;
+		return;
+	}
+	PerformOperation(replace);
 }
 
 void TextFile::DeleteLine(PGDirection direction) {
@@ -1562,13 +1610,13 @@ void TextFile::InsertText(std::string text, PGTextBuffer* buffer, lng insert_poi
 	// now we need to update the cursors
 	// we only need to consider cursors that currently point to "buffer"
 	// first find the first cursor that points to buffer (if any) 
-  	lng cursor_position = Cursor::FindFirstCursorInBuffer(cursors, buffer);
-  	if (cursor_position < cursors.size()) {
-		for(lng i = cursor_position; i < cursors.size(); i++) {
+	lng cursor_position = Cursor::FindFirstCursorInBuffer(cursors, buffer);
+	if (cursor_position < cursors.size()) {
+		for (lng i = cursor_position; i < cursors.size(); i++) {
 			Cursor& c = cursors[i];
 			if (c.start_buffer != buffer && c.end_buffer != buffer) break;
 
-			for(int bufpos = 0; bufpos < 2; bufpos++) {
+			for (int bufpos = 0; bufpos < 2; bufpos++) {
 				if (c.BUF(bufpos) == buffer) {
 					if (update.new_buffer == nullptr) {
 						if (c.BUFPOS(bufpos) >= insert_point) {
@@ -1591,7 +1639,7 @@ void TextFile::InsertText(std::string text, PGTextBuffer* buffer, lng insert_poi
 			assert(c.start_buffer_position < c.start_buffer->current_size);
 			assert(c.end_buffer_position < c.end_buffer->current_size);
 		}
-  	}
+	}
 	if (update.new_buffer != nullptr) {
 		for (lng index = buffer->index + 1; index < buffers.size(); index++) {
 			buffers[index]->index = index;
@@ -1694,17 +1742,17 @@ void TextFile::DeleteText(PGTextRange range) {
 	}
 	// update the cursors
 	lng cursor_position = Cursor::FindFirstCursorInBuffer(cursors, begin.buffer);
-	for(lng i = cursor_position; i < cursors.size(); i++) {
+	for (lng i = cursor_position; i < cursors.size(); i++) {
 		Cursor& c = cursors[i];
-		if (c.start_buffer->index > end.buffer->index && 
+		if (c.start_buffer->index > end.buffer->index &&
 			c.end_buffer->index > end.buffer->index) break;
-		for(int bufpos = 0; bufpos < 2; bufpos++) {
-			if (c.BUF(bufpos) == begin.buffer && 
+		for (int bufpos = 0; bufpos < 2; bufpos++) {
+			if (c.BUF(bufpos) == begin.buffer &&
 				c.BUFPOS(bufpos) < begin.position) {
 				// cursor is in begin buffer, but before the deleted text
 				// do nothing
-			} else if (c.BUF(bufpos) == end.buffer && 
-					   c.BUFPOS(bufpos) > end.position) {
+			} else if (c.BUF(bufpos) == end.buffer &&
+				c.BUFPOS(bufpos) > end.position) {
 				// cursor is in the end buffer AFTER the deleted text
 				if (split_point < 0) {
 					// begin buffer = end buffer
@@ -1739,6 +1787,82 @@ void TextFile::DeleteText(PGTextRange range) {
 	}
 	VerifyPartialTextfile();
 	// FIXME
+}
+
+void TextFile::ReplaceText(PGTextRange range, std::string replacement_text) {
+	bool empty_range = range.startpos() == range.endpos();
+	if (replacement_text.size() == 0) {
+		if (empty_range) {
+			// nothing to do; this shouldn't happen (probably)
+			assert(0);
+			return;
+		}
+		// nothing to replace; just delete the selection
+		DeleteText(range);
+		return;
+	}
+	if (empty_range) {
+		// nothing to replace; perform a normal insert
+		InsertText(replacement_text, range.start_buffer, range.start_position);
+		return;
+	}
+	// first replace the text that can be replaced in-line
+	lng current_position = 0;
+	auto beginpos = range.startpos();
+	auto curpos = beginpos;
+	auto endpos = range.endpos();
+	lng inserted_lines = 0;
+	while (curpos < endpos) {
+		if (current_position == replacement_text.size()) {
+			break;
+		}
+		assert(curpos.buffer->buffer[curpos.position] != '\n');
+		assert(replacement_text[current_position] != '\n');
+		curpos.buffer->buffer[curpos.position] = replacement_text[current_position];
+		current_position++;
+		curpos.Offset(1);
+	}
+	PGTextBuffer* buffer = beginpos.buffer;
+	while (buffer) {
+		InvalidateBuffer(buffer);
+		if (buffer == endpos.buffer) {
+			break;
+		}
+		buffer = buffer->next;
+	}
+	if (inserted_lines != 0) {
+		buffer = beginpos.buffer;
+		lng lines = buffer->start_line;
+		while (buffer) {
+			buffer->start_line = lines;
+			lines += buffer->line_count;
+			buffer = buffer->next;
+		}
+		linecount += inserted_lines;
+	}
+
+	// move the cursor to the end and select the remaining text (if any)
+	range.start_buffer = curpos.buffer;
+	range.start_position = curpos.position;
+	range.end_buffer = endpos.buffer;
+	range.end_position = endpos.position;
+	// now we can be in one of three situations:
+	// 1) the deleted text and selection were of identical size, as such we are done
+	// 2) we replaced the entire selection, but there is still more text to be inserted
+	// 3) we replaced part of the selection, but there is still more text to be deleted
+	if (current_position < replacement_text.size()) {
+		assert(curpos == endpos);
+		// case (2) haven't finished inserting everything
+		// insert the remaining text
+		InsertText(replacement_text.substr(current_position), curpos.buffer, curpos.position);
+	} else if (curpos != endpos) {
+		// case (3) haven't finished deleting everything
+		// delete the remaining text
+		DeleteText(range);
+	} else {
+		// case (1), finished everything
+		return;
+	}
 }
 
 std::string TextFile::CutText() {
@@ -2190,6 +2314,31 @@ bool TextFile::PerformOperation(TextDelta* delta, bool redo) {
 			}
 			return true;
 		}
+		case PGDeltaReplaceTextPosition:
+		{
+			ReplaceTextPosition* remove = (ReplaceTextPosition*)delta;
+			if (!redo) {
+				remove->stored_cursors = BackupCursors();
+			}
+			remove->removed_text.resize(remove->data.size());
+			for (lng i = remove->data.size() - 1; i >= 0; i--) {
+				PGTextBuffer* start_buffer = GetBuffer(remove->data[i].start_line);
+				lng start_position = start_buffer->GetBufferLocationFromCursor(remove->data[i].start_line, remove->data[i].start_position);
+				PGTextBuffer* end_buffer = GetBuffer(remove->data[i].end_line);
+				lng end_position = end_buffer->GetBufferLocationFromCursor(remove->data[i].end_line, remove->data[i].end_position);
+				PGTextRange range = PGTextRange(start_buffer, start_position, end_buffer, end_position);
+				if (!redo) {
+					Cursor c = Cursor(this, range);
+					if (c.SelectionIsEmpty()) {
+						remove->removed_text[i] = "";
+					} else {
+						remove->removed_text[i] = c.GetText();
+					}
+				}
+				ReplaceText(range, remove->replacement_text[i]);
+			}
+			return true;
+		}
 		default:
 			assert(0);
 			return false;
@@ -2309,6 +2458,20 @@ void TextFile::Undo(TextDelta* delta) {
 				PGTextBuffer* start_buffer = GetBuffer(remove->data[i].start_line);
 				lng start_position = start_buffer->GetBufferLocationFromCursor(remove->data[i].start_line, remove->data[i].start_position);
 				InsertText(remove->removed_text[i], start_buffer, start_position);
+			}
+			RestoreCursors(remove->stored_cursors);
+			return;
+		}
+		case PGDeltaReplaceTextPosition:
+		{
+			ReplaceTextPosition* remove = (ReplaceTextPosition*)delta;
+			for (lng i = remove->data.size() - 1; i >= 0; i--) {
+				PGTextBuffer* start_buffer = GetBuffer(remove->data[i].start_line);
+				lng start_position = start_buffer->GetBufferLocationFromCursor(remove->data[i].start_line, remove->data[i].start_position);
+				PGTextBuffer* end_buffer = start_buffer;
+				lng end_position = start_position + remove->replacement_text[i].size();
+				PGTextRange range = PGTextRange(start_buffer, start_position, end_buffer, end_position);
+				ReplaceText(range, remove->removed_text[i]);
 			}
 			RestoreCursors(remove->stored_cursors);
 			return;
@@ -2978,7 +3141,7 @@ void TextFile::FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle reg
 				continue;
 			}
 			textfile->FindAllMatches(info->regex_handle, info->context_lines, [](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
-				FindAllInformation* info = (FindAllInformation*) data;
+				FindAllInformation* info = (FindAllInformation*)data;
 				if (!info->task->active) {
 					return;
 				}

@@ -108,10 +108,12 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		}
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control, PGPopupInformation* info) {
-			// FIXME: change indentation of file
+			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			file.ConvertToIndentation(PGIndentionSpaces);
 		});
 		PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control, PGPopupInformation* info) {
-			// FIXME: change indentation of file
+			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			file.ConvertToIndentation(PGIndentionTabs);
 		});
 		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
 			PGPoint(button->X() + button->width - 1, button->Y())),

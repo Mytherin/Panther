@@ -15,6 +15,7 @@ class TextFile;
 typedef enum {
 	PGDeltaAddTextPosition,
 	PGDeltaRemoveTextPosition,
+	PGDeltaReplaceTextPosition,
 	PGDeltaReplaceText,
 	PGDeltaRegexReplace,
 	PGDeltaRemoveText,
@@ -120,5 +121,15 @@ public:
 	std::vector<std::string> removed_text;
 	RemoveTextPosition() :
 		TextDelta(PGDeltaRemoveTextPosition) {
+	}
+};
+
+class ReplaceTextPosition : public TextDelta {
+public:
+	std::vector<PGCursorRange> data;
+	std::vector<std::string> replacement_text;
+	std::vector<std::string> removed_text;
+	ReplaceTextPosition() :
+		TextDelta(PGDeltaReplaceTextPosition) {
 	}
 };

@@ -27,6 +27,7 @@ void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 	textline.line = buffer->buffer;
 	textline.length = buffer->current_size - 1;
 	// check if the buffer holds more than one line
+	// FIXME: use buffer->start_line
 	if (!(line == current_line && current_line + 1 == last_line)) {
 		for (lng i = 0; i < buffer->current_size; ) {
 			int offset = utf8_character_length(buffer->buffer[i]);
@@ -84,6 +85,7 @@ void TextLineIterator::PrevLine() {
 		end_position = start_position - 1;
 	}
 	// start at the current line and look for the previous newline character
+	// FIXME: use buffer->start_line
 	for (lng i = end_position - 1; i >= 0; i--) {
 		if (buffer->buffer[i] == '\n') {
 			start_position = i + 1;
@@ -124,6 +126,7 @@ void TextLineIterator::NextLine() {
 		start_position = end_position;
 	}
 	// start at the current line and look for the next newline character
+	// FIXME: use buffer->start_line
 	for (lng i = end_position; i < buffer->current_size; i++) {
 		if (buffer->buffer[i] == '\n') {
 			end_position = i;

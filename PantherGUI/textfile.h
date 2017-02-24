@@ -223,6 +223,8 @@ public:
 	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
 	std::string current_find_file;
 
+	void ConvertToIndentation(PGLineIndentation indentation);
+
 	void FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, int context_lines);
 private:
 	// load textfile from a file
@@ -230,6 +232,9 @@ private:
 
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 
+	// replace text in the specified text range with <replacement_text>
+	// neither <range> nor <replacement_text> may not contain newlines
+	void ReplaceText(PGTextRange range, std::string replacement_text);
 	// insert text at the specified cursor number, text must not include newlines
 	void InsertText(std::string text, size_t cursornr);
 	// insert text at the specified position, text must not include newlines
