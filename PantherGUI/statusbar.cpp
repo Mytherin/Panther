@@ -101,11 +101,16 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		}, file.GetLineIndentation() == PGIndentionSpaces ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		PGPopupMenuInsertSeparator(menu);
 		for (int i = 1; i <= 8; i++) {
-			std::string header = "Tab Width: " + std::to_string(i);
-			PGPopupMenuInsertEntry(menu, header, [](Control* control, PGPopupInformation* info) {
-				// FIXME: change tab width
+			PGPopupInformation info;
+			info.text = "Tab Width: " + std::to_string(i);
+			info.hotkey = "";
+			info.data = std::string(1, (char)i);
+			PGPopupMenuInsertEntry(menu, info, [](Control* control, PGPopupInformation* info) {
+				TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+				file.SetTabWidth(info->data[0]);
 			});
 		}
+
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control, PGPopupInformation* info) {
 			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
@@ -221,7 +226,7 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			default:
 				str = "Mixed: ";
 			}
-			str += to_string(4);
+			str += to_string(file.GetTabWidth());
 			{
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
 				tabwidth_button->x = this->width - 2 * padding - text_width - right_position;

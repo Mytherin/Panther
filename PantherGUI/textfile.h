@@ -194,6 +194,7 @@ public:
 	bool GetReadOnly() { return read_only; }
 	void SetReadOnly(bool read_only) { this->read_only = read_only; }
 
+	void SetTabWidth(int tabwidth);
 	int GetTabWidth() { return tabwidth; }
 
 	enum PGStoreFileType {

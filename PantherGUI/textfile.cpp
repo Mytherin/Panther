@@ -1271,6 +1271,11 @@ void TextFile::OffsetLineOffset(lng offset) {
 	yoffset = OffsetVerticalScroll(yoffset, offset);
 }
 
+void TextFile::SetTabWidth(int tabwidth) {
+	this->tabwidth = tabwidth;
+	if (textfield) textfield->SelectionChanged();
+}
+
 void TextFile::SetCursorLocation(lng line, lng character) {
 	ClearExtraCursors();
 	cursors[0].SetCursorLocation(line, character);
@@ -1537,6 +1542,7 @@ void TextFile::IndentText(PGDirection direction) {
 }
 
 void TextFile::ConvertToIndentation(PGLineIndentation indentation) {
+	this->indentation = indentation;
 	ReplaceTextPosition* replace = new ReplaceTextPosition();
 	for (auto iterator = TextLineIterator(this, (lng)0);; iterator++) {
 		TextLine line = iterator.GetLine();
