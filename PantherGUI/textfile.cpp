@@ -2631,6 +2631,36 @@ void TextFile::ChangeIndentation(PGLineIndentation indentation) {
 void TextFile::RemoveTrailingWhitespace() {
 	if (!is_loaded) return;
 
+	RemoveTextPosition* remove = new RemoveTextPosition();
+	for (auto iterator = TextLineIterator(this, (lng)0);; iterator++) {
+		TextLine line = iterator.GetLine();
+		if (!line.IsValid()) break;
+		char* data = line.GetLine();
+		lng length = line.GetLength();
+		int spaces = 0;
+
+		int start = length;
+		int end = length;
+
+		bool found_replacement = false;
+		for (lng i = length - 1; i >= 0; i--) {
+			if (data[i] == ' ' || data[i] == '\t') {
+				start = i;
+			} else {
+				break;
+			}
+		}
+		if (start != end) {
+			lng linenumber = iterator.GetCurrentLineNumber();
+			remove->data.push_back(PGCursorRange(linenumber, start, linenumber, end));
+		}
+	}
+	if (remove->data.size() == 0) {
+		delete remove;
+		return;
+	}
+	PerformOperation(remove);
+
 }
 
 std::vector<PGCursorRange> TextFile::BackupCursors() {

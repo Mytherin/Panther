@@ -96,8 +96,18 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
 
-		PGPopupMenuInsertEntry(menu, "Indent Using Spaces", [](Control* control, PGPopupInformation* info) {
-			// FIXME: change indentation of file and convert
+
+		PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control, PGPopupInformation* info) {
+			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			file.ConvertToIndentation(PGIndentionSpaces);
+		});
+		PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control, PGPopupInformation* info) {
+			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			file.ConvertToIndentation(PGIndentionTabs);
+		});
+		PGPopupMenuInsertEntry(menu, "Remove Trailing Whitespace", [](Control* control, PGPopupInformation* info) {
+			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			file.RemoveTrailingWhitespace();
 		}, file.GetLineIndentation() == PGIndentionSpaces ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		PGPopupMenuInsertSeparator(menu);
 		for (int i = 1; i <= 8; i++) {
@@ -110,16 +120,6 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 				file.SetTabWidth(info->data[0]);
 			});
 		}
-
-		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control, PGPopupInformation* info) {
-			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
-			file.ConvertToIndentation(PGIndentionSpaces);
-		});
-		PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control, PGPopupInformation* info) {
-			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
-			file.ConvertToIndentation(PGIndentionTabs);
-		});
 		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
 			PGPoint(button->X() + button->width - 1, button->Y())),
 			PGTextAlignRight | PGTextAlignBottom);
