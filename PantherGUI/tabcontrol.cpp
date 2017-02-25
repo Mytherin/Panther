@@ -6,6 +6,8 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
+#define MAX_TAB_WIDTH 150.0f
+
 #define SAVE_CHANGES_TITLE "Save Changes?"
 #define SAVE_CHANGES_DIALOG "The current file has unsaved changes. Save changes before closing?"
 
@@ -22,6 +24,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 		auto ptr = file_manager.OpenFile(*it);
 		this->tabs.push_back(OpenTab(ptr));
 	}
+	rendered_tabs = tabs.size();
 	this->font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(this->font, 12);
 	file_icon_width = 0;
@@ -63,8 +66,6 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 
 	PGScalar tab_height = this->height - 2;
 
-	tab.width = MeasureTabWidth(tab);
-
 	PGScalar current_x = tab.x;
 	
 	PGPolygon polygon;
@@ -97,7 +98,11 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	}
 
 	SetTextStyle(font, PGTextStyleBold);
-	RenderText(renderer, font, filename.c_str(), filename.length(), x + current_x + tab_padding, y + 6);
+	lng render_start = 0, render_end = filename.size();
+	auto widths = CumulativeCharacterWidths(font, filename.c_str(), filename.size(), 0, MAX_TAB_WIDTH - (file_icon_width + 2.5f + 20), render_start, render_end);
+	render_end = std::min(render_end, (lng) widths.size());
+
+	RenderText(renderer, font, filename.c_str(), render_end, x + current_x + tab_padding, y + 6);
 	current_x += (tab.width - 25);
 	RenderLine(renderer, PGLine(PGPoint(current_x, y + 13), PGPoint(current_x + 8, y + 21)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	RenderLine(renderer, PGLine(PGPoint(current_x, y + 21), PGPoint(current_x + 8, y + 13)), PGStyleManager::GetColor(PGColorTabControlText), 1);
@@ -113,6 +118,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 
 	bool rendered = false;
 	int index = 0;
+	SetRenderBounds(renderer, PGRect(x, y, this->width - MAX_TAB_WIDTH, this->height));
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		if (!active_tab_hidden || index != active_tab) {
 			if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x && !rendered) {
@@ -123,9 +129,25 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 			if (panther::epsilon_equals(it->x, -1)) {
 				it->x = position_x;
 			}
+			it->width = MeasureTabWidth(*it);
 			RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab);
+			if (position_x > this->width - MAX_TAB_WIDTH) {
+				if (position_x < this->width - MAX_TAB_WIDTH - it->width / 2.0f) {
+					// more than half the tab is visible
+					// count the tab as "visible"
+					index++;
+				}
+				break;
+			}
 		}
 		index++;
+	}
+	ClearRenderBounds(renderer);
+	rendered_tabs = index;
+	if (rendered_tabs != tabs.size()) {
+		// could not render all tabs
+		RenderGradient(renderer, PGRect(x + this->width - MAX_TAB_WIDTH, y, 4, this->height), PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
+
 	}
 	if (dragging_tab.file != nullptr) {
 		position_x = dragging_tab.x;
@@ -146,7 +168,7 @@ PGScalar TabControl::MeasureTabWidth(Tab& tab) {
 	TextFile* file = tab.file.get();
 	assert(file);
 	std::string filename = file->GetName();
-	return file_icon_width + 25 + MeasureTextWidth(font, filename.c_str(), filename.size());
+	return std::min(MAX_TAB_WIDTH, file_icon_width + 25 + MeasureTextWidth(font, filename.c_str(), filename.size()));
 }
 
 bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -595,19 +617,34 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 }
 
 void TabControl::PrevTab() {
-	std::vector<std::shared_ptr<TextFile>>& files = file_manager.GetFiles();
 	active_tab--;
-	if (active_tab < 0) active_tab = files.size() - 1;
+	if (active_tab < 0) {
+		if (rendered_tabs < tabs.size()) {
+			Tab t = tabs.back();
+			t.target_x = t.x = 0;
+			tabs.pop_back();
+			tabs.insert(tabs.begin(), t);
+			active_tab = 0;
+		} else {
+			active_tab = tabs.size() - 1;
+		}
+	}
 
-	SwitchToFile(files[active_tab]);
+	SwitchToFile(tabs[active_tab].file);
 }
 
 void TabControl::NextTab() {
-	std::vector<std::shared_ptr<TextFile>>& files = file_manager.GetFiles();
 	active_tab++;
-	if (active_tab >= files.size()) active_tab = 0;
+	if (active_tab >= tabs.size()) active_tab = 0;
+	if (active_tab >= rendered_tabs) {
+		// FIXME: potentially need to move more than one tabs
+		Tab t = tabs[0];
+		tabs.erase(tabs.begin());
+		tabs.push_back(t);
+		active_tab--;
+	}
 
-	SwitchToFile(files[active_tab]);
+	SwitchToFile(tabs[active_tab].file);
 }
 
 bool TabControl::CloseAllTabs() {
@@ -674,7 +711,7 @@ void TabControl::CloseTab(int tab) {
 		int* tabnumbers = new int[1];
 		tabnumbers[0] = tab;
 		// we use a callback here rather than a blocking confirmation box
-		// because a blocking confirmation box can launch a sub-event queue on windows
+		// because a blocking confirmation box can launch a sub-event queue on Windows
 		// which could lead to concurrency issues
 		PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG, 
 			[](PGWindowHandle window, Control* control, void* data, PGResponse response) {

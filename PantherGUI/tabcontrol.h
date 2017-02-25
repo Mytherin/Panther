@@ -101,6 +101,8 @@ protected:
 	Tab dragging_tab;
 	bool active_tab_hidden = false;
 
+	int rendered_tabs = 0;
+
 	TextField* textfield;
 
 	void SwitchToFile(std::shared_ptr<TextFile> file);
