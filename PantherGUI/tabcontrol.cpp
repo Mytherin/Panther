@@ -24,7 +24,6 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 		auto ptr = file_manager.OpenFile(*it);
 		this->tabs.push_back(OpenTab(ptr));
 	}
-	rendered_tabs = tabs.size();
 	this->font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(this->font, 12);
 	file_icon_width = 0;
@@ -44,11 +43,11 @@ void TabControl::PeriodicRender() {
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		PGScalar current_x = (*it).x;
 		PGScalar offset = ((*it).target_x - (*it).x) / 3;
-		if (((*it).x < (*it).target_x && (*it).x + offset >(*it).target_x) ||
+		if (((*it).x < (*it).target_x && (*it).x + offset > (*it).target_x) ||
 			(panther::abs((*it).x + offset - (*it).target_x) < 1)) {
 			(*it).x = (*it).target_x;
 		} else {
-			(*it).x = (*it).x < 0 ? (*it).target_x : (*it).x + offset;
+			(*it).x = (*it).x + offset;
 		}
 		if (panther::abs(current_x - (*it).x) > 0.1)
 			invalidate = true;
@@ -113,11 +112,12 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar x = X() - rectangle->x;
 	PGScalar y = Y() - rectangle->y;
-	PGScalar position_x = 0;
+	PGScalar position_x = -scroll_position;
 	PGColor color = PGStyleManager::GetColor(PGColorTabControlBackground);
 
 	bool rendered = false;
 	int index = 0;
+
 	SetRenderBounds(renderer, PGRect(x, y, this->width - MAX_TAB_WIDTH, this->height));
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		if (!active_tab_hidden || index != active_tab) {
@@ -130,25 +130,23 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 				it->x = position_x;
 			}
 			it->width = MeasureTabWidth(*it);
-			RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab);
-			if (position_x > this->width - MAX_TAB_WIDTH) {
-				if (position_x < this->width - MAX_TAB_WIDTH - it->width / 2.0f) {
-					// more than half the tab is visible
-					// count the tab as "visible"
-					index++;
+			if (position_x + (it->width + 30) >= 0) {
+				RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab);
+				if (position_x > this->width - MAX_TAB_WIDTH) {
+					// finished rendering
+					break;
 				}
-				break;
+			} else {
+				position_x += it->width + 30;
 			}
 		}
 		index++;
 	}
-	ClearRenderBounds(renderer);
-	rendered_tabs = index;
-	if (rendered_tabs != tabs.size()) {
-		// could not render all tabs
-		RenderGradient(renderer, PGRect(x + this->width - MAX_TAB_WIDTH, y, 4, this->height), PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
 
-	}
+	
+	max_scroll = 10 + GetTabPosition(tabs.size());
+	max_scroll = std::max(max_scroll - (this->width - MAX_TAB_WIDTH), 0.0f);
+
 	if (dragging_tab.file != nullptr) {
 		position_x = dragging_tab.x;
 		RenderTab(renderer, dragging_tab, position_x, x, y, true);
@@ -159,7 +157,17 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		position_x = x + this->width - (tab.width + 30);
 		tab.x = position_x;
 		tab.target_x = position_x;
-		RenderTab(renderer, tab, position_x, x, y, true);	
+		RenderTab(renderer, tab, position_x, x, y, true);
+	}
+	ClearRenderBounds(renderer);
+
+	if (scroll_position > 0) {
+		// render gradient at start if we have scrolled
+		RenderGradient(renderer, PGRect(x, y, 10, this->height), PGColor(0, 0, 0, 255), PGColor(0, 0, 0, 0));
+	}
+	if (index != tabs.size()) {
+		// did not render all tabs
+		RenderGradient(renderer, PGRect(x + this->width - MAX_TAB_WIDTH, y, 4, this->height), PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
 	}
 	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1), PGColor(80, 150, 200), 2);
 }
@@ -247,7 +255,7 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 	if (mouse.x >= 0 && mouse.x <= this->width && mouse.y >= -100 & mouse.y <= 100) {
 		td->accepted = this;
 		PGScalar tab_pos = mouse.x - td->drag_offset;
-		PGScalar position_x = 0;
+		PGScalar position_x = -scroll_position;
 		lng index = 0;
 		lng current_index = 0;
 		lng new_index = this == td->tabs ? tabs.size() - 1 : tabs.size();
@@ -270,7 +278,7 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 				Tab current_tab = tabs[active_tab];
 				tabs.erase(tabs.begin() + active_tab);
 				tabs.insert(tabs.begin() + new_index, current_tab);
-				active_tab = new_index;
+				SetActiveTab(new_index);
 			}
 			tabs[active_tab].x = tab_pos;
 			tabs[active_tab].target_x = tab_pos;
@@ -491,6 +499,29 @@ void TabControl::CloseTemporaryFile() {
 }
 
 
+PGScalar TabControl::GetTabPosition(int tabnr) {
+	assert(tabnr <= tabs.size());
+	PGScalar position = 0;
+	for (lng i = 0; i < tabnr; i++) {
+		position += MeasureTabWidth(tabs[i]) + 15;
+	}
+	return position;
+}
+
+void TabControl::SetActiveTab(int active_tab) {
+	assert(active_tab >= 0 && active_tab < tabs.size());
+	this->active_tab = active_tab;
+	PGScalar start = GetTabPosition(active_tab);
+	PGScalar width = MeasureTabWidth(tabs[active_tab]) + 30;
+	if (start < scroll_position) {
+		scroll_position = start;
+	} else if (start + width > scroll_position + this->width - MAX_TAB_WIDTH) {
+		scroll_position = start + width - (this->width - MAX_TAB_WIDTH);
+	}
+	SwitchToFile(tabs[active_tab].file);
+}
+
+
 void TabControl::ReopenFile(PGClosedTab tab) {
 	PGFileError error;
 	std::shared_ptr<TextFile> textfile = file_manager.OpenFile(tab.filepath, error);
@@ -521,7 +552,7 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file) {
 	assert(active_tab < tabs.size());
 	tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
 	active_tab++;
-	SwitchToFile(tabs[active_tab].file);
+	SetActiveTab(active_tab);
 }
 
 void TabControl::AddTab(std::shared_ptr<TextFile> file, lng index) {
@@ -529,7 +560,7 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file, lng index) {
 	assert(index < tabs.size());
 	tabs.insert(tabs.begin() + index, OpenTab(file));
 	active_tab = index;
-	SwitchToFile(tabs[active_tab].file);
+	SetActiveTab(active_tab);
 }
 
 void TabControl::AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid) {
@@ -550,7 +581,7 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid) 
 		tabs.insert(tabs.begin() + entry + 1, Tab(file, id));
 		active_tab = entry + 1;
 	}
-	SwitchToFile(tabs[active_tab].file);
+	SetActiveTab(active_tab);
 }
 
 int TabControl::GetSelectedTab(int x) {
@@ -568,7 +599,7 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
 			active_tab = selected_tab;
-			SwitchToFile(tabs[selected_tab].file);
+			SetActiveTab(selected_tab);
 			drag_offset = x - tabs[selected_tab].x;
 			drag_tab = true;
 			this->Invalidate(true);
@@ -616,35 +647,26 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 	}
 }
 
+void TabControl::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
+	PGScalar scroll_offset = (PGScalar) (std::abs(hdistance) > std::abs(distance) ? hdistance : distance);
+	scroll_position = std::min((PGScalar)max_scroll, std::max(0.0f, scroll_position + scroll_offset * 5));
+	this->Invalidate();
+}
+
 void TabControl::PrevTab() {
 	active_tab--;
 	if (active_tab < 0) {
-		if (rendered_tabs < tabs.size()) {
-			Tab t = tabs.back();
-			t.target_x = t.x = 0;
-			tabs.pop_back();
-			tabs.insert(tabs.begin(), t);
-			active_tab = 0;
-		} else {
-			active_tab = tabs.size() - 1;
-		}
+		active_tab = tabs.size() - 1;
 	}
-
-	SwitchToFile(tabs[active_tab].file);
+	SetActiveTab(active_tab);
 }
 
 void TabControl::NextTab() {
 	active_tab++;
-	if (active_tab >= tabs.size()) active_tab = 0;
-	if (active_tab >= rendered_tabs) {
-		// FIXME: potentially need to move more than one tabs
-		Tab t = tabs[0];
-		tabs.erase(tabs.begin());
-		tabs.push_back(t);
-		active_tab--;
+	if (active_tab >= tabs.size()) {
+		active_tab = 0;
 	}
-
-	SwitchToFile(tabs[active_tab].file);
+	SetActiveTab(active_tab);
 }
 
 bool TabControl::CloseAllTabs() {
@@ -665,8 +687,7 @@ bool TabControl::CloseTabConfirmation(int tab) {
 		(!hot_exit || (hot_exit && tabs[tab].file->WorkspaceFileStorage() == TextFile::PGFileTooLarge))) {
 
 		// switch to the tab
-		active_tab = tab;
-		SwitchToFile(tabs[active_tab].file);
+		SetActiveTab(tab);
 		this->Invalidate();
 
 		// then show the confirmation box
@@ -765,8 +786,7 @@ void TabControl::ReopenLastFile() {
 void TabControl::SwitchToTab(std::shared_ptr<TextFile> textfile) {
 	for (int i = 0; i < tabs.size(); i++) {
 		if (tabs[i].file == textfile) {
-			SwitchToFile(tabs[i].file);
-			active_tab = i;
+			SetActiveTab(i);
 			this->Invalidate();
 			return;
 		}

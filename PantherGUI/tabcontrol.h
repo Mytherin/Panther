@@ -41,6 +41,7 @@ public:
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
+	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 
 	bool AcceptsDragDrop(PGDragDropType type);
 	void DragDrop(PGDragDropType type, int x, int y, void* data);
@@ -101,7 +102,8 @@ protected:
 	Tab dragging_tab;
 	bool active_tab_hidden = false;
 
-	int rendered_tabs = 0;
+	PGScalar scroll_position = 0;
+	PGScalar max_scroll = 0;
 
 	TextField* textfield;
 
@@ -109,6 +111,9 @@ protected:
 
 	PGScalar tab_offset;
 	int active_tab;
+	
+	PGScalar GetTabPosition(int tabnr);
+	void SetActiveTab(int active_tab);
 
 	PGScalar drag_offset;
 	bool drag_tab;
