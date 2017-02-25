@@ -1011,6 +1011,35 @@ void OpenFolderInExplorer(std::string path) {
 }
 
 void OpenFolderInTerminal(std::string path) {
+	std::string parameter = "cmd.exe"; // "C:\\Program Files\\Git\\git-bash.exe";
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+
+	std::string directory = PGFile(path).Directory();
+	if (CreateProcess(NULL, (LPSTR)parameter.c_str(), NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, directory.c_str(), &si, &pi)) {
+		WaitForSingleObject(pi.hProcess, INFINITE);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+	} else {
+		DWORD dw = GetLastError();
+		LPVOID lpMsgBuf;
+
+		FormatMessage(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM |
+			FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			dw,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			(LPTSTR)&lpMsgBuf,
+			0, NULL);
+
+		Logger::WriteLogMessage(std::string((char*)lpMsgBuf));
+	}
 }
 
 PGPoint ConvertWindowToScreen(PGWindowHandle window, PGPoint point) {

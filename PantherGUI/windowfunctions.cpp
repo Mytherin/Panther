@@ -149,6 +149,12 @@ std::string PGFile::Extension() {
 	return path.substr(pos + 1);
 }
 
+std::string PGFile::Directory() {
+	size_t pos = path.find_last_of(GetSystemPathSeparator());
+	if (pos == std::string::npos || pos <= 0) return "";
+	return path.substr(0, pos);
+}
+
 std::string PGPathJoin(std::string path_one, std::string path_two) {
 	// FIXME: safe path join
 	return path_one + GetSystemPathSeparator() + path_two;

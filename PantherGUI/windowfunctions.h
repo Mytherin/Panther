@@ -456,6 +456,7 @@ PGFileInformation PGGetFileFlags(std::string path);
 struct PGFile {
 	std::string path;
 
+	std::string Directory();
 	std::string Filename();
 	std::string Extension();
 	PGFile() { }
