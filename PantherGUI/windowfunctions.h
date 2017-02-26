@@ -355,18 +355,27 @@ extern const PGPopupMenuFlags PGPopupMenuChecked;
 extern const PGPopupMenuFlags PGPopupMenuGrayed;
 extern const PGPopupMenuFlags PGPopupMenuSelected;
 extern const PGPopupMenuFlags PGPopupMenuSubmenu;
+extern const PGPopupMenuFlags PGPopupMenuHighlighted;
 
 typedef void(*PGControlCallback)(Control* control);
 typedef void(*PGControlDataCallback)(Control* control, void* data);
 
+enum PGPopupType {
+	PGPopupTypeEntry,
+	PGPopupTypeSeparator,
+	PGPopupTypeMenu,
+	PGPopupTypeSubmenu
+};
 
 struct PGPopupInformation {
+	PGPopupMenuHandle handle;
 	std::string text;
 	std::string hotkey;
 	std::string data;
+	PGPopupType type;
 
-	PGPopupInformation() { }
-	PGPopupInformation(std::string text, std::string hotkey) : text(text), hotkey(hotkey), data() { }
+	PGPopupInformation(PGPopupMenuHandle handle) : handle(handle), type(PGPopupTypeEntry) { }
+	PGPopupInformation(PGPopupMenuHandle handle, std::string text, std::string hotkey) : handle(handle), text(text), hotkey(hotkey), data(), type(PGPopupTypeEntry) { }
 };
 
 typedef void(*PGPopupCallback)(Control* control, PGPopupInformation* popup);
@@ -380,8 +389,11 @@ void PGPopupMenuInsertSeparator(PGPopupMenuHandle);
 void PGDisplayPopupMenu(PGPopupMenuHandle, PGTextAlign align);
 // Displays the menu at the specified point
 void PGDisplayPopupMenu(PGPopupMenuHandle, PGPoint, PGTextAlign align);
-PGSize PGMeasurePopupItem(PGFontHandle font, PGPopupInformation* information);
-void PGRenderPopupItem(PGRendererHandle renderer, PGFontHandle font, PGPopupInformation* information, PGSize size, PGPopupMenuFlags flags);
+PGSize PGMeasurePopupItem(PGFontHandle font, PGPopupInformation* information, PGScalar text_width, PGScalar hotkey_width, PGPopupType type);
+void PGRenderPopupItem(PGRendererHandle renderer, PGPoint point, PGFontHandle font, PGPopupInformation* information, PGSize size, PGPopupMenuFlags flags, PGScalar text_width, PGScalar hotkey_width, PGPopupType type);
+
+PGPopupMenuHandle PGCreateMenu(PGWindowHandle window, Control* control);
+void PGSetWindowMenu(PGWindowHandle, PGPopupMenuHandle);
 
 void OpenFolderInExplorer(std::string path);
 void OpenFolderInTerminal(std::string path);
@@ -390,8 +402,6 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 std::string ShowSaveFileDialog();
 
 PGPoint ConvertWindowToScreen(PGWindowHandle, PGPoint); 
-
-std::string OpenFileMenu();
 
 void DropFile(PGWindowHandle handle, std::string filename);
 

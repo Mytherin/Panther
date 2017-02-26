@@ -39,6 +39,7 @@ const PGPopupMenuFlags PGPopupMenuChecked = 0x01;
 const PGPopupMenuFlags PGPopupMenuGrayed = 0x02;
 const PGPopupMenuFlags PGPopupMenuSelected = 0x04;
 const PGPopupMenuFlags PGPopupMenuSubmenu = 0x08;
+const PGPopupMenuFlags PGPopupMenuHighlighted = 0x10;
 
 std::string GetButtonName(PGButton button) {
 	switch (button) {

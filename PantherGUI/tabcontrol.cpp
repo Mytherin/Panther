@@ -113,7 +113,8 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar x = X() - rectangle->x;
 	PGScalar y = Y() - rectangle->y;
 	PGScalar position_x = -scroll_position;
-	PGColor color = PGStyleManager::GetColor(PGColorTabControlBackground);
+	PGColor color = PGStyleManager::GetColor(PGColorMainMenuBackground);
+	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), color, PGDrawStyleFill);
 
 	bool rendered = false;
 	int index = 0;

@@ -24,6 +24,7 @@ enum PGColorType {
 	PGColorScrollbarDrag,
 	PGColorMinimapHover,
 	PGColorMinimapDrag,
+	PGColorMainMenuBackground,
 	PGColorMenuBackground,
 	PGColorMenuText,
 	PGColorMenuDisabled,

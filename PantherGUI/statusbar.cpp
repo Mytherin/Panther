@@ -111,7 +111,7 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 		}, file.GetLineIndentation() == PGIndentionSpaces ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		PGPopupMenuInsertSeparator(menu);
 		for (int i = 1; i <= 8; i++) {
-			PGPopupInformation info;
+			PGPopupInformation info(menu);
 			info.text = "Tab Width: " + std::to_string(i);
 			info.hotkey = "";
 			info.data = std::string(1, (char)i);

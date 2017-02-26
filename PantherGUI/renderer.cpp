@@ -40,9 +40,12 @@ SkPaint* CreateTextPaint() {
 	SkPaint* textpaint = new SkPaint();
 	textpaint->setTextSize(SkIntToScalar(15));
 	textpaint->setAntiAlias(true);
+	textpaint->setAutohinted(true);
+	textpaint->setHinting(SkPaint::Hinting::kNo_Hinting);
+	textpaint->setDevKernText(true);
 	textpaint->setLinearText(true);
 	textpaint->setSubpixelText(true);
-	textpaint->setStyle(SkPaint::kFill_Style);
+	textpaint->setStyle(SkPaint::kStrokeAndFill_Style);
 	textpaint->setTextEncoding(SkPaint::kUTF8_TextEncoding);
 	textpaint->setTextAlign(SkPaint::kLeft_Align);
 	return textpaint;
@@ -754,28 +757,62 @@ void ClearRenderBounds(PGRendererHandle handle) {
 	handle->canvas->restore();
 }
 
-PGSize PGMeasurePopupItem(PGFontHandle font, PGPopupInformation* information) {
+PGSize PGMeasurePopupItem(PGFontHandle font, PGPopupInformation* information, PGScalar text_width, PGScalar hotkey_width, PGPopupType type) {
 	PGSize result;
-	result.height = GetTextHeight(font) * 1.3;
-	result.width = MeasureTextWidth(font, information->text.c_str()) + MeasureTextWidth(font, information->hotkey.c_str()) + 20;
+	if (type == PGPopupTypeSeparator) {
+		result.height = 1;
+		result.width = 20;
+	} else if (type == PGPopupTypeSubmenu || type == PGPopupTypeEntry) {
+		result.height = GetTextHeight(font) * 1.3;
+		result.width = 20 + text_width + 20 + hotkey_width + 10;
+	} else if (type == PGPopupTypeMenu) {
+		result.height = GetTextHeight(font) * 1.3;
+		result.width = 10 + MeasureTextWidth(font, information->text.c_str());
+	}
 	return result;
 }
 
 #include "style.h"
 
-void PGRenderPopupItem(PGRendererHandle renderer, PGFontHandle font, PGPopupInformation* info, PGSize size, PGPopupMenuFlags flags) {
-	PGColor background_color = PGStyleManager::GetColor(PGColorMenuBackground);
-	if (flags & PGPopupMenuSelected) {
-		background_color = PGStyleManager::GetColor(PGColorMenuHover);
+void PGRenderPopupItem(PGRendererHandle renderer, PGPoint point, PGFontHandle font,  PGPopupInformation* info, PGSize size, PGPopupMenuFlags flags, PGScalar text_width, PGScalar hotkey_width, PGPopupType type) {
+
+	PGColor background_color;
+	PGColor text_color;
+	
+	if (type == PGPopupTypeMenu) {
+		background_color = PGStyleManager::GetColor(PGColorMainMenuBackground);
+		if (flags & PGPopupMenuHighlighted) {
+			background_color = PGStyleManager::GetColor(PGColorMenuHover);
+		}
+		if (flags & PGPopupMenuSelected) {
+			background_color = PGStyleManager::GetColor(PGColorMenuBackground);
+		}
+	} else {
+		background_color = PGStyleManager::GetColor(PGColorMenuBackground);
+		if (flags & PGPopupMenuSelected) {
+			background_color = PGStyleManager::GetColor(PGColorMenuHover);
+		}
 	}
-	PGColor text_color = PGStyleManager::GetColor(PGColorMenuText);
+	text_color = PGStyleManager::GetColor(PGColorMenuText);
 	if (flags & PGPopupMenuGrayed) {
 		text_color = PGStyleManager::GetColor(PGColorMenuDisabled);
 	}
-	RenderRectangle(renderer, PGRect(0, 0, size.width, size.height), background_color, PGDrawStyleFill);
-	SetTextColor(font, text_color);
-	RenderText(renderer, font, info->text.c_str(), info->text.size(), 5, 0);
-	RenderText(renderer, font, info->hotkey.c_str(), info->hotkey.size(), size.width - 5, 0, PGTextAlignRight);
+	RenderRectangle(renderer, PGRect(point.x, point.y, size.width, size.height), background_color, PGDrawStyleFill);
+	if (type == PGPopupTypeSeparator) {
+		RenderLine(renderer, PGLine(point + PGPoint(15, size.height / 2), point + PGPoint(size.width - 15, size.height / 2)), text_color, 0.5f);
+	} else if (type == PGPopupTypeSubmenu || type == PGPopupTypeEntry) {
+		SetTextColor(font, text_color);
+		RenderText(renderer, font, info->text.c_str(), info->text.size(), point.x + 20, point.y);
+		RenderText(renderer, font, info->hotkey.c_str(), info->hotkey.size(), point.x + 40 + text_width, point.y);
+	} else if (type == PGPopupTypeMenu) {
+		if (flags & PGPopupMenuSelected) {
+			PGColor stroke_color = PGStyleManager::GetColor(PGColorMenuDisabled);
+			RenderRectangle(renderer, PGRect(point.x, point.y, size.width, size.height + 10), stroke_color, PGDrawStyleStroke);
+		}
+
+		SetTextColor(font, text_color);
+		RenderText(renderer, font, info->text.c_str(), info->text.size(), point.x + 10, point.y, PGTextAlignLeft);
+	}
 }
 
 #include <SkCodec.h>

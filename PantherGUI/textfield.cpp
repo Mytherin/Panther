@@ -654,16 +654,16 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
 		PGPopupMenuInsertEntry(menu, "Show Unsaved Changes...", nullptr, PGPopupMenuGrayed);
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation("Copy", "Ctrl+C"), [](Control* control, PGPopupInformation* info) {
+		PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, "Copy", "Ctrl+C"), [](Control* control, PGPopupInformation* info) {
 			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->CopyText());
 		});
-		PGPopupMenuInsertEntry(menu, PGPopupInformation("Cut", "Ctrl+X"), nullptr, PGPopupMenuGrayed);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation("Paste", "Ctrl+V"), [](Control* control, PGPopupInformation* info) {
+		PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, "Cut", "Ctrl+X"), nullptr, PGPopupMenuGrayed);
+		PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, "Paste", "Ctrl+V"), [](Control* control, PGPopupInformation* info) {
 			std::string clipboard_text = GetClipboardText(control->window);
 			dynamic_cast<TextField*>(control)->textfile->PasteText(clipboard_text);
 		});
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation("Select Everything", "Ctrl+A"), [](Control* control, PGPopupInformation* info) {
+		PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, "Select Everything", "Ctrl+A"), [](Control* control, PGPopupInformation* info) {
 			dynamic_cast<TextField*>(control)->textfile->SelectEverything();
 		});
 		PGPopupMenuInsertSeparator(menu);

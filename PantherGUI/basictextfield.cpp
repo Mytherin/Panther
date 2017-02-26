@@ -181,7 +181,7 @@ void BasicTextField::PasteHistory() {
 	std::vector<std::string> history = GetClipboardTextHistory();
 	PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
 	for (auto it = history.begin(); it != history.end(); it++) {
-		PGPopupInformation info;
+		PGPopupInformation info(menu);
 		info.text = *it;
 		if (info.text.size() > 20) {
 			info.text.substr(0, 20);

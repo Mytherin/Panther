@@ -14,11 +14,11 @@ public:
 	HWND hwnd = nullptr;
 	ControlManager* manager = nullptr;
 	PGRendererHandle renderer = nullptr;
-	PGPopupMenuHandle popup = nullptr;
 	IDropTarget* drop_target;
 	PGTimerHandle timer;
 	HCURSOR cursor;
 	PGWorkspace workspace;
+	PGPopupMenuHandle menu;
 	
 	bool pending_popup_menu = false;
 	bool pending_drag_drop = false;
@@ -62,8 +62,11 @@ struct PGTimer {
 
 #define BASE_INDEX 1000
 struct PGPopupMenu {
-	PGWindowHandle window;
+	PGWindowHandle window = nullptr;
+	PGScalar text_size = 0;
+	PGScalar hotkey_size = 0;
 	HMENU menu;
+	bool is_popupmenu = false;
 	int index = BASE_INDEX;
 	std::vector<PGPopupInformation*> data;
 	std::map<int, PGPopupCallback> callbacks;

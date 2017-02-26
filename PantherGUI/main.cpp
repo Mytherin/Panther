@@ -129,6 +129,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 #endif
 
+static void LogLastError() {
+	DWORD dw = GetLastError();
+	LPVOID lpMsgBuf;
+
+	FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dw,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&lpMsgBuf,
+		0, NULL);
+
+	Logger::WriteLogMessage(std::string((char*)lpMsgBuf));
+}
+
 size_t UCS2Length(char* data) {
 	int i = 0;
 	while (true) {
@@ -164,7 +181,6 @@ std::string UTF8toUCS2(std::string text) {
 	free(temporary_buffer);
 	return res;
 }
-
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	PGWindowHandle handle = GetHWNDHandle(hWnd);
@@ -213,8 +229,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case WM_MEASUREITEM:
 		{
 			auto measure_item = (LPMEASUREITEMSTRUCT)lParam;
-			PGPopupInformation* text = (PGPopupInformation*)measure_item->itemData;
-			PGSize size = PGMeasurePopupItem(handle->popup->font, text);
+			PGPopupInformation* info = (PGPopupInformation*)measure_item->itemData;
+			PGSize size;
+			size = PGMeasurePopupItem(info->handle->font, info, info->handle->text_size, info->handle->hotkey_size, info->type);
+
 			measure_item->itemWidth = size.width;
 			measure_item->itemHeight = size.height;
 			break;
@@ -222,7 +240,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case WM_DRAWITEM:
 		{
 			auto render_item = (LPDRAWITEMSTRUCT)lParam;
-			PGPopupInformation* text = (PGPopupInformation*)render_item->itemData;
+			PGPopupInformation* info = (PGPopupInformation*)render_item->itemData;
 			PGIRect rect(
 				render_item->rcItem.left,
 				render_item->rcItem.top,
@@ -235,11 +253,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			if (render_item->itemState & ODS_DISABLED || render_item->itemState & ODS_GRAYED) {
 				flags |= PGPopupMenuGrayed;
 			}
+			if (render_item->itemState & ODS_HOTLIGHT) {
+				flags |= PGPopupMenuHighlighted;
+			}
 			if (render_item->itemState & ODS_SELECTED) {
 				flags |= PGPopupMenuSelected;
 			}
 
-			PGRenderPopupItem(renderer, handle->popup->font, text, PGSize(rect.width, rect.height), flags);
+			PGRenderPopupItem(renderer, PGPoint(0, 0), info->handle->font, info, PGSize(rect.width, rect.height), flags, info->handle->text_size, info->handle->hotkey_size, info->type);
 
 			SkBitmap& bitmap = *(bmp->bitmap);
 			BITMAPINFO bmi;
@@ -535,18 +556,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				if (handle->pending_popup_menu) {
 					int index;
 					handle->pending_popup_menu = false;
-					handle->popup = handle->popup_data.menu;
+					auto popup_menu = handle->popup_data.menu;
 					index = TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment | TPM_RETURNCMD, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
 					DestroyMenu(handle->popup_data.menu->menu);
 					if (index != 0) {
-						PGPopupCallback callback = handle->popup->callbacks[index];
+						PGPopupCallback callback = popup_menu->callbacks[index];
 						if (callback) {
-							assert(handle->popup->data.size() > (index - BASE_INDEX));
-							callback(handle->popup->control, handle->popup->data[index - BASE_INDEX]);
+							assert(popup_menu->data.size() > (index - BASE_INDEX));
+							callback(popup_menu->control, popup_menu->data[index - BASE_INDEX]);
 						}
 					}
-					delete handle->popup;
-					handle->popup = nullptr;
+					delete popup_menu;
 				}
 				while (handle->pending_confirmation_box) {
 					handle->pending_confirmation_box = false;
@@ -669,7 +689,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	tabbed->AddControl(tabs);
 	tabbed->AddControl(textfield);
 	textfield->vertical_anchor = tabs;
-	
+
 	ProjectExplorer* explorer = new ProjectExplorer(res);
 	explorer->SetAnchor(PGAnchorTop | PGAnchorLeft);
 	explorer->vertical_anchor = tabs;
@@ -696,6 +716,99 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	manager->statusbar = bar;
 	manager->active_textfield = textfield;
 	manager->active_projectexplorer = explorer;
+
+	auto handle = PGCreateMenu(res, manager);
+	auto file = PGCreatePopupMenu(res, manager);
+	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Open File", "Ctrl+O"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Open Folder", "Ctrl+Shift+O"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertEntry(file, "Open Recent", [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertEntry(file, "Reopen with Encoding", [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertEntry(file, "New View into File", [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSeparator(file);
+	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Save", "Ctrl+S"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Save As", "Ctrl+Shift+S"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSeparator(file);
+	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "New Window", "Ctrl+Shift+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Close Window", "Ctrl+Shift+W"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSeparator(file);
+	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Close File", "Ctrl+W"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertEntry(file, "Close All Files", [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSeparator(file);
+	PGPopupMenuInsertEntry(file, "Exit", [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSubmenu(handle, file, "File");
+
+	auto edit = PGCreatePopupMenu(res, manager);
+	PGPopupMenuInsertEntry(edit, PGPopupInformation(edit, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSubmenu(handle, edit, "Edit");
+
+	auto view = PGCreatePopupMenu(res, manager);
+	PGPopupMenuInsertEntry(view, PGPopupInformation(view, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSubmenu(handle, view, "View");
+
+	auto project = PGCreatePopupMenu(res, manager);
+	PGPopupMenuInsertEntry(project, PGPopupInformation(project, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSubmenu(handle, project, "Project");
+
+	auto build = PGCreatePopupMenu(res, manager);
+	PGPopupMenuInsertEntry(build, PGPopupInformation(build, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSubmenu(handle, build, "Build");
+
+	auto tools = PGCreatePopupMenu(res, manager);
+	PGPopupMenuInsertEntry(tools, PGPopupInformation(tools, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSubmenu(handle, tools, "Tools");
+
+	auto preferences = PGCreatePopupMenu(res, manager);
+	PGPopupMenuInsertEntry(preferences, PGPopupInformation(preferences, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSubmenu(handle, preferences, "Preferences");
+
+	auto help = PGCreatePopupMenu(res, manager);
+	PGPopupMenuInsertEntry(help, PGPopupInformation(help, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
+		assert(0);
+	});
+	PGPopupMenuInsertSubmenu(handle, help, "Help");
+
+	PGSetWindowMenu(res, handle);
+
+
 	return res;
 }
 
@@ -901,19 +1014,24 @@ PGRendererHandle GetRendererHandle(PGWindowHandle window) {
 	return window->renderer;
 }
 
-PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
+static PGPopupMenuHandle _create_menu(PGWindowHandle window, Control* control, HMENU hmenu, bool is_popupmenu) {
 	PGPopupMenuHandle handle = new PGPopupMenu();
-	handle->menu = CreatePopupMenu();
+	handle->menu = hmenu;
 	handle->window = window;
 	handle->control = control;
-	handle->font = PGCreateFont("myriad", false, false);
+	handle->font = PGCreateFont("segoe ui", false, false);
+	handle->text_size = 0;
+	handle->hotkey_size = 0;
+	handle->is_popupmenu = is_popupmenu;
 	SetTextFontSize(handle->font, 13);
 
-	PGColor background_color = PGStyleManager::GetColor(PGColorMenuBackground);
+
+	PGColor background_color = is_popupmenu ? PGStyleManager::GetColor(PGColorMenuBackground) : PGStyleManager::GetColor(PGColorMainMenuBackground);
 
 	MENUINFO mi = { 0 };
-	mi.cbSize = sizeof(mi);
-	mi.fMask = MIM_BACKGROUND | MIM_APPLYTOSUBMENUS;
+	mi.cbSize = sizeof(MENUINFO);
+	mi.fMask = MIM_BACKGROUND | MIM_APPLYTOSUBMENUS;// | MIM_STYLE;
+	//mi.dwStyle = MNS_MODELESS;
 	mi.hbrBack = CreateSolidBrush(RGB(background_color.r, background_color.g, background_color.b));
 
 	SetMenuInfo(handle->menu, &mi);
@@ -921,9 +1039,16 @@ PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
 	return handle;
 }
 
+PGPopupMenuHandle PGCreatePopupMenu(PGWindowHandle window, Control* control) {
+	return _create_menu(window, control, CreatePopupMenu(), true);
+}
+
+PGPopupMenuHandle PGCreateMenu(PGWindowHandle window, Control* control) {
+	return _create_menu(window, control, CreateMenu(), false);
+}
 
 void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupCallback callback, PGPopupMenuFlags flags) {
-	PGPopupInformation info;
+	PGPopupInformation info(handle);
 	info.text = text;
 	info.hotkey = "";
 	PGPopupMenuInsertEntry(handle, info, callback, flags);
@@ -935,7 +1060,11 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation informa
 	if (flags & PGPopupMenuGrayed) append_flags |= MF_GRAYED;
 	int index = handle->index;
 
+	handle->text_size = max(MeasureTextWidth(handle->font, information.text), handle->text_size);
+	handle->hotkey_size = max(MeasureTextWidth(handle->font, information.hotkey), handle->hotkey_size);
+
 	PGPopupInformation* info = new PGPopupInformation(information);
+	info->type = PGPopupTypeEntry;
 	AppendMenu(handle->menu, append_flags, index, (LPCSTR)info);
 	handle->data.push_back(info);
 	handle->callbacks[index] = callback;
@@ -943,11 +1072,19 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation informa
 }
 
 void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
-	AppendMenu(handle->menu, MF_SEPARATOR, 0, NULL);
+	PGPopupInformation* info = new PGPopupInformation(handle);
+	info->type = PGPopupTypeSeparator;
+	info->text = "";
+	AppendMenu(handle->menu, MF_SEPARATOR | MF_OWNERDRAW, 0, (LPCSTR)info);
+	handle->data.push_back(info);
 }
 
 void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submenu, std::string name) {
-	AppendMenu(handle->menu, MF_POPUP, (UINT_PTR)submenu->menu, name.c_str());
+	PGPopupInformation* info = new PGPopupInformation(handle);
+	info->type = !handle->is_popupmenu ? PGPopupTypeMenu : PGPopupTypeSubmenu;
+	info->text = name;
+	AppendMenu(handle->menu, MF_POPUP | MF_OWNERDRAW, (UINT_PTR)submenu->menu, (LPCSTR)info);
+	handle->data.push_back(info);
 }
 
 void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGTextAlign align) {
@@ -977,6 +1114,11 @@ void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGPoint point, PGTextAlign ali
 	handle->window->popup_data.menu = handle;
 	handle->window->popup_data.alignment = alignment;
 	handle->window->popup_data.point = point;
+}
+
+void PGSetWindowMenu(PGWindowHandle window, PGPopupMenuHandle menu) {
+	window->menu = menu;
+	SetMenu(window->hwnd, menu->menu);
 }
 
 void OpenFolderInExplorer(std::string path) {
@@ -1025,20 +1167,7 @@ void OpenFolderInTerminal(std::string path) {
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
 	} else {
-		DWORD dw = GetLastError();
-		LPVOID lpMsgBuf;
-
-		FormatMessage(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER |
-			FORMAT_MESSAGE_FROM_SYSTEM |
-			FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL,
-			dw,
-			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			(LPTSTR)&lpMsgBuf,
-			0, NULL);
-
-		Logger::WriteLogMessage(std::string((char*)lpMsgBuf));
+		LogLastError();
 	}
 }
 
@@ -1047,10 +1176,6 @@ PGPoint ConvertWindowToScreen(PGWindowHandle window, PGPoint point) {
 	p.x = point.x; p.y = point.y;
 	ClientToScreen(window->hwnd, &p);
 	return PGPoint(p.x, p.y);
-}
-
-std::string OpenFileMenu() {
-	return "";
 }
 
 std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directories, bool allow_multiple_selection) {
