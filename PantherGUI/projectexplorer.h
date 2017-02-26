@@ -36,6 +36,10 @@ private:
 
 	PGFontHandle font;
 
+	SimpleTextField* textfield = nullptr;
+
+	void RenameFile();
+
 	std::vector<PGDirectory*> directories;
 
 	bool dragging_scrollbar;
@@ -58,6 +62,6 @@ private:
 	lng MaximumScrollOffset();
 	lng RenderedFiles();
 
-	void DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected);
-	void DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset, lng& selection);
+	void DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected, bool highlighted);
+	void DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset, lng& selection, lng highlighted_entry);
 };

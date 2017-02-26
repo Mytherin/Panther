@@ -638,7 +638,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	HWND hWnd = CreateWindow(
 		szWindowClass,
 		szTitle,
-		WS_OVERLAPPEDWINDOW,
+		(WS_OVERLAPPEDWINDOW),
 		position.x, position.y,
 		1016, 738,
 		nullptr,

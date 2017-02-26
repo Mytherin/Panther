@@ -8,7 +8,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(SimpleTextField);
 
 SimpleTextField::SimpleTextField(PGWindowHandle window) :
 	BasicTextField(window, std::shared_ptr<TextFile>(new TextFile(nullptr))), valid_input(true),
-	on_user_cancel(), on_user_confirm(), on_prev_entry(), on_next_entry() {
+	on_user_cancel(), on_user_confirm(), on_prev_entry(), on_next_entry(), render_background(true) {
 	this->height = GetTextHeight(textfield_font) + 6;
 }
 
@@ -21,10 +21,12 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar max_x = x + this->width;
 	PGScalar xoffset = textfile->GetXOffset();
 
-	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
-	RenderRectangle(renderer, PGRect(x, y, this->width, this->height),
-		valid_input ? PGStyleManager::GetColor(PGColorTextFieldCaret) : PGStyleManager::GetColor(PGColorTextFieldError),
-		PGDrawStyleStroke);
+	if (render_background) {
+		RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+		RenderRectangle(renderer, PGRect(x, y, this->width, this->height),
+			valid_input ? PGStyleManager::GetColor(PGColorTextFieldCaret) : PGStyleManager::GetColor(PGColorTextFieldError),
+			PGDrawStyleStroke);
+	}
 
 	x += 4;
 	y += 2;

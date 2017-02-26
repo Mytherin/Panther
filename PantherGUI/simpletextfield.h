@@ -21,6 +21,7 @@ public:
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 
 	void SetValidInput(bool valid);
+	void SetRenderBackground(bool render) { render_background = render; }
 
 	void OnCancel(PGControlDataCallback callback, void* data) { on_user_cancel.function = callback; on_user_cancel.data = data; }
 	void OnConfirm(PGControlDataCallback callback, void* data) { on_user_confirm.function = callback; on_user_confirm.data = data; }
@@ -33,6 +34,7 @@ public:
 	PG_CONTROL_KEYBINDINGS;
 protected:
 	bool valid_input = true;
+	bool render_background = true;
 
 	struct PGFunctionData {
 		PGControlDataCallback function = nullptr;
