@@ -274,14 +274,20 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			}
 			SelectFile(selected_file, select_type, click_count > 0 && modifier == PGModifierNone);
 		} else if (button == PGRightMouseButton) {
+			PGDirectory *directory;
+			PGFile file;
+			FindFile(selected_file, &directory, &file);
+
 			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
-			PGPopupMenuInsertEntry(menu, "New File", [](Control* control, PGPopupInformation* info) {
-			});
-			PGPopupMenuInsertEntry(menu, "New Folder", [](Control* control, PGPopupInformation* info) {
-			});
-			PGPopupMenuInsertEntry(menu, "Existing File", [](Control* control, PGPopupInformation* info) {
-			});
-			PGPopupMenuInsertSeparator(menu);
+			if (directory) {
+				PGPopupMenuInsertEntry(menu, "Add New File", [](Control* control, PGPopupInformation* info) {
+				});
+				PGPopupMenuInsertEntry(menu, "Add New Folder", [](Control* control, PGPopupInformation* info) {
+				});
+				PGPopupMenuInsertEntry(menu, "Add Existing File", [](Control* control, PGPopupInformation* info) {
+				});
+				PGPopupMenuInsertSeparator(menu);
+			}
 			PGPopupMenuInsertEntry(menu, "Rename", [](Control* control, PGPopupInformation* info) {
 			});
 			PGPopupMenuInsertSeparator(menu);
@@ -292,9 +298,17 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			PGPopupMenuInsertEntry(menu, "Paste", [](Control* control, PGPopupInformation* info) {
 			});
 			PGPopupMenuInsertSeparator(menu);
-			PGPopupMenuInsertEntry(menu, "Open Folder in File Explorer", [](Control* control, PGPopupInformation* info) {
+			PGPopupInformation info(menu, directory);
+			info.data = directory ? directory->path : file.path;
+			info.text = directory ? "Open Folder in File Explorer" : "Open File in File Explorer";
+			PGPopupMenuInsertEntry(menu, info, [](Control* control, PGPopupInformation* info) {
+				OpenFolderInExplorer(info->data);
 			});
-			PGPopupMenuInsertEntry(menu, "Open Folder in Terminal", [](Control* control, PGPopupInformation* info) {
+			info = PGPopupInformation(menu, directory);
+			info.data = directory ? directory->path : file.path;
+			info.text = directory ? "Open Folder in Terminal" : "Open File in Terminal";
+			PGPopupMenuInsertEntry(menu, info, [](Control* control, PGPopupInformation* info) {
+				OpenFolderInTerminal(info->data);
 			});
 			PGPopupMenuInsertSeparator(menu);
 			PGPopupMenuInsertEntry(menu, "Delete", [](Control* control, PGPopupInformation* info) {

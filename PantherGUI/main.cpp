@@ -1077,6 +1077,7 @@ void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
 	info->text = "";
 	AppendMenu(handle->menu, MF_SEPARATOR | MF_OWNERDRAW, 0, (LPCSTR)info);
 	handle->data.push_back(info);
+	handle->index++;
 }
 
 void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submenu, std::string name) {
@@ -1085,6 +1086,7 @@ void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submen
 	info->text = name;
 	AppendMenu(handle->menu, MF_POPUP | MF_OWNERDRAW, (UINT_PTR)submenu->menu, (LPCSTR)info);
 	handle->data.push_back(info);
+	handle->index++;
 }
 
 void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGTextAlign align) {
@@ -1122,6 +1124,7 @@ void PGSetWindowMenu(PGWindowHandle window, PGPopupMenuHandle menu) {
 }
 
 void OpenFolderInExplorer(std::string path) {
+	// FIXME: if path is directory don't just select but go into the path
 	std::string parameter = "explorer.exe /select,\"" + path + "\"";
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
@@ -1153,6 +1156,7 @@ void OpenFolderInExplorer(std::string path) {
 }
 
 void OpenFolderInTerminal(std::string path) {
+	// FIXME: if path is directory don't just select but go into the path
 	std::string parameter = "cmd.exe"; // "C:\\Program Files\\Git\\git-bash.exe";
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;

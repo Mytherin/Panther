@@ -372,10 +372,19 @@ struct PGPopupInformation {
 	std::string text;
 	std::string hotkey;
 	std::string data;
+	union {
+		double ddata;
+		lng ldata;
+		void* pdata;
+	};
 	PGPopupType type;
 
-	PGPopupInformation(PGPopupMenuHandle handle) : handle(handle), type(PGPopupTypeEntry) { }
-	PGPopupInformation(PGPopupMenuHandle handle, std::string text, std::string hotkey) : handle(handle), text(text), hotkey(hotkey), data(), type(PGPopupTypeEntry) { }
+	PGPopupInformation(PGPopupMenuHandle handle) : handle(handle), type(PGPopupTypeEntry), pdata(nullptr) { }
+	PGPopupInformation(PGPopupMenuHandle handle, std::string data) : handle(handle), type(PGPopupTypeEntry), data(data) {}
+	PGPopupInformation(PGPopupMenuHandle handle, double data) : handle(handle), type(PGPopupTypeEntry), ddata(data) {}
+	PGPopupInformation(PGPopupMenuHandle handle, lng data) : handle(handle), type(PGPopupTypeEntry), ldata(data) {}
+	PGPopupInformation(PGPopupMenuHandle handle, void* data) : handle(handle), type(PGPopupTypeEntry), pdata(data) {}
+	PGPopupInformation(PGPopupMenuHandle handle, std::string text, std::string hotkey) : handle(handle), text(text), hotkey(hotkey), data(), type(PGPopupTypeEntry), pdata(nullptr) { }
 };
 
 typedef void(*PGPopupCallback)(Control* control, PGPopupInformation* popup);
