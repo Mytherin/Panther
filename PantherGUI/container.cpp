@@ -87,7 +87,7 @@ void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modif
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			c->MouseDown(mouse.x, mouse.y, button, modifier, click_count);
 			if (c->ControlTakesFocus()) {
-				focused_control = c;
+				SetFocusedControl(c);
 			}
 			return;
 		}
@@ -102,7 +102,7 @@ void PGContainer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifie
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			c->MouseUp(mouse.x, mouse.y, button, modifier);
 			if (c->ControlTakesFocus()) {
-				focused_control = c;
+				SetFocusedControl(c);
 			}
 			return;
 		}
@@ -132,6 +132,19 @@ void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
+void PGContainer::LosesFocus(void) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
+		Control* c = controls[i];
+		c->LosesFocus();
+	}
+}
+
+void PGContainer::GainsFocus(void) {
+	for (lng i = controls.size() - 1; i >= 0; i--) {
+		Control* c = controls[i];
+		c->GainsFocus();
+	}
+}
 
 bool PGContainer::AcceptsDragDrop(PGDragDropType type) {
 	for (lng i = controls.size() - 1; i >= 0; i--) {
@@ -262,9 +275,18 @@ void PGContainer::ActuallyAddControl(Control* control) {
 	control->parent = this;
 	controls.push_back(control);
 	if (control->ControlTakesFocus()) {
-		this->focused_control = control;
+		SetFocusedControl(control);
 	}
 	this->Invalidate();
+}
+
+
+void PGContainer::SetFocusedControl(Control* c) {
+	if (this->focused_control) {
+		this->focused_control->LosesFocus();
+	}
+	this->focused_control = c;
+	this->focused_control->GainsFocus();
 }
 
 void PGContainer::ActuallyRemoveControl(Control* control) {
@@ -275,7 +297,7 @@ void PGContainer::ActuallyRemoveControl(Control* control) {
 		this->focused_control = nullptr;
 		for (auto it = controls.begin(); it != controls.end(); it++) {
 			if ((*it)->ControlTakesFocus()) {
-				this->focused_control = (*it);
+				SetFocusedControl(*it);
 				break;
 			}
 		}

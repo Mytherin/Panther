@@ -386,9 +386,6 @@
     <ClInclude Include="keybindings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="notification.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="wrappedtextiterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -499,6 +496,9 @@
     </ClInclude>
     <ClInclude Include="rust\include\rust\gitignore.h">
       <Filter>Header Files\rust</Filter>
+    </ClInclude>
+    <ClInclude Include="notification.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

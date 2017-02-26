@@ -21,12 +21,10 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar max_x = x + this->width;
 	PGScalar xoffset = textfile->GetXOffset();
 
-	if (render_background) {
-		RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
-		RenderRectangle(renderer, PGRect(x, y, this->width, this->height),
-			valid_input ? PGStyleManager::GetColor(PGColorTextFieldCaret) : PGStyleManager::GetColor(PGColorTextFieldError),
-			PGDrawStyleStroke);
-	}
+	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+	RenderRectangle(renderer, PGRect(x, y, this->width, this->height),
+		valid_input ? PGStyleManager::GetColor(PGColorTextFieldCaret) : PGStyleManager::GetColor(PGColorTextFieldError),
+		PGDrawStyleStroke);
 
 	x += 4;
 	y += 2;

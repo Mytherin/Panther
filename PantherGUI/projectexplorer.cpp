@@ -3,10 +3,12 @@
 #include "projectexplorer.h"
 #include "style.h"
 
+PG_CONTROL_INITIALIZE_KEYBINDINGS(ProjectExplorer);
+
 #define FOLDER_IDENT 8
 
 ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
-	PGContainer(window), dragging_scrollbar(false) {
+	PGContainer(window), dragging_scrollbar(false), renaming_file(-1) {
 #ifdef WIN32
 	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI"));
 #else
@@ -48,7 +50,6 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 		PGColor color = selected ? PGStyleManager::GetColor(PGColorTextFieldSelection) : PGColor(45,45,45);
 		RenderRectangle(renderer, PGRect(x, y, this->width, file_render_height), color, PGDrawStyleFill);
 	}
-
 	if (!file_image) {
 		std::string extension = file.Extension();
 		auto language = PGLanguageManager::GetLanguage(extension);
@@ -91,13 +92,53 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 			PGStyleManager::GetColor(PGColorTabControlBorder));
 	}
 	x += 24;
-	RenderText(renderer, font, file.path.c_str(), file.path.size(), x, y);
+	if (!(selected && renaming_file >= 0)) {
+		RenderText(renderer, font, file.path.c_str(), file.path.size(), x, y);
+	} else {
+		textfield->x = x;
+		textfield->width = this->width - textfield->x - scrollbar->width - 16;
+	}
 	y += file_render_height;
 }
 
+void ProjectExplorer::FinishRename(bool success) {
+	if (renaming_file < 0) return;
+	if (success) {
+		std::string new_name = textfield->GetTextFile().GetText();
+		rename(renaming_path.c_str(), PGPathJoin(PGFile(renaming_path).Directory(), new_name).c_str());
+		directories[0]->Update();
+	}
+	renaming_file = -1;
+	this->RemoveControl(textfield);
+	textfield = nullptr;
+}
+
 void ProjectExplorer::RenameFile() {
+	if (selected_files.size() != 1) return;
 
+	// find the selected file
+	PGDirectory *directory;
+	PGFile file;
+	FindFile(selected_files[0], &directory, &file);
+	std::string initial_text;
+	if (directory) {
+		file = PGFile(directory->path);
+	}
+	initial_text = file.Filename();
+	this->renaming_path = file.path;
+	this->renaming_file = selected_files[0];
+	this->textfield = new SimpleTextField(window);
+	this->textfield->SetText(initial_text);
+	lng pos = initial_text.find('.');
+	this->textfield->GetTextFile().SetCursorLocation(0, 0, 0, pos == std::string::npos ? initial_text.size() : pos);
+	textfield->GetTextFile().SetXOffset(0);
+	textfield->SetRenderBackground(false);
+	textfield->x = 0; // FIXME
+	textfield->width = this->width - textfield->x - scrollbar->width - 16;
+	textfield->height = file_render_height;
+	textfield->SetFont(font);
 
+	this->AddControl(this->textfield);
 }
 
 void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset, lng& selection, lng highlighted_entry) {
@@ -131,7 +172,6 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 			}
 			current_offset++;
 		}
-		//RenderDashedLine(renderer, PGLine(start_x, start_y, start_x, y), PGColor(255, 255, 255), 1.0f, 1.0f, 1);
 	}
 }
 
@@ -166,9 +206,43 @@ void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
 	}
 
 	scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);
+
+	if (textfield) {
+		textfield->y = (renaming_file - offset) * file_render_height;
+	}
 	PGContainer::Draw(renderer, rect);
 	ClearRenderBounds(renderer);
 }
+
+bool ProjectExplorer::KeyboardButton(PGButton button, PGModifier modifier) {
+	if (button == PGButtonF2) {
+		this->RenameFile();
+		return true;
+	}
+	if (button == PGButtonEscape) {
+		// cancel rename
+		FinishRename(false);
+		return true;
+	}
+	if (button == PGButtonEnter) {
+		// succeed in rename
+		FinishRename(true);
+		return true;
+	}
+	if (this->PressKey(ProjectExplorer::keybindings, button, modifier)) {
+		return true;
+	}
+	return PGContainer::KeyboardButton(button, modifier);
+}
+
+
+bool ProjectExplorer::KeyboardCharacter(char character, PGModifier modifier) {
+	if (this->PressCharacter(ProjectExplorer::keybindings, character, modifier)) {
+		return true;
+	}
+	return PGContainer::KeyboardCharacter(character, modifier);
+}
+
 
 void ProjectExplorer::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
@@ -266,6 +340,7 @@ std::vector<PGFile> ProjectExplorer::GetFiles() {
 }
 
 void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool open_file) {
+	FinishRename(true);
 	if (type == PGSelectSingleFile) {
 		PGFile file;
 		PGDirectory* directory;
@@ -337,4 +412,8 @@ void ProjectExplorer::OnResize(PGSize old_size, PGSize new_size) {
 	scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, SCROLLBAR_PADDING));
 	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, this->height - 2 * SCROLLBAR_PADDING));
 	PGContainer::OnResize(old_size, new_size);
+}
+
+void ProjectExplorer::LosesFocus(void) {
+	FinishRename(false);
 }

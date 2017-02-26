@@ -55,6 +55,14 @@ void Control::ClearDragDrop(PGDragDropType type) {
 
 }
 
+void Control::LosesFocus(void) {
+
+}
+
+void Control::GainsFocus(void) {
+
+}
+
 bool Control::KeyboardButton(PGButton button, PGModifier modifier) {
 	return false;
 }

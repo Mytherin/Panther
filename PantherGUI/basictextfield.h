@@ -76,6 +76,8 @@ public:
 	void OnTextChanged(PGControlDataCallback callback, void* data);
 	void UnregisterOnTextChanged(PGControlDataCallback callback, void* data);
 
+	void SetFont(PGFontHandle font) { textfield_font = font; }
+
 	PG_CONTROL_KEYBINDINGS;
 protected:
 	std::shared_ptr<TextFile> textfile = nullptr;

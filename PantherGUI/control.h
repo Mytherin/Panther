@@ -33,10 +33,14 @@ public:
 	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
+	
 	// In order for a control to get MouseEnter() and MouseLeave() events
 	// it must register with the ControlManager
 	virtual void MouseEnter();
 	virtual void MouseLeave();
+
+	virtual void LosesFocus(void);
+	virtual void GainsFocus(void);
 
 	virtual void Invalidate(bool redraw_now = false);
 	virtual void Invalidate(PGIRect, bool redraw_now = false);

@@ -25,6 +25,9 @@ public:
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 
+	virtual void LosesFocus(void);
+	virtual void GainsFocus(void);
+
 	virtual bool AcceptsDragDrop(PGDragDropType type);
 	virtual void DragDrop(PGDragDropType type, int x, int y, void* data);
 	virtual void PerformDragDrop(PGDragDropType type, int x, int y, void* data);
@@ -49,6 +52,8 @@ public:
 	void RemoveControl(Control* control);
 protected:
 	Control* focused_control = nullptr;
+
+	void SetFocusedControl(Control* c);
 
 	std::vector<Control*> controls;
 

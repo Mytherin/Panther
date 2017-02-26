@@ -16,10 +16,15 @@ public:
 
 	void PeriodicRender(void);
 
+	bool KeyboardButton(PGButton button, PGModifier modifier);
+	bool KeyboardCharacter(char character, PGModifier modifier);
+
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
+
+	void LosesFocus(void);
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
@@ -29,16 +34,19 @@ public:
 
 	std::vector<PGFile> GetFiles();
 	std::vector<PGDirectory*>& GetDirectories() { return directories; }
-	
+
 	PG_CONTROL_KEYBINDINGS;
 private:
 	PGScalar file_render_height;
 
 	PGFontHandle font;
 
+	std::string renaming_path;
+	lng renaming_file = -1;
 	SimpleTextField* textfield = nullptr;
 
 	void RenameFile();
+	void FinishRename(bool success);
 
 	std::vector<PGDirectory*> directories;
 
