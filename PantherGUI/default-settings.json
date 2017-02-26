@@ -7,5 +7,6 @@
 	"always_show_minimap_viewport": false,
 	"word_wrap": "auto",
 	"hot_exit": true,
-	"automatic_reload_threshold": 1000
+	"automatic_reload_threshold": 1000,
+	"default_terminal": "C:\\Program Files\\Git\\git-bash.exe"
 }

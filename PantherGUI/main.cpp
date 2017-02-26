@@ -1157,7 +1157,11 @@ void OpenFolderInExplorer(std::string path) {
 
 void OpenFolderInTerminal(std::string path) {
 	// FIXME: if path is directory don't just select but go into the path
-	std::string parameter = "cmd.exe"; // "C:\\Program Files\\Git\\git-bash.exe";
+	
+	std::string parameter;
+	if (!PGSettingsManager::GetSetting("default_terminal", parameter)) {
+		parameter = "cmd.exe";
+	}
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
 
