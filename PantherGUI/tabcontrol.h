@@ -62,6 +62,8 @@ public:
 	void CloseTab(int tab);
 	void CloseTab(std::shared_ptr<TextFile> textfile);
 	bool CloseAllTabs();
+	bool CloseAllTabs(PGDirection direction);
+
 	void AddTab(std::shared_ptr<TextFile> textfile);
 	void AddTab(std::shared_ptr<TextFile> file, lng index);
 	void NewTab();
@@ -83,7 +85,7 @@ protected:
 
 	void AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid);
 
-	bool CloseTabConfirmation(int tab);
+	bool CloseTabConfirmation(int tab, bool respect_hot_exit = true);
 	void ActuallyCloseTab(int tab);
 	void ActuallyCloseTab(std::shared_ptr<TextFile> textfile);
 

@@ -632,9 +632,19 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 				tb->Invalidate();
 			});
 			PGPopupMenuInsertEntry(menu, "Close Other Tabs", [](Control* control, PGPopupInformation* info) {
-			}, PGPopupMenuGrayed);
+				TabControl* tb = dynamic_cast<TabControl*>(control);
+				tb->CloseAllTabs(PGDirectionLeft);
+				tb->CloseAllTabs(PGDirectionRight);
+			});
+			PGPopupMenuInsertSeparator(menu);
+			PGPopupMenuInsertEntry(menu, "Close Tabs to the Left", [](Control* control, PGPopupInformation* info) {
+				TabControl* tb = dynamic_cast<TabControl*>(control);
+				tb->CloseAllTabs(PGDirectionLeft);
+			});
 			PGPopupMenuInsertEntry(menu, "Close Tabs to the Right", [](Control* control, PGPopupInformation* info) {
-			}, PGPopupMenuGrayed);
+				TabControl* tb = dynamic_cast<TabControl*>(control);
+				tb->CloseAllTabs(PGDirectionRight);
+			});
 			PGPopupMenuInsertSeparator(menu);
 		}
 		PGPopupMenuInsertEntry(menu, "New File", [](Control* control, PGPopupInformation* info) {
@@ -678,9 +688,31 @@ bool TabControl::CloseAllTabs() {
 	return true;
 }
 
-bool TabControl::CloseTabConfirmation(int tab) {
-	bool hot_exit;
-	PGSettingsManager::GetSetting("hot_exit", hot_exit);
+bool TabControl::CloseAllTabs(PGDirection direction) {
+	size_t start, end;
+	if (direction == PGDirectionLeft) {
+		start = 0;
+		end = currently_selected_tab;
+	} else {
+		start = currently_selected_tab + 1;
+		end = tabs.size();
+	}
+	for (size_t i = start; i < end; i++) {
+		if (!CloseTabConfirmation(i, false)) {
+			return false;
+		}
+		ActuallyCloseTab(i);
+		i--;
+		end--;
+	}
+	return true;
+}
+
+bool TabControl::CloseTabConfirmation(int tab, bool respect_hot_exit) {
+	bool hot_exit = false;
+	if (respect_hot_exit) {
+		PGSettingsManager::GetSetting("hot_exit", hot_exit);
+	}
 	// we only show a confirmation on exit if hot_exit is disabled
 	// or if hot_exit is enabled, but the file cannot be saved in the workspace because it is too large
 	if (tabs[tab].file->HasUnsavedChanges() && 
