@@ -128,14 +128,15 @@ PGRendererHandle InitializeRenderer() {
 	return renderer;
 }
 
-void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager) {
+void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager, PGScalar scale_factor) {
 	//bitmap.setConfig(SkBitmap::kARGB_8888_Config, canvas_width, canvas_height);
 	bitmap.setAlphaType(kOpaque_SkAlphaType);
-	bitmap.allocN32Pixels(rect.width, rect.height);
+	bitmap.allocN32Pixels((lng)(rect.width * scale_factor), (lng)(rect.height * scale_factor));
 	//bitmap.allocPixels();
 
 	SkCanvas canvas(bitmap);
 	canvas.clear(SkColorSetRGB(30, 30, 30));
+	canvas.scale(scale_factor, scale_factor);
 
 	renderer->canvas = &canvas;
 
@@ -305,7 +306,6 @@ void RenderString(PGRendererHandle renderer, PGFontHandle font, const std::strin
 
 void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y, PGScalar max_position) {
 	renderer->canvas->drawBitmap(*image->bitmap, x, y);
-
 }
 
 PGBitmapHandle CreateBitmapFromSize(PGScalar width, PGScalar height) {

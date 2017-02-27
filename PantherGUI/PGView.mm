@@ -19,6 +19,8 @@
 #import "PGWindow.h"
 #import "PGDrawBitmap.h"
 
+#define RETINA_API_AVAILABLE (defined(MAC_OS_X_VERSION_10_7) && \
+                              MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
 // clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm c.cpp control.cpp cursor.cpp keywords.cpp logger.cpp scheduler.cpp text.cpp syntaxhighlighter.cpp textfield.cpp textfile.cpp textline.cpp thread.cpp windowfunctions.cpp xml.cpp file.cpp tabcontrol.cpp tabbedtextfield.cpp renderer.cpp filemanager.cpp controlmanager.cpp utils.cpp  -o main
 
 struct PGPopupMenu {
@@ -88,7 +90,11 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 - (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(std::vector<std::shared_ptr<TextFile>>)textfiles
 {
 	if(self = [super initWithFrame:frameRect]) {
+#ifdef RETINA_API_AVAILABLE
+		[self setWantsBestResolutionOpenGLSurface:YES];
+#endif
 		NSRect rect = [self getBounds];
+
 		handle = new PGWindow();
 		handle->window = window;
 		handle->view = self;
@@ -151,6 +157,21 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 	return self;
 }
 
+- (float)scaleFactor {
+    NSWindow *window = [self window];
+#ifdef RETINA_API_AVAILABLE
+    if (window) {
+        return [window backingScaleFactor];
+    }
+    return [[NSScreen mainScreen] backingScaleFactor];
+#else
+    if (window) {
+        return [window userSpaceScaleFactor];
+    }
+    return [[NSScreen mainScreen] userSpaceScaleFactor];
+#endif
+}
+
 - (void)drawRect:(NSRect)invalidateRect {
 	NSRect window_size = [self getBounds];
 	if (handle->manager->width != window_size.size.width || 
@@ -166,11 +187,11 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		invalidateRect.size.width,
 		invalidateRect.size.height);
 
-	RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager);
+	RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager, [self scaleFactor]);
 
 	// draw bitmap
 	CGContextRef context = (CGContextRef) [[NSGraphicsContext currentContext] graphicsPort];
-	SkCGDrawBitmap(context, bitmap, 0, 0);
+	SkCGDrawBitmap(context, bitmap, 0, 0, [self scaleFactor]);
 }
 
 -(void)performClose {

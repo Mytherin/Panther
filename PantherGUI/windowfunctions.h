@@ -44,6 +44,11 @@ struct PGPoint {
 	friend PGPoint operator-(PGPoint lhs, const PGPoint& rhs) {
 		return PGPoint(lhs.x - rhs.x, lhs.y - rhs.y);
 	}
+	PGPoint& operator*=(const PGScalar& rhs) {
+		this->x *= rhs;
+		this->y *= rhs;
+		return *this;
+	}
 	PGPoint() : x(0), y(0) { }
 	PGPoint(PGScalar x, PGScalar y) : x(x), y(y) { }
 };
@@ -57,6 +62,11 @@ struct PGSize {
 	}
 	friend PGSize operator-(PGSize lhs, const PGSize& rhs) {
 		return PGSize(lhs.width - rhs.width, lhs.height - rhs.height);
+	}
+	PGSize& operator*=(const PGScalar& rhs) {
+		this->width *= rhs;
+		this->height *= rhs;
+		return *this;
 	}
 	PGSize() : width(0), height(0) { }
 	PGSize(PGScalar width, PGScalar height) : width(width), height(height) { }
@@ -73,6 +83,13 @@ struct PGRect {
 	PGRect() : x(0), y(0), width(0), height(0) { }
 	PGRect(PGScalar x, PGScalar y, PGScalar width, PGScalar height) : x(x), y(y), width(width), height(height) { }
 	PGRect(PGIRect rect);
+	PGRect& operator*=(const PGScalar& rhs) {
+		this->x *= rhs;
+		this->y *= rhs;
+		this->width *= rhs;
+		this->height *= rhs;
+		return *this;
+	}
 };
 
 struct PGCircle {
@@ -82,6 +99,12 @@ struct PGCircle {
 
 	PGCircle() : x(0), y(0), radius(0) { }
 	PGCircle(PGScalar x, PGScalar y, PGScalar radius) : x(x), y(y), radius(radius) { }
+	PGCircle& operator*=(const PGScalar& rhs) {
+		this->x *= rhs;
+		this->y *= rhs;
+		this->radius *= rhs;
+		return *this;
+	}
 };
 
 struct PGIRect {
@@ -98,9 +121,13 @@ struct PGIRect {
 struct PGLine {
 	PGPoint start;
 	PGPoint end;
-
 	PGLine(PGPoint start, PGPoint end) : start(start), end(end) { }
 	PGLine(PGScalar startx, PGScalar starty, PGScalar endx, PGScalar endy) : start(startx, starty), end(endx, endy) { }
+	PGLine& operator*=(const PGScalar& rhs) {
+		this->start *= rhs;
+		this->end *= rhs;
+		return *this;
+	}
 };
 
 struct PGPolygon {
@@ -109,6 +136,13 @@ struct PGPolygon {
 
 	PGPolygon() : points(), closed(true) { }
 	PGPolygon(std::vector<PGPoint> points) : points(points), closed(true) { }
+
+	PGPolygon& operator*=(const PGScalar& rhs) {
+		for(size_t i = 0; i < points.size(); i++) {
+			points[i] *= rhs;
+		}
+		return *this;
+	}
 };
 
 bool PGRectangleContains(PGRect, PGPoint);

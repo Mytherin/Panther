@@ -139,7 +139,7 @@ CGImageRef SkCreateCGImageRef(const SkBitmap& bm) {
     return ref;
 }
 
-void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, float x, float y) {
+void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, float x, float y, float scale_factor) {
     CGImageRef img = SkCreateCGImageRef(bm);
 
     if (img) {
@@ -147,7 +147,7 @@ void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, float x, float y) {
 
         CGContextSaveGState(cg);
         CGContextTranslateCTM(cg, x, y);
-        CGContextScaleCTM(cg, 1, 1);
+        CGContextScaleCTM(cg, 1.0f / scale_factor, 1.0f / scale_factor);
 
         CGContextDrawImage(cg, r, img);
 

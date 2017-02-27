@@ -15,9 +15,8 @@
 struct PGRenderer {
 	SkCanvas* canvas;
 	SkPaint* paint;
-	int scale;
 
-	PGRenderer() : canvas(nullptr), paint(nullptr), scale(2) {}
+	PGRenderer() : canvas(nullptr), paint(nullptr) {}
 };
 
 struct PGFont {
@@ -37,6 +36,6 @@ struct PGBitmap {
 	SkBitmap* bitmap;
 };
 
-void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager);
+void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager, PGScalar scale_factor);
 PGRendererHandle InitializeRenderer();
 SkBitmap* PGGetBitmap(PGBitmapHandle);
