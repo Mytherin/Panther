@@ -15,8 +15,9 @@
 struct PGRenderer {
 	SkCanvas* canvas;
 	SkPaint* paint;
+	int scale;
 
-	PGRenderer() : canvas(nullptr), paint(nullptr) {}
+	PGRenderer() : canvas(nullptr), paint(nullptr), scale(2) {}
 };
 
 struct PGFont {

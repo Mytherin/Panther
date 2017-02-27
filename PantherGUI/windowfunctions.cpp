@@ -160,3 +160,10 @@ std::string PGPathJoin(std::string path_one, std::string path_two) {
 	// FIXME: safe path join
 	return path_one + GetSystemPathSeparator() + path_two;
 }
+
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupCallback callback, PGPopupMenuFlags flags) {
+	PGPopupInformation info(handle);
+	info.text = text;
+	info.hotkey = "";
+	PGPopupMenuInsertEntry(handle, info, callback, flags);
+}

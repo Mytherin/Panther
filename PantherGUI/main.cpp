@@ -1047,13 +1047,6 @@ PGPopupMenuHandle PGCreateMenu(PGWindowHandle window, Control* control) {
 	return _create_menu(window, control, CreateMenu(), false);
 }
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupCallback callback, PGPopupMenuFlags flags) {
-	PGPopupInformation info(handle);
-	info.text = text;
-	info.hotkey = "";
-	PGPopupMenuInsertEntry(handle, info, callback, flags);
-}
-
 void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation information, PGPopupCallback callback, PGPopupMenuFlags flags) {
 	int append_flags = MF_OWNERDRAW;
 	if (flags & PGPopupMenuChecked) append_flags |= MF_CHECKED;

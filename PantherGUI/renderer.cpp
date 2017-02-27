@@ -40,12 +40,13 @@ SkPaint* CreateTextPaint() {
 	SkPaint* textpaint = new SkPaint();
 	textpaint->setTextSize(SkIntToScalar(15));
 	textpaint->setAntiAlias(true);
-	textpaint->setAutohinted(true);
-	textpaint->setHinting(SkPaint::Hinting::kNo_Hinting);
+	textpaint->setAutohinted(false);
+	textpaint->setDither(false);
+	textpaint->setHinting(SkPaint::Hinting::kFull_Hinting);
 	textpaint->setDevKernText(true);
 	textpaint->setLinearText(true);
 	textpaint->setSubpixelText(true);
-	textpaint->setStyle(SkPaint::kStrokeAndFill_Style);
+	textpaint->setStyle(SkPaint::kFill_Style);
 	textpaint->setTextEncoding(SkPaint::kUTF8_TextEncoding);
 	textpaint->setTextAlign(SkPaint::kLeft_Align);
 	return textpaint;
@@ -62,13 +63,13 @@ static void CreateFallbackFonts(PGFontHandle font) {
 	font->fallback_paints.push_back(fallback_paint);
 }
 
-PGFontHandle PGCreateFont(bool italic, bool bold) {
+PGFontHandle PGCreateFont() {
 #ifdef WIN32
-	char* default_font = "Consolas";
+	return PGCreateFont("Consolas", true, true);
 #else
-	char* default_font = "menlo";
+	return PGCreateFont("menlo", true, true);
+	return PGCreateFont("/Users/myth/Programs/Panther/PantherGUI/fonts/SourceCodePro-Semibold.ttf");
 #endif
-	return PGCreateFont(default_font, italic, bold);
 }
 
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
@@ -128,8 +129,10 @@ PGRendererHandle InitializeRenderer() {
 }
 
 void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager) {
+	//bitmap.setConfig(SkBitmap::kARGB_8888_Config, canvas_width, canvas_height);
+	bitmap.setAlphaType(kOpaque_SkAlphaType);
 	bitmap.allocN32Pixels(rect.width, rect.height);
-	bitmap.allocPixels();
+	//bitmap.allocPixels();
 
 	SkCanvas canvas(bitmap);
 	canvas.clear(SkColorSetRGB(30, 30, 30));
@@ -799,7 +802,7 @@ void PGRenderPopupItem(PGRendererHandle renderer, PGPoint point, PGFontHandle fo
 	}
 	RenderRectangle(renderer, PGRect(point.x, point.y, size.width, size.height), background_color, PGDrawStyleFill);
 	if (type == PGPopupTypeSeparator) {
-		RenderLine(renderer, PGLine(point + PGPoint(15, size.height / 2), point + PGPoint(size.width - 15, size.height / 2)), text_color, 0.5f);
+		RenderLine(renderer, PGLine(point + PGPoint(15, size.height / 2), point + PGPoint(size.width - 15, size.height / 2)), text_color, 1);
 	} else if (type == PGPopupTypeSubmenu || type == PGPopupTypeEntry) {
 		SetTextColor(font, text_color);
 		RenderText(renderer, font, info->text.c_str(), info->text.size(), point.x + 20, point.y);

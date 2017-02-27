@@ -605,13 +605,6 @@ void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submen
 	//assert(0);
 }
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupCallback callback, PGPopupMenuFlags flags) {
-	PGPopupInformation info;
-	info.text = text;
-	info.hotkey = "";
-	PGPopupMenuInsertEntry(handle, info, callback, flags);
-}
-
 void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation info, PGPopupCallback callback, PGPopupMenuFlags flags) {
 	NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:info.text.c_str()] action:@selector(popupMenuPress:) keyEquivalent:@""];
 	NSValue* _callback = [NSValue valueWithPointer:(void*)callback];
@@ -623,8 +616,6 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation info, P
 
 void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
 	[handle->menu addItem:[NSMenuItem separatorItem]];
-	// FIXME
-	//assert(0);
 }
 
 void PGDisplayPopupMenu(PGPopupMenuHandle handle, PGTextAlign align) {

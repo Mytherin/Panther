@@ -314,7 +314,7 @@ enum PGTextStyle {
 
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold);
 PGFontHandle PGCreateFont(char* filename);
-PGFontHandle PGCreateFont(bool italic = false, bool bold = false);
+PGFontHandle PGCreateFont();
 void PGDestroyFont(PGFontHandle font);
 // Sets the color of the text rendered with the RenderText method
 void SetTextColor(PGFontHandle font, PGColor color);

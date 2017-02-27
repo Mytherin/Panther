@@ -85,8 +85,6 @@ void TextFile::SetLanguage(PGLanguage* language) {
 		this->Unlock(PGWriteLock);
 		this->InvalidateParsing();
 	}
-
-
 }
 
 bool TextFile::Reload(PGFileError& error) {

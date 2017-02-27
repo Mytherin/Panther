@@ -452,6 +452,8 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	PGIRect rect = PGIRect(r->x, r->y, std::min(r->width, (int)(X() + this->width - r->x)), std::min(r->height, (int)(Y() + this->height - r->y)));
 	PGIRect* rectangle = &rect;
 
+	RenderRectangle(renderer, PGIRect(X() - r->x, Y() - r->y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+
 	if (textfile->IsLoaded()) {
 		textfile->Lock(PGReadLock);
 		// determine the width of the line numbers

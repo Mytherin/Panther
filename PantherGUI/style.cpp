@@ -64,7 +64,54 @@ PGStyleManager::PGStyleManager() {
 	vs.SetColor(PGColorSyntaxClass6, *vs.GetColor(PGColorSyntaxClass1));
 	this->styles["Visual Studio (Dark)"] = vs;
 
-	this->default_style = this->styles["Visual Studio (Dark)"];
+	PGStyle bp; // Black Panther
+	bp.SetColor(PGColorToggleButtonToggled, PGColor(51, 51, 51));
+	bp.SetColor(PGColorNotificationBackground, PGColor(51, 51, 51));
+	bp.SetColor(PGColorNotificationText, PGColor(238, 238, 238));
+	bp.SetColor(PGColorNotificationError, PGColor(190, 17, 0));
+	bp.SetColor(PGColorNotificationWarning, PGColor(255, 140, 0));
+	bp.SetColor(PGColorNotificationButton, PGColor(14, 99, 156));
+	bp.SetColor(PGColorProjectExplorerText, PGColor(222, 222, 222));
+	bp.SetColor(PGColorTextFieldBackground, PGColor(45, 45, 45));
+	bp.SetColor(PGColorTextFieldText, PGColor(211, 208, 200));
+	bp.SetColor(PGColorTextFieldSelection, PGColor(63, 63, 63));
+	bp.SetColor(PGColorTextFieldCaret, PGColor(212, 208, 200));
+	bp.SetColor(PGColorTextFieldLineNumber, PGColor(128, 127, 123));
+	bp.SetColor(PGColorTextFieldError, PGColor(252, 64, 54));
+	bp.SetColor(PGColorScrollbarBackground, PGColor(62, 62, 66));
+	bp.SetColor(PGColorScrollbarForeground, PGColor(104, 104, 104));
+	bp.SetColor(PGColorScrollbarHover, PGColor(158, 158, 158));
+	bp.SetColor(PGColorScrollbarDrag, PGColor(239, 235, 239));
+	bp.SetColor(PGColorMinimapHover, PGColor(255, 255, 255, 96));
+	bp.SetColor(PGColorMinimapDrag, PGColor(255, 255, 255, 128));
+	bp.SetColor(PGColorMainMenuBackground, PGColor(45, 45, 45));
+	bp.SetColor(PGColorMenuBackground, PGColor(27, 27, 28));
+	bp.SetColor(PGColorMenuText, PGColor(255, 255, 255));
+	bp.SetColor(PGColorMenuDisabled, PGColor(101, 101, 101));
+	bp.SetColor(PGColorMenuHover, PGColor(51, 51, 52));
+	bp.SetColor(PGColorTabControlText, PGColor(224, 224, 224));
+	bp.SetColor(PGColorTabControlBorder, PGColor(104, 104, 104));
+	bp.SetColor(PGColorTabControlBackground, PGColor(30, 30, 30));
+	bp.SetColor(PGColorTabControlUnsavedText, PGColor(222, 77, 77));
+	bp.SetColor(PGColorTabControlHover, PGColor(28, 151, 234));
+	bp.SetColor(PGColorTabControlSelected, PGColor(0, 122, 204));
+	bp.SetColor(PGColorStatusBarBackground, PGColor(87, 87, 87));
+	bp.SetColor(PGColorStatusBarText, PGColor(255, 255, 255));
+	bp.SetColor(PGColorSyntaxString, PGColor(153, 204, 153));
+	bp.SetColor(PGColorSyntaxConstant, PGColor(249, 145, 87));
+	bp.SetColor(PGColorSyntaxComment, PGColor(116, 115, 105));
+	bp.SetColor(PGColorSyntaxKeyword, PGColor(240, 128, 128));
+	bp.SetColor(PGColorSyntaxOperator, *bp.GetColor(PGColorSyntaxString));
+	bp.SetColor(PGColorSyntaxFunction, PGColor(166, 182, 255));
+	bp.SetColor(PGColorSyntaxClass1, PGColor(240, 128, 128));
+	bp.SetColor(PGColorSyntaxClass2, PGColor(247, 246, 146));
+	bp.SetColor(PGColorSyntaxClass3, PGColor(204, 153, 204));
+	bp.SetColor(PGColorSyntaxClass4, *bp.GetColor(PGColorSyntaxClass1));
+	bp.SetColor(PGColorSyntaxClass5, *bp.GetColor(PGColorSyntaxClass1));
+	bp.SetColor(PGColorSyntaxClass6, *bp.GetColor(PGColorSyntaxClass1));
+	this->styles["Black Panther"] = bp;
+
+	this->default_style = this->styles["Black Panther"];
 }
 
 PGColor PGStyleManager::_GetColor(PGColorType type, PGStyle* extra_style) {
