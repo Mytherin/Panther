@@ -329,6 +329,30 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 			button = PGButtonPageUp;
 		} else if (keyChar == NSPageDownFunctionKey) {
 			button = PGButtonPageDown;
+		} else if (keyChar == NSF1FunctionKey) {
+			button = PGButtonF1;
+		} else if (keyChar == NSF2FunctionKey) {
+			button = PGButtonF2;
+		} else if (keyChar == NSF3FunctionKey) {
+			button = PGButtonF3;
+		} else if (keyChar == NSF4FunctionKey) {
+			button = PGButtonF4;
+		} else if (keyChar == NSF5FunctionKey) {
+			button = PGButtonF5;
+		} else if (keyChar == NSF6FunctionKey) {
+			button = PGButtonF6;
+		} else if (keyChar == NSF7FunctionKey) {
+			button = PGButtonF7;
+		} else if (keyChar == NSF8FunctionKey) {
+			button = PGButtonF8;
+		} else if (keyChar == NSF9FunctionKey) {
+			button = PGButtonF9;
+		} else if (keyChar == NSF10FunctionKey) {
+			button = PGButtonF10;
+		} else if (keyChar == NSF11FunctionKey) {
+			button = PGButtonF11;
+		} else if (keyChar == NSF12FunctionKey) {
+			button = PGButtonF12;
 		} else if (keyChar == NSPrintScreenFunctionKey) {
 			assert(0);
 		} else if (keyChar == NSScrollLockFunctionKey) {
