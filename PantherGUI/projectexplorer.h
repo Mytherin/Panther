@@ -46,7 +46,7 @@ private:
 	SimpleTextField* textfield = nullptr;
 
 	void RenameFile();
-	void FinishRename(bool success);
+	void FinishRename(bool success, bool update_selection);
 
 	std::vector<PGDirectory*> directories;
 
@@ -63,7 +63,10 @@ private:
 		PGSelectAddRangeFile
 	};
 
+	void ScrollToFile(lng file_number);
+
 	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
+	lng FindFile(std::string full_name, PGDirectory** directory, PGFile* file);
 	void SelectFile(lng selected_file, PGSelectFileType type, bool open_file);
 
 	lng TotalFiles();
@@ -71,5 +74,5 @@ private:
 	lng RenderedFiles();
 
 	void DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected, bool highlighted);
-	void DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset, lng& selection, lng highlighted_entry);
+	void DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, PGScalar max_y, lng& current_offset, lng offset, lng& selection, lng highlighted_entry);
 };

@@ -101,21 +101,40 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 	y += file_render_height;
 }
 
-void ProjectExplorer::FinishRename(bool success) {
+void ProjectExplorer::ScrollToFile(lng file_number) {
+	if (scrollbar_offset > file_number) {
+		scrollbar_offset = file_number;
+	} else if (scrollbar_offset + RenderedFiles() <= file_number) {
+		scrollbar_offset = file_number - RenderedFiles() + 1;
+	}
+}
+
+void ProjectExplorer::FinishRename(bool success, bool update_selection) {
 	if (renaming_file < 0) return;
+	renaming_file = -1;
 	if (success) {
 		std::string new_name = textfield->GetTextFile().GetText();
-		rename(renaming_path.c_str(), PGPathJoin(PGFile(renaming_path).Directory(), new_name).c_str());
+		std::string full_name = PGPathJoin(PGFile(renaming_path).Directory(), new_name);
+		rename(renaming_path.c_str(), full_name.c_str());
 		directories[0]->Update();
+		if (update_selection) {
+			PGDirectory* directory; PGFile file;
+			lng filenr = this->FindFile(full_name, &directory, &file);
+			if (filenr >= 0) {
+				this->SelectFile(filenr, PGSelectSingleFile, false);
+				ScrollToFile(filenr);
+			}
+		}
+		this->Invalidate();
 	}
-	renaming_file = -1;
 	this->RemoveControl(textfield);
 	textfield = nullptr;
 }
 
 void ProjectExplorer::RenameFile() {
 	if (selected_files.size() != 1) return;
-
+	assert(renaming_file < 0);
+	ScrollToFile(selected_files[0]);
 	// find the selected file
 	PGDirectory *directory;
 	PGFile file;
@@ -141,7 +160,7 @@ void ProjectExplorer::RenameFile() {
 	this->AddControl(this->textfield);
 }
 
-void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, lng& current_offset, lng offset, lng& selection, lng highlighted_entry) {
+void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, PGScalar max_y, lng& current_offset, lng offset, lng& selection, lng highlighted_entry) {
 	if (current_offset >= offset) {
 		bool selected = selected_files.size() > selection ? selected_files[selection] == current_offset : false;
 		if (selected) selection++;
@@ -162,9 +181,11 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 		PGScalar start_y = y;
 		x += FOLDER_IDENT;
 		for (auto it = directory.directories.begin(); it != directory.directories.end(); it++) {
-			DrawDirectory(renderer, **it, x, y, current_offset, offset, selection, highlighted_entry);
+			if (y > max_y) return;
+			DrawDirectory(renderer, **it, x, y, max_y, current_offset, offset, selection, highlighted_entry);
 		}
 		for (auto it = directory.files.begin(); it != directory.files.end(); it++) {
+			if (y > max_y) return;
 			if (current_offset >= offset) {
 				bool selected = selected_files.size() > selection ? selected_files[selection] == current_offset : false;
 				if (selected) selection++;
@@ -202,7 +223,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
 
 	// render the files in the directory
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		DrawDirectory(renderer, **it, x + FOLDER_IDENT + 2, y, current_offset, offset, current_selection, highlighted_entry);
+		DrawDirectory(renderer, **it, x + FOLDER_IDENT + 2, y, y + this->height , current_offset, offset, current_selection, highlighted_entry);
 	}
 
 	scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);
@@ -221,12 +242,12 @@ bool ProjectExplorer::KeyboardButton(PGButton button, PGModifier modifier) {
 	}
 	if (button == PGButtonEscape) {
 		// cancel rename
-		FinishRename(false);
+		FinishRename(false, false);
 		return true;
 	}
 	if (button == PGButtonEnter) {
 		// succeed in rename
-		FinishRename(true);
+		FinishRename(true, true);
 		return true;
 	}
 	if (this->PressKey(ProjectExplorer::keybindings, button, modifier)) {
@@ -278,6 +299,10 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			PGFile file;
 			FindFile(selected_file, &directory, &file);
 
+			if (directory == nullptr) {
+				SelectFile(selected_file, PGSelectSingleFile, false);
+			}
+
 			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
 			if (directory) {
 				PGPopupMenuInsertEntry(menu, "Add New File", [](Control* control, PGPopupInformation* info) {
@@ -289,6 +314,8 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 				PGPopupMenuInsertSeparator(menu);
 			}
 			PGPopupMenuInsertEntry(menu, "Rename", [](Control* control, PGPopupInformation* info) {
+				auto explorer = dynamic_cast<ProjectExplorer*>(control);
+				explorer->RenameFile();
 			});
 			PGPopupMenuInsertSeparator(menu);
 			PGPopupMenuInsertEntry(menu, "Cut", [](Control* control, PGPopupInformation* info) {
@@ -332,6 +359,18 @@ void ProjectExplorer::MouseMove(int x, int y, PGMouseButton buttons) {
 	PGContainer::MouseMove(x, y, buttons);
 }
 
+lng ProjectExplorer::FindFile(std::string full_name, PGDirectory** directory, PGFile* file) {
+	lng index = 0;
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		lng entry = (*it)->FindFile(full_name, directory, file);
+		if (entry >= 0) {
+			return index + entry;
+		}
+		index += (*it)->DisplayedFiles();
+	}
+	return -1;
+}
+
 void ProjectExplorer::FindFile(lng file_number, PGDirectory** directory, PGFile* file) {
 	*directory = nullptr;
 	lng file_count = 0;
@@ -354,7 +393,7 @@ std::vector<PGFile> ProjectExplorer::GetFiles() {
 }
 
 void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool open_file) {
-	FinishRename(true);
+	FinishRename(true, false);
 	if (type == PGSelectSingleFile) {
 		PGFile file;
 		PGDirectory* directory;
@@ -419,7 +458,7 @@ lng ProjectExplorer::MaximumScrollOffset() {
 }
 
 lng ProjectExplorer::RenderedFiles() {
-	return this->height / GetTextHeight(font);
+	return this->height / file_render_height;
 }
 
 void ProjectExplorer::OnResize(PGSize old_size, PGSize new_size) {
@@ -429,5 +468,5 @@ void ProjectExplorer::OnResize(PGSize old_size, PGSize new_size) {
 }
 
 void ProjectExplorer::LosesFocus(void) {
-	FinishRename(false);
+	FinishRename(false, false);
 }
