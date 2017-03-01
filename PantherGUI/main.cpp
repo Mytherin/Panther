@@ -199,7 +199,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				ps.rcPaint.right - ps.rcPaint.left,
 				ps.rcPaint.bottom - ps.rcPaint.top);
 
-			RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager);
+			RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager, 1);
 
 			BITMAPINFO bmi;
 			memset(&bmi, 0, sizeof(bmi));
@@ -679,7 +679,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	tabbed->width = 0;
 	tabbed->height = TEXT_TAB_HEIGHT;
 	TextField* textfield = new TextField(res, initial_files[0]);
-	textfield->SetAnchor(PGAnchorTop | PGAnchorLeft);
+	textfield->SetAnchor(PGAnchorTop);
 	textfield->percentage_height = 1;
 	textfield->percentage_width = 1;
 	TabControl* tabs = new TabControl(res, textfield, initial_files);
@@ -691,27 +691,27 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	textfield->vertical_anchor = tabs;
 
 	ProjectExplorer* explorer = new ProjectExplorer(res);
-	explorer->SetAnchor(PGAnchorTop | PGAnchorLeft);
-	explorer->vertical_anchor = tabs;
+	explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	explorer->fixed_width = 200;
 	explorer->percentage_height = 1;
-	tabbed->AddControl(explorer);
-	textfield->horizontal_anchor = explorer;
 
 	StatusBar* bar = new StatusBar(res, textfield);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 	bar->percentage_width = 1;
 	bar->fixed_height = STATUSBAR_HEIGHT;
+	explorer->vertical_anchor = bar;
 
-	tabbed->SetAnchor(PGAnchorBottom);
+	tabbed->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	tabbed->percentage_height = 1;
 	tabbed->percentage_width = 1;
 	tabbed->vertical_anchor = bar;
+	tabbed->horizontal_anchor = explorer;
 	//tabbed->SetPosition(PGPoint(50, 50));
 	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
 
 	manager->AddControl(tabbed);
 	manager->AddControl(bar);
+	manager->AddControl(explorer);
 
 	manager->statusbar = bar;
 	manager->active_textfield = textfield;
