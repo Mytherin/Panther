@@ -485,12 +485,14 @@ void TabControl::NewTab() {
 }
 
 void TabControl::OpenFile(std::string path) {
-	PGFileError error;
-	std::shared_ptr<TextFile> textfile = file_manager.OpenFile(path, error);
-	if (textfile) {
-		AddTab(textfile);
-	} else if (textfield) {
-		this->textfield->DisplayNotification(error);
+	if (!SwitchToTab(path)) {
+		PGFileError error;
+		std::shared_ptr<TextFile> textfile = file_manager.OpenFile(path, error);
+		if (textfile) {
+			AddTab(textfile);
+		} else if (textfield) {
+			this->textfield->DisplayNotification(error);
+		}
 	}
 }
 
