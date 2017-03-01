@@ -210,7 +210,7 @@ public:
 
 	void ClearMatches();
 	const std::vector<PGTextRange>& GetFindMatches() { return matches; }
-	void SetSelectedMatch(lng selected_match) { selected_match = selected_match; }
+	void SetSelectedMatch(lng selected_match) { this->selected_match = selected_match; }
 	
 	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }

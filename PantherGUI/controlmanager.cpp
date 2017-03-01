@@ -158,6 +158,7 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 	// Find text
 	if (active_findtext) {
 		active_findtext->SetType(type);
+		SetFocusedControl(active_findtext);
 		return;
 	}
 	PGFindText* view = new PGFindText(this->window, type);
