@@ -86,7 +86,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 
-	RenderFileIcon(renderer, font, ext.c_str(), current_x, y + (height - file_icon_height) / 2, file_icon_width, file_icon_height,
+	RenderFileIcon(renderer, font, ext.c_str(), x + current_x, y + (height - file_icon_height) / 2, file_icon_width, file_icon_height,
 		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGStyleManager::GetColor(PGColorTabControlBackground), PGStyleManager::GetColor(PGColorTabControlBorder));
 		
 	current_x += file_icon_width + 2.5f;
@@ -103,8 +103,8 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 
 	RenderText(renderer, font, filename.c_str(), render_end, x + current_x + tab_padding, y + 6);
 	current_x += (tab.width - 25);
-	RenderLine(renderer, PGLine(PGPoint(current_x, y + 13), PGPoint(current_x + 8, y + 21)), PGStyleManager::GetColor(PGColorTabControlText), 1);
-	RenderLine(renderer, PGLine(PGPoint(current_x, y + 21), PGPoint(current_x + 8, y + 13)), PGStyleManager::GetColor(PGColorTabControlText), 1);
+	RenderLine(renderer, PGLine(PGPoint(x + current_x, y + 13), PGPoint(x + current_x + 8, y + 21)), PGStyleManager::GetColor(PGColorTabControlText), 1);
+	RenderLine(renderer, PGLine(PGPoint(x + current_x, y + 21), PGPoint(x + current_x + 8, y + 13)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	
 	position_x += tab.width + 15;
 }

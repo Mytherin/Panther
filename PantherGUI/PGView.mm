@@ -108,7 +108,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		tabbed->width = 0;
 		tabbed->height = TEXT_TAB_HEIGHT;
 		TextField* textfield = new TextField(handle, textfiles[0]);
-		textfield->SetAnchor(PGAnchorTop | PGAnchorLeft);
+		textfield->SetAnchor(PGAnchorTop);
 		textfield->percentage_height = 1;
 		textfield->percentage_width = 1;
 		TabControl* tabs = new TabControl(handle, textfield, textfiles);
@@ -121,24 +121,23 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 
 		ProjectExplorer* explorer = new ProjectExplorer(handle);
-		explorer->SetAnchor(PGAnchorTop | PGAnchorLeft);
-		explorer->vertical_anchor = tabs;
+		explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 		explorer->fixed_width = 200;
 		explorer->percentage_height = 1;
-		tabbed->AddControl(explorer);
-		textfield->horizontal_anchor = explorer;
 
 		StatusBar* bar = new StatusBar(handle, textfield);
 		bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 		bar->percentage_width = 1;
 		bar->fixed_height = STATUSBAR_HEIGHT;
+		explorer->vertical_anchor = bar;
 
-		tabbed->SetAnchor(PGAnchorBottom);
+		tabbed->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 		tabbed->percentage_height = 1;
 		tabbed->percentage_width = 1;
 		tabbed->vertical_anchor = bar;
-		//tabbed->SetPosition(PGPoint(50, 50));
-		//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
+		tabbed->SetPosition(PGPoint(50, 50));
+		tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
+		tabbed->horizontal_anchor = explorer;
 
 		manager->AddControl(tabbed);
 		manager->AddControl(bar);

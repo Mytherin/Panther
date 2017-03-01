@@ -272,6 +272,7 @@ void PGContainer::FlushRemoves() {
 
 void PGContainer::ActuallyAddControl(Control* control) {
 	assert(control);
+	assert(control->parent == nullptr || control->parent == this);
 	control->parent = this;
 	controls.push_back(control);
 	if (control->ControlTakesFocus()) {
