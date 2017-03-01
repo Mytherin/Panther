@@ -838,6 +838,17 @@ void TabControl::SwitchToTab(std::shared_ptr<TextFile> textfile) {
 	assert(0);
 }
 
+bool TabControl::SwitchToTab(std::string path) {
+	for (int i = 0; i < tabs.size(); i++) {
+		if (tabs[i].file->path == path) {
+			SetActiveTab(i);
+			this->Invalidate();
+			return true;
+		}
+	}
+	return false;
+}
+
 
 void TabControl::SwitchToFile(std::shared_ptr<TextFile> file) {
 	textfield->SetTextFile(file);

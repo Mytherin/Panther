@@ -74,6 +74,7 @@ public:
 	void AddTab(std::shared_ptr<TextFile> file, lng index);
 	void NewTab();
 	void SwitchToTab(std::shared_ptr<TextFile> file);
+	bool SwitchToTab(std::string path);
 	void ReopenLastFile();
 
 	void OpenTemporaryFile(std::shared_ptr<TextFile> textfile);

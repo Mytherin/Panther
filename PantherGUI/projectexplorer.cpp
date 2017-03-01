@@ -418,9 +418,11 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 					t->OpenFile(file.path);
 				} else {
 					PGFileError error;
-					auto ptr = std::shared_ptr<TextFile>(TextFile::OpenTextFilePreview(t->GetTextField(), file.path, error));
-					if (error == PGFileSuccess) {
-						t->OpenTemporaryFile(ptr);
+					if (!(t->SwitchToTab(file.path))) {
+						auto ptr = std::shared_ptr<TextFile>(TextFile::OpenTextFilePreview(t->GetTextField(), file.path, error));
+						if (error == PGFileSuccess) {
+							t->OpenTemporaryFile(ptr);
+						}
 					}
 				}
 			}
