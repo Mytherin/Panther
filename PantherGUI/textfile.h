@@ -178,10 +178,10 @@ public:
 	void SetLineOffset(lng offset);
 	void SetLineOffset(PGVerticalScroll scroll);
 	void SetScrollOffset(lng offset);
-	void OffsetLineOffset(lng lines);
+	void OffsetLineOffset(double lines);
 	PGVerticalScroll GetVerticalScroll(lng linenumber, lng characternr);
-	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset);
-	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, lng offset, lng& lines_offset);
+	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, double offset);
+	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, double offset, lng& lines_offset);
 	Cursor& GetActiveCursor();
 	lng GetActiveCursorIndex();
 	std::vector<Cursor>& GetCursors() { return cursors; }

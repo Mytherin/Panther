@@ -1228,16 +1228,47 @@ PGVerticalScroll TextFile::GetVerticalScroll(lng linenumber, lng characternr) {
 	}
 }
 
-PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng offset) {
+PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, double offset) {
 	lng lines_offset;
 	return OffsetVerticalScroll(scroll, offset, lines_offset);
 }
 
-PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng offset, lng& lines_offset) {
+PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, double offset, lng& lines_offset) {
+	if (offset == 0) return scroll;
+
+	// first perform any fractional (less than one line) scrolling
+	double partial = offset - (lng)offset;
+	offset = (lng) offset;
+	scroll.line_fraction += partial;
+	if (scroll.line_fraction >= 1) {
+		// the fraction is >= 1, we have to advance one actual line now
+		lng floor = (lng) scroll.line_fraction;
+		scroll.line_fraction -= floor;
+		offset += floor;
+	} else if (scroll.line_fraction < 0) {
+		// the fraction is < 0, we have to go one line back now
+		lng addition = (lng) std::ceil(std::abs(scroll.line_fraction));
+		scroll.line_fraction += addition;
+		offset -= addition;
+		if (scroll.linenumber <= 0 && (!wordwrap || scroll.inner_line <= 0)) {
+			// if we are at the first line in the file and we go backwards
+			// we cannot actually go back one line from this position
+			// so we avoid setting the line_fraction back to a value > 0
+			scroll.line_fraction = 0;
+		}
+	}
+	// line_fraction should always be a fraction
+	assert(scroll.line_fraction >= 0 && scroll.line_fraction < 1);
 	if (!wordwrap) {
+		// no wordwrap, simply add offset to the linenumber count
 		lng original_linenumber = scroll.linenumber;
-		scroll.linenumber += offset;
-		scroll.linenumber = std::max(std::min(scroll.linenumber, GetMaxYScroll()), (lng)0);
+		scroll.linenumber += (lng) offset;
+		lng max_y_scroll = GetMaxYScroll();
+		scroll.linenumber = std::max(std::min(scroll.linenumber, max_y_scroll), (lng)0);
+		if (scroll.linenumber >= max_y_scroll) {
+			// we cannot have a fraction > 0 if we are at the last line of the file
+			scroll.line_fraction = 0;
+		}
 		lines_offset = std::abs(scroll.linenumber - original_linenumber);
 	} else {
 		lines_offset = 0;
@@ -1247,25 +1278,34 @@ PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, lng off
 			// move forward by <lines>
 			for (; lines != 0; lines--) {
 				it->NextLine();
-				if (!it->GetLine().IsValid())
+				if (!it->GetLine().IsValid()) {
 					break;
+				}
 				lines_offset++;
 			}
 		} else {
 			// move backward by <lines>
 			for (; lines != 0; lines++) {
 				it->PrevLine();
-				if (!(it->GetLine().IsValid()))
+				if (!(it->GetLine().IsValid())) {
 					break;
+				}
 				lines_offset++;
 			}
 		}
+		double fraction = scroll.line_fraction;
 		scroll = it->GetCurrentScrollOffset();
+		it->NextLine();
+		if (!it->GetLine().IsValid()) {
+			// we cannot have a fraction > 0 if we are at the last line of the file
+			fraction = 0;
+		}
+		scroll.line_fraction = fraction;
 	}
 	return scroll;
 }
 
-void TextFile::OffsetLineOffset(lng offset) {
+void TextFile::OffsetLineOffset(double offset) {
 	yoffset = OffsetVerticalScroll(yoffset, offset);
 }
 

@@ -73,7 +73,7 @@ void WrappedTextLineIterator::SetCurrentScrollOffset(PGVerticalScroll scroll) {
 	inner_line = scroll.inner_line;
 	assert(scroll.inner_line >= 0 && scroll.inner_line < max_inner_line);
 	this->wrap_positions = textline.WrapLine(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
-	start_wrap = inner_line > 1 ? wrap_positions[inner_line - 1] : 0;
+	start_wrap = inner_line >= 1 ? wrap_positions[inner_line - 1] : 0;
 	end_wrap = wrap_positions[inner_line];
 	SetLineFromOffsets();
 }

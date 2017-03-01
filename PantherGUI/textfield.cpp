@@ -138,6 +138,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	lng current_match = 0;
 	const std::vector<PGTextRange>& matches = textfile->GetFindMatches();
 	lng selected_line = -1;
+	assert(start_line.line_fraction >= 0 && start_line.line_fraction <= 1);
+	position_y -= line_height * start_line.line_fraction;
 
 	if (!minimap) {
 		rendered_lines.clear();
@@ -199,8 +201,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					goto next_line;
 				}
 			}
-
-			SetRenderBounds(renderer, PGRect(position_x_text, y, this->width, this->height));
 
 			// render the selections and cursors, if there are any on this line
 			while (current_cursor < cursors.size()) {
@@ -424,13 +424,11 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 					}
 				}
 			}
-			ClearRenderBounds(renderer);
 		}
 next_line:
 		(*line_iterator)++;
 		position_y += line_height;
 	}
-	ClearRenderBounds(renderer);
 	if (!minimap) {
 		this->line_height = line_height;
 	} else {
@@ -452,6 +450,10 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 	PGIRect rect = PGIRect(r->x, r->y, std::min(r->width, (int)(X() + this->width - r->x)), std::min(r->height, (int)(Y() + this->height - r->y)));
 	PGIRect* rectangle = &rect;
 
+	// prevent rendering outside of the textfield
+	SetRenderBounds(renderer, PGRect(X() - r->x, Y() - r->y, this->width, this->height));
+
+	// render the background
 	RenderRectangle(renderer, PGIRect(X() - r->x, Y() - r->y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
 	if (textfile->IsLoaded()) {
@@ -536,6 +538,7 @@ void TextField::Draw(PGRendererHandle renderer, PGIRect* r) {
 			// error loading file: display nothing
 		}
 	}
+	ClearRenderBounds(renderer);
 }
 
 PGScalar TextField::GetTextfieldWidth() {
@@ -579,7 +582,9 @@ PGVerticalScroll TextField::GetMinimapStartLine() {
 	lng lines_rendered;
 	double percentage = 0;
 	GetMinimapLinesRendered(lines_rendered, percentage);
-	return textfile->OffsetVerticalScroll(textfile->GetLineOffset(), -(lines_rendered * percentage));
+	auto scroll = textfile->OffsetVerticalScroll(textfile->GetLineOffset(), -(lines_rendered * percentage));
+	scroll.line_fraction = 0;
+	return scroll;
 }
 
 void TextField::SetMinimapOffset(PGScalar offset) {

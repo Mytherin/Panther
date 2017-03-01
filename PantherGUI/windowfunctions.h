@@ -475,9 +475,10 @@ std::string GetOSName();
 struct PGVerticalScroll {
 	lng linenumber = 0;
 	lng inner_line = 0;
+	PGScalar line_fraction = 0;
 
-	PGVerticalScroll() : linenumber(0), inner_line(0) { }
-	PGVerticalScroll(lng linenumber, lng inner_line) : linenumber(linenumber), inner_line(inner_line) { }
+	PGVerticalScroll() : linenumber(0), inner_line(0), line_fraction(0) { }
+	PGVerticalScroll(lng linenumber, lng inner_line) : linenumber(linenumber), inner_line(inner_line), line_fraction(0) { }
 
 	friend bool operator< (const PGVerticalScroll& lhs, const PGVerticalScroll& rhs) {
 		return lhs.linenumber < rhs.linenumber ||
