@@ -121,7 +121,7 @@ void ProjectExplorer::FinishRename(bool success, bool update_selection) {
 			PGDirectory* directory; PGFile file;
 			lng filenr = this->FindFile(full_name, &directory, &file);
 			if (filenr >= 0) {
-				this->SelectFile(filenr, PGSelectSingleFile, false);
+				this->SelectFile(filenr, PGSelectSingleFile, false, false);
 				ScrollToFile(filenr);
 			}
 		}
@@ -293,15 +293,13 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			} else {
 				return;
 			}
-			SelectFile(selected_file, select_type, click_count > 0 && modifier == PGModifierNone);
+			SelectFile(selected_file, select_type, click_count > 0 && modifier == PGModifierNone, true);
 		} else if (button == PGRightMouseButton) {
 			PGDirectory *directory;
 			PGFile file;
 			FindFile(selected_file, &directory, &file);
 
-			if (directory == nullptr) {
-				SelectFile(selected_file, PGSelectSingleFile, false);
-			}
+			SelectFile(selected_file, PGSelectSingleFile, false, false);
 
 			PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
 			if (directory) {
@@ -392,14 +390,14 @@ std::vector<PGFile> ProjectExplorer::GetFiles() {
 	return files;
 }
 
-void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool open_file) {
+void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool open_file, bool click) {
 	FinishRename(true, false);
 	if (type == PGSelectSingleFile) {
 		PGFile file;
 		PGDirectory* directory;
 		this->FindFile(selected_file, &directory, &file);
 
-		if (directory) {
+		if (directory && click) {
 			// (un)expand the selected directory
 			lng current_count = directory->DisplayedFiles();
 			directory->expanded = !directory->expanded;
@@ -414,14 +412,22 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 			// simply select the file
 			selected_files.clear();
 			selected_files.push_back(selected_file);
-			if (open_file) {
+			if (open_file || click) {
 				TabControl* t = GetControlManager(this)->active_textfield->GetTabControl();
-				t->OpenFile(file.path);
+				if (open_file) {
+					t->OpenFile(file.path);
+				} else {
+					PGFileError error;
+					auto ptr = std::shared_ptr<TextFile>(TextFile::OpenTextFilePreview(t->GetTextField(), file.path, error));
+					if (error == PGFileSuccess) {
+						t->OpenTemporaryFile(ptr);
+					}
+				}
 			}
 		}
 	} else if (type == PGSelectAddRangeFile) {
 		if (selected_files.size() == 0) {
-			SelectFile(selected_file, type, open_file);
+			SelectFile(selected_file, type, open_file, click);
 			return;
 		}
 		lng start = selected_files.back();

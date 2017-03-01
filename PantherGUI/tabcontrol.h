@@ -51,8 +51,14 @@ public:
 	void LoadWorkspace(nlohmann::json& j);
 	void WriteWorkspace(nlohmann::json& j);
 
+	enum PGTabType {
+		PGTabTypeNone,
+		PGTabTypeSelected,
+		PGTabTypeTemporary
+	};
+
 	void Draw(PGRendererHandle, PGIRect*);
-	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, bool selected_tab);
+	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, PGTabType type);
 
 	void OpenFile(std::string path);
 	void OpenFile(std::shared_ptr<TextFile> textfile);
@@ -72,6 +78,8 @@ public:
 
 	void OpenTemporaryFile(std::shared_ptr<TextFile> textfile);
 	void CloseTemporaryFile();
+
+	TextField* GetTextField() { return textfield; }
 
 	bool IsDragging() {
 		return drag_tab;

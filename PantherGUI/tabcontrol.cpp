@@ -58,7 +58,7 @@ void TabControl::PeriodicRender() {
 	}
 }
 
-void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, bool selected_tab) {
+void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, PGTabType type) {
 	TextFile* file = tab.file.get();
 	assert(file);
 	std::string filename = file->GetName();
@@ -73,8 +73,15 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	polygon.points.push_back(PGPoint(x + current_x + tab.width + 15, y + 4));
 	polygon.points.push_back(PGPoint(x + current_x + tab.width + 27, y + tab_height));
 	polygon.closed = true;
-	RenderPolygon(renderer, polygon, selected_tab ? PGStyleManager::GetColor(PGColorTabControlSelected) :
-		PGStyleManager::GetColor(PGColorTabControlBackground));
+
+	PGColor background_color = PGStyleManager::GetColor(PGColorTabControlBackground);
+	if (type == PGTabTypeSelected) {
+		background_color = PGStyleManager::GetColor(PGColorTabControlSelected);
+	} else if (type == PGTabTypeTemporary) {
+		background_color = PGStyleManager::GetColor(PGColorTabControlTemporary);
+	}
+
+	RenderPolygon(renderer, polygon, background_color);
 	polygon.closed = false;
 	RenderPolygon(renderer, polygon, PGStyleManager::GetColor(PGColorTabControlBorder), 2);
 
@@ -132,7 +139,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 			}
 			it->width = MeasureTabWidth(*it);
 			if (position_x + (it->width + 30) >= 0) {
-				RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab);
+				RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab ? PGTabTypeSelected : PGTabTypeNone);
 				if (position_x > this->width - MAX_TAB_WIDTH) {
 					// finished rendering
 					break;
@@ -150,17 +157,17 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 
 	if (dragging_tab.file != nullptr) {
 		position_x = dragging_tab.x;
-		RenderTab(renderer, dragging_tab, position_x, x, y, true);
+		RenderTab(renderer, dragging_tab, position_x, x, y, PGTabTypeSelected);
 	}
+	ClearRenderBounds(renderer);
 	if (temporary_textfile) {
 		Tab tab = Tab(temporary_textfile, -1);
 		tab.width = MeasureTabWidth(tab);
-		position_x = x + this->width - (tab.width + 30);
+		position_x = this->width - (tab.width + 30);
 		tab.x = position_x;
 		tab.target_x = position_x;
-		RenderTab(renderer, tab, position_x, x, y, true);
+		RenderTab(renderer, tab, position_x, x, y, PGTabTypeTemporary);
 	}
-	ClearRenderBounds(renderer);
 
 	if (scroll_position > 0) {
 		// render gradient at start if we have scrolled
@@ -207,7 +214,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 		PGScalar position_x = 0;
 		PGScalar stored_x = tabs[active_tab].x;
 		tabs[active_tab].x = 0;
-		RenderTab(renderer, tabs[active_tab], position_x, 0, 0, false);
+		RenderTab(renderer, tabs[active_tab], position_x, 0, 0, PGTabTypeNone);
 		tabs[active_tab].x = stored_x;
 		DeleteRenderer(renderer);
 		
@@ -607,10 +614,14 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 			return;
 		}
 	} else if (button == PGMiddleMouseButton) {
-		int selected_tab = GetSelectedTab(x);
-		if (selected_tab >= 0) {
-			CloseTab(selected_tab);
-			this->Invalidate();
+		if (temporary_textfile && x > this->width - MAX_TAB_WIDTH) {
+			CloseTemporaryFile();
+		} else {
+			int selected_tab = GetSelectedTab(x);
+			if (selected_tab >= 0) {
+				CloseTab(selected_tab);
+				this->Invalidate();
+			}
 		}
 	}
 }
@@ -830,6 +841,9 @@ void TabControl::SwitchToTab(std::shared_ptr<TextFile> textfile) {
 
 void TabControl::SwitchToFile(std::shared_ptr<TextFile> file) {
 	textfield->SetTextFile(file);
+	if (temporary_textfile && file != temporary_textfile) {
+		CloseTemporaryFile();
+	}
 	this->Invalidate();
 }
 

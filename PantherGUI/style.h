@@ -34,6 +34,7 @@ enum PGColorType {
 	PGColorTabControlBackground,
 	PGColorTabControlHover,
 	PGColorTabControlSelected,
+	PGColorTabControlTemporary,
 	PGColorTabControlBorder,
 	PGColorStatusBarBackground,
 	PGColorStatusBarText,

@@ -67,7 +67,7 @@ private:
 
 	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
 	lng FindFile(std::string full_name, PGDirectory** directory, PGFile* file);
-	void SelectFile(lng selected_file, PGSelectFileType type, bool open_file);
+	void SelectFile(lng selected_file, PGSelectFileType type, bool open_file, bool click);
 
 	lng TotalFiles();
 	lng MaximumScrollOffset();

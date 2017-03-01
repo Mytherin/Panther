@@ -48,6 +48,7 @@ PGStyleManager::PGStyleManager() {
 	vs.SetColor(PGColorTabControlUnsavedText, PGColor(222, 77, 77));
 	vs.SetColor(PGColorTabControlHover, PGColor(28, 151, 234));
 	vs.SetColor(PGColorTabControlSelected, PGColor(0, 122, 204));
+	vs.SetColor(PGColorTabControlTemporary, PGColor(104, 33, 122));
 	vs.SetColor(PGColorStatusBarBackground, PGColor(0, 122, 204));
 	vs.SetColor(PGColorStatusBarText, PGColor(255, 255, 255));
 	vs.SetColor(PGColorSyntaxString, PGColor(214, 157, 110));
@@ -96,6 +97,7 @@ PGStyleManager::PGStyleManager() {
 	bp.SetColor(PGColorTabControlHover, PGColor(28, 151, 234));
 	bp.SetColor(PGColorTabControlSelected, PGColor(0, 122, 204));
 	bp.SetColor(PGColorStatusBarBackground, PGColor(87, 87, 87));
+	bp.SetColor(PGColorTabControlTemporary, PGColor(104, 33, 122));
 	bp.SetColor(PGColorStatusBarText, PGColor(255, 255, 255));
 	bp.SetColor(PGColorSyntaxString, PGColor(153, 204, 153));
 	bp.SetColor(PGColorSyntaxConstant, PGColor(249, 145, 87));
