@@ -532,3 +532,6 @@ enum PGFindTextType {
 	PGFindReplaceSingleFile,
 	PGFindReplaceManyFiles
 };
+
+void PGLogMessage(std::string text);
+

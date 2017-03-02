@@ -455,7 +455,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
 			int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			handle->manager->MouseWheel(point.x, point.y, 0, zDelta / 30.0, modifier);
+			handle->manager->MouseWheel(point.x, point.y, 0, (double) zDelta, modifier);
 			break;
 		}
 		case WM_LBUTTONDOWN:

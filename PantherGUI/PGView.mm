@@ -284,10 +284,10 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 - (void)scrollWheel:(NSEvent *)event {
-	if ([event deltaX] == 0 && [event deltaY] == 0) return;
+	if ([event scrollingDeltaX] == 0.0 && [event scrollingDeltaY] == 0.0) return;
 	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
-	handle->manager->MouseWheel(flags.x, flags.y, [event deltaX] * 10, [event deltaY], flags.modifiers);
+	handle->manager->MouseWheel(flags.x, flags.y, [event scrollingDeltaX] * 10, [event scrollingDeltaY], flags.modifiers);
 }
 /*
 - (void)mouseDragged:(NSEvent *)event {
@@ -829,6 +829,10 @@ PGFileInformation PGGetFileFlags(std::string path) {
 	info.modification_time = (lng) stat_info.st_mtime;
 
 	return info;
+}
+
+void PGLogMessage(std::string text) {
+	NSLog(@"%s", text.c_str());
 }
 
 #include <dirent.h>

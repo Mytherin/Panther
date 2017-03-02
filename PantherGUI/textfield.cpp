@@ -846,7 +846,7 @@ void TextField::DisplayGotoDialog(PGGotoType goto_type) {
 void TextField::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
 		if (distance != 0) {
-			textfile->OffsetLineOffset(-distance);
+			textfile->OffsetLineOffset(-distance / GetTextHeight(textfield_font));
 			this->Invalidate();
 		}
 	}
