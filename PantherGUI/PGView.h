@@ -23,6 +23,7 @@
 - (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(std::vector<std::shared_ptr<TextFile>>)textfiles;
 -(NSRect)getBounds;
 - (void)targetMethod:(NSTimer*)timer;
+- (BOOL)acceptsFirstMouse:(NSEvent *)event;
 - (PGTimerHandle)scheduleTimer:(PGWindowHandle)handle :(int)ms :(PGTimerCallback)callback :(PGTimerFlags)flags;
 
 

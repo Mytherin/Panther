@@ -241,6 +241,10 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 	return flags;
 }
 
+- (BOOL)acceptsFirstMouse:(NSEvent *)event {
+	return YES;
+}
+
 - (void)mouseDown:(NSEvent *)event { 
 	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
