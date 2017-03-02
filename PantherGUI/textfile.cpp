@@ -1234,7 +1234,10 @@ PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, double 
 }
 
 PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, double offset, lng& lines_offset) {
-	if (offset == 0) return scroll;
+	if (offset == 0) {
+		lines_offset = 0;
+		return scroll;
+	}
 
 	// first perform any fractional (less than one line) scrolling
 	double partial = offset - (lng)offset;

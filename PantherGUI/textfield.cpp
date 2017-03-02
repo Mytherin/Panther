@@ -618,6 +618,7 @@ void TextField::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				!display_horizontal_scrollbar || mouse.y <= this->height - SCROLLBAR_SIZE)) {
 				PGScalar minimap_offset = GetMinimapOffset();
 				PGScalar minimap_height = GetMinimapHeight();
+				drag_button = PGLeftMouseButton;
 				if ((mouse.y < minimap_offset) || (mouse.y > minimap_offset + minimap_height)) {
 					// mouse click above/below the minimap, move the minimap to the mouse
 					SetMinimapOffset(mouse.y - minimap_height / 2.0f);
