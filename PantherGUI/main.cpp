@@ -287,6 +287,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			bitmap.unlockPixels();
 			break;
 		}
+		case WM_KILLFOCUS:
+			handle->manager->LosesFocus();
+			break;
 		case WM_KEYDOWN:
 		{
 			char character = '\0';
