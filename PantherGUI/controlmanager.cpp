@@ -20,7 +20,7 @@ void ControlManager::PeriodicRender(void) {
 	PGPoint mouse = GetMousePosition(window);
 	PGMouseButton buttons = GetMouseState(window);
 
-	bool is_dragging = false;
+	is_dragging = false;
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)->IsDragging()) {
 			is_dragging = true;

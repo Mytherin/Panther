@@ -46,7 +46,7 @@ public:
 
 	PGCursorType GetCursor(PGPoint mouse);
 	PGCursorType GetDraggingCursor();
-	bool IsDragging();
+	virtual bool IsDragging();
 
 	void AddControl(Control* control);
 	void RemoveControl(Control* control);

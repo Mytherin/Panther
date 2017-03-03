@@ -3,6 +3,7 @@
 #include "filemanager.h"
 #include "style.h"
 #include "settings.h"
+#include "controlmanager.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
@@ -13,7 +14,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files) :
-	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1), active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr) {
+	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1), active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1) {
 		if (textfield) {
 		textfield->SetTabControl(this);
 	}
@@ -53,6 +54,42 @@ void TabControl::PeriodicRender() {
 			invalidate = true;
 		index++;
 	}
+	auto manager = GetControlManager(this);
+	bool find_hover = false;
+	if (!manager->IsDragging()) {
+		PGPoint mouse = GetMousePosition(window);
+		mouse.x -= X(); mouse.y -= Y();
+		if (PGRectangleContains(PGIRect(0, 0, this->width, this->height), mouse)) {
+			find_hover = true;
+			PGScalar position_x = -scroll_position;
+			lng old_selection = current_selection;
+			if (old_selection >= 0 && old_selection < tabs.size()) {
+				tabs[old_selection].hover = false;
+			}
+			current_selection = -1;
+			for (lng i = 0; i < tabs.size(); i++) {
+				if (position_x + (tabs[i].width + 30) >= 0) {
+					if (mouse.x >= position_x && mouse.x <= position_x + tabs[i].width + 30) {
+						current_selection = i;
+						tabs[i].hover = true;
+						break;
+					}
+				}
+				position_x += tabs[i].width + 30;
+			}
+			if (current_selection != old_selection) {
+				invalidate = true;
+			}
+		}
+	}
+	if (!find_hover) {
+		if (current_selection >= 0 && current_selection < tabs.size()) {
+			tabs[current_selection].hover = false;
+			invalidate = true;
+		}
+		current_selection = -1;
+	}
+	
 	if (invalidate) {
 		this->Invalidate();
 	}
@@ -75,11 +112,14 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	polygon.closed = true;
 
 	PGColor background_color = PGStyleManager::GetColor(PGColorTabControlBackground);
-	if (type == PGTabTypeSelected) {
+	if (tab.hover) {
+		background_color = PGStyleManager::GetColor(PGColorTabControlHover);
+	} else if (type == PGTabTypeSelected) {
 		background_color = PGStyleManager::GetColor(PGColorTabControlSelected);
 	} else if (type == PGTabTypeTemporary) {
 		background_color = PGStyleManager::GetColor(PGColorTabControlTemporary);
 	}
+	
 
 	RenderPolygon(renderer, polygon, background_color);
 	polygon.closed = false;

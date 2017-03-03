@@ -11,8 +11,9 @@ struct Tab {
 	PGScalar width;
 	PGScalar x = -1;
 	PGScalar target_x = -1;
+	bool hover = false;
 
-	Tab(std::shared_ptr<TextFile> file, lng id) : file(file), x(-1), target_x(-1), id(id) { }
+	Tab(std::shared_ptr<TextFile> file, lng id) : file(file), x(-1), target_x(-1), id(id), hover(false) { }
 };
 
 struct PGClosedTab {
@@ -83,7 +84,7 @@ public:
 	TextField* GetTextField() { return textfield; }
 
 	bool IsDragging() {
-		return drag_tab;
+		return drag_tab || dragging_tab.file != nullptr;
 	}
 
 	int currently_selected_tab = 0;
@@ -112,6 +113,8 @@ protected:
 	std::vector<Tab> tabs;
 	Tab dragging_tab;
 	bool active_tab_hidden = false;
+
+	lng current_selection = -1;
 
 	PGScalar scroll_position = 0;
 	PGScalar max_scroll = 0;

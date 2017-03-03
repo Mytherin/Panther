@@ -58,6 +58,7 @@ public:
 	StatusBar* statusbar;
 
 	bool CloseControlManager();
+	bool IsDragging() { return is_dragging; }
 
 	void ShowFindReplace(PGFindTextType type);
 	void CreateNewWindow();
@@ -67,6 +68,7 @@ private:
 	PGIRect invalidated_area;
 	bool invalidated;
 	bool is_destroyed = false;
+	bool is_dragging = false;
 
 	void EnterManager();
 	void LeaveManager();
