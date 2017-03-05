@@ -12,8 +12,9 @@ struct Tab {
 	PGScalar x = -1;
 	PGScalar target_x = -1;
 	bool hover = false;
+	bool button_hover = false;
 
-	Tab(std::shared_ptr<TextFile> file, lng id) : file(file), x(-1), target_x(-1), id(id), hover(false) { }
+	Tab(std::shared_ptr<TextFile> file, lng id) : file(file), x(-1), target_x(-1), id(id), hover(false), button_hover(false) { }
 };
 
 struct PGClosedTab {

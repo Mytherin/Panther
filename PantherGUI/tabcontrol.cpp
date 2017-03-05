@@ -63,21 +63,28 @@ void TabControl::PeriodicRender() {
 			find_hover = true;
 			PGScalar position_x = -scroll_position;
 			lng old_selection = current_selection;
+			bool old_button_hover = false, new_button_hover = false;
 			if (old_selection >= 0 && old_selection < tabs.size()) {
 				tabs[old_selection].hover = false;
+				old_button_hover = tabs[old_selection].button_hover;
+				tabs[old_selection].button_hover = false;
 			}
 			current_selection = -1;
 			for (lng i = 0; i < tabs.size(); i++) {
-				if (position_x + (tabs[i].width + 30) >= 0) {
-					if (mouse.x >= position_x && mouse.x <= position_x + tabs[i].width + 30) {
+				if (position_x + (tabs[i].width + 15) >= 0) {
+					if (mouse.x >= position_x && mouse.x <= position_x + tabs[i].width + 15) {
 						current_selection = i;
 						tabs[i].hover = true;
+						if (mouse.x >= position_x + tabs[i].width - 12.5f + file_icon_width && mouse.y >= 10 && mouse.y <= 22) {
+							tabs[i].button_hover = true;
+						}
+						new_button_hover = tabs[i].button_hover;
 						break;
 					}
 				}
-				position_x += tabs[i].width + 30;
+				position_x += tabs[i].width + 15;
 			}
-			if (current_selection != old_selection) {
+			if (current_selection != old_selection || old_button_hover != new_button_hover) {
 				invalidate = true;
 			}
 		}
@@ -150,6 +157,9 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 
 	RenderText(renderer, font, filename.c_str(), render_end, x + current_x + tab_padding, y + 6);
 	current_x += (tab.width - 25);
+	if (tab.button_hover) {
+		RenderRectangle(renderer, PGRect(x + current_x - 2, y + 11, 12, 12), PGStyleManager::GetColor(PGColorTabControlUnsavedText), PGDrawStyleFill);
+	}
 	RenderLine(renderer, PGLine(PGPoint(x + current_x, y + 13), PGPoint(x + current_x + 8, y + 21)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	RenderLine(renderer, PGLine(PGPoint(x + current_x, y + 21), PGPoint(x + current_x + 8, y + 13)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	
@@ -636,7 +646,7 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid) 
 
 int TabControl::GetSelectedTab(int x) {
 	for (int i = 0; i < tabs.size(); i++) {
-		if (x >= tabs[i].x && x <= tabs[i].x + tabs[i].width) {
+		if (x >= tabs[i].x && x <= tabs[i].x + tabs[i].width + 15) {
 			return i;
 		}
 	}
@@ -648,11 +658,16 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 	if (button == PGLeftMouseButton) {
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
-			active_tab = selected_tab;
-			SetActiveTab(selected_tab);
-			drag_offset = x - tabs[selected_tab].x;
-			drag_tab = true;
-			this->Invalidate(true);
+			PGScalar offset = x - tabs[selected_tab].x;
+			if (offset > tabs[selected_tab].width - 12.5f + file_icon_width) {
+				CloseTab(selected_tab);
+			} else {
+				active_tab = selected_tab;
+				SetActiveTab(selected_tab);
+				drag_offset = x - tabs[selected_tab].x;
+				drag_tab = true;
+				this->Invalidate(true);
+			}
 			return;
 		}
 	} else if (button == PGMiddleMouseButton) {
