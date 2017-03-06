@@ -9,7 +9,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
 ControlManager::ControlManager(PGWindowHandle window) : 
-	PGContainer(window), active_projectexplorer(nullptr), active_findtext(nullptr){
+	PGContainer(window), active_projectexplorer(nullptr), active_findtext(nullptr), is_focused(true) {
 #ifdef PANTHER_DEBUG
 	entrance_count = 0;
 #endif
@@ -282,6 +282,21 @@ void ControlManager::MouseUp(int x, int y, PGMouseButton button, PGModifier modi
 void ControlManager::MouseMove(int x, int y, PGMouseButton buttons) {
 	EnterManager();
 	PGContainer::MouseMove(x, y, buttons);
+	LeaveManager();
+}
+
+
+void ControlManager::LosesFocus(void) {
+	EnterManager();
+	is_focused = false;
+	PGContainer::LosesFocus();
+	LeaveManager();
+}
+
+void ControlManager::GainsFocus(void) {
+	EnterManager();
+	is_focused = true;
+	PGContainer::GainsFocus();
 	LeaveManager();
 }
 

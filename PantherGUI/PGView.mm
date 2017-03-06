@@ -474,6 +474,14 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 -(void)draggingSession:(NSDraggingSession *)session movedToPoint:(NSPoint)screenPoint {
 }
 
+- (void)windowDidResignKey:(NSNotification *)notification {
+    handle->manager->LosesFocus();
+}
+
+- (void)windowDidBecomeKey:(NSNotification *)notification {
+    handle->manager->GainsFocus();
+}
+
 @end
 
 PGPoint GetMousePosition(PGWindowHandle window) {
@@ -504,15 +512,16 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 
     window = [[PGNSWindow alloc] initWithContentRect:contentSize styleMask:windowStyleMask backing:NSBackingStoreBuffered defer:YES];
     window.backgroundColor = [NSColor whiteColor];
-    NSView *view = [[PGView alloc] initWithFrame:contentSize:window:textfiles];
+    PGView *view = [[PGView alloc] initWithFrame:contentSize:window:textfiles];
     [view setWantsLayer:YES];
     window.contentView = view;
     [window makeFirstResponder:view];
-    [window registerPGView:(PGView*)view];
+    [window registerPGView:view];
 
     [window cascadeTopLeftFromPoint:NSMakePoint(position.x, position.y)];
     [window setTitle:@"Panther"];
-	return [(PGView*)view getHandle];
+    [window setDelegate:view];
+	return [view getHandle];
 }
 
 PGWindowHandle PGCreateWindow(std::vector<std::shared_ptr<TextFile>> textfiles) {

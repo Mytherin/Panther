@@ -10,7 +10,7 @@
 
 @class PGView;
 
-@interface PGView : NSView <NSDraggingSource> {
+@interface PGView : NSView <NSDraggingSource, NSWindowDelegate> {
 	PGWindowHandle handle;
 	PGTimerHandle timer;
 

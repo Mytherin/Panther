@@ -63,12 +63,19 @@ public:
 	void ShowFindReplace(PGFindTextType type);
 	void CreateNewWindow();
 
+	void LosesFocus(void);
+	void GainsFocus(void);
+
+	bool ControlHasFocus() { return is_focused; }
+
+
 	PG_CONTROL_KEYBINDINGS;
 private:
 	PGIRect invalidated_area;
 	bool invalidated;
 	bool is_destroyed = false;
 	bool is_dragging = false;
+	bool is_focused = true;
 
 	void EnterManager();
 	void LeaveManager();
