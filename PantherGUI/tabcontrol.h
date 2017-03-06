@@ -117,6 +117,7 @@ protected:
 
 	lng current_selection = -1;
 
+	PGScalar rendered_scroll = 0;
 	PGScalar scroll_position = 0;
 	PGScalar max_scroll = 0;
 

@@ -287,6 +287,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			bitmap.unlockPixels();
 			break;
 		}
+		case WM_SETFOCUS:
+			handle->manager->GainsFocus();
+			break;
 		case WM_KILLFOCUS:
 			handle->manager->LosesFocus();
 			break;

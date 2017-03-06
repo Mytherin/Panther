@@ -169,7 +169,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar x = X() - rectangle->x;
 	PGScalar y = Y() - rectangle->y;
-	PGScalar position_x = -scroll_position;
+	PGScalar position_x = 0;
 	PGColor color = PGStyleManager::GetColor(PGColorMainMenuBackground);
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), color, PGDrawStyleFill);
 
@@ -188,14 +188,14 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 				it->x = position_x;
 			}
 			it->width = MeasureTabWidth(*it);
-			if (position_x + (it->width + 30) >= 0) {
-				RenderTab(renderer, *it, position_x, x, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab ? PGTabTypeSelected : PGTabTypeNone);
-				if (position_x > this->width - MAX_TAB_WIDTH) {
+			if (position_x + (it->width + 30) - scroll_position >= 0) {
+				RenderTab(renderer, *it, position_x, x - scroll_position, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab ? PGTabTypeSelected : PGTabTypeNone);
+				if (position_x - scroll_position > this->width - MAX_TAB_WIDTH) {
 					// finished rendering
 					break;
 				}
 			} else {
-				position_x += it->width + 30;
+				position_x += it->width + 15;
 			}
 		}
 		index++;
@@ -728,7 +728,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 
 void TabControl::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	PGScalar scroll_offset = (PGScalar) (std::abs(hdistance) > std::abs(distance) ? hdistance : distance);
-	scroll_position = std::min((PGScalar)max_scroll, std::max(0.0f, scroll_position + scroll_offset * 5));
+	scroll_position = std::min((PGScalar)max_scroll, std::max(0.0f, scroll_position + scroll_offset * 2));
 	this->Invalidate();
 }
 
