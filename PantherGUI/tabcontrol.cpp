@@ -14,7 +14,8 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files) :
-	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1), active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1) {
+	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1),
+	active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1), target_scroll(0), scroll_position(0) {
 		if (textfield) {
 		textfield->SetTabControl(this);
 	}
@@ -38,21 +39,29 @@ Tab TabControl::OpenTab(std::shared_ptr<TextFile> textfile) {
 	return Tab(textfile, current_id++);
 }
 
+static bool MovePositionTowards(PGScalar& current, PGScalar target, PGScalar speed) {
+	PGScalar original_position = current;
+	PGScalar offset = (target - current) / 3;
+	if ((current < target && current + offset > target) ||
+		(panther::abs(current + offset - target) < 1)) {
+		current = target;
+	} else {
+		current = current + offset;
+	}
+	return panther::abs(original_position - current) > 0.1;
+}
+
 void TabControl::PeriodicRender() {
 	bool invalidate = false;
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
-		PGScalar current_x = (*it).x;
-		PGScalar offset = ((*it).target_x - (*it).x) / 3;
-		if (((*it).x < (*it).target_x && (*it).x + offset > (*it).target_x) ||
-			(panther::abs((*it).x + offset - (*it).target_x) < 1)) {
-			(*it).x = (*it).target_x;
-		} else {
-			(*it).x = (*it).x + offset;
-		}
-		if (panther::abs(current_x - (*it).x) > 0.1)
+		if (MovePositionTowards((*it).x, (*it).target_x, 3)) {
 			invalidate = true;
+		}
 		index++;
+	}
+	if (MovePositionTowards(scroll_position, target_scroll, 3)) {
+		invalidate = true;
 	}
 	auto manager = GetControlManager(this);
 	bool find_hover = false;
@@ -176,10 +185,13 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	bool rendered = false;
 	int index = 0;
 
+	scroll_position = std::min((PGScalar)max_scroll, std::max(0.0f, scroll_position));
+	SetScrollPosition(target_scroll);
+
 	SetRenderBounds(renderer, PGRect(x, y, this->width - MAX_TAB_WIDTH, this->height));
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		if (!active_tab_hidden || index != active_tab) {
-			if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x && !rendered) {
+			if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x + scroll_position && !rendered) {
 				rendered = true;
 				position_x += MeasureTabWidth(dragging_tab) + 15;
 			}
@@ -285,20 +297,29 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
+void TabControl::SetScrollPosition(PGScalar position) {
+	target_scroll = std::min((PGScalar)max_scroll, std::max(0.0f, position));
+}
 
 bool TabControl::AcceptsDragDrop(PGDragDropType type) {
 	return type == PGDragDropTabs;
 }
 
 void TabControl::DragDrop(PGDragDropType type, int x, int y, void* data) {
+	TabDragDropStruct* tab_data = (TabDragDropStruct*)data;
 	PGPoint mouse(x - this->x, y - this->y);
 	assert(type == PGDragDropTabs);
-	if (mouse.x >= 0 && mouse.x <= this->width && mouse.y >= -100 & mouse.y <= 100) {
-		TabDragDropStruct* tab_data = (TabDragDropStruct*)data;
+	dragging_tab.width = MeasureTabWidth(Tab(tab_data->file, -1));
+	if (mouse.x >= -dragging_tab.width && mouse.x - tab_data->drag_offset <= this->width && mouse.y >= -100 & mouse.y <= 100) {
 		dragging_tab.file = tab_data->file;
-		dragging_tab.width = MeasureTabWidth(dragging_tab);
 		dragging_tab.x = mouse.x - tab_data->drag_offset;
-		dragging_tab.target_x = mouse.x;
+		dragging_tab.target_x = dragging_tab.x;
+
+		if (mouse.x <= 20) {
+			SetScrollPosition(target_scroll - 20);
+		} else if (mouse.x >= this->width - MAX_TAB_WIDTH) {
+			SetScrollPosition(target_scroll + 20);
+		}
 	} else {
 		dragging_tab.x = -1;
 		dragging_tab.file = nullptr;
@@ -338,8 +359,8 @@ void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) 
 				tabs.insert(tabs.begin() + new_index, current_tab);
 				SetActiveTab(new_index);
 			}
-			tabs[active_tab].x = tab_pos;
-			tabs[active_tab].target_x = tab_pos;
+			tabs[active_tab].x = tab_pos + scroll_position;
+			tabs[active_tab].target_x = tab_pos + scroll_position;
 		} else {
 			// if the tab is from a different tab control 
 			// we have to open the file
@@ -573,10 +594,10 @@ void TabControl::SetActiveTab(int active_tab) {
 	this->active_tab = active_tab;
 	PGScalar start = GetTabPosition(active_tab);
 	PGScalar width = MeasureTabWidth(tabs[active_tab]) + 30;
-	if (start < scroll_position) {
-		scroll_position = start;
-	} else if (start + width > scroll_position + this->width - MAX_TAB_WIDTH) {
-		scroll_position = start + width - (this->width - MAX_TAB_WIDTH);
+	if (start < target_scroll) {
+		SetScrollPosition(start);
+	} else if (start + width > target_scroll + this->width - MAX_TAB_WIDTH) {
+		SetScrollPosition(start + width - (this->width - MAX_TAB_WIDTH));
 	}
 	SwitchToFile(tabs[active_tab].file);
 }
@@ -644,7 +665,8 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid) 
 	SetActiveTab(active_tab);
 }
 
-int TabControl::GetSelectedTab(int x) {
+int TabControl::GetSelectedTab(PGScalar x) {
+	x += scroll_position;
 	for (int i = 0; i < tabs.size(); i++) {
 		if (x >= tabs[i].x && x <= tabs[i].x + tabs[i].width + 15) {
 			return i;
@@ -664,7 +686,7 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 			} else {
 				active_tab = selected_tab;
 				SetActiveTab(selected_tab);
-				drag_offset = x - tabs[selected_tab].x;
+				drag_offset = x - tabs[selected_tab].x + scroll_position;
 				drag_tab = true;
 				this->Invalidate(true);
 			}
@@ -728,7 +750,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 
 void TabControl::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	PGScalar scroll_offset = (PGScalar) (std::abs(hdistance) > std::abs(distance) ? hdistance : distance);
-	scroll_position = std::min((PGScalar)max_scroll, std::max(0.0f, scroll_position + scroll_offset * 2));
+	SetScrollPosition(target_scroll + scroll_offset * 2);
 	this->Invalidate();
 }
 

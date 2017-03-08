@@ -12,6 +12,7 @@ public:
 	StatusBar(PGWindowHandle window, TextField* textfield);
 	~StatusBar();
 
+	void SetText(std::string text);
 
 	void SelectionChanged();
 
@@ -23,6 +24,8 @@ public:
 	}
 	TextField* active_textfield;
 private:
+	std::string status;
+
 	Button* unicode_button;
 	Button* language_button;
 	Button* lineending_button;

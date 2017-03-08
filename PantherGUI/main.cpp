@@ -1443,3 +1443,10 @@ PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>&
 
 	return PGDirectorySuccess;
 }
+
+void PGLogMessage(std::string text) {
+	for (auto it = handle_map.begin(); it != handle_map.end(); it++) {
+		it->second->manager->statusbar->SetText(text);
+		break;
+	}
+}

@@ -108,7 +108,7 @@ protected:
 
 	PGFontHandle font;
 
-	int GetSelectedTab(int x);
+	int GetSelectedTab(PGScalar x);
 
 	std::vector<PGClosedTab> closed_tabs;
 	std::vector<Tab> tabs;
@@ -119,7 +119,10 @@ protected:
 
 	PGScalar rendered_scroll = 0;
 	PGScalar scroll_position = 0;
+	PGScalar target_scroll = 0;
 	PGScalar max_scroll = 0;
+
+	void SetScrollPosition(PGScalar position);
 
 	TextField* textfield;
 

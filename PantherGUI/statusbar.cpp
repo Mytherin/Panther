@@ -130,6 +130,11 @@ StatusBar::~StatusBar() {
 	// FIXME: unregister textfield function
 }
 
+void StatusBar::SetText(std::string text) {
+	this->status = text;
+	this->Invalidate();
+}
+
 void StatusBar::SelectionChanged() {
 	this->Invalidate();
 }
@@ -159,6 +164,9 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 				}
 			} else {
 				str = to_string(cursors.size()) + string(" selected regions");
+			}
+			if (status.size() > 0) {
+				str += " - " + status;
 			}
 			RenderText(renderer, font, str.c_str(), str.size(), x + 10, y - rect->y);
 			const int padding = 20;
