@@ -5,6 +5,7 @@
 #include "projectexplorer.h"
 #include "tabcontrol.h"
 #include "textfield.h"
+#include "textfieldcontainer.h"
 
 typedef void(*PGMouseCallback)(Control* control, bool, void*);
 
@@ -31,6 +32,7 @@ public:
 
 	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
+	bool KeyboardCharacter(char character, PGModifier modifier);
 	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 	void Draw(PGRendererHandle, PGIRect*);
 
@@ -40,8 +42,6 @@ public:
 
 	void RefreshWindow(bool redraw_now = false);
 	void RefreshWindow(PGIRect rectangle, bool redraw_now = false);
-
-	bool KeyboardCharacter(char character, PGModifier modifier);
 
 	Control* GetActiveControl() { return focused_control; }
 	void RegisterControlForMouseEvents(Control* control);
@@ -68,9 +68,13 @@ public:
 
 	bool ControlHasFocus() { return is_focused; }
 
+	void SetTextFieldLayout(int columns, int rows);
 
 	PG_CONTROL_KEYBINDINGS;
 private:
+	int rows = 0, columns = 0;
+	std::vector<TextFieldContainer*> textfields;
+
 	PGIRect invalidated_area;
 	bool invalidated;
 	bool is_destroyed = false;

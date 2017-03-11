@@ -70,7 +70,8 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 }
 
 TextField::~TextField() {
-
+	ControlManager* manager = GetControlManager(this);
+	manager->UnregisterMouseRegion(&minimap_region);
 }
 
 void TextField::PeriodicRender() {

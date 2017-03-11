@@ -2,15 +2,16 @@
 #include "statusbar.h"
 #include "encoding.h"
 #include "style.h"
+#include "controlmanager.h"
 
-StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
-	active_textfield(textfield), PGContainer(window) {
+StatusBar::StatusBar(PGWindowHandle window) :
+	PGContainer(window) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
-	textfield->OnSelectionChanged([](Control* c, void* data) {
+	/*textfield->OnSelectionChanged([](Control* c, void* data) {
 		((StatusBar*)(data))->SelectionChanged();
-	}, (void*) this);
+	}, (void*) this);*/
 
 	Button* buttons[4];
 	for (int i = 0; i < 4; i++) {
@@ -56,7 +57,7 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 
 	language_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
-		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
+		TextFile& file = ((StatusBar*)c)->GetActiveTextField()->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
 		auto languages = PGLanguageManager::GetLanguages();
 		auto active_language = file.GetLanguage();
@@ -72,18 +73,18 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 
 	lineending_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
-		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
+		TextFile& file = ((StatusBar*)c)->GetActiveTextField()->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
 		PGPopupMenuInsertEntry(menu, "Windows (\\r\\n)", [](Control* control, PGPopupInformation* info) {
-			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			TextFile& file = dynamic_cast<StatusBar*>(control)->GetActiveTextField()->GetTextFile();
 			file.ChangeLineEnding(PGLineEndingWindows);
 		}, file.GetLineEnding() == PGLineEndingWindows ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		PGPopupMenuInsertEntry(menu, "Unix (\\n)", [](Control* control, PGPopupInformation* info) {
-			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			TextFile& file = dynamic_cast<StatusBar*>(control)->GetActiveTextField()->GetTextFile();
 			file.ChangeLineEnding(PGLineEndingUnix);
 		}, file.GetLineEnding() == PGLineEndingUnix ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		PGPopupMenuInsertEntry(menu, "Mac OS 9 (\\r)", [](Control* control, PGPopupInformation* info) {
-			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			TextFile& file = dynamic_cast<StatusBar*>(control)->GetActiveTextField()->GetTextFile();
 			file.ChangeLineEnding(PGLineEndingMacOS);
 		}, file.GetLineEnding() == PGLineEndingMacOS ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 
@@ -93,20 +94,20 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 	}, this);
 	tabwidth_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
-		TextFile& file = ((StatusBar*)c)->active_textfield->GetTextFile();
+		TextFile& file = ((StatusBar*)c)->GetActiveTextField()->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
 
 
 		PGPopupMenuInsertEntry(menu, "Convert Indentation To Spaces", [](Control* control, PGPopupInformation* info) {
-			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			TextFile& file = dynamic_cast<StatusBar*>(control)->GetActiveTextField()->GetTextFile();
 			file.ConvertToIndentation(PGIndentionSpaces);
 		});
 		PGPopupMenuInsertEntry(menu, "Convert Indentation To Tabs", [](Control* control, PGPopupInformation* info) {
-			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			TextFile& file = dynamic_cast<StatusBar*>(control)->GetActiveTextField()->GetTextFile();
 			file.ConvertToIndentation(PGIndentionTabs);
 		});
 		PGPopupMenuInsertEntry(menu, "Remove Trailing Whitespace", [](Control* control, PGPopupInformation* info) {
-			TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+			TextFile& file = dynamic_cast<StatusBar*>(control)->GetActiveTextField()->GetTextFile();
 			file.RemoveTrailingWhitespace();
 		}, file.GetLineIndentation() == PGIndentionSpaces ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
 		PGPopupMenuInsertSeparator(menu);
@@ -116,7 +117,7 @@ StatusBar::StatusBar(PGWindowHandle window, TextField* textfield) :
 			info.hotkey = "";
 			info.data = std::string(1, (char)i);
 			PGPopupMenuInsertEntry(menu, info, [](Control* control, PGPopupInformation* info) {
-				TextFile& file = dynamic_cast<StatusBar*>(control)->active_textfield->GetTextFile();
+				TextFile& file = dynamic_cast<StatusBar*>(control)->GetActiveTextField()->GetTextFile();
 				file.SetTabWidth(info->data[0]);
 			});
 		}
@@ -143,6 +144,7 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	using namespace std;
 	PGScalar x = X(), y = Y();
 	RenderRectangle(renderer, PGRect(x - rect->x, y - rect->y, this->width, this->height), PGStyleManager::GetColor(PGColorStatusBarBackground), PGDrawStyleFill);
+	auto active_textfield = GetActiveTextField();
 	if (active_textfield) {
 		TextFile& file = active_textfield->GetTextFile();
 		if (file.IsLoaded()) {
@@ -247,4 +249,8 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			}
 		}
 	}
+}
+
+TextField* StatusBar::GetActiveTextField() {
+	return GetControlManager(this)->active_textfield;
 }

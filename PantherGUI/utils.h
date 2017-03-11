@@ -27,6 +27,11 @@ namespace panther {
 	T abs(T t1) {
 		return t1 < 0 ? t1 * -1 : t1;
 	}
+	template<class T>
+	T clamp(T t1, T min, T max) {
+		if (min > max) return clamp(t1, max, min);
+		return t1 < min ? min : (t1 > max ? max : t1);
+	}
 
 	char* strdup(const char* source);
 

@@ -233,6 +233,7 @@
     <ClCompile Include="text.cpp" />
     <ClCompile Include="textdelta.cpp" />
     <ClCompile Include="textfield.cpp" />
+    <ClCompile Include="textfieldcontainer.cpp" />
     <ClCompile Include="textfile.cpp" />
     <ClCompile Include="textbuffer.cpp" />
     <ClCompile Include="textiterator.cpp" />
@@ -314,6 +315,7 @@
     <ClInclude Include="tester.h" />
     <ClInclude Include="text.h" />
     <ClInclude Include="textfield.h" />
+    <ClInclude Include="textfieldcontainer.h" />
     <ClInclude Include="textfile.h" />
     <ClInclude Include="textdelta.h" />
     <ClInclude Include="textbuffer.h" />

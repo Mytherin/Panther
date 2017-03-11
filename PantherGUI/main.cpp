@@ -403,7 +403,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			if (button != PGButtonNone) {
 				handle->manager->KeyboardButton(button, handle->modifier);
 				return 0;
-			} else if ((wParam >= 0x41 && wParam <= 0x5A) || character != '\0') {
+			} else if ((wParam >= 0x20 && wParam <= 0x7E) || character != '\0') {
 				if (character == '\0')
 					character = (char)wParam;
 				if (handle->modifier != PGModifierNone) {
@@ -679,49 +679,25 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	res->timer = CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
 		SendMessage(res->hwnd, WM_COMMAND, 0, 0);
 	}, PGTimerFlagsNone);
-
-
-	PGContainer* tabbed = new PGContainer(res);
-	tabbed->width = 0;
-	tabbed->height = TEXT_TAB_HEIGHT;
-	TextField* textfield = new TextField(res, initial_files[0]);
-	textfield->SetAnchor(PGAnchorTop);
-	textfield->percentage_height = 1;
-	textfield->percentage_width = 1;
-	TabControl* tabs = new TabControl(res, textfield, initial_files);
-	tabs->SetAnchor(PGAnchorTop | PGAnchorLeft);
-	tabs->fixed_height = TEXT_TAB_HEIGHT;
-	tabs->percentage_width = 1;
-	tabbed->AddControl(tabs);
-	tabbed->AddControl(textfield);
-	textfield->vertical_anchor = tabs;
-
+	
 	ProjectExplorer* explorer = new ProjectExplorer(res);
 	explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	explorer->fixed_width = 200;
 	explorer->percentage_height = 1;
 
-	StatusBar* bar = new StatusBar(res, textfield);
+	StatusBar* bar = new StatusBar(res);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 	bar->percentage_width = 1;
 	bar->fixed_height = STATUSBAR_HEIGHT;
 	explorer->vertical_anchor = bar;
-
-	tabbed->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-	tabbed->percentage_height = 1;
-	tabbed->percentage_width = 1;
-	tabbed->vertical_anchor = bar;
-	tabbed->horizontal_anchor = explorer;
-	//tabbed->SetPosition(PGPoint(50, 50));
-	//tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
-
-	manager->AddControl(tabbed);
+	
 	manager->AddControl(bar);
 	manager->AddControl(explorer);
 
 	manager->statusbar = bar;
-	manager->active_textfield = textfield;
 	manager->active_projectexplorer = explorer;
+
+	manager->SetTextFieldLayout(1, 1);
 
 	auto handle = PGCreateMenu(res, manager);
 	auto file = PGCreatePopupMenu(res, manager);

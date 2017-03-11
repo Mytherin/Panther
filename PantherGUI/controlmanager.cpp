@@ -9,7 +9,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
 ControlManager::ControlManager(PGWindowHandle window) : 
-	PGContainer(window), active_projectexplorer(nullptr), active_findtext(nullptr), is_focused(true) {
+	PGContainer(window), active_projectexplorer(nullptr), active_findtext(nullptr), is_focused(true), columns(0), rows(0) {
 #ifdef PANTHER_DEBUG
 	entrance_count = 0;
 #endif
@@ -175,6 +175,51 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 	this->Invalidate();
 }
 
+void ControlManager::SetTextFieldLayout(int columns, int rows) {
+	int total_textfields = columns * rows;
+	int current_textfields = textfields.size();
+	if (total_textfields < current_textfields) {
+		// have to remove textfields
+		// all the tabs of the removed textfields will be moved to the first textfield
+		for (lng i = textfields.size() - 1; i >= total_textfields; i--) {
+			this->RemoveControl(textfields[i]);
+		}
+		textfields.erase(textfields.begin() + total_textfields, textfields.end());
+	} else if (total_textfields > current_textfields) {
+		// have to add textfields
+		// the new textfields will be empty
+		for (lng i = current_textfields; i < total_textfields; i++) {
+			std::vector<std::shared_ptr<TextFile>> textfiles;
+			textfiles.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
+			TextFieldContainer* container = new TextFieldContainer(this->window, textfiles);
+			this->AddControl(container);
+			textfields.push_back(container);
+		}
+	}
+	int current_column = 0, current_row = 0;
+	for(lng i = 0; i < textfields.size(); i++) {
+		TextFieldContainer* container = textfields[i];
+		container->SetAnchor(PGAnchorBottom | PGAnchorLeft);
+		container->percentage_height = 1.0 / (rows - (rows - current_row) + 1);
+		container->percentage_width = 1.0 / (columns - current_column);
+		assert(current_row == rows - 1 || i + columns < textfields.size());
+		container->vertical_anchor = current_row == rows - 1 ? (Control*)statusbar : (Control*)textfields[i + columns];
+		assert(current_column == 0 || i > 0);
+		container->horizontal_anchor = current_column == 0 ? (Control*)active_projectexplorer : (Control*)textfields[i - 1];
+
+		current_column++;
+		if (current_column == columns) {
+			current_column = 0;
+			current_row++;
+		}
+	}
+
+	this->rows = rows;
+	this->columns = columns;
+	this->TriggerResize();
+	this->Invalidate();
+}
+
 void ControlManager::CreateNewWindow() {
 	std::vector<std::shared_ptr<TextFile>> files;
 	files.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
@@ -211,6 +256,19 @@ void ControlManager::InitializeKeybindings() {
 			}
 		}
 		t->ShowFindReplace(type);
+	};
+	args["set_textfield_layout"] = [](Control* c, std::map<std::string, std::string> args) {
+		ControlManager* t = (ControlManager*)c;
+		int columns = 1, rows = 1;
+		if (args.count("columns") > 0) {
+			columns = atol(args["columns"].c_str());
+			columns = panther::clamp(columns, 1, 3);
+		}
+		if (args.count("rows") > 0) {
+			rows = atol(args["rows"].c_str());
+			rows = panther::clamp(rows, 1, 3);
+		}
+		t->SetTextFieldLayout(columns, rows);
 	};
 }
 

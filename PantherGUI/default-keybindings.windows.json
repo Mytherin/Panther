@@ -6,7 +6,12 @@
 
 		{ "key": "ctrl+f", "command": "show_find", "args": {"type": "find"} },
 		{ "key": "ctrl+h", "command": "show_find", "args": {"type": "findreplace"} },
-		{ "key": "ctrl+shift+f", "command": "show_find", "args": {"type": "findinfiles"} }
+		{ "key": "ctrl+shift+f", "command": "show_find", "args": {"type": "findinfiles"} },
+
+		{ "key": "ctrl+shift+1", "command": "set_textfield_layout", "args": {"columns": "1", "rows": "1"} },
+		{ "key": "ctrl+shift+2", "command": "set_textfield_layout", "args": {"columns": "2", "rows": "1"} },
+		{ "key": "ctrl+shift+3", "command": "set_textfield_layout", "args": {"columns": "1", "rows": "2"} },
+		{ "key": "ctrl+shift+4", "command": "set_textfield_layout", "args": {"columns": "2", "rows": "2"} }
 	],
 	"basictextfield": [
 		{ "key": "backspace", "command": "left_delete" },

@@ -9,7 +9,7 @@
 
 class StatusBar : public PGContainer {
 public:
-	StatusBar(PGWindowHandle window, TextField* textfield);
+	StatusBar(PGWindowHandle window);
 	~StatusBar();
 
 	void SetText(std::string text);
@@ -22,7 +22,8 @@ public:
 		PGIRect rect = PGIRect((int)X(), (int)Y(), (int)this->width, (int)this->height);
 		RefreshWindow(this->window, rect);
 	}
-	TextField* active_textfield;
+
+	TextField* GetActiveTextField();
 private:
 	std::string status;
 
