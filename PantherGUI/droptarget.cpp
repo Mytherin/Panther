@@ -185,6 +185,9 @@ HRESULT PGDropSource::GiveFeedback(DWORD dwEffect) {
 }
 
 HRESULT PGDropSource::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState) {
+	if (drop_cancelled) {
+		return DRAGDROP_S_CANCEL;
+	}
 	if (fEscapePressed) {
 		return DRAGDROP_S_CANCEL;
 	}
@@ -272,15 +275,21 @@ ULONG PGDataObject::Release(void) {
 	}
 }
 
+PGWindowHandle active_dragging_window = nullptr;
+
 void PGPerformDragDrop(PGWindowHandle window) {
 	assert(!window->dragging);
 	window->dragging = true;
+
+	active_dragging_window = window;
 
 	PGDataObject* object = new PGDataObject(window, window->drag_drop_data.callback, window->drag_drop_data.data);
 	PGDropSource* source = new PGDropSource(window->drag_drop_data.callback, window->drag_drop_data.data);
 	DWORD result;
 
+	window->source = source;
 	HRESULT hresult = DoDragDrop(object, source, DROPEFFECT_MOVE | DROPEFFECT_COPY, &result);
+	window->source = nullptr;
 
 	window->dragging = false;
 }
@@ -292,4 +301,12 @@ void PGStartDragDrop(PGWindowHandle window, PGBitmapHandle image, PGDropCallback
 	window->drag_drop_data.callback = callback;
 	window->drag_drop_data.data = data;
 	window->drag_drop_data.data_length = data_length;
+}
+
+void PGCancelDragDrop(PGWindowHandle window) {
+	assert(active_dragging_window);
+	assert(active_dragging_window->dragging);
+	if (active_dragging_window->dragging) {
+		active_dragging_window->source->CancelDrop();
+	}
 }

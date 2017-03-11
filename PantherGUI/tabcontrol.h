@@ -29,6 +29,15 @@ struct PGClosedTab {
 	}
 };
 
+class TabControl;
+struct TabDragDropStruct {
+	TabDragDropStruct(std::shared_ptr<TextFile> file, TabControl* tabs, PGScalar drag_offset) : file(file), tabs(tabs), accepted(nullptr), drag_offset(drag_offset) {}
+	std::shared_ptr<TextFile> file;
+	TabControl* tabs;
+	TabControl* accepted = nullptr;
+	PGScalar drag_offset;
+};
+
 class TabControl : public Control {
 	friend class TextField; //FIXME
 	friend class PGGotoAnything;
@@ -134,6 +143,7 @@ protected:
 	PGScalar GetTabPosition(int tabnr);
 	void SetActiveTab(int active_tab);
 
+	TabDragDropStruct* drag_data = nullptr;
 	PGScalar drag_offset;
 	bool drag_tab;
 

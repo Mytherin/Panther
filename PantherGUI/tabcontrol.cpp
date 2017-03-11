@@ -15,7 +15,8 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files) :
 	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1),
-	active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1), target_scroll(0), scroll_position(0) {
+	active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1), 
+	target_scroll(0), scroll_position(0), drag_data(nullptr) {
 		if (textfield) {
 		textfield->SetTabControl(this);
 	}
@@ -256,44 +257,65 @@ bool TabControl::KeyboardButton(PGButton button, PGModifier modifier) {
 	return false;
 }
 
-struct TabDragDropStruct {
-	TabDragDropStruct(std::shared_ptr<TextFile> file, TabControl* tabs, PGScalar drag_offset) : file(file), tabs(tabs), accepted(nullptr), drag_offset(drag_offset) {}
-	std::shared_ptr<TextFile> file;
-	TabControl* tabs;
-	TabControl* accepted = nullptr;
-	PGScalar drag_offset;
-};
-
 void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
-	if (drag_tab) {
-		drag_tab = false;
+	PGPoint mouse(x - this->x, y - this->y);
+	if (buttons & PGLeftMouseButton) {
+		if (drag_tab) {
+			if (mouse.x >= -dragging_tab.width && mouse.x - drag_offset <= this->width && mouse.y >= -100 & mouse.y <= 100) {
+				dragging_tab.x = mouse.x - drag_offset;
+				dragging_tab.target_x = dragging_tab.x;
+				if (mouse.x <= 20) {
+					SetScrollPosition(target_scroll - 20);
+				} else if (mouse.x >= this->width - MAX_TAB_WIDTH) {
+					SetScrollPosition(target_scroll + 20);
+				}
+				this->Invalidate();
+			} else {
+				drag_tab = false;
 
-		dragging_tab = tabs[active_tab];
-		active_tab_hidden = true;
+				PGBitmapHandle bitmap = nullptr;
+				/*
+				bitmap = CreateBitmapFromSize(MeasureTabWidth(tabs[active_tab]) + 30, this->height);
+				PGRendererHandle renderer = CreateRendererForBitmap(bitmap);
+				PGScalar position_x = 0;
+				PGScalar stored_x = tabs[active_tab].x;
+				tabs[active_tab].x = 0;
+				RenderTab(renderer, tabs[active_tab], position_x, 0, 0, PGTabTypeNone);
+				tabs[active_tab].x = stored_x;
+				DeleteRenderer(renderer);*/
 
-		PGBitmapHandle bitmap = CreateBitmapFromSize(MeasureTabWidth(tabs[active_tab]) + 30, this->height);
-		PGRendererHandle renderer = CreateRendererForBitmap(bitmap);
-		PGScalar position_x = 0;
-		PGScalar stored_x = tabs[active_tab].x;
-		tabs[active_tab].x = 0;
-		RenderTab(renderer, tabs[active_tab], position_x, 0, 0, PGTabTypeNone);
-		tabs[active_tab].x = stored_x;
-		DeleteRenderer(renderer);
-		
-		PGStartDragDrop(window, bitmap, [](PGPoint mouse, void* d) {
-			if (!d) return;
-			TabDragDropStruct* data = (TabDragDropStruct*)d;
-			if (data->accepted == nullptr) {
-				std::vector<std::shared_ptr<TextFile>> textfiles;
-				textfiles.push_back(data->file);
-				PGWindowHandle new_window = PGCreateWindow(mouse, textfiles);
-				ShowWindow(new_window);
-				data->tabs->ActuallyCloseTab(data->file);
-			} else if (data->accepted != data->tabs) {
-				data->tabs->ActuallyCloseTab(data->file);
+				if (!drag_data) {
+					// if no drag data exists, then this is the tab control that "owns" the dragging tab
+					drag_data = new TabDragDropStruct(tabs[active_tab].file, this, drag_offset);
+				}
+				drag_data->accepted = nullptr;
+
+				PGStartDragDrop(window, bitmap, [](PGPoint mouse, void* d) {
+					if (!d) return;
+					TabDragDropStruct* data = (TabDragDropStruct*)d;
+					if (data->accepted == nullptr) {
+						// the data was dropped and nobody accepted it
+						// create a new window at the location of the mouse
+						std::vector<std::shared_ptr<TextFile>> textfiles;
+						textfiles.push_back(data->file);
+						PGWindowHandle new_window = PGCreateWindow(mouse, textfiles);
+						ShowWindow(new_window);
+						// close the tab in the original tab control
+						data->tabs->active_tab_hidden = false;
+						data->tabs->ActuallyCloseTab(data->file);
+						delete d;
+					}
+				}, drag_data, sizeof(TabDragDropStruct));
+				drag_data = nullptr;
+				dragging_tab.file = nullptr;
+				dragging_tab.x = -1;
+				dragging_tab.target_x = -1;
 			}
-			data->tabs->active_tab_hidden = false;
-		}, new TabDragDropStruct(tabs[active_tab].file, this, drag_offset), sizeof(TabDragDropStruct));
+		}
+	} else {
+		if (drag_tab) {
+			this->MouseUp(x, y, PGLeftMouseButton, PGModifierNone);
+		}
 	}
 }
 
@@ -309,17 +331,22 @@ void TabControl::DragDrop(PGDragDropType type, int x, int y, void* data) {
 	TabDragDropStruct* tab_data = (TabDragDropStruct*)data;
 	PGPoint mouse(x - this->x, y - this->y);
 	assert(type == PGDragDropTabs);
+	if (drag_tab || tab_data->accepted != nullptr) return;
 	dragging_tab.width = MeasureTabWidth(Tab(tab_data->file, -1));
 	if (mouse.x >= -dragging_tab.width && mouse.x - tab_data->drag_offset <= this->width && mouse.y >= -100 & mouse.y <= 100) {
+		// the tab was dragged in range of this tab control
+		// attach the tab to this tab control and add it as the dragging tab
+		tab_data->accepted = this;
+		// cancel the current drag-drop operation
+		PGCancelDragDrop(window);
 		dragging_tab.file = tab_data->file;
-		dragging_tab.x = mouse.x - tab_data->drag_offset;
-		dragging_tab.target_x = dragging_tab.x;
-
-		if (mouse.x <= 20) {
-			SetScrollPosition(target_scroll - 20);
-		} else if (mouse.x >= this->width - MAX_TAB_WIDTH) {
-			SetScrollPosition(target_scroll + 20);
-		}
+		dragging_tab.x = -1;
+		dragging_tab.target_x = -1;
+		drag_offset = tab_data->drag_offset;
+		// we save the tab_data, because we need to know the tabcontrol that owns the dragging tab
+		// so we can close the tab there if we accept the tab
+		this->drag_data = tab_data;
+		this->drag_tab = true;
 	} else {
 		dragging_tab.x = -1;
 		dragging_tab.file = nullptr;
@@ -330,54 +357,17 @@ void TabControl::DragDrop(PGDragDropType type, int x, int y, void* data) {
 void TabControl::PerformDragDrop(PGDragDropType type, int x, int y, void* data) {
 	PGPoint mouse(x - this->x, y - this->y);
 	assert(type == PGDragDropTabs);
-	TabDragDropStruct* td = (TabDragDropStruct*)data;
-	if (mouse.x >= 0 && mouse.x <= this->width && mouse.y >= -100 & mouse.y <= 100) {
-		td->accepted = this;
-		PGScalar tab_pos = mouse.x - td->drag_offset;
-		PGScalar position_x = -scroll_position;
-		lng index = 0;
-		lng current_index = 0;
-		lng new_index = this == td->tabs ? tabs.size() - 1 : tabs.size();
-		for (auto it = tabs.begin(); it != tabs.end(); it++, index++) {
-			// we skip the active tab if the file is from the current tab control
-			// because the active tab is the file we are dragging
-			if (this == td->tabs && index == active_tab) continue;
-			PGScalar width = MeasureTabWidth(*it);
-			if (position_x + width / 2 > tab_pos) {
-				new_index = current_index;
-				break;
-			}
-			position_x += width + 15;
-			current_index++;
-		}
-		if (this == td->tabs) {
-			// if the tab is from this tab control,
-			// we only move the tab around
-			if (new_index != active_tab) {
-				Tab current_tab = tabs[active_tab];
-				tabs.erase(tabs.begin() + active_tab);
-				tabs.insert(tabs.begin() + new_index, current_tab);
-				SetActiveTab(new_index);
-			}
-			tabs[active_tab].x = tab_pos + scroll_position;
-			tabs[active_tab].target_x = tab_pos + scroll_position;
-		} else {
-			// if the tab is from a different tab control 
-			// we have to open the file
-			this->OpenFile(td->file, new_index);
-		}
-		active_tab_hidden = false;
-	}
-	dragging_tab.x = -1;
-	dragging_tab.file = nullptr;
+	return;
 	this->Invalidate();
 }
 
 void TabControl::ClearDragDrop(PGDragDropType type) {
 	assert(type == PGDragDropTabs);
-	dragging_tab.x = -1;
-	dragging_tab.file = nullptr;
-	this->Invalidate();
+	if (!drag_tab) {
+		dragging_tab.x = -1;
+		dragging_tab.file = nullptr;
+		this->Invalidate();
+	}
 }
 
 void TabControl::LoadWorkspace(nlohmann::json& j) {
@@ -638,7 +628,7 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file) {
 
 void TabControl::AddTab(std::shared_ptr<TextFile> file, lng index) {
 	assert(file);
-	assert(index < tabs.size());
+	assert(index <= tabs.size());
 	tabs.insert(tabs.begin() + index, OpenTab(file));
 	active_tab = index;
 	SetActiveTab(active_tab);
@@ -687,6 +677,10 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 				active_tab = selected_tab;
 				SetActiveTab(selected_tab);
 				drag_offset = x - tabs[selected_tab].x + scroll_position;
+
+				dragging_tab = tabs[active_tab];
+				active_tab_hidden = true;
+
 				drag_tab = true;
 				this->Invalidate(true);
 			}
@@ -706,10 +700,53 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 }
 
 void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
-	x -= this->x; y -= this->y;
+	PGPoint mouse(x - this->x, y - this->y);
 	if (button & PGLeftMouseButton) {
 		if (drag_tab) {
 			drag_tab = false;
+			PGScalar tab_pos = mouse.x - drag_offset;
+			PGScalar position_x = -scroll_position;
+			lng index = 0;
+			lng current_index = 0;
+			lng new_index = active_tab_hidden ? tabs.size() - 1 : tabs.size();
+			for (auto it = tabs.begin(); it != tabs.end(); it++, index++) {
+				// we skip the active tab if the file is from the current tab control
+				// because the active tab is the file we are dragging
+				if (active_tab_hidden && index == active_tab) continue;
+				PGScalar width = MeasureTabWidth(*it);
+				if (position_x + width / 2 > tab_pos) {
+					new_index = current_index;
+					break;
+				}
+				position_x += width + 15;
+				current_index++;
+			}
+			if (active_tab_hidden) {
+				// if the tab is from this tab control,
+				// we only move the tab around
+				if (new_index != active_tab) {
+					Tab current_tab = tabs[active_tab];
+					tabs.erase(tabs.begin() + active_tab);
+					tabs.insert(tabs.begin() + new_index, current_tab);
+					SetActiveTab(new_index);
+				}
+				tabs[active_tab].x = tab_pos + scroll_position;
+				tabs[active_tab].target_x = tab_pos + scroll_position;
+			} else {
+				// if the tab is from a different tab control 
+				// we have to open the file
+				this->OpenFile(dragging_tab.file, new_index);
+			}
+			active_tab_hidden = false;
+			dragging_tab.file = nullptr;
+			if (drag_data && drag_data->tabs != this) {
+				// we have drag data, and this tab control is not the original tabcontrol
+				// we have to close the tab of the original tab control
+				drag_data->tabs->ActuallyCloseTab(drag_data->file);
+				drag_data->tabs->active_tab_hidden = false;
+				delete this->drag_data;
+				this->drag_data = nullptr;
+			}
 			this->Invalidate();
 		}
 	} else if (button & PGRightMouseButton) {

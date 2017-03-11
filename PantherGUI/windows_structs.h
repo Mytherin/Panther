@@ -15,6 +15,7 @@ public:
 	ControlManager* manager = nullptr;
 	PGRendererHandle renderer = nullptr;
 	IDropTarget* drop_target;
+	PGDropSource* source = nullptr;
 	PGTimerHandle timer;
 	HCURSOR cursor;
 	PGWorkspace workspace;

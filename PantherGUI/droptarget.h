@@ -42,7 +42,7 @@ private:
 
 class PGDropSource : public IDropSource {
 public:
-	PGDropSource(PGDropCallback callback, void* data) : callback(callback), data(data), m_lRefCount(1) {}
+	PGDropSource(PGDropCallback callback, void* data) : callback(callback), data(data), drop_cancelled(false), m_lRefCount(1){}
 
 	HRESULT GiveFeedback(DWORD dwEffect);
 	HRESULT QueryContinueDrag(BOOL  fEscapePressed, DWORD grfKeyState);
@@ -50,9 +50,12 @@ public:
 	HRESULT QueryInterface(REFIID iid, void ** ppvObject);
 	ULONG AddRef(void);
 	ULONG Release(void);
+
+	void CancelDrop() { drop_cancelled = true; }
 private:
 	PGDropCallback callback;
 	void* data;
+	bool drop_cancelled = false;
 
 	LONG	m_lRefCount;
 };
