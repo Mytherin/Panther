@@ -12,6 +12,23 @@ extern const PGAnchor PGAnchorRight;
 extern const PGAnchor PGAnchorTop;
 extern const PGAnchor PGAnchorBottom;
 
+enum PGControlType {
+	PGControlTypeBasicTextField,
+	PGControlTypeButton,
+	PGControlTypeContainer,
+	PGControlTypeControlManager,
+	PGControlTypeFindText,
+	PGControlTypeGotoAnything,
+	PGControlTypeProjectExplorer,
+	PGControlTypeScrollbar,
+	PGControlTypeSearchBox,
+	PGControlTypeSimpleTextField,
+	PGControlTypeStatusBar,
+	PGControlTypeTabControl,
+	PGControlTypeTextField,
+	PGControlTypeTextFieldContainer
+};
+
 class Control {
 public:
 	Control(PGWindowHandle window);
@@ -74,6 +91,7 @@ public:
 	virtual PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
 	virtual PGCursorType GetDraggingCursor() { return PGCursorStandard; }
 
+	virtual PGControlType GetControlType() = 0;
 //protected:
 	bool visible;
 

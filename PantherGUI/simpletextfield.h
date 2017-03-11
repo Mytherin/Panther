@@ -32,6 +32,8 @@ public:
 	void SetText(std::string text);
 
 	PG_CONTROL_KEYBINDINGS;
+
+	virtual PGControlType GetControlType() { return PGControlTypeSimpleTextField; }
 protected:
 	bool valid_input = true;
 	bool render_background = true;

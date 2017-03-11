@@ -100,6 +100,8 @@ public:
 	int currently_selected_tab = 0;
 
 	PG_CONTROL_KEYBINDINGS;
+
+	virtual PGControlType GetControlType() { return PGControlTypeTabControl; }
 protected:
 	void ReopenFile(PGClosedTab tab);
 
@@ -154,4 +156,5 @@ protected:
 	lng current_id = 0;
 
 	std::shared_ptr<TextFile> temporary_textfile = nullptr;
+	PGScalar temporary_tab_width = 0;
 };

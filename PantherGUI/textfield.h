@@ -86,6 +86,7 @@ public:
 	void DisplayGotoDialog(PGGotoType goto_type);
 
 	PG_CONTROL_KEYBINDINGS;
+	virtual PGControlType GetControlType() { return PGControlTypeTextField; }
 protected:
 	void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
 	void GetLineFromPosition(PGScalar y, lng& line);

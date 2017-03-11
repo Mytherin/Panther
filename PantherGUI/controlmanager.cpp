@@ -175,6 +175,13 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 	this->Invalidate();
 }
 
+void ControlManager::SetFocusedControl(Control* c) {
+	if (c->GetControlType() == PGControlTypeTextFieldContainer) {
+		this->active_textfield = dynamic_cast<TextFieldContainer*>(c)->textfield;
+	}
+	PGContainer::SetFocusedControl(c);
+}
+
 void ControlManager::SetTextFieldLayout(int columns, int rows) {
 	int total_textfields = columns * rows;
 	int current_textfields = textfields.size();

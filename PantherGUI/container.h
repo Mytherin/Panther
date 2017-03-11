@@ -50,10 +50,12 @@ public:
 
 	void AddControl(Control* control);
 	void RemoveControl(Control* control);
+
+	virtual PGControlType GetControlType() { return PGControlTypeContainer; }
 protected:
 	Control* focused_control = nullptr;
 
-	void SetFocusedControl(Control* c);
+	virtual void SetFocusedControl(Control* c);
 
 	std::vector<Control*> controls;
 

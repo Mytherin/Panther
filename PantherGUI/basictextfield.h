@@ -79,6 +79,8 @@ public:
 	void SetFont(PGFontHandle font) { textfield_font = font; }
 
 	PG_CONTROL_KEYBINDINGS;
+
+	virtual PGControlType GetControlType() { return PGControlTypeBasicTextField; }
 protected:
 	std::shared_ptr<TextFile> textfile = nullptr;
 	PGFontHandle textfield_font = nullptr;

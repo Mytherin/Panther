@@ -61,6 +61,8 @@ public:
 
 	void OnRender(SearchBoxRenderFunction func) { render_function = func; }
 	void OnSelectionChanged(SearchBoxSelectionChangedFunction func, void* data) { selection_changed = func; selection_changed_data = data; }
+
+	virtual PGControlType GetControlType() { return PGControlTypeSearchBox; }
 private:
 	std::vector<SearchEntry> entries;
 	std::vector<SearchRank> displayed_entries;

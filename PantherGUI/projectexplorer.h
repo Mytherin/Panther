@@ -36,6 +36,8 @@ public:
 	std::vector<PGDirectory*>& GetDirectories() { return directories; }
 
 	PG_CONTROL_KEYBINDINGS;
+
+	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
 private:
 	PGScalar file_render_height;
 

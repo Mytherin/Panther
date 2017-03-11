@@ -71,6 +71,8 @@ public:
 	void SetTextFieldLayout(int columns, int rows);
 
 	PG_CONTROL_KEYBINDINGS;
+protected:
+	virtual void SetFocusedControl(Control* c);
 private:
 	int rows = 0, columns = 0;
 	std::vector<TextFieldContainer*> textfields;

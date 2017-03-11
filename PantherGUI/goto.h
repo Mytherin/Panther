@@ -26,6 +26,8 @@ public:
 	bool ControlTakesFocus() { return true; }
 
 	PG_CONTROL_KEYBINDINGS;
+
+	virtual PGControlType GetControlType() { return PGControlTypeGotoAnything; }
 private:
 	PGFontHandle font;
 

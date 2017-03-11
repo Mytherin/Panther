@@ -32,6 +32,8 @@ public:
 	void Close();
 
 	PG_CONTROL_KEYBINDINGS;
+
+	virtual PGControlType GetControlType() { return PGControlTypeFindText; }
 private:
 	PGFindTextType type;
 

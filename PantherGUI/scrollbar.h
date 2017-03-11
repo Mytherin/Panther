@@ -49,6 +49,8 @@ public:
 
 	PGScalar bottom_padding = 0;
 	PGScalar top_padding = 0;
+
+	virtual PGControlType GetControlType() { return PGControlTypeScrollbar; }
 private:
 	PGScrollbarCallback callback;
 	PGScrollbarDragType drag_type = PGScrollbarDragNone;

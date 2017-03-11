@@ -31,6 +31,8 @@ public:
 	void SetText(std::string text, PGFontHandle font);
 	std::string GetText() { return text; }
 
+	virtual PGControlType GetControlType() { return PGControlTypeButton; }
+
 	PGColor background_color;
 	PGColor background_color_hover;
 	PGColor background_color_click;

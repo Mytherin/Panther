@@ -24,6 +24,8 @@ public:
 	}
 
 	TextField* GetActiveTextField();
+
+	virtual PGControlType GetControlType() { return PGControlTypeStatusBar; }
 private:
 	std::string status;
 

@@ -16,7 +16,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files) :
 	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1),
 	active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1), 
-	target_scroll(0), scroll_position(0), drag_data(nullptr) {
+	target_scroll(0), scroll_position(0), drag_data(nullptr), temporary_tab_width(0) {
 		if (textfield) {
 		textfield->SetTabControl(this);
 	}
@@ -189,7 +189,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	scroll_position = std::min((PGScalar)max_scroll, std::max(0.0f, scroll_position));
 	SetScrollPosition(target_scroll);
 
-	SetRenderBounds(renderer, PGRect(x, y, this->width - MAX_TAB_WIDTH, this->height));
+	SetRenderBounds(renderer, PGRect(x, y, this->width - temporary_tab_width, this->height));
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {
 		if (!active_tab_hidden || index != active_tab) {
 			if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x + scroll_position && !rendered) {
@@ -203,7 +203,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 			it->width = MeasureTabWidth(*it);
 			if (position_x + (it->width + 30) - scroll_position >= 0) {
 				RenderTab(renderer, *it, position_x, x - scroll_position, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab ? PGTabTypeSelected : PGTabTypeNone);
-				if (position_x - scroll_position > this->width - MAX_TAB_WIDTH) {
+				if (position_x - scroll_position > this->width - temporary_tab_width) {
 					// finished rendering
 					break;
 				}
@@ -216,7 +216,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 
 	
 	max_scroll = 10 + GetTabPosition(tabs.size());
-	max_scroll = std::max(max_scroll - (this->width - MAX_TAB_WIDTH), 0.0f);
+	max_scroll = std::max(max_scroll - (this->width - temporary_tab_width), 0.0f);
 
 	if (dragging_tab.file != nullptr) {
 		position_x = dragging_tab.x;
@@ -226,10 +226,13 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	if (temporary_textfile) {
 		Tab tab = Tab(temporary_textfile, -1);
 		tab.width = MeasureTabWidth(tab);
+		temporary_tab_width = tab.width;
 		position_x = this->width - (tab.width + 30);
 		tab.x = position_x;
 		tab.target_x = position_x;
 		RenderTab(renderer, tab, position_x, x, y, PGTabTypeTemporary);
+	} else {
+		temporary_tab_width = 0;
 	}
 
 	if (scroll_position > 0) {
@@ -238,7 +241,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	}
 	if (index != tabs.size()) {
 		// did not render all tabs
-		RenderGradient(renderer, PGRect(x + this->width - MAX_TAB_WIDTH, y, 4, this->height), PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
+		RenderGradient(renderer, PGRect(x + this->width - temporary_tab_width, y, 4, this->height), PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
 	}
 	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1), PGColor(80, 150, 200), 2);
 }
@@ -266,7 +269,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 				dragging_tab.target_x = dragging_tab.x;
 				if (mouse.x <= 20) {
 					SetScrollPosition(target_scroll - 20);
-				} else if (mouse.x >= this->width - MAX_TAB_WIDTH) {
+				} else if (mouse.x >= this->width - temporary_tab_width) {
 					SetScrollPosition(target_scroll + 20);
 				}
 				this->Invalidate();
@@ -560,6 +563,7 @@ void TabControl::OpenFile(std::string path) {
 void TabControl::OpenTemporaryFile(std::shared_ptr<TextFile> textfile) {
 	this->temporary_textfile = textfile;
 	SwitchToFile(temporary_textfile);
+	this->Invalidate();
 }
 
 void TabControl::CloseTemporaryFile() {
@@ -567,6 +571,7 @@ void TabControl::CloseTemporaryFile() {
 		SwitchToFile(tabs[active_tab].file);
 	}
 	this->temporary_textfile = nullptr;
+	this->Invalidate();
 }
 
 
@@ -586,8 +591,8 @@ void TabControl::SetActiveTab(int active_tab) {
 	PGScalar width = MeasureTabWidth(tabs[active_tab]) + 30;
 	if (start < target_scroll) {
 		SetScrollPosition(start);
-	} else if (start + width > target_scroll + this->width - MAX_TAB_WIDTH) {
-		SetScrollPosition(start + width - (this->width - MAX_TAB_WIDTH));
+	} else if (start + width > target_scroll + this->width - temporary_tab_width) {
+		SetScrollPosition(start + width - (this->width - temporary_tab_width));
 	}
 	SwitchToFile(tabs[active_tab].file);
 }
@@ -687,7 +692,7 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 			return;
 		}
 	} else if (button == PGMiddleMouseButton) {
-		if (temporary_textfile && x > this->width - MAX_TAB_WIDTH) {
+		if (temporary_textfile && x > this->width - temporary_tab_width) {
 			CloseTemporaryFile();
 		} else {
 			int selected_tab = GetSelectedTab(x);
