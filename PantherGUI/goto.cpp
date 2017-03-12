@@ -8,7 +8,7 @@
 
 #include <unordered_set>
 
-#define HPADDING 25
+#define HPADDING 35
 #define HPADDING_SMALL 5
 #define VPADDING 5
 
@@ -73,7 +73,9 @@ PGGotoAnything::~PGGotoAnything() {
 }
 
 void PGGotoAnything::Draw(PGRendererHandle renderer, PGIRect* rect) {
+	SetRenderBounds(renderer, PGRect(X() - rect->x, Y() - rect->y, this->width, this->height));
 	PGContainer::Draw(renderer, rect);
+	ClearRenderBounds(renderer);
 }
 
 
@@ -181,6 +183,9 @@ void PGGotoAnything::SetType(PGGotoType type) {
 		{
 			goto_file->SetToggled(true);
 			std::vector<SearchEntry> entries;
+			// add currently open files
+			// keep track of currently open files, so we do not display them twice if they are in the explorer's directories
+			std::unordered_set<std::string> blacklisted_entries;
 			TabControl* tb = textfield->GetTabControl();
 			for (auto it = tb->tabs.begin(); it != tb->tabs.end(); it++) {
 				SearchEntry entry;
@@ -188,6 +193,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				entry.display_subtitle = it->file->GetFullPath();
 				entry.text = it->file->GetFullPath();
 				entry.data = it->file;
+				blacklisted_entries.insert(entry.text);
 				entry.basescore = it->file->GetLanguage() == nullptr ? 0 : 0.2;
 				entry.multiplier = 1.5;
 				entries.push_back(entry);
@@ -195,6 +201,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			ControlManager* cm = GetControlManager(this);
 			ProjectExplorer* explorer = cm->active_projectexplorer;
 			if (explorer) {
+				// add files from currently open directories
 				auto directories = explorer->GetDirectories();
 				for (auto it = directories.begin(); it != directories.end(); it++) {
 					// get a list of all whitelisted files (files not ignored by .gitignore/.hgignore/etc)
@@ -208,6 +215,10 @@ void PGGotoAnything::SetType(PGGotoType type) {
 					std::vector<PGFile> files;
 					(*it)->GetFiles(files);
 					for (auto it2 = files.begin(); it2 != files.end(); it2++) {
+						if (blacklisted_entries.find(it2->path) != blacklisted_entries.end()) {
+							// the file is already in the dialog
+							continue;
+						}
 						SearchEntry entry;
 						entry.display_name = it2->Filename();
 						entry.display_subtitle = it2->path;
