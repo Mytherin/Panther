@@ -345,14 +345,14 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 			lng position = 0;
 
 			// render the background text buffers (for debug purposes)
-			
+			/*
 			if (line_iterator->CurrentBuffer() != buffer) {
 				buffer = line_iterator->CurrentBuffer();
 				toggle = !toggle;
 			}
 			if (toggle && !minimap) {
 				RenderRectangle(renderer, PGRect(position_x_text, position_y, this->width, line_height), PGColor(72, 72, 72, 60), PGDrawStyleFill);
-			}
+			}*/
 
 			PGScalar bitmap_x = position_x_text + character_widths[0];
 			PGScalar bitmap_y = position_y;
@@ -567,8 +567,9 @@ PGScalar TextField::GetTextfieldHeight() {
 	return display_horizontal_scrollbar ? this->height - SCROLLBAR_SIZE : this->height;
 }
 
+#define MAXIMUM_MINIMAP_WIDTH 150.0f
 PGScalar TextField::GetMinimapWidth() {
-	return this->width / 7.0f;
+	return std::min(MAXIMUM_MINIMAP_WIDTH, this->width / 7.0f);
 }
 
 PGScalar TextField::GetMinimapHeight() {
