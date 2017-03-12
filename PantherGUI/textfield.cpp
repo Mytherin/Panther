@@ -31,7 +31,8 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 
 TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), 
-	display_linenumbers(true), notification(nullptr), tabcontrol(nullptr) {
+	display_linenumbers(true), notification(nullptr), tabcontrol(nullptr),
+	vscroll_left(0), hscroll_left(0), vscroll_speed(0) {
 	textfile->SetTextField(this);
 
 	ControlManager* manager = GetControlManager(this);
@@ -87,6 +88,20 @@ void TextField::PeriodicRender() {
 			ShowNotification();
 		}
 	}
+	if (vscroll_left != 0) {
+		double offset = vscroll_speed;
+		if (vscroll_left > 0) offset = -offset;
+
+		if (std::abs(vscroll_left) < std::abs(offset)) {
+			offset = -vscroll_left;
+			vscroll_left = 0;
+			vscroll_speed = 0;
+		} else {
+			vscroll_left += offset;
+		}
+		textfile->OffsetLineOffset(offset);
+		this->Invalidate();
+	}
 	BasicTextField::PeriodicRender();
 }
 
@@ -106,7 +121,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	if (minimap) {
 		// fill in the background of the minimap
 		render_width = GetMinimapWidth();
-		PGRect rect(position_x_text, position_y, render_width, this->height - position_y);
+		PGRect rect(position_x_text, position_y, render_width, this->height);
 		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGDrawStyleFill);
 		// start line of the minimap
 		start_line = GetMinimapStartLine();
@@ -848,7 +863,10 @@ void TextField::DisplayGotoDialog(PGGotoType goto_type) {
 void TextField::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
 		if (distance != 0) {
-			textfile->OffsetLineOffset(-distance / GetTextHeight(textfield_font));
+			double offset = -distance / GetTextHeight(textfield_font);
+			vscroll_left -= offset;
+			vscroll_speed += std::abs(offset / 5.0);
+			//textfile->OffsetLineOffset(-distance / GetTextHeight(textfield_font));
 			this->Invalidate();
 		}
 	}
@@ -880,6 +898,8 @@ void TextField::InvalidateMinimap() {
 }
 
 void TextField::SetTextFile(std::shared_ptr<TextFile> textfile) {
+	vscroll_left = 0;
+	vscroll_speed = 0;
 	if (this->textfile != textfile) {
 		this->textfile->last_modified_deletion = false;
 		this->textfile->last_modified_notification = this->textfile->last_modified_time;

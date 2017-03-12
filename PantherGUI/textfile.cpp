@@ -1261,7 +1261,7 @@ PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, double 
 		}
 	}
 	// line_fraction should always be a fraction
-	assert(scroll.line_fraction >= 0 && scroll.line_fraction < 1);
+	assert(scroll.line_fraction >= 0 && scroll.line_fraction <= 1);
 	if (!wordwrap) {
 		// no wordwrap, simply add offset to the linenumber count
 		lng original_linenumber = scroll.linenumber;
