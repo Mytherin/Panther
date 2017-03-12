@@ -3,6 +3,7 @@
 #include "container.h"
 #include "control.h"
 #include "projectexplorer.h"
+#include "splitter.h"
 #include "tabcontrol.h"
 #include "textfield.h"
 #include "textfieldcontainer.h"
@@ -56,6 +57,7 @@ public:
 	ProjectExplorer* active_projectexplorer;
 	PGFindText* active_findtext;
 	StatusBar* statusbar;
+	Control* splitter;
 
 	bool CloseControlManager();
 	bool IsDragging() { return is_dragging; }
@@ -89,6 +91,7 @@ protected:
 private:
 	int rows = 0, columns = 0;
 	std::vector<TextFieldContainer*> textfields;
+	std::vector<Splitter*> splitters;
 
 	PGIRect invalidated_area;
 	bool invalidated;

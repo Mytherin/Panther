@@ -23,6 +23,7 @@ enum PGControlType {
 	PGControlTypeScrollbar,
 	PGControlTypeSearchBox,
 	PGControlTypeSimpleTextField,
+	PGControlTypeSplitter,
 	PGControlTypeStatusBar,
 	PGControlTypeTabControl,
 	PGControlTypeTextField,
@@ -104,6 +105,8 @@ public:
 	bool size_resolved = false;
 	PGScalar x = 0, y = 0;
 	PGScalar width, height;
+	PGScalar minimum_width = 0, minimum_height = 0;
+	PGScalar maximum_width = FLT_MAX, maximum_height = FLT_MAX;
 	PGScalar fixed_width = -1, fixed_height = -1;
 	PGScalar percentage_width = -1, percentage_height = -1;
 	PGAnchor anchor;

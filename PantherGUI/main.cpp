@@ -37,6 +37,8 @@
 
 #include "dirent.h"
 
+#include "splitter.h"
+
 void DestroyWindow(PGWindowHandle window);
 
 std::map<HWND, PGWindowHandle> handle_map = {};
@@ -48,6 +50,8 @@ HCURSOR cursor_crosshair = nullptr;
 HCURSOR cursor_hand = nullptr;
 HCURSOR cursor_ibeam = nullptr;
 HCURSOR cursor_wait = nullptr;
+HCURSOR cursor_horizontal_resize = nullptr;
+HCURSOR cursor_vertical_resize = nullptr;
 
 static TCHAR szWindowClass[] = _T("Panther");
 static TCHAR szTitle[] = _T("Panther");
@@ -95,6 +99,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	cursor_hand = LoadCursor(nullptr, IDC_HAND);
 	cursor_ibeam = LoadCursor(nullptr, IDC_IBEAM);
 	cursor_wait = LoadCursor(nullptr, IDC_WAIT);
+	cursor_horizontal_resize = LoadCursor(nullptr, IDC_SIZEWE);
+	cursor_vertical_resize = LoadCursor(nullptr, IDC_SIZENS);
 
 	PGLanguageManager::AddLanguage(new CLanguage());
 	PGLanguageManager::AddLanguage(new XMLLanguage());
@@ -248,7 +254,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				render_item->rcItem.bottom - render_item->rcItem.top);
 			PGBitmapHandle bmp = CreateBitmapFromSize(rect.width, rect.height);
 			PGRendererHandle renderer = CreateRendererForBitmap(bmp);
-
+			
 			PGPopupMenuFlags flags = 0;
 			if (render_item->itemState & ODS_DISABLED || render_item->itemState & ODS_GRAYED) {
 				flags |= PGPopupMenuGrayed;
@@ -684,18 +690,28 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	explorer->fixed_width = 200;
 	explorer->percentage_height = 1;
-
+	explorer->minimum_width = 50;
+	
 	StatusBar* bar = new StatusBar(res);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 	bar->percentage_width = 1;
 	bar->fixed_height = STATUSBAR_HEIGHT;
 	explorer->vertical_anchor = bar;
-	
+
+	Splitter *splitter = new Splitter(res, true);
+	splitter->SetAnchor(PGAnchorBottom | PGAnchorLeft);
+	splitter->horizontal_anchor = explorer;
+	splitter->vertical_anchor = bar;
+	splitter->fixed_width = 4;
+	splitter->percentage_height = 1;
+
 	manager->AddControl(bar);
 	manager->AddControl(explorer);
+	manager->AddControl(splitter);
 
 	manager->statusbar = bar;
 	manager->active_projectexplorer = explorer;
+	manager->splitter = splitter;
 
 	manager->SetTextFieldLayout(1, 1);
 
@@ -981,6 +997,12 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 			break;
 		case PGCursorWait:
 			cursor = cursor_wait;
+			break;
+		case PGCursorResizeHorizontal:
+			cursor = cursor_horizontal_resize;
+			break;
+		case PGCursorResizeVertical:
+			cursor = cursor_vertical_resize;
 			break;
 		default:
 			break;

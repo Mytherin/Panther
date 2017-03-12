@@ -7,7 +7,8 @@ const PGAnchor PGAnchorRight = 0x02;
 const PGAnchor PGAnchorTop = 0x04;
 const PGAnchor PGAnchorBottom = 0x08;
 
-Control::Control(PGWindowHandle handle) {
+Control::Control(PGWindowHandle handle) : 
+	percentage_width(-1), percentage_height(-1), fixed_height(-1), fixed_width(-1) {
 	this->window = handle;
 	this->x = 0;
 	this->y = 0;
@@ -185,7 +186,7 @@ void Control::ResolveSize(PGSize new_size) {
 	}
 	if (fixed_width >= 0 || percentage_width >= 0) {
 		if (horizontal_anchor == nullptr) {
-			if (fixed_width > 0) {
+			if (fixed_width >= 0) {
 				this->width = fixed_width;
 			} else {
 				assert(percentage_width > 0);

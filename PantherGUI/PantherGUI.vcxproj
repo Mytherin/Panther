@@ -223,6 +223,7 @@
     <ClCompile Include="searchbox.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="simpletextfield.cpp" />
+    <ClCompile Include="splitter.cpp" />
     <ClCompile Include="statusbar.cpp" />
     <ClCompile Include="style.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
@@ -306,6 +307,7 @@
     <ClInclude Include="searchbox.h" />
     <ClInclude Include="settings.h" />
     <ClInclude Include="simpletextfield.h" />
+    <ClInclude Include="splitter.h" />
     <ClInclude Include="statusbar.h" />
     <ClInclude Include="style.h" />
     <ClInclude Include="syntax.h" />

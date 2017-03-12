@@ -278,7 +278,9 @@ typedef enum {
 	PGCursorCrosshair,
 	PGCursorHand,
 	PGCursorIBeam,
-	PGCursorWait
+	PGCursorWait,
+	PGCursorResizeHorizontal,
+	PGCursorResizeVertical
 } PGCursorType;
 
 typedef enum {

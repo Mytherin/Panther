@@ -206,6 +206,51 @@ void ControlManager::SetTextFieldLayout(int columns, int rows) {
 			textfields.push_back(container);
 		}
 	}
+	Control* bottom_control = this->active_findtext ? (Control*)this->active_findtext : (Control*)statusbar;
+	Control* leftmost_control = this->active_projectexplorer ? this->splitter : nullptr;
+
+	// setup the splitters
+	// we have (rows - 1) horizontal splitters, and (columns - 1) vertical splitters
+	int splitter_count = (rows - 1) + (columns - 1);
+	if (splitter_count > splitters.size()) {
+		// have to add splitters
+		for (int i = splitters.size(); i < splitter_count; i++) {
+			Splitter *splitter = new Splitter(this->window, true);
+			splitters.push_back(splitter);
+			this->AddControl(splitter);
+		}
+	} else if (splitter_count < splitters.size()) {
+		// have to remove splitters
+		for (lng i = splitters.size() - 1; i >= splitter_count; i--) {
+			this->RemoveControl(splitters[i]);
+		}
+		splitters.erase(splitters.begin() + splitter_count, splitters.end());
+	}
+	// set up the splitters
+	for (int i = 0; i < columns - 1; i++) {
+		// for each column, we have one horizontal splitter
+		splitters[i]->SetAnchor(PGAnchorBottom | PGAnchorLeft);
+		splitters[i]->vertical_anchor = bottom_control;
+		splitters[i]->horizontal_anchor = nullptr;
+		splitters[i]->horizontal = true;
+		splitters[i]->fixed_width = 4;
+		splitters[i]->percentage_width = -1;
+		splitters[i]->percentage_height = 1;
+		splitters[i]->fixed_height = -1;
+	}
+	int base = columns - 1;
+	for (int i = 0; i < rows - 1; i++) {
+		// for each row, we have one vertical splitter
+		splitters[base + i]->SetAnchor(PGAnchorBottom | PGAnchorLeft);
+		splitters[base + i]->horizontal_anchor = leftmost_control;
+		splitters[base + i]->vertical_anchor = nullptr;
+		splitters[base + i]->horizontal = false;
+		splitters[base + i]->fixed_height = 4;
+		splitters[base + i]->percentage_height = -1;
+		splitters[base + i]->percentage_width = 1;
+		splitters[base + i]->fixed_width = -1;
+	}
+
 	int current_column = 0, current_row = 0;
 	for(lng i = 0; i < textfields.size(); i++) {
 		TextFieldContainer* container = textfields[i];
@@ -213,9 +258,33 @@ void ControlManager::SetTextFieldLayout(int columns, int rows) {
 		container->percentage_height = 1.0 / (rows - (rows - current_row) + 1);
 		container->percentage_width = 1.0 / (columns - current_column);
 		assert(current_row == rows - 1 || i + columns < textfields.size());
-		container->vertical_anchor = current_row == rows - 1 ? (Control*)statusbar : (Control*)textfields[i + columns];
+		// set up the vertical anchor of the container
+		if (current_row != rows - 1) {
+			Splitter* splitter = splitters[base + current_row];
+			// the vertical anchor is the splitter below this textfield
+			if (splitter->vertical_anchor) {
+				splitter->additional_anchors.push_back(splitter->vertical_anchor);
+			}
+			splitter->vertical_anchor = (Control*)textfields[i + columns];
+			container->vertical_anchor = splitter;
+		} else {
+			// final row, the vertical anchor is the bottom-most control
+			container->vertical_anchor = bottom_control;
+		}
 		assert(current_column == 0 || i > 0);
-		container->horizontal_anchor = current_column == 0 ? (Control*)active_projectexplorer : (Control*)textfields[i - 1];
+		// set up the horizontal anchor of the container
+		if (current_column != 0) {
+			Splitter* splitter = splitters[current_column - 1];
+			// the horizontal anchor is the splitter to the left of this textfield
+			if (splitter->horizontal_anchor) {
+				splitter->additional_anchors.push_back(splitter->horizontal_anchor);
+			}
+			splitter->horizontal_anchor = (Control*)textfields[i - 1];
+			container->horizontal_anchor = splitter;
+		} else {
+			// left-most row, the horizontal anchor is the left-most control
+			container->horizontal_anchor = leftmost_control;
+		}
 
 		current_column++;
 		if (current_column == columns) {
