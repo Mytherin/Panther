@@ -226,7 +226,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	if (temporary_textfile) {
 		Tab tab = Tab(temporary_textfile, -1);
 		tab.width = MeasureTabWidth(tab);
-		temporary_tab_width = tab.width;
+		temporary_tab_width = tab.width + 30;
 		position_x = this->width - (tab.width + 30);
 		tab.x = position_x;
 		tab.target_x = position_x;
@@ -684,6 +684,8 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 				drag_offset = x - tabs[selected_tab].x + scroll_position;
 
 				dragging_tab = tabs[active_tab];
+				dragging_tab.x = x - drag_offset;
+				dragging_tab.target_x = dragging_tab.x;
 				active_tab_hidden = true;
 
 				drag_tab = true;
