@@ -178,8 +178,8 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 void ControlManager::SetFocusedControl(Control* c) {
 	if (c->GetControlType() == PGControlTypeTextFieldContainer) {
 		if (this->active_textfield != c) {
-			ActiveTextFieldChanged(c);
 			this->active_textfield = dynamic_cast<TextFieldContainer*>(c)->textfield;
+			ActiveTextFieldChanged(c);
 		}
 	}
 	PGContainer::SetFocusedControl(c);

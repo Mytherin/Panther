@@ -42,14 +42,14 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 	textfield_font = PGCreateFont();
 	minimap_font = PGCreateFont();
 
-	scrollbar = new Scrollbar(this, window, false, false);
+	scrollbar = std::unique_ptr<Scrollbar>(new Scrollbar(this, window, false, false));
 	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
 	scrollbar->bottom_padding = SCROLLBAR_PADDING;
 	scrollbar->top_padding = SCROLLBAR_PADDING + SCROLLBAR_SIZE;
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
 		((TextField*)scroll->parent)->GetTextFile().SetScrollOffset(value);
 	});
-	horizontal_scrollbar = new Scrollbar(this, window, true, false);
+	horizontal_scrollbar = std::unique_ptr<Scrollbar>(new Scrollbar(this, window, true, false));
 	horizontal_scrollbar->bottom_padding = SCROLLBAR_PADDING;
 	horizontal_scrollbar->top_padding = SCROLLBAR_PADDING + SCROLLBAR_SIZE;
 	horizontal_scrollbar->SetPosition(PGPoint(0, this->height - SCROLLBAR_SIZE));
