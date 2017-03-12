@@ -71,6 +71,7 @@ public:
 	bool ControlHasFocus() { return is_focused; }
 
 	void SetTextFieldLayout(int columns, int rows);
+	void SetTextFieldLayout(int columns, int rows, std::vector<std::shared_ptr<TextFile>> initial_files);
 
 	void OnSelectionChanged(PGControlDataCallback callback, void* data);
 	void UnregisterOnSelectionChanged(PGControlDataCallback callback, void* data);

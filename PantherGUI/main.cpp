@@ -713,7 +713,7 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	manager->active_projectexplorer = explorer;
 	manager->splitter = splitter;
 
-	manager->SetTextFieldLayout(1, 1);
+	manager->SetTextFieldLayout(1, 1, initial_files);
 
 	auto handle = PGCreateMenu(res, manager);
 	auto file = PGCreatePopupMenu(res, manager);

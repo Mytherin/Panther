@@ -186,6 +186,12 @@ void ControlManager::SetFocusedControl(Control* c) {
 }
 
 void ControlManager::SetTextFieldLayout(int columns, int rows) {
+	std::vector<std::shared_ptr<TextFile>> textfiles;
+	textfiles.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
+	SetTextFieldLayout(columns, rows, textfiles);
+}
+
+void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::shared_ptr<TextFile>> initial_files) {
 	int total_textfields = columns * rows;
 	int current_textfields = textfields.size();
 	if (total_textfields < current_textfields) {
@@ -200,7 +206,11 @@ void ControlManager::SetTextFieldLayout(int columns, int rows) {
 		// the new textfields will be empty
 		for (lng i = current_textfields; i < total_textfields; i++) {
 			std::vector<std::shared_ptr<TextFile>> textfiles;
-			textfiles.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
+			if (initial_files.size() > 0) {
+				textfiles = initial_files;
+			} else {
+				textfiles.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
+			}
 			TextFieldContainer* container = new TextFieldContainer(this->window, textfiles);
 			this->AddControl(container);
 			textfields.push_back(container);
