@@ -219,6 +219,7 @@ public:
 	PGTextRange FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap, std::shared_ptr<Task> current_task);
 
 	void SetSettings(PGTextFileSettings settings);
+	PGTextFileSettings GetSettings();
 
 	// only used for "Find Results"
 	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);

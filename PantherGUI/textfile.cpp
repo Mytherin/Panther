@@ -3142,8 +3142,8 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 	if (settings.cursor_data.size() > 0) {
 		this->ClearCursors();
 		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
-			it->start_line = std::min(linecount - 1, std::max((lng)0, it->start_line));
-			it->end_line = std::min(linecount - 1, std::max((lng)0, it->end_line));
+			it->start_line = std::max((lng)0, std::min(linecount - 1, it->start_line));
+			it->end_line = std::max((lng)0, std::min(linecount - 1, it->end_line));
 			this->cursors.push_back(Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
 		}
 		std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
@@ -3236,4 +3236,14 @@ void TextFile::FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle reg
 	}, info));
 	info->task = find_task;
 	Scheduler::RegisterTask(this->find_task, PGTaskUrgent);
+}
+
+PGTextFileSettings TextFile::GetSettings() {
+	PGTextFileSettings settings;
+	settings.cursor_data = BackupCursors();
+	settings.line_ending = GetLineEnding();
+	settings.wordwrap = GetWordWrap();
+	settings.xoffset = GetXOffset();
+	settings.yoffset = yoffset;
+	return settings;
 }

@@ -613,6 +613,7 @@ void TabControl::ReopenFile(PGClosedTab tab) {
 	PGFileError error;
 	std::shared_ptr<TextFile> textfile = file_manager.OpenFile(tab.filepath, error);
 	if (textfile) {
+		textfile->SetSettings(tab.settings);
 		AddTab(textfile, tab.id, tab.neighborid);
 	} else if (textfield) {
 		this->textfield->DisplayNotification(error);
@@ -901,7 +902,7 @@ void TabControl::ActuallyCloseTab(int tab) {
 		}
 	}
 	if (tabs[tab].file->path.size() > 0) {
-		closed_tabs.push_back(PGClosedTab(tabs[tab], tab == 0 ? -1 : tabs[tab - 1].id));
+		closed_tabs.push_back(PGClosedTab(tabs[tab], tab == 0 ? -1 : tabs[tab - 1].id, tabs[tab].file->GetSettings()));
 	}
 	file_manager.CloseFile(tabs[tab].file);
 	tabs.erase(tabs.begin() + tab);

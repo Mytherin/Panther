@@ -21,10 +21,12 @@ struct PGClosedTab {
 	lng id;
 	lng neighborid;
 	std::string filepath;
+	PGTextFileSettings settings;
 
-	PGClosedTab(Tab tab, lng neighborid) {
+	PGClosedTab(Tab tab, lng neighborid, PGTextFileSettings settings) {
 		id = tab.id;
 		this->neighborid = neighborid;
+		this->settings = settings;
 		filepath = tab.file->GetFullPath();
 	}
 };
