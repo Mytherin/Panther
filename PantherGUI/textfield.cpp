@@ -988,10 +988,6 @@ void TextField::TextChanged() {
 	BasicTextField::TextChanged();
 }
 
-void TextField::TextChanged(std::vector<lng> lines) {
-	BasicTextField::TextChanged(lines);
-}
-
 bool TextField::IsDragging() {
 	if (scrollbar->IsDragging()) return true;
 	if (horizontal_scrollbar->IsDragging()) return true;

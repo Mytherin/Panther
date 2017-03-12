@@ -177,7 +177,10 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 
 void ControlManager::SetFocusedControl(Control* c) {
 	if (c->GetControlType() == PGControlTypeTextFieldContainer) {
-		this->active_textfield = dynamic_cast<TextFieldContainer*>(c)->textfield;
+		if (this->active_textfield != c) {
+			ActiveTextFieldChanged(c);
+			this->active_textfield = dynamic_cast<TextFieldContainer*>(c)->textfield;
+		}
 	}
 	PGContainer::SetFocusedControl(c);
 }
@@ -365,3 +368,53 @@ void ControlManager::GainsFocus(void) {
 	LeaveManager();
 }
 
+static void UnregisterCallback(std::vector<std::pair<PGControlDataCallback, void*>>& arr, PGControlDataCallback callback, void* data) {
+	for (lng i = 0; i < arr.size(); i++) {
+		if (arr[i].first == callback && arr[i].second == data) {
+			arr.erase(arr.begin() + i);
+			return;
+		}
+	}
+}
+
+static void TriggerCallback(std::vector<std::pair<PGControlDataCallback, void*>>& arr, Control* control) {
+	for (auto it = arr.begin(); it != arr.end(); it++) {
+		(it->first)(control, it->second);
+	}
+}
+
+void ControlManager::OnSelectionChanged(PGControlDataCallback callback, void* data) {
+	this->selection_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
+}
+
+void ControlManager::UnregisterOnSelectionChanged(PGControlDataCallback callback, void* data) {
+	UnregisterCallback(selection_changed_callbacks, callback, data);
+}
+
+void ControlManager::OnTextChanged(PGControlDataCallback callback, void* data) {
+	this->text_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
+}
+
+void ControlManager::UnregisterOnTextChanged(PGControlDataCallback callback, void* data) {
+	UnregisterCallback(text_changed_callbacks, callback, data);
+}
+
+void ControlManager::OnActiveTextFieldChanged(PGControlDataCallback callback, void* data) {
+	this->active_textfield_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
+}
+
+void ControlManager::UnregisterOnActiveTextFieldChanged(PGControlDataCallback callback, void* data) {
+	UnregisterCallback(active_textfield_callbacks, callback, data);
+}
+
+void ControlManager::TextChanged(Control *control) {
+	TriggerCallback(text_changed_callbacks, control);
+}
+
+void ControlManager::SelectionChanged(Control *control) {
+	TriggerCallback(selection_changed_callbacks, control);
+}
+
+void ControlManager::ActiveTextFieldChanged(Control *control) {
+	TriggerCallback(active_textfield_callbacks, control);
+}

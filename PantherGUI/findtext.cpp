@@ -157,9 +157,8 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	toggle_wrap->OnToggle(update_highlight, toggle_wrap_text);
 
 	ControlManager* manager = GetControlManager(this);
-	TextFile& tf = manager->active_textfield->GetTextFile();
-
-	manager->active_textfield->OnTextChanged((PGControlDataCallback)UpdateHighlight, this);
+	manager->OnTextChanged((PGControlDataCallback)UpdateHighlight, this);
+	manager->OnActiveTextFieldChanged((PGControlDataCallback)UpdateHighlight, this);
 
 	this->replace_field = nullptr;
 	this->replace_button = nullptr;
@@ -178,7 +177,8 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 PGFindText::~PGFindText() {
 	ControlManager* manager = GetControlManager(this);
 	manager->active_findtext = nullptr;
-	manager->active_textfield->UnregisterOnTextChanged((PGControlDataCallback)UpdateHighlight, this);
+	manager->UnregisterOnTextChanged((PGControlDataCallback)UpdateHighlight, this);
+	manager->UnregisterOnActiveTextFieldChanged((PGControlDataCallback)UpdateHighlight, this);
 }
 
 void PGFindText::SetType(PGFindTextType type) {

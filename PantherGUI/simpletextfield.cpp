@@ -130,3 +130,15 @@ void SimpleTextField::InitializeKeybindings() {
 		}
 	};
 }
+
+void SimpleTextField::SelectionChanged() {
+	if (this->on_selection_changed.function) {
+		this->on_selection_changed.function(this, this->on_selection_changed.data);
+	}
+}
+
+void SimpleTextField::TextChanged() {
+	if (this->on_text_changed.function) {
+		this->on_text_changed.function(this, this->on_text_changed.data);
+	}
+}

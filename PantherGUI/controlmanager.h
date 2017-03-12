@@ -70,6 +70,19 @@ public:
 
 	void SetTextFieldLayout(int columns, int rows);
 
+	void OnSelectionChanged(PGControlDataCallback callback, void* data);
+	void UnregisterOnSelectionChanged(PGControlDataCallback callback, void* data);
+
+	void OnTextChanged(PGControlDataCallback callback, void* data);
+	void UnregisterOnTextChanged(PGControlDataCallback callback, void* data);
+
+	void OnActiveTextFieldChanged(PGControlDataCallback callback, void* data);
+	void UnregisterOnActiveTextFieldChanged(PGControlDataCallback callback, void* data);
+
+	void TextChanged(Control *control);
+	void SelectionChanged(Control *control);
+	void ActiveTextFieldChanged(Control *control);
+
 	PG_CONTROL_KEYBINDINGS;
 protected:
 	virtual void SetFocusedControl(Control* c);
@@ -92,6 +105,10 @@ private:
 	MouseClickInstance last_click;
 
 	std::vector<PGMouseRegion> regions;
+
+	std::vector<std::pair<PGControlDataCallback, void*>> selection_changed_callbacks;
+	std::vector<std::pair<PGControlDataCallback, void*>> text_changed_callbacks;
+	std::vector<std::pair<PGControlDataCallback, void*>> active_textfield_callbacks;
 };
 
 ControlManager* GetControlManager(Control* c);

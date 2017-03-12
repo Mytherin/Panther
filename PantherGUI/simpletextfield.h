@@ -27,6 +27,11 @@ public:
 	void OnConfirm(PGControlDataCallback callback, void* data) { on_user_confirm.function = callback; on_user_confirm.data = data; }
 	void OnPrevEntry(PGControlDataCallback callback, void* data) { on_prev_entry.function = callback; on_prev_entry.data = data; }
 	void OnNextEntry(PGControlDataCallback callback, void* data) { on_next_entry.function = callback; on_next_entry.data = data; }
+	void OnSelectionChanged(PGControlDataCallback callback, void* data) { on_selection_changed.function = callback; on_selection_changed.data = data; }
+	void OnTextChanged(PGControlDataCallback callback, void* data) { on_text_changed.function = callback; on_text_changed.data = data; }
+
+	virtual void SelectionChanged();
+	virtual void TextChanged();
 
 	std::string GetText();
 	void SetText(std::string text);
@@ -49,4 +54,6 @@ protected:
 	PGFunctionData on_user_confirm;
 	PGFunctionData on_prev_entry;
 	PGFunctionData on_next_entry;
+	PGFunctionData on_text_changed;
+	PGFunctionData on_selection_changed;
 };

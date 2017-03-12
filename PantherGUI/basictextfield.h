@@ -68,13 +68,8 @@ public:
 
 	virtual void SelectionChanged();
 	virtual void TextChanged();
-	virtual void TextChanged(std::vector<lng> lines);
 
 	void PasteHistory();
-
-	void OnSelectionChanged(PGControlDataCallback callback, void* data);
-	void OnTextChanged(PGControlDataCallback callback, void* data);
-	void UnregisterOnTextChanged(PGControlDataCallback callback, void* data);
 
 	void SetFont(PGFontHandle font) { textfield_font = font; }
 
@@ -104,7 +99,4 @@ protected:
 	virtual void GetPositionFromLineCharacter(lng line, lng character, PGScalar& x, PGScalar& y);
 	virtual void GetPositionFromLine(lng line, PGScalar& y);
 	virtual void _GetPositionFromCharacter(lng pos, TextLine line, PGScalar& x);
-
-	std::vector<std::pair<PGControlDataCallback, void*>> selection_changed_callbacks;
-	std::vector<std::pair<PGControlDataCallback, void*>> text_changed_callbacks;
 };

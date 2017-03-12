@@ -2,6 +2,7 @@
 #include "basictextfield.h"
 #include "style.h"
 
+#include "controlmanager.h"
 #include "container.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(BasicTextField);
@@ -141,40 +142,14 @@ PGScalar BasicTextField::GetMaxXOffset() {
 }
 
 void BasicTextField::SelectionChanged() {
-	for (auto it = selection_changed_callbacks.begin(); it != selection_changed_callbacks.end(); it++) {
-		(it->first)(this, it->second);
-	}
 	this->RefreshCursors();
+	GetControlManager(this)->SelectionChanged(this);
 	this->Invalidate();
 }
 
 void BasicTextField::TextChanged() {
-	for (auto it = text_changed_callbacks.begin(); it != text_changed_callbacks.end(); it++) {
-		(it->first)(this, it->second);
-	}
+	GetControlManager(this)->TextChanged(this);
 	this->Invalidate();
-}
-
-void BasicTextField::TextChanged(std::vector<lng> lines) {
-	this->TextChanged();
-}
-
-
-void BasicTextField::OnSelectionChanged(PGControlDataCallback callback, void* data) {
-	this->selection_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
-}
-
-void BasicTextField::OnTextChanged(PGControlDataCallback callback, void* data) {
-	this->text_changed_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
-}
-
-void BasicTextField::UnregisterOnTextChanged(PGControlDataCallback callback, void* data) {
-	for (lng i = 0; i < text_changed_callbacks.size(); i++) {
-		if (text_changed_callbacks[i].first == callback && text_changed_callbacks[i].second == data) {
-			text_changed_callbacks.erase(text_changed_callbacks.begin() + i);
-			return;
-		}
-	}
 }
 
 void BasicTextField::PasteHistory() {

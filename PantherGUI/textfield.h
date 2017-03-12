@@ -78,7 +78,6 @@ public:
 	PGScalar GetMaxXOffset() { return max_xoffset; }
 
 	void TextChanged();
-	void TextChanged(std::vector<lng> lines);
 
 	void IncreaseFontSize(int modifier);
 
@@ -96,8 +95,8 @@ protected:
 private:
 	TabControl* tabcontrol;
 
-	Scrollbar* scrollbar;
-	Scrollbar* horizontal_scrollbar;
+	std::unique_ptr<Scrollbar> scrollbar;
+	std::unique_ptr<Scrollbar> horizontal_scrollbar;
 
 	PGFontHandle minimap_font;
 
