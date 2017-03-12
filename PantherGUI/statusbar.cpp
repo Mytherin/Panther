@@ -9,9 +9,12 @@ StatusBar::StatusBar(PGWindowHandle window) :
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
-	/*textfield->OnSelectionChanged([](Control* c, void* data) {
+	GetControlManager(this)->OnSelectionChanged([](Control* c, void* data) {
 		((StatusBar*)(data))->SelectionChanged();
-	}, (void*) this);*/
+	}, (void*) this);
+	GetControlManager(this)->OnActiveTextFieldChanged([](Control* c, void* data) {
+		((StatusBar*)(data))->SelectionChanged();
+	}, (void*) this);
 
 	Button* buttons[4];
 	for (int i = 0; i < 4; i++) {

@@ -8,6 +8,9 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
 #define MAX_TAB_WIDTH 150.0f
+#define BASE_TAB_OFFSET 30.0f
+#define EXTRA_TAB_WIDTH 30.0f
+#define TAB_SPACING 15.0f
 
 #define SAVE_CHANGES_TITLE "Save Changes?"
 #define SAVE_CHANGES_DIALOG "The current file has unsaved changes. Save changes before closing?"
@@ -81,8 +84,8 @@ void TabControl::PeriodicRender() {
 			}
 			current_selection = -1;
 			for (lng i = 0; i < tabs.size(); i++) {
-				if (position_x + (tabs[i].width + 15) >= 0) {
-					if (mouse.x >= position_x && mouse.x <= position_x + tabs[i].width + 15) {
+				if (position_x + (tabs[i].width + TAB_SPACING) >= 0) {
+					if (mouse.x >= position_x && mouse.x <= position_x + tabs[i].width + TAB_SPACING) {
 						current_selection = i;
 						tabs[i].hover = true;
 						if (mouse.x >= position_x + tabs[i].width - 12.5f + file_icon_width && mouse.y >= 10 && mouse.y <= 22) {
@@ -92,7 +95,7 @@ void TabControl::PeriodicRender() {
 						break;
 					}
 				}
-				position_x += tabs[i].width + 15;
+				position_x += tabs[i].width + TAB_SPACING;
 			}
 			if (current_selection != old_selection || old_button_hover != new_button_hover) {
 				invalidate = true;
@@ -123,9 +126,9 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	
 	PGPolygon polygon;
 	polygon.points.push_back(PGPoint(x + current_x, y + tab_height));
-	polygon.points.push_back(PGPoint(x + current_x + 12, y + 4));
+	polygon.points.push_back(PGPoint(x + current_x + 8, y + 4));
 	polygon.points.push_back(PGPoint(x + current_x + tab.width + 15, y + 4));
-	polygon.points.push_back(PGPoint(x + current_x + tab.width + 27, y + tab_height));
+	polygon.points.push_back(PGPoint(x + current_x + tab.width + 23, y + tab_height));
 	polygon.closed = true;
 
 	PGColor background_color = PGStyleManager::GetColor(PGColorTabControlBackground);
@@ -173,7 +176,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	RenderLine(renderer, PGLine(PGPoint(x + current_x, y + 13), PGPoint(x + current_x + 8, y + 21)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	RenderLine(renderer, PGLine(PGPoint(x + current_x, y + 21), PGPoint(x + current_x + 8, y + 13)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	
-	position_x += tab.width + 15;
+	position_x += tab.width + TAB_SPACING;
 }
 
 void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
@@ -182,9 +185,13 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	PGScalar position_x = 0;
 	PGColor color = PGStyleManager::GetColor(PGColorMainMenuBackground);
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), color, PGDrawStyleFill);
+	bool parent_has_focus = this->parent->ControlHasFocus();
 
 	bool rendered = false;
 	int index = 0;
+
+	max_scroll = 10 + GetTabPosition(tabs.size());
+	max_scroll = std::max(max_scroll - (this->width - temporary_tab_width), 0.0f);
 
 	scroll_position = std::min((PGScalar)max_scroll, std::max(0.0f, scroll_position));
 	SetScrollPosition(target_scroll);
@@ -194,45 +201,39 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		if (!active_tab_hidden || index != active_tab) {
 			if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x + scroll_position && !rendered) {
 				rendered = true;
-				position_x += MeasureTabWidth(dragging_tab) + 15;
+				position_x += MeasureTabWidth(dragging_tab) + TAB_SPACING;
 			}
 			it->target_x = position_x;
 			if (panther::epsilon_equals(it->x, -1)) {
 				it->x = position_x;
 			}
 			it->width = MeasureTabWidth(*it);
-			if (position_x + (it->width + 30) - scroll_position >= 0) {
+			if (position_x + (it->width + EXTRA_TAB_WIDTH) - scroll_position >= 0) {
 				RenderTab(renderer, *it, position_x, x - scroll_position, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab ? PGTabTypeSelected : PGTabTypeNone);
 				if (position_x - scroll_position > this->width - temporary_tab_width) {
 					// finished rendering
 					break;
 				}
 			} else {
-				position_x += it->width + 15;
+				position_x += it->width + TAB_SPACING;
 			}
 		}
 		index++;
 	}
-
-	
-	max_scroll = 10 + GetTabPosition(tabs.size());
-	max_scroll = std::max(max_scroll - (this->width - temporary_tab_width), 0.0f);
 
 	if (dragging_tab.file != nullptr) {
 		position_x = dragging_tab.x;
 		RenderTab(renderer, dragging_tab, position_x, x, y, PGTabTypeSelected);
 	}
 	ClearRenderBounds(renderer);
+
 	if (temporary_textfile) {
 		Tab tab = Tab(temporary_textfile, -1);
 		tab.width = MeasureTabWidth(tab);
-		temporary_tab_width = tab.width + 30;
-		position_x = this->width - (tab.width + 30);
+		position_x = this->width - (tab.width + EXTRA_TAB_WIDTH) - BASE_TAB_OFFSET;
 		tab.x = position_x;
 		tab.target_x = position_x;
 		RenderTab(renderer, tab, position_x, x, y, PGTabTypeTemporary);
-	} else {
-		temporary_tab_width = 0;
 	}
 
 	if (scroll_position > 0) {
@@ -241,9 +242,11 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	}
 	if (index != tabs.size()) {
 		// did not render all tabs
-		RenderGradient(renderer, PGRect(x + this->width - temporary_tab_width, y, 4, this->height), PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
+		RenderGradient(renderer, PGRect(x + this->width - temporary_tab_width - 4, y, 4, this->height), PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
 	}
-	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1), PGColor(80, 150, 200), 2);
+
+	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1), 
+		temporary_textfile ? PGStyleManager::GetColor(PGColorTabControlTemporary) : (parent_has_focus ? PGStyleManager::GetColor(PGColorTabControlSelected) : PGStyleManager::GetColor(PGColorTabControlBackground)), 2);
 }
 
 PGScalar TabControl::MeasureTabWidth(Tab& tab) {
@@ -278,7 +281,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 
 				PGBitmapHandle bitmap = nullptr;
 				/*
-				bitmap = CreateBitmapFromSize(MeasureTabWidth(tabs[active_tab]) + 30, this->height);
+				bitmap = CreateBitmapFromSize(MeasureTabWidth(tabs[active_tab]) + EXTRA_TAB_WIDTH, this->height);
 				PGRendererHandle renderer = CreateRendererForBitmap(bitmap);
 				PGScalar position_x = 0;
 				PGScalar stored_x = tabs[active_tab].x;
@@ -563,6 +566,13 @@ void TabControl::OpenFile(std::string path) {
 void TabControl::OpenTemporaryFile(std::shared_ptr<TextFile> textfile) {
 	this->temporary_textfile = textfile;
 	SwitchToFile(temporary_textfile);
+	if (temporary_textfile) {
+		Tab tab = Tab(temporary_textfile, -1);
+		tab.width = MeasureTabWidth(tab);
+		temporary_tab_width = tab.width + EXTRA_TAB_WIDTH + BASE_TAB_OFFSET;
+	} else {
+		temporary_tab_width = BASE_TAB_OFFSET;
+	}
 	this->Invalidate();
 }
 
@@ -571,6 +581,7 @@ void TabControl::CloseTemporaryFile() {
 		SwitchToFile(tabs[active_tab].file);
 	}
 	this->temporary_textfile = nullptr;
+	this->temporary_tab_width = BASE_TAB_OFFSET;
 	this->Invalidate();
 }
 
@@ -579,7 +590,7 @@ PGScalar TabControl::GetTabPosition(int tabnr) {
 	assert(tabnr <= tabs.size());
 	PGScalar position = 0;
 	for (lng i = 0; i < tabnr; i++) {
-		position += MeasureTabWidth(tabs[i]) + 15;
+		position += MeasureTabWidth(tabs[i]) + TAB_SPACING;
 	}
 	return position;
 }
@@ -588,7 +599,7 @@ void TabControl::SetActiveTab(int active_tab) {
 	assert(active_tab >= 0 && active_tab < tabs.size());
 	this->active_tab = active_tab;
 	PGScalar start = GetTabPosition(active_tab);
-	PGScalar width = MeasureTabWidth(tabs[active_tab]) + 30;
+	PGScalar width = MeasureTabWidth(tabs[active_tab]) + EXTRA_TAB_WIDTH;
 	if (start < target_scroll) {
 		SetScrollPosition(start);
 	} else if (start + width > target_scroll + this->width - temporary_tab_width) {
@@ -663,7 +674,7 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid) 
 int TabControl::GetSelectedTab(PGScalar x) {
 	x += scroll_position;
 	for (int i = 0; i < tabs.size(); i++) {
-		if (x >= tabs[i].x && x <= tabs[i].x + tabs[i].width + 15) {
+		if (x >= tabs[i].x && x <= tabs[i].x + tabs[i].width + TAB_SPACING) {
 			return i;
 		}
 	}
@@ -673,6 +684,13 @@ int TabControl::GetSelectedTab(PGScalar x) {
 void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	x -= this->x; y -= this->y;
 	if (button == PGLeftMouseButton) {
+
+		if (temporary_textfile && x > this->width - temporary_tab_width) {
+			if (click_count > 0) {
+				OpenFile(temporary_textfile->path);
+			}
+			return;
+		}
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
 			PGScalar offset = x - tabs[selected_tab].x;
@@ -725,7 +743,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 					new_index = current_index;
 					break;
 				}
-				position_x += width + 15;
+				position_x += width + TAB_SPACING;
 				current_index++;
 			}
 			if (active_tab_hidden) {

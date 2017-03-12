@@ -154,7 +154,7 @@ protected:
 	PGScalar file_icon_width = 0;
 
 	lng current_id = 0;
-
+	
 	std::shared_ptr<TextFile> temporary_textfile = nullptr;
 	PGScalar temporary_tab_width = 0;
 };
