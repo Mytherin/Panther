@@ -280,7 +280,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 				drag_tab = false;
 
 				PGBitmapHandle bitmap = nullptr;
-				/*
+				
 				bitmap = CreateBitmapFromSize(MeasureTabWidth(tabs[active_tab]) + EXTRA_TAB_WIDTH, this->height);
 				PGRendererHandle renderer = CreateRendererForBitmap(bitmap);
 				PGScalar position_x = 0;
@@ -288,7 +288,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 				tabs[active_tab].x = 0;
 				RenderTab(renderer, tabs[active_tab], position_x, 0, 0, PGTabTypeNone);
 				tabs[active_tab].x = stored_x;
-				DeleteRenderer(renderer);*/
+				DeleteRenderer(renderer);
 
 				if (!drag_data) {
 					// if no drag data exists, then this is the tab control that "owns" the dragging tab
@@ -338,7 +338,8 @@ void TabControl::DragDrop(PGDragDropType type, int x, int y, void* data) {
 	PGPoint mouse(x - this->x, y - this->y);
 	assert(type == PGDragDropTabs);
 	if (drag_tab || tab_data->accepted != nullptr) return;
-	dragging_tab.width = MeasureTabWidth(Tab(tab_data->file, -1));
+	Tab tab = Tab(tab_data->file, -1);
+	dragging_tab.width = MeasureTabWidth(tab);
 	if (mouse.x >= -dragging_tab.width && mouse.x - tab_data->drag_offset <= this->width && mouse.y >= -100 & mouse.y <= 100) {
 		// the tab was dragged in range of this tab control
 		// attach the tab to this tab control and add it as the dragging tab

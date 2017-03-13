@@ -65,6 +65,7 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/searchbox.o \
 		 $(OBJDIR)/settings.o \
 		 $(OBJDIR)/simpletextfield.o \
+		 $(OBJDIR)/splitter.o \
 		 $(OBJDIR)/statusbar.o \
 		 $(OBJDIR)/style.o \
 		 $(OBJDIR)/syntaxhighlighter.o \
@@ -73,6 +74,7 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/textbuffer.o \
 		 $(OBJDIR)/textdelta.o \
 		 $(OBJDIR)/textfield.o \
+		 $(OBJDIR)/textfieldcontainer.o \
 		 $(OBJDIR)/textfile.o \
 		 $(OBJDIR)/textiterator.o \
 		 $(OBJDIR)/textline.o \

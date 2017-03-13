@@ -20,7 +20,7 @@
 #import "PGDrawBitmap.h"
 
 #define RETINA_API_AVAILABLE (defined(MAC_OS_X_VERSION_10_7) && \
-                              MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+							  MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
 // clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm c.cpp control.cpp cursor.cpp keywords.cpp logger.cpp scheduler.cpp text.cpp syntaxhighlighter.cpp textfield.cpp textfile.cpp textline.cpp thread.cpp windowfunctions.cpp xml.cpp file.cpp tabcontrol.cpp tabbedtextfield.cpp renderer.cpp filemanager.cpp controlmanager.cpp utils.cpp  -o main
 
 struct PGPopupMenu {
@@ -78,6 +78,8 @@ struct PGTimer {
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
+NSDraggingSession* active_session = nullptr;
+
 void PeriodicWindowRedraw(PGWindowHandle handle) {
 	handle->manager->PeriodicRender();
 	if (handle->pending_destroy) {
@@ -98,76 +100,65 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		handle = new PGWindow();
 		handle->window = window;
 		handle->view = self;
-		ControlManager* manager = new ControlManager(handle);
-		handle->manager = manager;
 		handle->renderer = InitializeRenderer();
 
 		timer = CreateTimer(handle, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
-		PGContainer* tabbed = new PGContainer(handle);
-		tabbed->width = 0;
-		tabbed->height = TEXT_TAB_HEIGHT;
-		TextField* textfield = new TextField(handle, textfiles[0]);
-		textfield->SetAnchor(PGAnchorTop);
-		textfield->percentage_height = 1;
-		textfield->percentage_width = 1;
-		TabControl* tabs = new TabControl(handle, textfield, textfiles);
-		tabs->SetAnchor(PGAnchorTop | PGAnchorLeft);
-		tabs->fixed_height = TEXT_TAB_HEIGHT;
-		tabs->percentage_width = 1;
-		tabbed->AddControl(tabs);
-		tabbed->AddControl(textfield);
-		textfield->vertical_anchor = tabs;
-
-
+		ControlManager* manager = new ControlManager(handle);
+		manager->SetPosition(PGPoint(0, 0));
+		manager->SetSize(PGSize(1000, 700));
+		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+		handle->manager = manager;
+		
 		ProjectExplorer* explorer = new ProjectExplorer(handle);
 		explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 		explorer->fixed_width = 200;
 		explorer->percentage_height = 1;
-
-		StatusBar* bar = new StatusBar(handle, textfield);
+		explorer->minimum_width = 50;
+		
+		StatusBar* bar = new StatusBar(handle);
 		bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 		bar->percentage_width = 1;
 		bar->fixed_height = STATUSBAR_HEIGHT;
 		explorer->vertical_anchor = bar;
 
-		tabbed->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-		tabbed->percentage_height = 1;
-		tabbed->percentage_width = 1;
-		tabbed->vertical_anchor = bar;
-		tabbed->SetPosition(PGPoint(50, 50));
-		tabbed->SetSize(manager->GetSize() - PGSize(100, 100));
-		tabbed->horizontal_anchor = explorer;
+		Splitter *splitter = new Splitter(handle, true);
+		splitter->SetAnchor(PGAnchorBottom | PGAnchorLeft);
+		splitter->horizontal_anchor = explorer;
+		splitter->vertical_anchor = bar;
+		splitter->fixed_width = 4;
+		splitter->percentage_height = 1;
 
-		manager->AddControl(tabbed);
 		manager->AddControl(bar);
 		manager->AddControl(explorer);
+		manager->AddControl(splitter);
 
 		manager->statusbar = bar;
-		manager->active_textfield = textfield;
 		manager->active_projectexplorer = explorer;
-		
+		manager->splitter = splitter;
+
+		manager->SetTextFieldLayout(1, 1, textfiles);
 		manager->SetPosition(PGPoint(0, 0));
 		manager->SetSize(PGSize(rect.size.width, rect.size.height));
 		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 
-	    handle->workspace.LoadWorkspace("workspace.json");
+		handle->workspace.LoadWorkspace("workspace.json");
 	}
 	return self;
 }
 
 - (float)scaleFactor {
-    NSWindow *window = [self window];
+	NSWindow *window = [self window];
 #ifdef RETINA_API_AVAILABLE
-    if (window) {
-        return [window backingScaleFactor];
-    }
-    return [[NSScreen mainScreen] backingScaleFactor];
+	if (window) {
+		return [window backingScaleFactor];
+	}
+	return [[NSScreen mainScreen] backingScaleFactor];
 #else
-    if (window) {
-        return [window userSpaceScaleFactor];
-    }
-    return [[NSScreen mainScreen] userSpaceScaleFactor];
+	if (window) {
+		return [window userSpaceScaleFactor];
+	}
+	return [[NSScreen mainScreen] userSpaceScaleFactor];
 #endif
 }
 
@@ -445,19 +436,20 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 
 - (NSDraggingSession *)startDragging:(NSArray<NSDraggingItem *> *)items 
-        event:(NSEvent *)event 
-        source:(id<NSDraggingSource>)source
-        callback:(PGDropCallback)callback
-        data:(void*)data {
+		event:(NSEvent *)event 
+		source:(id<NSDraggingSource>)source
+		callback:(PGDropCallback)callback
+		data:(void*)data {
 	self->dragging_callback = callback;
 	self->dragging_data = data;
 	NSDraggingSession* session = [handle->view beginDraggingSessionWithItems:items event:event source:source];
 	session.animatesToStartingPositionsOnCancelOrFail = NO;
+	active_session = session;
 	return session;
 }
 
 -(NSDragOperation)draggingSession:(NSDraggingSession *)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context {
-    return NSDragOperationEvery;
+	return NSDragOperationEvery;
 }
 
 
@@ -465,6 +457,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 -(void)draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation {
+	active_session = nullptr;
 	if (dragging_callback) {
 		dragging_callback(PGPoint(screenPoint.x, [self getBounds].size.height - screenPoint.y), dragging_data);
 		dragging_callback = nullptr;
@@ -475,11 +468,11 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 - (void)windowDidResignKey:(NSNotification *)notification {
-    handle->manager->LosesFocus();
+	handle->manager->LosesFocus();
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification {
-    handle->manager->GainsFocus();
+	handle->manager->GainsFocus();
 }
 
 @end
@@ -507,20 +500,20 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 
 PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<TextFile>> textfiles) {
 	PGNSWindow *window;
-    NSRect contentSize = NSMakeRect(0, 0, 1000.0, 700.0);
-    NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
+	NSRect contentSize = NSMakeRect(0, 0, 1000.0, 700.0);
+	NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
 
-    window = [[PGNSWindow alloc] initWithContentRect:contentSize styleMask:windowStyleMask backing:NSBackingStoreBuffered defer:YES];
-    window.backgroundColor = [NSColor whiteColor];
-    PGView *view = [[PGView alloc] initWithFrame:contentSize:window:textfiles];
-    [view setWantsLayer:YES];
-    window.contentView = view;
-    [window makeFirstResponder:view];
-    [window registerPGView:view];
+	window = [[PGNSWindow alloc] initWithContentRect:contentSize styleMask:windowStyleMask backing:NSBackingStoreBuffered defer:YES];
+	window.backgroundColor = [NSColor whiteColor];
+	PGView *view = [[PGView alloc] initWithFrame:contentSize:window:textfiles];
+	[view setWantsLayer:YES];
+	window.contentView = view;
+	[window makeFirstResponder:view];
+	[window registerPGView:view];
 
-    [window cascadeTopLeftFromPoint:NSMakePoint(position.x, position.y)];
-    [window setTitle:@"Panther"];
-    [window setDelegate:view];
+	[window cascadeTopLeftFromPoint:NSMakePoint(position.x, position.y)];
+	[window setTitle:@"Panther"];
+	[window setDelegate:view];
 	return [view getHandle];
 }
 
@@ -529,7 +522,7 @@ PGWindowHandle PGCreateWindow(std::vector<std::shared_ptr<TextFile>> textfiles) 
 }
 
 void ShowWindow(PGWindowHandle handle) {
-    [handle->window makeKeyAndOrderFront:nil];
+	[handle->window makeKeyAndOrderFront:nil];
 }
 
 void RefreshWindow(PGWindowHandle window, bool redraw_now) {
@@ -735,18 +728,49 @@ void PGStartDragDrop(PGWindowHandle handle, PGBitmapHandle image, PGDropCallback
 
 	NSSize size = [nsimage size];
 
-    NSPasteboardItem *pbItem = [NSPasteboardItem new];
-    [pbItem setData:[[NSData alloc] initWithBytes:&data length:sizeof(void*)] forType:@"com.panther.draggingobject"];
+	NSPasteboardItem *pbItem = [NSPasteboardItem new];
+	[pbItem setData:[[NSData alloc] initWithBytes:&data length:sizeof(void*)] forType:@"com.panther.draggingobject"];
 
+	if (active_session == nullptr) {
+		NSDraggingItem *dragItem = [[NSDraggingItem alloc] initWithPasteboardWriter:pbItem];
+		NSPoint dragPosition = [handle->view convertPoint:[handle->event locationInWindow] fromView:nil];
+		dragPosition.x -= size.width / 2;
+		dragPosition.y -= size.height /2;
+		NSRect draggingRect = NSMakeRect(dragPosition.x, dragPosition.y, size.width, size.height);
+		[dragItem setDraggingFrame:draggingRect contents:nsimage];
 
-    NSDraggingItem *dragItem = [[NSDraggingItem alloc] initWithPasteboardWriter:pbItem];
-    NSPoint dragPosition = [handle->view convertPoint:[handle->event locationInWindow] fromView:nil];
-    dragPosition.x -= size.width / 2;
-    dragPosition.y -= size.height /2;
-    NSRect draggingRect = NSMakeRect(dragPosition.x, dragPosition.y, size.width, size.height);
-	[dragItem setDraggingFrame:draggingRect contents:nsimage];
+		[handle->view startDragging:[NSArray arrayWithObject:dragItem] event:handle->event source:handle->view callback:callback data:data];
+	} else {
+		/*
+		NSImage* image = [[NSImage alloc] initWithSize:size];
+		[active_session enumerateDraggingItemsWithOptions:NSDraggingItemEnumerationClearNonenumeratedImages
+									  forView:handle->view
+									  classes:[NSArray arrayWithObject:pbItem]
+								searchOptions:nil
+								   usingBlock:^(NSDraggingItem *draggingItem, NSInteger idx, BOOL *stop) {
+									   [draggingItem setDraggingFrame:draggingItem.draggingFrame contents:nsimage];
+									   *stop = NO;
+								   }];*/
+	}
+}
 
-	[handle->view startDragging:[NSArray arrayWithObject:dragItem] event:handle->event source:handle->view callback:callback data:data];
+void PGCancelDragDrop(PGWindowHandle window) {
+	/*
+	if (active_session != nullptr) {
+		NSSize size;
+		size.width = 0;
+		size.height = 0;
+		NSImage* image = [[NSImage alloc] initWithSize:size];
+		[active_session enumerateDraggingItemsWithOptions:NSDraggingItemEnumerationClearNonenumeratedImages
+									  forView:window->view
+									  classes:@[]
+								searchOptions:nil
+								   usingBlock:^(NSDraggingItem *draggingItem, NSInteger idx, BOOL *stop) {
+									   [draggingItem setDraggingFrame:draggingItem.draggingFrame contents:image];
+									   *stop = NO;
+								   }];
+		PGLogMessage("Cancel drag drop operation.");
+	}*/
 }
 
 std::string GetOSName() {

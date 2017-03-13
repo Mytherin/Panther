@@ -4,6 +4,7 @@
 #include <string>
 #include "assert.h"
 #include <vector>
+#include <float.h>
 
 typedef enum {
 	PGDirectionLeft,
