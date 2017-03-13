@@ -32,7 +32,7 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), 
 	display_linenumbers(true), notification(nullptr), tabcontrol(nullptr),
-	vscroll_left(0), hscroll_left(0), vscroll_speed(0) {
+	vscroll_left(0), hscroll_left(0), vscroll_speed(0), active_searchbox(nullptr) {
 	textfile->SetTextField(this);
 
 	ControlManager* manager = GetControlManager(this);
@@ -855,10 +855,48 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 }
 
 void TextField::DisplayGotoDialog(PGGotoType goto_type) {
-	PGGotoAnything* goto_anything = new PGGotoAnything(this, this->window, goto_type);
+	PGGotoAnything* goto_anything;
+	if (active_searchbox != nullptr) {
+		goto_anything = dynamic_cast<PGGotoAnything*>(active_searchbox);
+		if (goto_anything == nullptr) {
+			dynamic_cast<PGContainer*>(this->parent)->RemoveControl(goto_anything);
+			this->active_searchbox = nullptr;
+		} else {
+			goto_anything->SetType(goto_type);
+			return;
+		}
+	}
+	goto_anything = new PGGotoAnything(this, this->window, goto_type);
 	goto_anything->SetSize(PGSize(goto_anything->width, GetTextHeight(textfield_font) + 306));
 	goto_anything->SetPosition(PGPoint(this->x + (this->width - goto_anything->width) * 0.5f, this->y));
+	this->active_searchbox = goto_anything;
+	this->active_searchbox->OnDestroy([](Control* c, void* data) {
+		TextField* tf = static_cast<TextField*>(data);
+		tf->ClearSearchBox(c);
+	}, this);
 	dynamic_cast<PGContainer*>(this->parent)->AddControl(goto_anything);
+}
+
+void TextField::DisplaySearchBox(std::vector<SearchEntry>& entries) {
+	if (active_searchbox != nullptr) {
+		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(active_searchbox);
+		this->active_searchbox = nullptr;
+	}
+	SearchBox* searchbox = new SearchBox(this->window, entries, false);
+	searchbox->SetSize(PGSize(500, GetTextHeight(textfield_font) + 306));
+	searchbox->SetPosition(PGPoint(this->x + (this->width - searchbox->width) * 0.5f, this->y));
+	this->active_searchbox = searchbox;
+	this->active_searchbox->OnDestroy([](Control* c, void* data) {
+		TextField* tf = static_cast<TextField*>(data);
+		tf->ClearSearchBox(c);
+	}, this);
+	dynamic_cast<PGContainer*>(this->parent)->AddControl(searchbox);
+}
+
+void TextField::ClearSearchBox(Control * searchbox) {
+	if (this->active_searchbox == searchbox) {
+		this->active_searchbox = nullptr;
+	}
 }
 
 void TextField::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {

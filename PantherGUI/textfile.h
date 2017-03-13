@@ -334,3 +334,12 @@ private:
 	
 	void _InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 };
+
+struct SearchEntry {
+	std::string display_name;
+	std::string display_subtitle;
+	std::string text;
+	std::shared_ptr<TextFile> data;
+	double multiplier;
+	double basescore;
+};

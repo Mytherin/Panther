@@ -3,6 +3,7 @@
 #include "encoding.h"
 #include "style.h"
 #include "controlmanager.h"
+#include "searchbox.h"
 
 StatusBar::StatusBar(PGWindowHandle window) :
 	PGContainer(window) {
@@ -60,6 +61,33 @@ StatusBar::StatusBar(PGWindowHandle window) :
 
 	language_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
+		TextField* tf = dynamic_cast<StatusBar*>(c)->GetActiveTextField();
+		TextFile& file = tf->GetTextFile();
+		std::vector<SearchEntry> entries;
+		// plain text entry
+		SearchEntry entry;
+		entry.basescore = 10;
+		entry.multiplier = 1;
+		entry.display_name = "Plain Text";
+		entry.display_subtitle = "";
+		entries.push_back(entry);
+		// entries for all the supported languages
+		auto languages = PGLanguageManager::GetLanguages();
+		auto active_language = file.GetLanguage();
+		for (auto it = languages.begin(); it != languages.end(); it++) {
+			SearchEntry entry;
+			entry.basescore = active_language == *it ? 1 : 0;
+			entry.multiplier = 1;
+			entry.display_name = (*it)->GetName();
+			entry.display_subtitle = "";
+			entries.push_back(entry);
+		}
+		tf->DisplaySearchBox(entries);
+
+
+
+		/*
+		Control* c = button->parent;
 		TextFile& file = ((StatusBar*)c)->GetActiveTextField()->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
 		auto languages = PGLanguageManager::GetLanguages();
@@ -71,7 +99,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 		}
 		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
 			PGPoint(button->X() + button->width - 1, button->Y())),
-			PGTextAlignRight | PGTextAlignBottom);
+			PGTextAlignRight | PGTextAlignBottom);*/
 	}, this);
 
 	lineending_button->OnPressed([](Button* button, void* data) {

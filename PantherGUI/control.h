@@ -33,7 +33,7 @@ enum PGControlType {
 class Control {
 public:
 	Control(PGWindowHandle window);
-	virtual ~Control() { }
+	virtual ~Control();
 
 	virtual void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	// Returns true if the button has been consumed by the control, false if it has been ignored
@@ -93,6 +93,8 @@ public:
 	virtual PGCursorType GetDraggingCursor() { return PGCursorStandard; }
 
 	virtual PGControlType GetControlType() = 0;
+	
+	void OnDestroy(PGControlDataCallback callback, void* data) { destroy_data.function = callback; destroy_data.data = data; }
 //protected:
 	bool visible;
 
@@ -120,4 +122,6 @@ protected:
 	bool PressKey(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, PGButton button, PGModifier modifier);
 	bool PressCharacter(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, char character, PGModifier modifier);
 	bool PressMouseButton(std::map<PGMousePress, PGMouseFunctionCall>& mousebindings, PGMouseButton button, PGPoint mouse, PGModifier modifier, int clicks, lng line, lng character);
+private:
+	PGFunctionData destroy_data;
 };

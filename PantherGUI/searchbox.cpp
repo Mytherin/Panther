@@ -4,9 +4,9 @@
 #include "unicode.h"
 #include "goto.h"
 
-SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries) :
+SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles) :
 	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0),
-	scrollbar(nullptr), scroll_position(0) {
+	scrollbar(nullptr), scroll_position(0), render_subtitles(render_subtitles) {
 	font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -121,7 +121,7 @@ void SearchBox::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 void SearchBox::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
 		if (distance != 0) {
-			lng offset = (distance < 0 ? -1 : 1) * std::ceil(std::abs(distance));
+			lng offset = (distance < 0 ? -1 : 1) * std::ceil(std::abs(distance / 30.0f));
 			SetScrollPosition(scroll_position - offset);
 			this->Invalidate();
 		}
@@ -165,8 +165,10 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		entry_height += 10;
 		SetTextFontSize(font, 13);
 		entry_height += GetTextHeight(font) + 1;
-		SetTextFontSize(font, 11);
-		entry_height += GetTextHeight(font) + 1;
+		if (render_subtitles) {
+			SetTextFontSize(font, 11);
+			entry_height += GetTextHeight(font) + 1;
+		}
 	}
 
 	while ((current_y - y) + entry_height < this->height) {
@@ -200,9 +202,11 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		SetTextFontSize(font, 13);
 		RenderTextPartialBold(renderer, font, entry.display_name, rank.pos, filter_size, current_x + 5, current_y + 1);
 		current_y += GetTextHeight(font) + 1;
-		SetTextFontSize(font, 11);
-		RenderTextPartialBold(renderer, font, entry.display_subtitle, rank.subpos, filter_size, current_x + 5, current_y + 2);
-		current_y += GetTextHeight(font) + 1;
+		if (render_subtitles) {
+			SetTextFontSize(font, 11);
+			RenderTextPartialBold(renderer, font, entry.display_subtitle, rank.subpos, filter_size, current_x + 5, current_y + 2);
+			current_y += GetTextHeight(font) + 1;
+		}
 		current_y += 3;
 
 		current_x = x;
@@ -225,7 +229,12 @@ void SearchBox::OnResize(PGSize old_size, PGSize new_size) {
 }
 
 void SearchBox::Close(bool success) {
-	dynamic_cast<PGGotoAnything*>(this->parent)->Close(success);
+	PGGotoAnything* goto_anything = dynamic_cast<PGGotoAnything*>(this->parent);
+	if (goto_anything != nullptr) {
+		goto_anything->Close(success);
+	} else {
+		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
+	}
 	/*
 	if (success && displayed_entries.size() > 0) {
 		if (selection_confirmed) {

@@ -17,6 +17,12 @@ Control::Control(PGWindowHandle handle) :
 	this->visible = true;
 }
 
+Control::~Control() {
+	if (this->destroy_data.function) {
+		this->destroy_data.function(this, destroy_data.data);
+	}
+}
+
 void Control::Draw(PGRendererHandle handle, PGIRect* rectangle) {
 }
 

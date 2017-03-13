@@ -2,6 +2,7 @@
 #include "controlmanager.h"
 #include "scrollbar.h"
 #include "style.h"
+#include "searchbox.h"
 
 Scrollbar::Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows) :
 	Control(window), horizontal(horizontal), arrows(arrows) {

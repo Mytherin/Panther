@@ -83,6 +83,9 @@ public:
 
 	void DisplayNotification(PGFileError error);
 	void DisplayGotoDialog(PGGotoType goto_type);
+	void DisplaySearchBox(std::vector<SearchEntry>& entries);
+
+	void ClearSearchBox(Control* searchbox);
 
 	PG_CONTROL_KEYBINDINGS;
 	virtual PGControlType GetControlType() { return PGControlTypeTextField; }
@@ -138,4 +141,5 @@ private:
 	void ClearNotification();
 
 	PGNotification* notification = nullptr;
+	Control* active_searchbox = nullptr;
 };

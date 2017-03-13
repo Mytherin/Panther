@@ -43,13 +43,6 @@ protected:
 	bool valid_input = true;
 	bool render_background = true;
 
-	struct PGFunctionData {
-		PGControlDataCallback function = nullptr;
-		void* data = nullptr;
-
-		PGFunctionData() : function(nullptr), data(nullptr) { }
-	};
-
 	PGFunctionData on_user_cancel;
 	PGFunctionData on_user_confirm;
 	PGFunctionData on_prev_entry;

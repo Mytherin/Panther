@@ -396,6 +396,13 @@ extern const PGPopupMenuFlags PGPopupMenuHighlighted;
 typedef void(*PGControlCallback)(Control* control);
 typedef void(*PGControlDataCallback)(Control* control, void* data);
 
+struct PGFunctionData {
+	PGControlDataCallback function = nullptr;
+	void* data = nullptr;
+
+	PGFunctionData() : function(nullptr), data(nullptr) {}
+};
+
 enum PGPopupType {
 	PGPopupTypeEntry,
 	PGPopupTypeSeparator,

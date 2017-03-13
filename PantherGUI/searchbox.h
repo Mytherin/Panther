@@ -6,15 +6,6 @@
 #include "simpletextfield.h"
 #include "togglebutton.h"
 
-struct SearchEntry {
-	std::string display_name;
-	std::string display_subtitle;
-	std::string text;
-	std::shared_ptr<TextFile> data;
-	double multiplier;
-	double basescore;
-};
-
 struct SearchRank {
 	lng index;
 	double score;
@@ -43,7 +34,7 @@ typedef void(*SearchBoxSelectionChangedFunction)(SearchBox* searchbox, SearchRan
 
 class SearchBox : public PGContainer {
 public:
-	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries);
+	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles = true);
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 
@@ -66,6 +57,8 @@ public:
 private:
 	std::vector<SearchEntry> entries;
 	std::vector<SearchRank> displayed_entries;
+
+	bool render_subtitles = false;
 
 	PGFontHandle font;
 	SimpleTextField* field;
