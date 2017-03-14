@@ -7,6 +7,7 @@
 #include "simpletextfield.h"
 #include "findtext.h"
 #include "goto.h"
+#include "searchbox.h"
 
 #include "json.h"
 
@@ -21,6 +22,7 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	TextField::InitializeKeybindings();
 	PGFindText::InitializeKeybindings();
 	PGGotoAnything::InitializeKeybindings();
+	SearchBox::InitializeKeybindings();
 
 #ifdef WIN32
 	LoadSettings("default-keybindings." + GetOSName() + ".json");
@@ -234,6 +236,8 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 				INITIALIZE_CONTROL(PGFindText);
 			} else if (control == "goto") {
 				INITIALIZE_CONTROL(PGGotoAnything);
+			} else if (control == "searchbox") {
+				INITIALIZE_CONTROL(SearchBox);
 			}
 
 			if (functions && keybindings_noargs && keybindings_varargs) {

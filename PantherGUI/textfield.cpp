@@ -877,7 +877,7 @@ void TextField::DisplayGotoDialog(PGGotoType goto_type) {
 	dynamic_cast<PGContainer*>(this->parent)->AddControl(goto_anything);
 }
 
-void TextField::DisplaySearchBox(std::vector<SearchEntry>& entries) {
+void TextField::DisplaySearchBox(std::vector<SearchEntry>& entries, SearchBoxCloseFunction close_function, void* close_data) {
 	if (active_searchbox != nullptr) {
 		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(active_searchbox);
 		this->active_searchbox = nullptr;
@@ -885,6 +885,7 @@ void TextField::DisplaySearchBox(std::vector<SearchEntry>& entries) {
 	SearchBox* searchbox = new SearchBox(this->window, entries, false);
 	searchbox->SetSize(PGSize(500, GetTextHeight(textfield_font) + 306));
 	searchbox->SetPosition(PGPoint(this->x + (this->width - searchbox->width) * 0.5f, this->y));
+	searchbox->OnClose(close_function, close_data);
 	this->active_searchbox = searchbox;
 	this->active_searchbox->OnDestroy([](Control* c, void* data) {
 		TextField* tf = static_cast<TextField*>(data);
@@ -943,6 +944,10 @@ void TextField::SetTextFile(std::shared_ptr<TextFile> textfile) {
 		this->textfile->last_modified_deletion = false;
 		this->textfile->last_modified_notification = this->textfile->last_modified_time;
 		ClearNotification();
+		if (active_searchbox != nullptr) {
+			dynamic_cast<PGContainer*>(this->parent)->RemoveControl(active_searchbox);
+			this->active_searchbox = nullptr;
+		}
 	}
 	this->textfile = textfile;
 	textfile->SetTextField(this);

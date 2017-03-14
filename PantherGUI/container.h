@@ -25,6 +25,8 @@ public:
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 
+	void SetFocus();
+
 	virtual void LosesFocus(void);
 	virtual void GainsFocus(void);
 

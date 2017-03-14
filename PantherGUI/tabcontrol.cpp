@@ -309,7 +309,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 						// close the tab in the original tab control
 						data->tabs->active_tab_hidden = false;
 						data->tabs->ActuallyCloseTab(data->file);
-						delete d;
+						delete data;
 					}
 				}, drag_data, sizeof(TabDragDropStruct));
 				drag_data = nullptr;

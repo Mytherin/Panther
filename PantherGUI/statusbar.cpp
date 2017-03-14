@@ -80,9 +80,18 @@ StatusBar::StatusBar(PGWindowHandle window) :
 			entry.multiplier = 1;
 			entry.display_name = (*it)->GetName();
 			entry.display_subtitle = "";
+			entry.ptr_data = *it;
 			entries.push_back(entry);
 		}
-		tf->DisplaySearchBox(entries);
+		tf->DisplaySearchBox(entries, [](SearchBox* searchbox, bool success, SearchRank& rank, SearchEntry& entry, void* data) {
+			if (success) {
+				// switch language
+				TextField* tf = (TextField*)data;
+				TextFile& file = tf->GetTextFile();
+				PGLanguage* language = (PGLanguage*)entry.ptr_data;
+				file.SetLanguage(language);
+			}
+		}, tf);
 
 
 

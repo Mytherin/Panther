@@ -3,8 +3,19 @@
 #include "button.h"
 #include "container.h"
 #include "scrollbar.h"
-#include "simpletextfield.h"
 #include "togglebutton.h"
+
+class SimpleTextField;
+
+struct SearchEntry {
+	std::string display_name;
+	std::string display_subtitle;
+	std::string text;
+	std::shared_ptr<TextFile> data;
+	void* ptr_data;
+	double multiplier;
+	double basescore;
+};
 
 struct SearchRank {
 	lng index;
@@ -31,11 +42,14 @@ class SearchBox;
 
 typedef void(*SearchBoxRenderFunction)(PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height);
 typedef void(*SearchBoxSelectionChangedFunction)(SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data);
+typedef void(*SearchBoxCloseFunction)(SearchBox* searchbox, bool success, SearchRank& rank, SearchEntry& entry, void* data);
+
 
 class SearchBox : public PGContainer {
 public:
 	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles = true);
 
+	bool KeyboardCharacter(char character, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 
 	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
@@ -48,10 +62,15 @@ public:
 
 	void OnResize(PGSize old_size, PGSize new_size);
 
+	bool ControlTakesFocus() { return true; }
+
 	void Close(bool success = false);
 
 	void OnRender(SearchBoxRenderFunction func) { render_function = func; }
 	void OnSelectionChanged(SearchBoxSelectionChangedFunction func, void* data) { selection_changed = func; selection_changed_data = data; }
+	void OnClose(SearchBoxCloseFunction func, void* data) { close_function = func; close_data = data;}
+
+	PG_CONTROL_KEYBINDINGS;
 
 	virtual PGControlType GetControlType() { return PGControlTypeSearchBox; }
 private:
@@ -71,6 +90,9 @@ private:
 	SearchBoxRenderFunction render_function = nullptr;
 	SearchBoxSelectionChangedFunction selection_changed = nullptr;
 	void* selection_changed_data = nullptr;
+
+	SearchBoxCloseFunction close_function = nullptr;
+	void* close_data = nullptr;
 
 	PGScalar GetEntryHeight() { return entry_height; }
 	lng GetRenderedEntries();

@@ -1,12 +1,16 @@
 
 #include "searchbox.h"
+#include "simpletextfield.h"
 #include "style.h"
 #include "unicode.h"
 #include "goto.h"
 
+PG_CONTROL_INITIALIZE_KEYBINDINGS(SearchBox);
+
 SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles) :
 	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0),
-	scrollbar(nullptr), scroll_position(0), render_subtitles(render_subtitles) {
+	scrollbar(nullptr), scroll_position(0), render_subtitles(render_subtitles),
+	close_function(nullptr), close_data(nullptr) {
 	font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -66,7 +70,17 @@ void SearchBox::SetScrollPosition(lng position) {
 	scroll_position = std::max(std::min((lng) displayed_entries.size() - GetRenderedEntries(), position), (lng) 0);
 }
 
+bool SearchBox::KeyboardCharacter(char character, PGModifier modifier) {
+	if (this->PressCharacter(SearchBox::keybindings, character, modifier)) {
+		return true;
+	}
+	return PGContainer::KeyboardCharacter(character, modifier);
+}
+
 bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
+	if (this->PressKey(SearchBox::keybindings, button, modifier)) {
+		return true;
+	}
 	if (modifier == PGModifierNone) {
 		switch (button) {
 		case PGButtonUp:
@@ -233,6 +247,11 @@ void SearchBox::Close(bool success) {
 	if (goto_anything != nullptr) {
 		goto_anything->Close(success);
 	} else {
+		if (close_function) {
+			SearchRank& rank = displayed_entries[selected_entry];
+			SearchEntry& entry = entries[rank.index];
+			close_function(this, success, rank, entry, close_data);
+		}
 		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
 	}
 	/*
@@ -286,4 +305,14 @@ void SearchBox::Filter(std::string filter) {
 	std::reverse(displayed_entries.begin(), displayed_entries.end());
 	SetSelectedEntry(0);
 	this->Invalidate();
+}
+
+void SearchBox::InitializeKeybindings() {
+	std::map<std::string, PGKeyFunction>& noargs = SearchBox::keybindings_noargs;
+	noargs["confirm"] = [](Control* c) {
+		dynamic_cast<SearchBox*>(c)->Close(true);
+	};
+	noargs["cancel"] = [](Control* c) {
+		dynamic_cast<SearchBox*>(c)->Close(false);
+	};
 }

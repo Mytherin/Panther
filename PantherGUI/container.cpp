@@ -132,6 +132,18 @@ void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
+void PGContainer::SetFocus(void) {
+	if (!this->parent) return;
+	PGContainer* container = dynamic_cast<PGContainer*>(this->parent);
+	if (!container) return;
+	if (container) {
+		if (container->focused_control != this) {
+			container->SetFocusedControl(this);
+		}
+	}
+
+}
+
 void PGContainer::LosesFocus(void) {
 	for (lng i = controls.size() - 1; i >= 0; i--) {
 		Control* c = controls[i];
@@ -288,6 +300,7 @@ void PGContainer::SetFocusedControl(Control* c) {
 	}
 	this->focused_control = c;
 	this->focused_control->GainsFocus();
+	this->SetFocus();
 }
 
 void PGContainer::ActuallyRemoveControl(Control* control) {

@@ -5,6 +5,7 @@
 #include "cursor.h"
 #include "textfile.h"
 #include "time.h"
+#include "searchbox.h"
 
 #include "notification.h"
 #include "scrollbar.h"
@@ -83,7 +84,7 @@ public:
 
 	void DisplayNotification(PGFileError error);
 	void DisplayGotoDialog(PGGotoType goto_type);
-	void DisplaySearchBox(std::vector<SearchEntry>& entries);
+	void DisplaySearchBox(std::vector<SearchEntry>& entries, SearchBoxCloseFunction close_function, void* close_data);
 
 	void ClearSearchBox(Control* searchbox);
 
