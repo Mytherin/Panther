@@ -31,6 +31,7 @@ void ControlManager::PeriodicRender(void) {
 	// for any registered mouse regions, check if the mouse status has changed (mouse has entered or left the area)
 	if (!is_dragging) {
 		for (auto it = regions.begin(); it != regions.end(); it++) {
+			it->MouseMove(mouse);
 			Control* c = (*it).control;
 			if ((*it).rect == nullptr) {
 				PGIRect rectangle = PGIRect(c->X(), c->Y(), c->width, c->height);
@@ -496,4 +497,8 @@ void ControlManager::SelectionChanged(Control *control) {
 
 void ControlManager::ActiveTextFieldChanged(Control *control) {
 	TriggerCallback(active_textfield_callbacks, control);
+}
+
+void PGSingleMouseRegion::MouseMove(PGPoint mouse) {
+
 }

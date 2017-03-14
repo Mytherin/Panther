@@ -11,13 +11,29 @@
 typedef void(*PGMouseCallback)(Control* control, bool, void*);
 
 struct PGMouseRegion {
+	virtual void MouseMove(PGPoint mouse) = 0;
+};
+
+struct PGSingleMouseRegion : public PGMouseRegion {
 	bool mouse_inside = false;
 	PGIRect* rect = nullptr;
 	void* data = nullptr;
 	Control* control = nullptr;
 	PGMouseCallback mouse_event;
 
+	void MouseMove(PGPoint mouse);
+
 	PGMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr) : rect(rect), control(control), mouse_event(mouse_event), data(data) { }
+};
+
+
+struct PGMouseRegionContainer : public PGMouseRegion {
+	std::vector<PGMouseRegion>* regions;
+	Control* containing_control;
+
+	void MouseMove(PGPoint mouse);
+
+	PGMouseRegionContainer(std::vector<PGMouseRegion>* regions, Control* control) : regions(regions), containing_control(control) { }
 };
 
 class TextField;
