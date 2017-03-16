@@ -36,8 +36,13 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	file_icon_height = 0;
 
 	tab_padding = 5;
+	
+	GetControlManager(this)->RegisterGenericMouseRegion(new PGTabMouseRegion(this));
 }
 
+TabControl::~TabControl() {
+	GetControlManager(this)->UnregisterControlForMouseEvents(this);
+}
 
 Tab TabControl::OpenTab(std::shared_ptr<TextFile> textfile) {
 	return Tab(textfile, current_id++);
@@ -67,49 +72,6 @@ void TabControl::PeriodicRender() {
 	if (MovePositionTowards(scroll_position, target_scroll, 3)) {
 		invalidate = true;
 	}
-	auto manager = GetControlManager(this);
-	bool find_hover = false;
-	if (!manager->IsDragging()) {
-		PGPoint mouse = GetMousePosition(window);
-		mouse.x -= X(); mouse.y -= Y();
-		if (PGRectangleContains(PGIRect(0, 0, this->width, this->height), mouse)) {
-			find_hover = true;
-			PGScalar position_x = -scroll_position;
-			lng old_selection = current_selection;
-			bool old_button_hover = false, new_button_hover = false;
-			if (old_selection >= 0 && old_selection < tabs.size()) {
-				tabs[old_selection].hover = false;
-				old_button_hover = tabs[old_selection].button_hover;
-				tabs[old_selection].button_hover = false;
-			}
-			current_selection = -1;
-			for (lng i = 0; i < tabs.size(); i++) {
-				if (position_x + (tabs[i].width + TAB_SPACING) >= 0) {
-					if (mouse.x >= position_x && mouse.x <= position_x + tabs[i].width + TAB_SPACING) {
-						current_selection = i;
-						tabs[i].hover = true;
-						if (mouse.x >= position_x + tabs[i].width - 12.5f + file_icon_width && mouse.y >= 10 && mouse.y <= 22) {
-							tabs[i].button_hover = true;
-						}
-						new_button_hover = tabs[i].button_hover;
-						break;
-					}
-				}
-				position_x += tabs[i].width + TAB_SPACING;
-			}
-			if (current_selection != old_selection || old_button_hover != new_button_hover) {
-				invalidate = true;
-			}
-		}
-	}
-	if (!find_hover) {
-		if (current_selection >= 0 && current_selection < tabs.size()) {
-			tabs[current_selection].hover = false;
-			invalidate = true;
-		}
-		current_selection = -1;
-	}
-	
 	if (invalidate) {
 		this->Invalidate();
 	}
@@ -140,7 +102,6 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 		background_color = PGStyleManager::GetColor(PGColorTabControlTemporary);
 	}
 	
-
 	RenderPolygon(renderer, polygon, background_color);
 	polygon.closed = false;
 	RenderPolygon(renderer, polygon, PGStyleManager::GetColor(PGColorTabControlBorder), 2);
@@ -216,6 +177,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 				}
 			} else {
 				position_x += it->width + TAB_SPACING;
+				it->width = 0;
 			}
 		}
 		index++;
@@ -1036,4 +998,52 @@ void TabControl::InitializeKeybindings() {
 		t->ReopenLastFile();
 		t->Invalidate();
 	};
+}
+
+void PGTabMouseRegion::MouseMove(PGPoint mouse) {
+	PGIRect rectangle = PGIRect(tabs->X(), tabs->Y(), tabs->width, tabs->height);
+	bool contains = PGRectangleContains(rectangle, mouse);
+
+	if (!contains && currently_contains) {
+		for (auto it = tabs->tabs.begin(); it != tabs->tabs.end(); it++) {
+			it->hover = false;
+			it->button_hover = false;
+		}
+		tabs->Invalidate();
+	}
+	currently_contains = contains;
+	if (!contains) return;
+
+	PGScalar tab_height = tabs->height - 2;
+
+	mouse.x -= tabs->X(); mouse.y -= tabs->Y();
+	bool invalidated = false;
+	for (auto it = tabs->tabs.begin(); it != tabs->tabs.end(); it++) {
+		bool current_hover = it->hover;
+		if (it->width == 0) {
+			it->hover = false;
+			it->button_hover = false;
+		} else {
+			PGRect rect = PGRect(it->x, 4, it->width + TAB_SPACING, tab_height);
+			bool contains = PGRectangleContains(rect, mouse);
+			it->hover = contains;
+			if (contains) {
+				PGRect rect = PGRect(it->x + it->width - 12.5f + tabs->file_icon_width, 10, 16, 22);
+				bool current_hover = it->button_hover;
+				it->button_hover = PGRectangleContains(rect, mouse);
+				if (it->button_hover != current_hover) {
+					invalidated = true;
+				}
+				it->hover = true;
+			} else {
+				it->button_hover = false;
+			}
+		}
+		if (current_hover != it->hover) {
+			invalidated = true;
+		}
+	}
+	if (invalidated) {
+		tabs->Invalidate();
+	}
 }

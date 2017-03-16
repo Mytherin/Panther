@@ -5,6 +5,8 @@
 #include "textfield.h"
 #include "filemanager.h"
 
+class TabControl;
+
 struct Tab {
 	lng id = 0;
 	std::shared_ptr<TextFile> file;
@@ -16,6 +18,16 @@ struct Tab {
 
 	Tab(std::shared_ptr<TextFile> file, lng id) : file(file), x(-1), target_x(-1), id(id), hover(false), button_hover(false) { }
 };
+
+struct PGTabMouseRegion : public PGMouseRegion {
+	TabControl* tabs = nullptr;
+	bool currently_contains = false;
+
+	void MouseMove(PGPoint mouse);
+
+	PGTabMouseRegion(TabControl* control) : PGMouseRegion((Control*)control), tabs(control), currently_contains(false) {}
+};
+
 
 struct PGClosedTab {
 	lng id;
@@ -31,7 +43,6 @@ struct PGClosedTab {
 	}
 };
 
-class TabControl;
 struct TabDragDropStruct {
 	TabDragDropStruct(std::shared_ptr<TextFile> file, TabControl* tabs, PGScalar drag_offset) : file(file), tabs(tabs), accepted(nullptr), drag_offset(drag_offset) {}
 	std::shared_ptr<TextFile> file;
@@ -43,8 +54,10 @@ struct TabDragDropStruct {
 class TabControl : public Control {
 	friend class TextField; //FIXME
 	friend class PGGotoAnything;
+	friend class PGTabMouseRegion;
 public:
 	TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files);
+	~TabControl();
 
 	void PeriodicRender(void);
 

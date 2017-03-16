@@ -546,3 +546,35 @@ enum PGFindTextType {
 
 void PGLogMessage(std::string text);
 
+
+typedef void(*PGMouseCallback)(Control* control, bool, void*);
+
+struct PGMouseRegion {
+	Control* control = nullptr;
+
+	virtual void MouseMove(PGPoint mouse) = 0;
+
+	PGMouseRegion(Control* control) : control(control) {}
+};
+
+struct PGSingleMouseRegion : public PGMouseRegion {
+	bool mouse_inside = false;
+	PGIRect* rect = nullptr;
+	void* data = nullptr;
+	PGMouseCallback mouse_event;
+
+	void MouseMove(PGPoint mouse);
+
+	PGSingleMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr) : rect(rect), PGMouseRegion(control), mouse_event(mouse_event), data(data) {}
+};
+
+typedef std::vector<std::unique_ptr<PGSingleMouseRegion>> MouseRegionSet;
+
+struct PGMouseRegionContainer : public PGMouseRegion {
+	MouseRegionSet* regions;
+	bool currently_contained;
+
+	void MouseMove(PGPoint mouse);
+
+	PGMouseRegionContainer(MouseRegionSet* regions, Control* control) : regions(regions), PGMouseRegion(control), currently_contained(false) {}
+};

@@ -8,7 +8,7 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
-ControlManager::ControlManager(PGWindowHandle window) : 
+ControlManager::ControlManager(PGWindowHandle window) :
 	PGContainer(window), active_projectexplorer(nullptr), active_findtext(nullptr), is_focused(true), columns(0), rows(0) {
 #ifdef PANTHER_DEBUG
 	entrance_count = 0;
@@ -31,28 +31,7 @@ void ControlManager::PeriodicRender(void) {
 	// for any registered mouse regions, check if the mouse status has changed (mouse has entered or left the area)
 	if (!is_dragging) {
 		for (auto it = regions.begin(); it != regions.end(); it++) {
-			it->MouseMove(mouse);
-			Control* c = (*it).control;
-			if ((*it).rect == nullptr) {
-				PGIRect rectangle = PGIRect(c->X(), c->Y(), c->width, c->height);
-				bool contains = PGRectangleContains(rectangle, mouse);
-				if (!(*it).mouse_inside && contains) {
-					c->MouseEnter();
-				} else if ((*it).mouse_inside && !contains) {
-					c->MouseLeave();
-				}
-				(*it).mouse_inside = contains;
-			} else {
-				bool contains = PGRectangleContains(*(*it).rect, mouse - (*it).control->Position());
-				if (!(*it).mouse_inside && contains) {
-					// mouse enter
-					(*it).mouse_event((*it).control, true, (*it).data);
-				} else if ((*it).mouse_inside && !contains) {
-					// mouse leave
-					(*it).mouse_event((*it).control, false, (*it).data);
-				}
-				(*it).mouse_inside = contains;
-			}
+			(*it)->MouseMove(mouse);
 		}
 	}
 	for (auto it = controls.begin(); it != controls.end(); it++) {
@@ -118,13 +97,14 @@ void ControlManager::RefreshWindow(PGIRect rectangle, bool redraw_now) {
 }
 
 void ControlManager::RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data) {
-	regions.push_back(PGMouseRegion(rect, control, mouse_event, data));
+	regions.push_back(std::unique_ptr<PGMouseRegion>(new PGSingleMouseRegion(rect, control, mouse_event, data)));
 }
 
 void ControlManager::UnregisterMouseRegion(PGIRect* rect) {
 	if (is_destroyed) return;
 	for (auto it = regions.begin(); it != regions.end(); it++) {
-		if ((*it).rect == rect) {
+		auto single_region = dynamic_cast<PGSingleMouseRegion*>(it->get());
+		if (single_region && single_region->rect == rect) {
 			regions.erase(it);
 			return;
 		}
@@ -133,19 +113,40 @@ void ControlManager::UnregisterMouseRegion(PGIRect* rect) {
 }
 
 void ControlManager::RegisterControlForMouseEvents(Control* control) {
-	regions.push_back(PGMouseRegion(nullptr, control, nullptr, nullptr));
+	regions.push_back(std::unique_ptr<PGMouseRegion>(new PGSingleMouseRegion(nullptr, control, nullptr, nullptr)));
 }
 
 void ControlManager::UnregisterControlForMouseEvents(Control* control) {
 	if (is_destroyed) return;
 	for (auto it = regions.begin(); it != regions.end(); it++) {
-		if ((*it).control == control) {
+		if ((*it)->control == control) {
 			regions.erase(it);
 			return;
 		}
 	}
 	assert(0);
 }
+
+void ControlManager::RegisterMouseRegionContainer(MouseRegionSet* r, Control* control) {
+	regions.push_back(std::unique_ptr<PGMouseRegion>(new PGMouseRegionContainer(r, control)));
+}
+
+void ControlManager::UnregisterMouseRegionContainer(MouseRegionSet* r) {
+	if (is_destroyed) return;
+	for (auto it = regions.begin(); it != regions.end(); it++) {
+		auto container = dynamic_cast<PGMouseRegionContainer*>(it->get());
+		if (container && container->regions == r) {
+			regions.erase(it);
+			return;
+		}
+	}
+	assert(0);
+}
+
+void ControlManager::RegisterGenericMouseRegion(PGMouseRegion* region) {
+	regions.push_back(std::unique_ptr<PGMouseRegion>(region));
+}
+
 
 void ControlManager::DropFile(std::string filename) {
 	active_textfield->GetTabControl()->OpenFile(filename);
@@ -263,7 +264,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 	}
 
 	int current_column = 0, current_row = 0;
-	for(lng i = 0; i < textfields.size(); i++) {
+	for (lng i = 0; i < textfields.size(); i++) {
 		TextFieldContainer* container = textfields[i];
 		container->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 		container->percentage_height = 1.0 / (rows - (rows - current_row) + 1);
@@ -500,5 +501,37 @@ void ControlManager::ActiveTextFieldChanged(Control *control) {
 }
 
 void PGSingleMouseRegion::MouseMove(PGPoint mouse) {
+	Control* c = this->control;
+	if (this->rect == nullptr) {
+		PGIRect rectangle = PGIRect(c->X(), c->Y(), c->width, c->height);
+		bool contains = PGRectangleContains(rectangle, mouse);
+		if (!this->mouse_inside && contains) {
+			c->MouseEnter();
+		} else if (this->mouse_inside && !contains) {
+			c->MouseLeave();
+		}
+		this->mouse_inside = contains;
+	} else {
+		bool contains = PGRectangleContains(*this->rect, mouse - this->control->Position());
+		if (!this->mouse_inside && contains) {
+			// mouse enter
+			this->mouse_event(this->control, true, this->data);
+		} else if (this->mouse_inside && !contains) {
+			// mouse leave
+			this->mouse_event(this->control, false, this->data);
+		}
+		this->mouse_inside = contains;
+	}
+}
 
+void PGMouseRegionContainer::MouseMove(PGPoint mouse) {
+	Control* c = this->control;
+	PGIRect rectangle = PGIRect(c->X(), c->Y(), c->width, c->height);
+	bool contains = PGRectangleContains(rectangle, mouse);
+	if (contains || (!contains && currently_contained)) {
+		this->currently_contained = contains;
+		for (auto it = this->regions->begin(); it != this->regions->end(); it++) {
+			(*it)->MouseMove(mouse);
+		}
+	}
 }

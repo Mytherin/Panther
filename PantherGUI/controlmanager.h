@@ -8,34 +8,6 @@
 #include "textfield.h"
 #include "textfieldcontainer.h"
 
-typedef void(*PGMouseCallback)(Control* control, bool, void*);
-
-struct PGMouseRegion {
-	virtual void MouseMove(PGPoint mouse) = 0;
-};
-
-struct PGSingleMouseRegion : public PGMouseRegion {
-	bool mouse_inside = false;
-	PGIRect* rect = nullptr;
-	void* data = nullptr;
-	Control* control = nullptr;
-	PGMouseCallback mouse_event;
-
-	void MouseMove(PGPoint mouse);
-
-	PGMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr) : rect(rect), control(control), mouse_event(mouse_event), data(data) { }
-};
-
-
-struct PGMouseRegionContainer : public PGMouseRegion {
-	std::vector<PGMouseRegion>* regions;
-	Control* containing_control;
-
-	void MouseMove(PGPoint mouse);
-
-	PGMouseRegionContainer(std::vector<PGMouseRegion>* regions, Control* control) : regions(regions), containing_control(control) { }
-};
-
 class TextField;
 class StatusBar;
 class PGFindText;
@@ -66,6 +38,12 @@ public:
 
 	void RegisterMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr);
 	void UnregisterMouseRegion(PGIRect* rect);
+
+	void RegisterMouseRegionContainer(MouseRegionSet* regions, Control* control);
+	void UnregisterMouseRegionContainer(MouseRegionSet* regions);
+
+	void RegisterGenericMouseRegion(PGMouseRegion* region);
+
 
 	void DropFile(std::string filename);
 
@@ -124,7 +102,7 @@ private:
 
 	MouseClickInstance last_click;
 
-	std::vector<PGMouseRegion> regions;
+	std::vector<std::unique_ptr<PGMouseRegion>> regions;
 
 	std::vector<std::pair<PGControlDataCallback, void*>> selection_changed_callbacks;
 	std::vector<std::pair<PGControlDataCallback, void*>> text_changed_callbacks;
