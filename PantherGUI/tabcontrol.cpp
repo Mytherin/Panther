@@ -1016,7 +1016,7 @@ void PGTabMouseRegion::MouseMove(PGPoint mouse) {
 
 	PGScalar tab_height = tabs->height - 2;
 
-	mouse.x -= tabs->X(); mouse.y -= tabs->Y();
+	mouse.x -= tabs->X() - tabs->scroll_position; mouse.y -= tabs->Y();
 	bool invalidated = false;
 	for (auto it = tabs->tabs.begin(); it != tabs->tabs.end(); it++) {
 		bool current_hover = it->hover;
