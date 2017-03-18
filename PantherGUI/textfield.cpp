@@ -894,6 +894,13 @@ void TextField::DisplaySearchBox(std::vector<SearchEntry>& entries, SearchBoxClo
 	dynamic_cast<PGContainer*>(this->parent)->AddControl(searchbox);
 }
 
+void TextField::CloseSearchBox() {
+	if (active_searchbox != nullptr) {
+		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(active_searchbox);
+		this->active_searchbox = nullptr;
+	}
+}
+
 void TextField::ClearSearchBox(Control * searchbox) {
 	if (this->active_searchbox == searchbox) {
 		this->active_searchbox = nullptr;
@@ -944,10 +951,6 @@ void TextField::SetTextFile(std::shared_ptr<TextFile> textfile) {
 		this->textfile->last_modified_deletion = false;
 		this->textfile->last_modified_notification = this->textfile->last_modified_time;
 		ClearNotification();
-		if (active_searchbox != nullptr) {
-			dynamic_cast<PGContainer*>(this->parent)->RemoveControl(active_searchbox);
-			this->active_searchbox = nullptr;
-		}
 	}
 	this->textfile = textfile;
 	textfile->SetTextField(this);

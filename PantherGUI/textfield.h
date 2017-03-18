@@ -86,6 +86,7 @@ public:
 	void DisplayGotoDialog(PGGotoType goto_type);
 	void DisplaySearchBox(std::vector<SearchEntry>& entries, SearchBoxCloseFunction close_function, void* close_data);
 
+	void CloseSearchBox();
 	void ClearSearchBox(Control* searchbox);
 
 	PG_CONTROL_KEYBINDINGS;
