@@ -118,6 +118,8 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeTabControl; }
 protected:
+	static void ClearEmptyFlag(Control* c, void* data);
+
 	void ReopenFile(PGClosedTab tab);
 
 	void AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid);
@@ -172,4 +174,6 @@ protected:
 	
 	std::shared_ptr<TextFile> temporary_textfile = nullptr;
 	PGScalar temporary_tab_width = 0;
+
+	bool is_empty = false;
 };

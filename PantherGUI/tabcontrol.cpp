@@ -15,17 +15,26 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 #define SAVE_CHANGES_TITLE "Save Changes?"
 #define SAVE_CHANGES_DIALOG "The current file has unsaved changes. Save changes before closing?"
 
+void TabControl::ClearEmptyFlag(Control* c, void* data) {
+	TextField* tf = dynamic_cast<TextField*>(c);
+	TabControl* tb = static_cast<TabControl*>(data);
+	if (tf == tb->GetTextField() && tb->is_empty) {
+		tb->is_empty = false;
+	}
+}
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files) :
 	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1),
-	active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1), 
-	target_scroll(0), scroll_position(0), drag_data(nullptr), temporary_tab_width(0) {
-		if (textfield) {
+	active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1),
+	target_scroll(0), scroll_position(0), drag_data(nullptr), temporary_tab_width(0), is_empty(false) {
+	if (textfield) {
 		textfield->SetTabControl(this);
 	}
 
-	if (files.size() == 0)
+	if (files.size() == 0) {
+		is_empty = true;
 		files.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
+	}
 	for (auto it = files.begin(); it != files.end(); it++) {
 		auto ptr = file_manager.OpenFile(*it);
 		this->tabs.push_back(OpenTab(ptr));
@@ -34,14 +43,19 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	SetTextFontSize(this->font, 12);
 	file_icon_width = 0;
 	file_icon_height = 0;
-
-	tab_padding = 5;
 	
-	GetControlManager(this)->RegisterGenericMouseRegion(new PGTabMouseRegion(this));
+	tab_padding = 5;
+
+	auto cm = GetControlManager(this);
+	cm->OnTextChanged(ClearEmptyFlag, this);
+
+	cm->RegisterGenericMouseRegion(new PGTabMouseRegion(this));
 }
 
 TabControl::~TabControl() {
-	GetControlManager(this)->UnregisterControlForMouseEvents(this);
+	auto cm = GetControlManager(this);
+	cm->UnregisterOnTextChanged(ClearEmptyFlag, this);
+	cm->UnregisterControlForMouseEvents(this);
 }
 
 Tab TabControl::OpenTab(std::shared_ptr<TextFile> textfile) {
@@ -85,7 +99,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	PGScalar tab_height = this->height - 2;
 
 	PGScalar current_x = tab.x;
-	
+
 	PGPolygon polygon;
 	polygon.points.push_back(PGPoint(x + current_x, y + tab_height));
 	polygon.points.push_back(PGPoint(x + current_x + 8, y + 4));
@@ -101,7 +115,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	} else if (type == PGTabTypeTemporary) {
 		background_color = PGStyleManager::GetColor(PGColorTabControlTemporary);
 	}
-	
+
 	RenderPolygon(renderer, polygon, background_color);
 	polygon.closed = false;
 	RenderPolygon(renderer, polygon, PGStyleManager::GetColor(PGColorTabControlBorder), 2);
@@ -116,7 +130,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 
 	RenderFileIcon(renderer, font, ext.c_str(), x + current_x, y + (height - file_icon_height) / 2, file_icon_width, file_icon_height,
 		file->GetLanguage() ? file->GetLanguage()->GetColor() : PGColor(255, 255, 255), PGStyleManager::GetColor(PGColorTabControlBackground), PGStyleManager::GetColor(PGColorTabControlBorder));
-		
+
 	current_x += file_icon_width + 2.5f;
 	if (file->HasUnsavedChanges()) {
 		SetTextColor(font, PGStyleManager::GetColor(PGColorTabControlUnsavedText));
@@ -127,7 +141,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	SetTextStyle(font, PGTextStyleBold);
 	lng render_start = 0, render_end = filename.size();
 	auto widths = CumulativeCharacterWidths(font, filename.c_str(), filename.size(), 0, MAX_TAB_WIDTH - (file_icon_width + 2.5f + 20), render_start, render_end);
-	render_end = std::min(render_end, (lng) widths.size());
+	render_end = std::min(render_end, (lng)widths.size());
 
 	RenderText(renderer, font, filename.c_str(), render_end, x + current_x + tab_padding, y + 6);
 	current_x += (tab.width - 25);
@@ -136,7 +150,7 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	}
 	RenderLine(renderer, PGLine(PGPoint(x + current_x, y + 13), PGPoint(x + current_x + 8, y + 21)), PGStyleManager::GetColor(PGColorTabControlText), 1);
 	RenderLine(renderer, PGLine(PGPoint(x + current_x, y + 21), PGPoint(x + current_x + 8, y + 13)), PGStyleManager::GetColor(PGColorTabControlText), 1);
-	
+
 	position_x += tab.width + TAB_SPACING;
 }
 
@@ -158,29 +172,31 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	SetScrollPosition(target_scroll);
 
 	SetRenderBounds(renderer, PGRect(x, y, this->width - temporary_tab_width, this->height));
-	for (auto it = tabs.begin(); it != tabs.end(); it++) {
-		if (!active_tab_hidden || index != active_tab) {
-			if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x + scroll_position && !rendered) {
-				rendered = true;
-				position_x += MeasureTabWidth(dragging_tab) + TAB_SPACING;
-			}
-			it->target_x = position_x;
-			if (panther::epsilon_equals(it->x, -1)) {
-				it->x = position_x;
-			}
-			it->width = MeasureTabWidth(*it);
-			if (position_x + (it->width + EXTRA_TAB_WIDTH) - scroll_position >= 0) {
-				RenderTab(renderer, *it, position_x, x - scroll_position, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab ? PGTabTypeSelected : PGTabTypeNone);
-				if (position_x - scroll_position > this->width - temporary_tab_width) {
-					// finished rendering
-					break;
+	if (!is_empty) {
+		for (auto it = tabs.begin(); it != tabs.end(); it++) {
+			if (!active_tab_hidden || index != active_tab) {
+				if (dragging_tab.file != nullptr && position_x + it->width / 2 > dragging_tab.x + scroll_position && !rendered) {
+					rendered = true;
+					position_x += MeasureTabWidth(dragging_tab) + TAB_SPACING;
 				}
-			} else {
-				position_x += it->width + TAB_SPACING;
-				it->width = 0;
+				it->target_x = position_x;
+				if (panther::epsilon_equals(it->x, -1)) {
+					it->x = position_x;
+				}
+				it->width = MeasureTabWidth(*it);
+				if (position_x + (it->width + EXTRA_TAB_WIDTH) - scroll_position >= 0) {
+					RenderTab(renderer, *it, position_x, x - scroll_position, y, dragging_tab.file == nullptr && temporary_textfile == nullptr && index == active_tab ? PGTabTypeSelected : PGTabTypeNone);
+					if (position_x - scroll_position > this->width - temporary_tab_width) {
+						// finished rendering
+						break;
+					}
+				} else {
+					position_x += it->width + TAB_SPACING;
+					it->width = 0;
+				}
 			}
+			index++;
 		}
-		index++;
 	}
 
 	if (dragging_tab.file != nullptr) {
@@ -207,7 +223,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 		RenderGradient(renderer, PGRect(x + this->width - temporary_tab_width - 4, y, 4, this->height), PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
 	}
 
-	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1), 
+	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1),
 		temporary_textfile ? PGStyleManager::GetColor(PGColorTabControlTemporary) : (parent_has_focus ? PGStyleManager::GetColor(PGColorTabControlSelected) : PGStyleManager::GetColor(PGColorTabControlBackground)), 2);
 }
 
@@ -242,7 +258,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 				drag_tab = false;
 
 				PGBitmapHandle bitmap = nullptr;
-				
+
 				bitmap = CreateBitmapFromSize(MeasureTabWidth(tabs[active_tab]) + EXTRA_TAB_WIDTH, this->height);
 				PGRendererHandle renderer = CreateRendererForBitmap(bitmap);
 				PGScalar position_x = 0;
@@ -357,7 +373,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 						// if we have the text stored in a buffer
 						// we load the text from the buffer, rather than from the file
 						std::string buffer = (*it)["buffer"];
-						textfile = std::shared_ptr<TextFile>(new TextFile(textfield, path.c_str(), (char*) buffer.c_str(), buffer.size(), true, false));
+						textfile = std::shared_ptr<TextFile>(new TextFile(textfield, path.c_str(), (char*)buffer.c_str(), buffer.size(), true, false));
 						if (path.size() == 0) {
 							textfile->name = "untitled";
 						}
@@ -375,7 +391,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 					// load additional text file settings from the workspace
 					// note that we do not apply them to the textfile immediately because of concurrency concerns
 					PGTextFileSettings settings;
-					
+
 					Cursor::LoadCursors(*it, settings.cursor_data);
 
 					if (it->count("lineending") > 0) {
@@ -430,7 +446,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 		if (tb.count("selected_tab") > 0 && tb["selected_tab"].is_number()) {
 			// if the selected tab is specified, switch to the selected tab
 			lng selected_tab = tb["selected_tab"];
-			selected_tab = std::max((lng) 0, std::min((lng) tabs.size() - 1, selected_tab));
+			selected_tab = std::max((lng)0, std::min((lng)tabs.size() - 1, selected_tab));
 			SwitchToTab(tabs[selected_tab].file);
 		}
 		j.erase(j.find("tabs"));
@@ -478,22 +494,22 @@ void TabControl::WriteWorkspace(nlohmann::json& j) {
 		}
 		std::string endings;
 		switch (line_ending) {
-		case PGLineEndingWindows:
-			endings = "Windows";
-			break;
-		case PGLineEndingUnix:
-			endings = "Unix";
-			break;
-		case PGLineEndingMacOS:
-			endings = "MacOS";
-			break;
+			case PGLineEndingWindows:
+				endings = "Windows";
+				break;
+			case PGLineEndingUnix:
+				endings = "Unix";
+				break;
+			case PGLineEndingMacOS:
+				endings = "MacOS";
+				break;
 		}
 		cur["lineending"] = endings;
 		if (file->wordwrap) {
 			cur["yoffset"] = { file->yoffset.linenumber, file->yoffset.inner_line };
 		} else {
 			cur["xoffset"] = file->xoffset;
-			cur["yoffset"] = file->yoffset.linenumber ;
+			cur["yoffset"] = file->yoffset.linenumber;
 		}
 		index++;
 	}
@@ -775,7 +791,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 }
 
 void TabControl::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
-	PGScalar scroll_offset = (PGScalar) (std::abs(hdistance) > std::abs(distance) ? hdistance : distance);
+	PGScalar scroll_offset = (PGScalar)(std::abs(hdistance) > std::abs(distance) ? hdistance : distance);
 	SetScrollPosition(target_scroll + scroll_offset * 2);
 	this->Invalidate();
 }
@@ -832,7 +848,7 @@ bool TabControl::CloseTabConfirmation(int tab, bool respect_hot_exit) {
 	}
 	// we only show a confirmation on exit if hot_exit is disabled
 	// or if hot_exit is enabled, but the file cannot be saved in the workspace because it is too large
-	if (tabs[tab].file->HasUnsavedChanges() && 
+	if (tabs[tab].file->HasUnsavedChanges() &&
 		(!hot_exit || (hot_exit && tabs[tab].file->WorkspaceFileStorage() == TextFile::PGFileTooLarge))) {
 
 		// switch to the tab
@@ -859,7 +875,14 @@ void TabControl::ActuallyCloseTab(int tab) {
 		active_tab--;
 	} else if (tab == active_tab) {
 		if (tabs.size() == 1) {
-			close_window = true;
+			if (is_empty) {
+				close_window = true;
+			} else {
+				auto ptr = file_manager.OpenFile(std::shared_ptr<TextFile>(new TextFile(nullptr)));
+				tabs.push_back(OpenTab(ptr));
+				SwitchToFile(tabs[1].file);
+				is_empty = true;
+			}
 		} else {
 			SwitchToFile(tabs[1].file);
 		}
@@ -883,7 +906,7 @@ void TabControl::CloseTab(int tab) {
 		// we use a callback here rather than a blocking confirmation box
 		// because a blocking confirmation box can launch a sub-event queue on Windows
 		// which could lead to concurrency issues
-		PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG, 
+		PGConfirmationBox(window, SAVE_CHANGES_TITLE, SAVE_CHANGES_DIALOG,
 			[](PGWindowHandle window, Control* control, void* data, PGResponse response) {
 			TabControl* tabs = (TabControl*)control;
 			int* tabnumbers = (int*)data;
@@ -968,7 +991,7 @@ void TabControl::InitializeKeybindings() {
 	noargs["open_file"] = [](Control* c) {
 		TabControl* t = (TabControl*)c;
 		std::vector<std::string> files = ShowOpenFileDialog(true, false, true);
-		for(auto it = files.begin(); it != files.end(); it++) {
+		for (auto it = files.begin(); it != files.end(); it++) {
 			t->OpenFile(*it);
 		}
 		t->Invalidate();
