@@ -43,7 +43,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	SetTextFontSize(this->font, 12);
 	file_icon_width = 0;
 	file_icon_height = 0;
-	
+
 	tab_padding = 5;
 
 	auto cm = GetControlManager(this);
@@ -617,8 +617,14 @@ void TabControl::OpenFile(std::shared_ptr<TextFile> textfile, lng index) {
 void TabControl::AddTab(std::shared_ptr<TextFile> file) {
 	assert(file);
 	assert(active_tab < tabs.size());
-	tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
-	active_tab++;
+	if (is_empty) {
+		tabs.clear();
+		tabs.push_back(OpenTab(file));
+		active_tab = 0;
+	} else {
+		tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
+		active_tab++;
+	}
 	SetActiveTab(active_tab);
 }
 
@@ -632,7 +638,11 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file, lng index) {
 
 void TabControl::AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid) {
 	assert(file);
-	if (neighborid < 0) {
+	if (is_empty) {
+		tabs.clear();
+		tabs.push_back(Tab(file, id));
+		active_tab = 0;
+	} else if (neighborid < 0) {
 		tabs.insert(tabs.begin(), Tab(file, id));
 		active_tab = 0;
 	} else {
