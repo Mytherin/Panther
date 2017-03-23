@@ -524,6 +524,10 @@ bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
 }
 
 void TabControl::NewTab() {
+	if (is_empty) {
+		active_tab = -1;
+		tabs.clear();
+	}
 	std::shared_ptr<TextFile> file = file_manager.OpenFile();
 	tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
 	active_tab++;
@@ -1008,7 +1012,11 @@ void TabControl::InitializeKeybindings() {
 	};
 	noargs["close_tab"] = [](Control* c) {
 		TabControl* t = (TabControl*)c;
-		t->CloseTab(t->active_tab);
+		if (t->temporary_textfile != nullptr) {
+			t->CloseTemporaryFile();
+		} else {
+			t->CloseTab(t->active_tab);
+		}
 		t->Invalidate();
 	};
 	noargs["new_tab"] = [](Control* c) {
