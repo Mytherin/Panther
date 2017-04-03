@@ -116,7 +116,7 @@ CGImageRef SkCreateCGImageRef(const SkBitmap& bm) {
     if (nullptr == bitmap) {
         return nullptr;
     }
-
+    
     const int w = bitmap->width();
     const int h = bitmap->height();
     const size_t s = bitmap->getSize();
@@ -139,14 +139,27 @@ CGImageRef SkCreateCGImageRef(const SkBitmap& bm) {
     return ref;
 }
 
-void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, float x, float y, float scale_factor) {
-    CGImageRef img = SkCreateCGImageRef(bm);
+void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, PGIRect rectangle, float scale_factor) {
+    SkBitmap snipped_bitmap;
+    SkIRect r;
+    r.fLeft = rectangle.x;
+    r.fTop = rectangle.y;
+    r.fRight = rectangle.x + rectangle.width;
+    r.fBottom = rectangle.y + rectangle.height;
 
+    if (!bm.extractSubset(&snipped_bitmap, r)) {
+        assert(0);
+        return;
+    }
+
+    CGImageRef img = SkCreateCGImageRef(snipped_bitmap);
     if (img) {
-        CGRect r = CGRectMake(0, 0, bm.width(), bm.height());
+        assert(rectangle.x + rectangle.width <= bm.width());
+        assert(rectangle.y + rectangle.height <= bm.height());
+        CGRect r = CGRectMake(0, 0, snipped_bitmap.width(), snipped_bitmap.height());
 
         CGContextSaveGState(cg);
-        CGContextTranslateCTM(cg, x, y);
+        CGContextTranslateCTM(cg, rectangle.x, rectangle.y);
         CGContextScaleCTM(cg, 1.0f / scale_factor, 1.0f / scale_factor);
 
         CGContextDrawImage(cg, r, img);

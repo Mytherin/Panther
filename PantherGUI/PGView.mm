@@ -3,7 +3,6 @@
 #include "control.h"
 #include "textfield.h"
 #include "time.h"
-#include "renderer.h"
 #include "controlmanager.h"
 #include "filemanager.h"
 #include "container.h"
@@ -169,8 +168,6 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		handle->manager->SetSize(PGSize(window_size.size.width, window_size.size.height));
 	}
 
-	SkBitmap bitmap;
-
 	PGIRect rect(
 		invalidateRect.origin.x,
 		invalidateRect.origin.y,
@@ -181,7 +178,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 	// draw bitmap
 	CGContextRef context = (CGContextRef) [[NSGraphicsContext currentContext] graphicsPort];
-	SkCGDrawBitmap(context, bitmap, 0, 0, [self scaleFactor]);
+	SkCGDrawBitmap(context, bitmap, rect, [self scaleFactor]);
 }
 
 -(void)performClose {

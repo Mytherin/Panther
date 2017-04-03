@@ -7,6 +7,7 @@
 #include "textfile.h"
 #include "controlmanager.h"
 
+#include "renderer.h"
 
 @class PGView;
 
@@ -16,6 +17,8 @@
 
 	PGDropCallback dragging_callback;
 	void* dragging_data;
+
+	SkBitmap bitmap;
 }
 -(void)performClose;
 -(ControlManager*)getManager;

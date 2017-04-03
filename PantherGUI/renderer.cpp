@@ -130,18 +130,20 @@ PGRendererHandle InitializeRenderer() {
 
 void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect rect, ControlManager* manager, PGScalar scale_factor) {
 	//bitmap.setConfig(SkBitmap::kARGB_8888_Config, canvas_width, canvas_height);
-	bitmap.setAlphaType(kOpaque_SkAlphaType);
-	bitmap.allocN32Pixels((lng)(rect.width * scale_factor), (lng)(rect.height * scale_factor));
-	//bitmap.allocPixels();
+	lng w = (lng)(rect.width * scale_factor);
+	lng h = (lng)(rect.height * scale_factor);
+	if (bitmap.width() != w || bitmap.height() != h) {
+		manager->InvalidateChildren();
+		bitmap.setAlphaType(kOpaque_SkAlphaType);
+		bitmap.allocN32Pixels((lng)(rect.width * scale_factor), (lng)(rect.height * scale_factor));
+	}
 
 	SkCanvas canvas(bitmap);
-	canvas.clear(SkColorSetRGB(30, 30, 30));
 	canvas.scale(scale_factor, scale_factor);
 
 	renderer->canvas = &canvas;
 
-	assert(0);
-	//manager->Draw(renderer, &rect);
+	manager->Draw(renderer);
 }
 
 
