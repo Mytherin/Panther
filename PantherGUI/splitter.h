@@ -7,7 +7,7 @@ class Splitter : public Control {
 public:
 	Splitter(PGWindowHandle window, bool horizontal);
 
-	void Draw(PGRendererHandle, PGIRect*);
+	void Draw(PGRendererHandle);
 
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);

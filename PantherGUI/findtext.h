@@ -12,7 +12,7 @@ public:
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	
-	void Draw(PGRendererHandle renderer, PGIRect* rect);
+	void Draw(PGRendererHandle renderer);
 
 	void OnResize(PGSize old_size, PGSize new_size);
 

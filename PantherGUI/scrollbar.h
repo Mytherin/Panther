@@ -25,7 +25,7 @@ public:
 	Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows);
 	~Scrollbar();
 
-	void Draw(PGRendererHandle renderer, PGIRect* rect);
+	void Draw(PGRendererHandle renderer);
 
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);

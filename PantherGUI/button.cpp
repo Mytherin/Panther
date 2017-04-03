@@ -64,8 +64,8 @@ void Button::MouseLeave() {
 	}
 }
 
-void Button::Draw(PGRendererHandle renderer, PGIRect* rect) {
-	PGRect render_rectangle = PGRect(X() - rect->x, Y() - rect->y, this->width, this->height);
+void Button::Draw(PGRendererHandle renderer) {
+	PGRect render_rectangle = PGRect(X(), Y(), this->width, this->height);
 
 	if (this->clicking) {
 		RenderRectangle(renderer, render_rectangle, background_color_click, PGDrawStyleFill);

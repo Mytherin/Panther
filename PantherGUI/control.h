@@ -41,7 +41,7 @@ public:
 	virtual bool KeyboardCharacter(char character, PGModifier modifier);
 	virtual bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 	virtual void PeriodicRender(void);
-	virtual void Draw(PGRendererHandle, PGIRect*);
+	virtual void Draw(PGRendererHandle);
 
 	virtual bool AcceptsDragDrop(PGDragDropType type);
 	virtual void DragDrop(PGDragDropType type, int x, int y, void* data);
@@ -60,9 +60,7 @@ public:
 	virtual void LosesFocus(void);
 	virtual void GainsFocus(void);
 
-	virtual void Invalidate(bool redraw_now = false);
-	virtual void Invalidate(PGIRect, bool redraw_now = false);
-	virtual void Invalidate(PGRect, bool redraw_now = false);
+	virtual void Invalidate(bool initial_invalidate = true);
 
 	virtual void LoadWorkspace(nlohmann::json& j);
 	virtual void WriteWorkspace(nlohmann::json& j);
@@ -96,6 +94,7 @@ public:
 	
 	void OnDestroy(PGControlDataCallback callback, void* data) { destroy_data.function = callback; destroy_data.data = data; }
 //protected:
+	bool dirty;
 	bool visible;
 
 	PGScalar X();

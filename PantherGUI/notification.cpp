@@ -16,9 +16,9 @@ PGNotification::~PGNotification() {
 	buttons.clear();
 }
 
-void PGNotification::Draw(PGRendererHandle renderer, PGIRect* rect) {
-	PGScalar x = X() - rect->x;
-	PGScalar y = Y() - rect->y;
+void PGNotification::Draw(PGRendererHandle renderer) {
+	PGScalar x = X();
+	PGScalar y = Y();
 
 	// render the background of the notification
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height),
@@ -53,7 +53,7 @@ void PGNotification::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	ClearRenderBounds(renderer);
 
 	// render the buttons (controls)
-	PGContainer::Draw(renderer, rect);
+	PGContainer::Draw(renderer);
 }
 
 void PGNotification::AddButton(PGControlDataCallback callback, Control* c, void* data, std::string button_text) {

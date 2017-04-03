@@ -23,7 +23,7 @@ public:
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	bool KeyboardCharacter(char character, PGModifier modifier);
 	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
-	void Draw(PGRendererHandle, PGIRect*);
+	void Draw(PGRendererHandle);
 
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
@@ -79,7 +79,7 @@ public:
 	void TextChanged(Control *control);
 	void SelectionChanged(Control *control);
 	void ActiveTextFieldChanged(Control *control);
-
+	
 	PG_CONTROL_KEYBINDINGS;
 protected:
 	virtual void SetFocusedControl(Control* c);

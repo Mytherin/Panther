@@ -30,7 +30,7 @@ public:
 
 	PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
 
-	void Draw(PGRendererHandle renderer, PGIRect* rect);
+	void Draw(PGRendererHandle renderer);
 
 	std::vector<PGFile> GetFiles();
 	std::vector<PGDirectory*>& GetDirectories() { return directories; }

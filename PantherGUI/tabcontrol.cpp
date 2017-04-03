@@ -154,9 +154,9 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 	position_x += tab.width + TAB_SPACING;
 }
 
-void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
-	PGScalar x = X() - rectangle->x;
-	PGScalar y = Y() - rectangle->y;
+void TabControl::Draw(PGRendererHandle renderer) {
+	PGScalar x = X();
+	PGScalar y = Y();
 	PGScalar position_x = 0;
 	PGColor color = PGStyleManager::GetColor(PGColorMainMenuBackground);
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), color, PGDrawStyleFill);
@@ -225,6 +225,7 @@ void TabControl::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 
 	RenderLine(renderer, PGLine(x, y + this->height - 2, x + this->width, y + this->height - 1),
 		temporary_textfile ? PGStyleManager::GetColor(PGColorTabControlTemporary) : (parent_has_focus ? PGStyleManager::GetColor(PGColorTabControlSelected) : PGStyleManager::GetColor(PGColorTabControlBackground)), 2);
+	Control::Draw(renderer);
 }
 
 PGScalar TabControl::MeasureTabWidth(Tab& tab) {
@@ -701,7 +702,7 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 				active_tab_hidden = true;
 
 				drag_tab = true;
-				this->Invalidate(true);
+				this->Invalidate();
 			}
 			return;
 		}

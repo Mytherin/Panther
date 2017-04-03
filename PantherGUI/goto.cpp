@@ -72,9 +72,9 @@ PGGotoAnything::~PGGotoAnything() {
 	}
 }
 
-void PGGotoAnything::Draw(PGRendererHandle renderer, PGIRect* rect) {
-	SetRenderBounds(renderer, PGRect(X() - rect->x, Y() - rect->y, this->width, this->height));
-	PGContainer::Draw(renderer, rect);
+void PGGotoAnything::Draw(PGRendererHandle renderer) {
+	SetRenderBounds(renderer, PGRect(X(), Y(), this->width, this->height));
+	PGContainer::Draw(renderer);
 	ClearRenderBounds(renderer);
 }
 

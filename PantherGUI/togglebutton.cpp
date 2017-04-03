@@ -14,9 +14,9 @@ ToggleButton::ToggleButton(PGWindowHandle window, Control* parent, bool toggled)
 	toggled_color = PGStyleManager::GetColor(PGColorToggleButtonToggled);
 }
 
-void ToggleButton::Draw(PGRendererHandle renderer, PGIRect* rect) {
+void ToggleButton::Draw(PGRendererHandle renderer) {
 	background_color = toggled ? toggled_color : untoggled_color;
-	Button::Draw(renderer, rect);
+	Button::Draw(renderer);
 }
 
 void ToggleButton::Toggle() {

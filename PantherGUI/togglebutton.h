@@ -8,7 +8,7 @@ class ToggleButton : public Button {
 public:
 	ToggleButton(PGWindowHandle window, Control* parent, bool toggled);
 
-	void Draw(PGRendererHandle renderer, PGIRect* rect);
+	void Draw(PGRendererHandle renderer);
 
 	void OnToggle(PGToggleCallback callback, void* data = nullptr) { on_toggle = callback; toggle_data = data; }
 	void Toggle();

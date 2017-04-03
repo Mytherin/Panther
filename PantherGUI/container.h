@@ -19,7 +19,7 @@ public:
 	virtual bool KeyboardCharacter(char character, PGModifier modifier);
 	virtual bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
 	virtual void PeriodicRender(void);
-	virtual void Draw(PGRendererHandle, PGIRect*);
+	virtual void Draw(PGRendererHandle);
 
 	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
@@ -52,6 +52,8 @@ public:
 
 	void AddControl(Control* control);
 	void RemoveControl(Control* control);
+
+	void InvalidateChildren();
 
 	virtual PGControlType GetControlType() { return PGControlTypeContainer; }
 protected:

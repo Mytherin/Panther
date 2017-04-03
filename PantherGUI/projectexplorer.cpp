@@ -196,9 +196,9 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 	}
 }
 
-void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
-	PGScalar x = X() - rect->x;
-	PGScalar y = Y() - rect->y;
+void ProjectExplorer::Draw(PGRendererHandle renderer) {
+	PGScalar x = X();
+	PGScalar y = Y();
 
 	PGPoint mouse = GetMousePosition(window);
 	mouse.x -= X();
@@ -231,7 +231,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer, PGIRect *rect) {
 	if (textfield) {
 		textfield->y = (renaming_file - offset) * file_render_height;
 	}
-	PGContainer::Draw(renderer, rect);
+	PGContainer::Draw(renderer);
 	ClearRenderBounds(renderer);
 }
 

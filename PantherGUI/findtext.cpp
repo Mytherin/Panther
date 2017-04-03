@@ -388,9 +388,9 @@ void PGFindText::SetType(PGFindTextType type) {
 	GetControlManager(this)->Invalidate();
 }
 
-void PGFindText::Draw(PGRendererHandle renderer, PGIRect* rect) {
-	PGScalar x = X() - rect->x;
-	PGScalar y = Y() - rect->y;
+void PGFindText::Draw(PGRendererHandle renderer) {
+	PGScalar x = X();
+	PGScalar y = Y();
 
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
 
@@ -404,7 +404,7 @@ void PGFindText::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		RenderString(renderer, font, "Filter:", x + files_to_include_field->x - field_offset, y + files_to_include_field->y + (files_to_include_field->height - GetTextHeight(font)) / 2 - 1);
 	}
 
-	PGContainer::Draw(renderer, rect);
+	PGContainer::Draw(renderer);
 }
 
 void PGFindText::OnResize(PGSize old_size, PGSize new_size) {

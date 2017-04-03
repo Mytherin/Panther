@@ -16,7 +16,7 @@ public:
 
 	void SelectionChanged();
 
-	void Draw(PGRendererHandle, PGIRect*);
+	void Draw(PGRendererHandle);
 
 	void Invalidate() {
 		PGIRect rect = PGIRect((int)X(), (int)Y(), (int)this->width, (int)this->height);

@@ -140,7 +140,8 @@ void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect
 
 	renderer->canvas = &canvas;
 
-	manager->Draw(renderer, &rect);
+	assert(0);
+	//manager->Draw(renderer, &rect);
 }
 
 

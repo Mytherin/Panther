@@ -16,7 +16,7 @@ public:
 
 	PGFontHandle GetFont() { return font; }
 
-	void Draw(PGRendererHandle renderer, PGIRect* rect);
+	void Draw(PGRendererHandle renderer);
 
 	void AddButton(PGControlDataCallback, Control* control, void* data, std::string button_text);
 private:

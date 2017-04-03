@@ -15,9 +15,9 @@ SimpleTextField::SimpleTextField(PGWindowHandle window) :
 SimpleTextField::~SimpleTextField() {
 }
 
-void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
-	PGScalar x = X() - rectangle->x;
-	PGScalar y = Y() - rectangle->y;
+void SimpleTextField::Draw(PGRendererHandle renderer) {
+	PGScalar x = X();
+	PGScalar y = Y();
 	PGScalar max_x = x + this->width;
 	PGScalar xoffset = textfile->GetXOffset();
 
@@ -74,6 +74,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
 	}
 
 	RenderText(renderer, textfield_font, line + render_start, render_end - render_start, x + character_widths[0], y, max_x);
+	Control::Draw(renderer);
 }
 
 bool SimpleTextField::KeyboardButton(PGButton button, PGModifier modifier) {

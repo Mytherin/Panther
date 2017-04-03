@@ -167,8 +167,8 @@ void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::st
 
 }
 
-void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
-	PGScalar x = X() - rect->x, y = Y() - rect->y;
+void SearchBox::Draw(PGRendererHandle renderer) {
+	PGScalar x = X(), y = Y();
 	PGScalar current_x = x;
 	PGScalar initial_y = y + field->height;
 	PGScalar current_y = initial_y;
@@ -234,7 +234,7 @@ void SearchBox::Draw(PGRendererHandle renderer, PGIRect* rect) {
 		scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, current_y - initial_y - 2 * SCROLLBAR_PADDING - 7));
 		scrollbar->UpdateValues(0, displayed_entries.size() - GetRenderedEntries(), GetRenderedEntries(), scroll_position);
 	}
-	PGContainer::Draw(renderer, rect);
+	PGContainer::Draw(renderer);
 }
 
 void SearchBox::OnResize(PGSize old_size, PGSize new_size) {

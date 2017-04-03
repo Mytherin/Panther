@@ -83,7 +83,7 @@ public:
 		PGTabTypeTemporary
 	};
 
-	void Draw(PGRendererHandle, PGIRect*);
+	void Draw(PGRendererHandle);
 	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, PGTabType type);
 
 	void OpenFile(std::string path);

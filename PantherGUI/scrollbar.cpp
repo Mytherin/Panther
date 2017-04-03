@@ -43,10 +43,10 @@ Scrollbar::~Scrollbar() {
 	}
 }
 
-void Scrollbar::Draw(PGRendererHandle renderer, PGIRect* rect) {
+void Scrollbar::Draw(PGRendererHandle renderer) {
 	if (!visible) return;
-	PGScalar x = X() - rect->x;
-	PGScalar y = Y() - rect->y;
+	PGScalar x = X();
+	PGScalar y = Y();
 	// render the background
 	if (horizontal) {
 		RenderRectangle(renderer, PGIRect(x - bottom_padding, y, this->width + bottom_padding + top_padding, this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
@@ -98,6 +98,7 @@ void Scrollbar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 	}
 	RenderRectangle(renderer, 
 		PGRect(x + scrollbar_area.x, y + scrollbar_area.y, scrollbar_area.width, scrollbar_area.height), scrollbar_color, PGDrawStyleFill);
+	Control::Draw(renderer);
 }
 
 PGScalar Scrollbar::ComputeScrollbarSize() {

@@ -69,14 +69,15 @@ void PGContainer::PeriodicRender(void) {
 	}
 }
 
-void PGContainer::Draw(PGRendererHandle renderer, PGIRect* rect) {
+void PGContainer::Draw(PGRendererHandle renderer) {
 	FlushRemoves();
+	if (!dirty) return;
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		if (rect && !PGIRectanglesOverlap(PGIRect((*it)->X(), (*it)->Y(), (*it)->width, (*it)->height), *rect)) {
-			continue;
+		if ((*it)->dirty) {
+			(*it)->Draw(renderer);
 		}
-		(*it)->Draw(renderer, rect);
 	}
+	Control::Draw(renderer);
 }
 
 void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
@@ -341,4 +342,16 @@ Control* PGContainer::GetMouseOverControl(int x, int y) {
 		}
 	}
 	return nullptr;
+}
+
+void PGContainer::InvalidateChildren() {
+	FlushRemoves();
+	this->dirty = true;
+	for (auto it = controls.begin(); it != controls.end(); it++) {
+		(*it)->dirty = true;
+		PGContainer* container = dynamic_cast<PGContainer*>(*it);
+		if (container != nullptr) {
+			container->InvalidateChildren();
+		}
+	}
 }

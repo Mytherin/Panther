@@ -56,7 +56,7 @@ public:
 
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
-	void Draw(PGRendererHandle renderer, PGIRect* rect);
+	void Draw(PGRendererHandle renderer);
 
 	PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
 

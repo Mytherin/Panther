@@ -45,7 +45,7 @@ public:
 	~TextField();
 
 	void PeriodicRender(void);
-	void Draw(PGRendererHandle, PGIRect*);
+	void Draw(PGRendererHandle);
 	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);

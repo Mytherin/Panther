@@ -366,14 +366,14 @@ void ControlManager::InitializeKeybindings() {
 void ControlManager::EnterManager() {
 #ifdef PANTHER_DEBUG
 	entrance_count++;
-	assert(entrance_count == 1);
+	//assert(entrance_count == 1);
 #endif
 }
 
 void ControlManager::LeaveManager() {
 #ifdef PANTHER_DEBUG
 	entrance_count--;
-	assert(entrance_count == 0);
+	//assert(entrance_count == 0);
 #endif
 }
 
@@ -398,9 +398,9 @@ bool ControlManager::KeyboardUnicode(PGUTF8Character character, PGModifier modif
 
 }
 
-void ControlManager::Draw(PGRendererHandle renderer, PGIRect* rectangle) {
+void ControlManager::Draw(PGRendererHandle renderer) {
 	EnterManager();
-	PGContainer::Draw(renderer, rectangle);
+	PGContainer::Draw(renderer);
 	LeaveManager();
 }
 

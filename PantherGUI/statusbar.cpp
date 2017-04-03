@@ -180,10 +180,10 @@ void StatusBar::SelectionChanged() {
 	this->Invalidate();
 }
 
-void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
+void StatusBar::Draw(PGRendererHandle renderer) {
 	using namespace std;
 	PGScalar x = X(), y = Y();
-	RenderRectangle(renderer, PGRect(x - rect->x, y - rect->y, this->width, this->height), PGStyleManager::GetColor(PGColorStatusBarBackground), PGDrawStyleFill);
+	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorStatusBarBackground), PGDrawStyleFill);
 	auto active_textfield = GetActiveTextField();
 	if (active_textfield) {
 		TextFile& file = active_textfield->GetTextFile();
@@ -210,7 +210,7 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 			if (status.size() > 0) {
 				str += " - " + status;
 			}
-			RenderText(renderer, font, str.c_str(), str.size(), x + 10, y - rect->y);
+			RenderText(renderer, font, str.c_str(), str.size(), x + 10, y);
 			const int padding = 20;
 			int right_position = 0;
 
@@ -220,11 +220,11 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
 				unicode_button->x = this->width - 2 * padding - text_width - right_position;
 				unicode_button->width = 2 * padding + text_width;
-				unicode_button->Draw(renderer, rect);
+				unicode_button->Draw(renderer);
 				right_position += padding;
-				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
+				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
 				right_position += padding;
-				RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
 			}
 
 			PGLanguage* language = file.GetLanguage();
@@ -233,11 +233,11 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
 				language_button->x = this->width - 2 * padding - text_width - right_position;
 				language_button->width = 2 * padding + text_width;
-				language_button->Draw(renderer, rect);
+				language_button->Draw(renderer);
 				right_position += padding;
-				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
+				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
 				right_position += padding;
-				RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
 			}
 
 			PGLineEnding ending = file.GetLineEnding();
@@ -258,11 +258,11 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
 				lineending_button->x = this->width - 2 * padding - text_width - right_position;
 				lineending_button->width = 2 * padding + text_width;
-				lineending_button->Draw(renderer, rect);
+				lineending_button->Draw(renderer);
 				right_position += padding;
-				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
+				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
 				right_position += padding;
-				RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
 			}
 
 			PGLineIndentation indentation = file.GetLineIndentation();
@@ -281,14 +281,15 @@ void StatusBar::Draw(PGRendererHandle renderer, PGIRect* rect) {
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
 				tabwidth_button->x = this->width - 2 * padding - text_width - right_position;
 				tabwidth_button->width = 2 * padding + text_width;
-				tabwidth_button->Draw(renderer, rect);
+				tabwidth_button->Draw(renderer);
 				right_position += padding;
-				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y - rect->y, PGTextAlignRight);
+				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
 				right_position += padding;
-				RenderLine(renderer, PGLine(x + this->width - right_position, y - rect->y, x + this->width - right_position, y - rect->y + this->height), line_color);
+				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
 			}
 		}
 	}
+	Control::Draw(renderer);
 }
 
 TextField* StatusBar::GetActiveTextField() {

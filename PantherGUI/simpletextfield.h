@@ -17,7 +17,7 @@ public:
 	SimpleTextField(PGWindowHandle);
 	~SimpleTextField();
 
-	void Draw(PGRendererHandle, PGIRect*);
+	void Draw(PGRendererHandle);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 
 	void SetValidInput(bool valid);

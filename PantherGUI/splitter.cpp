@@ -7,8 +7,9 @@ Splitter::Splitter(PGWindowHandle window, bool horizontal) :
 	Control(window), is_dragging(false), horizontal(horizontal) {
 }
 
-void Splitter::Draw(PGRendererHandle renderer, PGIRect* rect) {
-	RenderRectangle(renderer, PGRect(X() - rect->x, Y() - rect->y, this->width, this->height), PGStyleManager::GetColor(PGColorTabControlBackground), PGDrawStyleFill);
+void Splitter::Draw(PGRendererHandle renderer) {
+	RenderRectangle(renderer, PGRect(X(), Y(), this->width, this->height), PGStyleManager::GetColor(PGColorTabControlBackground), PGDrawStyleFill);
+	Control::Draw(renderer);
 }
 
 void Splitter::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
