@@ -463,12 +463,14 @@ next_line:
 
 void TextField::Draw(PGRendererHandle renderer) {
 	bool window_has_focus = WindowHasFocus(window);
+	PGPoint position = Position();
+	PGScalar x = position.x, y = position.y;
 
 	// prevent rendering outside of the textfield
-	SetRenderBounds(renderer, PGRect(X(), Y(), this->width, this->height));
+	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height));
 
 	// render the background
-	RenderRectangle(renderer, PGIRect(X(), Y(), this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+	RenderRectangle(renderer, PGIRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
 	if (textfile->IsLoaded()) {
 		textfile->Lock(PGReadLock);
@@ -479,8 +481,6 @@ void TextField::Draw(PGRendererHandle renderer) {
 			auto line_number = std::to_string(std::max((lng)10, textfile->GetMaxYScroll() + 1));
 			text_offset = 10 + MeasureTextWidth(textfield_font, line_number.c_str(), line_number.size());
 		}
-		PGPoint position = Position();
-		PGScalar x = position.x, y = position.y;
 		// get the mouse position (for rendering hovers)
 		PGPoint mouse = GetMousePosition(window, this);
 		PGScalar position_x = x;
@@ -515,7 +515,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 		if (this->display_minimap) {
 			bool mouse_in_minimap = window_has_focus && this->mouse_in_minimap;
 			PGIRect minimap_rect = PGIRect(textfield_width, 0, minimap_width, this->height);
-			PGIRect shadow_rect = PGIRect(minimap_rect.x - 5, y, 5, minimap_rect.height);
+			PGIRect shadow_rect = PGIRect(x + minimap_rect.x - 5, y, 5, minimap_rect.height);
 
 			RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
 			DrawTextField(renderer, minimap_font, &minimap_rect, true, x + textfield_width, x + textfield_width, y, minimap_width, mouse_in_minimap);

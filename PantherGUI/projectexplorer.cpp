@@ -38,11 +38,18 @@ ProjectExplorer::~ProjectExplorer() {
 }
 
 void ProjectExplorer::PeriodicRender(void) {
-	// FIXME: check if files in directory were actually changed
+	bool invalidated = false;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		(*it)->Update();
+		auto flags = PGGetFileFlags((*it)->path);
+		if (flags.modification_time != (*it)->last_modified_time) {
+			(*it)->last_modified_time = flags.modification_time;
+			(*it)->Update();
+			invalidated = true;
+		}
 	}
-	this->Invalidate();
+	if (invalidated) {
+		this->Invalidate();	
+	}
 }
 
 void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected, bool highlighted) {
