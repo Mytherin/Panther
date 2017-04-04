@@ -3,6 +3,7 @@
 
 #include "controlmanager.h"
 #include "workspace.h"
+#include "renderer.h"
 
 #include <map>
 #include <windows.h>
@@ -20,6 +21,7 @@ public:
 	HCURSOR cursor;
 	PGWorkspace workspace;
 	PGPopupMenuHandle menu;
+	SkBitmap bitmap;
 	
 	bool pending_popup_menu = false;
 	bool pending_drag_drop = false;

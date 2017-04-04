@@ -198,15 +198,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		{
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
-			SkBitmap bitmap;
-			PGIRect rect(
-				ps.rcPaint.left,
-				ps.rcPaint.top,
-				ps.rcPaint.right - ps.rcPaint.left,
-				ps.rcPaint.bottom - ps.rcPaint.top);
+			if (ps.rcPaint.left == ps.rcPaint.right || ps.rcPaint.top == ps.rcPaint.bottom) {
+				EndPaint(hWnd, &ps);
+				break;
+			}
 
-			RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager, 1);
+			RenderControlsToBitmap(handle->renderer, handle->bitmap, PGIRect(0, 0, handle->manager->width, handle->manager->height), handle->manager, 1);
 
+			SkBitmap& bitmap = handle->bitmap;
+			SkBitmap subset_bitmap;
+			if (ps.rcPaint.left != 0 || ps.rcPaint.right != bitmap.width() || ps.rcPaint.bottom != bitmap.height() || ps.rcPaint.top != 0) {
+				SkIRect r;
+				r.fLeft = ps.rcPaint.left;
+				r.fTop = ps.rcPaint.top;
+				r.fRight = ps.rcPaint.right;
+				r.fBottom = ps.rcPaint.bottom;
+
+				SkBitmap subset;
+				if (!handle->bitmap.extractSubset(&subset, r)) {
+					EndPaint(hWnd, &ps);
+					break;
+				}
+				if (!subset.deepCopyTo(&subset_bitmap)) {
+					EndPaint(hWnd, &ps);
+					break;
+				}
+				bitmap = subset_bitmap;
+			}
 			BITMAPINFO bmi;
 			memset(&bmi, 0, sizeof(bmi));
 			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -217,10 +235,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			bmi.bmiHeader.biCompression = BI_RGB;
 			bmi.bmiHeader.biSizeImage = 0;
 
-			assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
 			bitmap.lockPixels();
 			int ret = SetDIBitsToDevice(hdc,
-				rect.x, rect.y,
+				ps.rcPaint.left, ps.rcPaint.top,
 				bitmap.width(), bitmap.height(),
 				0, 0,
 				0, bitmap.height(),
@@ -254,7 +271,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				render_item->rcItem.bottom - render_item->rcItem.top);
 			PGBitmapHandle bmp = CreateBitmapFromSize(rect.width, rect.height);
 			PGRendererHandle renderer = CreateRendererForBitmap(bmp);
-			
+
 			PGPopupMenuFlags flags = 0;
 			if (render_item->itemState & ODS_DISABLED || render_item->itemState & ODS_GRAYED) {
 				flags |= PGPopupMenuGrayed;
@@ -467,7 +484,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			if (wParam & MK_CONTROL) modifier |= PGModifierCtrl;
 			if (wParam & MK_SHIFT) modifier |= PGModifierShift;
 			int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
-			handle->manager->MouseWheel(point.x, point.y, 0, (double) zDelta, modifier);
+			handle->manager->MouseWheel(point.x, point.y, 0, (double)zDelta, modifier);
 			break;
 		}
 		case WM_LBUTTONDOWN:
@@ -685,13 +702,13 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	res->timer = CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
 		SendMessage(res->hwnd, WM_COMMAND, 0, 0);
 	}, PGTimerFlagsNone);
-	
+
 	ProjectExplorer* explorer = new ProjectExplorer(res);
 	explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	explorer->fixed_width = 200;
 	explorer->percentage_height = 1;
 	explorer->minimum_width = 50;
-	
+
 	StatusBar* bar = new StatusBar(res);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 	bar->percentage_width = 1;
@@ -1154,7 +1171,7 @@ void OpenFolderInExplorer(std::string path) {
 
 void OpenFolderInTerminal(std::string path) {
 	// FIXME: if path is directory don't just select but go into the path
-	
+
 	std::string parameter;
 	if (!PGSettingsManager::GetSetting("default_terminal", parameter)) {
 		parameter = "cmd.exe";

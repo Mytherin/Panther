@@ -498,7 +498,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 			xoffset = this->textfile->GetXOffset();
 			if (xoffset > max_xoffset) {
 				xoffset = max_xoffset;
-				this->textfile->SetXOffset(max_xoffset);
+				this->textfile->SetXOffset(max_xoffset); 
 			} else if (xoffset < 0) {
 				xoffset = 0;
 				this->textfile->SetXOffset(xoffset);
