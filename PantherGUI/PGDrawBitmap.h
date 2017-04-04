@@ -144,8 +144,8 @@ void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, PGIRect rectangle, floa
     SkIRect r;
     r.fLeft = rectangle.x;
     r.fTop = rectangle.y;
-    r.fRight = rectangle.x + rectangle.width;
-    r.fBottom = rectangle.y + rectangle.height;
+    r.fRight = rectangle.x + rectangle.width * scale_factor;
+    r.fBottom = rectangle.y + rectangle.height * scale_factor;
 
     if (!bm.extractSubset(&snipped_bitmap, r)) {
         assert(0);

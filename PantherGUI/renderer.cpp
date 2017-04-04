@@ -135,7 +135,7 @@ void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect
 	if (bitmap.width() != w || bitmap.height() != h) {
 		manager->InvalidateChildren();
 		bitmap.setAlphaType(kOpaque_SkAlphaType);
-		bitmap.allocN32Pixels((lng)(rect.width * scale_factor), (lng)(rect.height * scale_factor));
+		bitmap.allocN32Pixels(w, h);
 	}
 
 	SkCanvas canvas(bitmap);
