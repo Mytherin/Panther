@@ -344,6 +344,21 @@ Control* PGContainer::GetMouseOverControl(int x, int y) {
 	return nullptr;
 }
 
+void PGContainer::Invalidate(bool initial_invalidate) {
+	if (initial_invalidate) {
+		FlushRemoves();
+		this->dirty = true;
+		for (auto it = controls.begin(); it != controls.end(); it++) {
+			(*it)->dirty = true;
+			PGContainer* container = dynamic_cast<PGContainer*>(*it);
+			if (container != nullptr) {
+				container->InvalidateChildren();
+			}
+		}
+	}
+	Control::Invalidate(initial_invalidate);
+}
+
 void PGContainer::InvalidateChildren() {
 	FlushRemoves();
 	this->dirty = true;
