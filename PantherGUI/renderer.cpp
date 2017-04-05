@@ -33,7 +33,7 @@ static SkPaint::Style PGDrawStyleConvert(PGDrawStyle style) {
 	if (style == PGDrawStyleStroke) {
 		return SkPaint::kStroke_Style;
 	}
-	return SkPaint::kStrokeAndFill_Style;
+	return SkPaint::kFill_Style;
 }
 
 SkPaint* CreateTextPaint() {
@@ -132,10 +132,14 @@ void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect
 	//bitmap.setConfig(SkBitmap::kARGB_8888_Config, canvas_width, canvas_height);
 	lng w = (lng)(rect.width * scale_factor);
 	lng h = (lng)(rect.height * scale_factor);
-	if (bitmap.width() != w || bitmap.height() != h) {
+	if ((lng)bitmap.width() != w || (lng)bitmap.height() != h) {
 		manager->InvalidateChildren();
 		bitmap.setAlphaType(kOpaque_SkAlphaType);
 		bitmap.allocN32Pixels(w, h);
+#ifdef PANTHER_DEBUG
+		SkCanvas canvas(bitmap);
+		canvas.clear(SkColorSetARGB(255, 255, 0, 255));
+#endif
 	}
 
 	SkCanvas canvas(bitmap);
@@ -196,10 +200,12 @@ void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGC
 		SkPoint::Make(rectangle.x + rectangle.width, rectangle.y + rectangle.height / 2)
 	};
 	SkColor colors[2] = { CreateSkColor(left), CreateSkColor(right) };
+	handle->paint->setColor(colors[1]);
 	handle->paint->setShader(SkGradientShader::MakeLinear(
 		points, colors, nullptr, 2,
 		SkShader::kClamp_TileMode, 0, nullptr));
-	handle->paint->setStyle(PGDrawStyleConvert(PGDrawStyleFill));
+	handle->paint->setStyle(SkPaint::kFill_Style);
+	handle->paint->setStrokeWidth(0.0f);
 	handle->canvas->drawRect(rect, *handle->paint);
 	handle->paint->setShader(nullptr);
 }
