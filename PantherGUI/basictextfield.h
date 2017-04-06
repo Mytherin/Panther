@@ -71,6 +71,9 @@ public:
 
 	void PasteHistory();
 
+	// invalidate only the textfield (not the whole control); used to avoid unnecessary redrawing for caret flickering
+	virtual void InvalidateTextField();
+
 	void SetFont(PGFontHandle font) { textfield_font = font; }
 
 	PG_CONTROL_KEYBINDINGS;

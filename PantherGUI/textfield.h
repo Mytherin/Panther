@@ -89,6 +89,8 @@ public:
 	void CloseSearchBox();
 	void ClearSearchBox(Control* searchbox);
 
+	void Invalidate(bool initial_invalidate = true);
+
 	PG_CONTROL_KEYBINDINGS;
 	virtual PGControlType GetControlType() { return PGControlTypeTextField; }
 protected:
@@ -99,6 +101,8 @@ protected:
 	void GetPositionFromLine(lng line, PGScalar& y);
 private:
 	TabControl* tabcontrol;
+
+	bool is_minimap_dirty = true;
 
 	double vscroll_left = 0;
 	double vscroll_speed = 0;
@@ -135,7 +139,7 @@ private:
 	PGVerticalScroll GetMinimapStartLine();
 	void SetMinimapOffset(PGScalar offset);
 
-	void DrawTextField(PGRendererHandle, PGFontHandle, PGIRect*, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
+	void DrawTextField(PGRendererHandle, PGFontHandle, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay);
 
 	void CreateNotification(PGNotificationType type, std::string text);
 	void ShowNotification();

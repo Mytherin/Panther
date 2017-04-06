@@ -32,7 +32,8 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), 
 	display_linenumbers(true), notification(nullptr), tabcontrol(nullptr),
-	vscroll_left(0), hscroll_left(0), vscroll_speed(0), active_searchbox(nullptr) {
+	vscroll_left(0), hscroll_left(0), vscroll_speed(0), active_searchbox(nullptr),
+	is_minimap_dirty(true) {
 	textfile->SetTextField(this);
 
 	ControlManager* manager = GetControlManager(this);
@@ -105,12 +106,12 @@ void TextField::PeriodicRender() {
 	BasicTextField::PeriodicRender();
 }
 
-void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIRect* rectangle, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
+void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {
 	PGScalar xoffset = 0;
 	PGScalar max_x = position_x_text + width;
 	if (!minimap)
 		xoffset = textfile->GetXOffset();
-	PGScalar y = Y() - rectangle->y;
+	PGScalar y = Y();
 	auto start_line = textfile->GetLineOffset();
 	const std::vector<Cursor>& cursors = textfile->GetCursors();
 	TextLine current_line;
@@ -120,9 +121,9 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	PGScalar render_width = GetTextfieldWidth();
 	if (minimap) {
 		// fill in the background of the minimap
-		render_width = GetMinimapWidth();
+		/*render_width = GetMinimapWidth();
 		PGRect rect(position_x_text, position_y, render_width, this->height);
-		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGDrawStyleFill);
+		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGDrawStyleFill);*/
 		// start line of the minimap
 		start_line = GetMinimapStartLine();
 	}
@@ -162,7 +163,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, PGIR
 	}
 
 	while ((current_line = line_iterator->GetLine()).IsValid()) {
-		if (position_y > rectangle->height) break;
+		if (position_y > this->height) break;
 
 		// only render lines that fall within the render rectangle
 		if (!(position_y + line_height < 0)) {
@@ -469,9 +470,6 @@ void TextField::Draw(PGRendererHandle renderer) {
 	// prevent rendering outside of the textfield
 	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height));
 
-	// render the background
-	RenderRectangle(renderer, PGIRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
-
 	if (textfile->IsLoaded()) {
 		textfile->Lock(PGReadLock);
 		// determine the width of the line numbers
@@ -504,21 +502,30 @@ void TextField::Draw(PGRendererHandle renderer) {
 				this->textfile->SetXOffset(xoffset);
 			}
 		}
+		// render the background of the textfield
+		RenderRectangle(renderer, PGIRect(x, y, textfield_width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+
 		// render the actual text field
 		textfield_region.width = textfield_width - text_offset - 5;
 		textfield_region.height = this->height;
 		textfile->SetWordWrap(textfile->GetWordWrap(), GetTextfieldWidth());
 		PGIRect rectangle = PGIRect(0, 0, this->width, this->height);
-		DrawTextField(renderer, textfield_font, &rectangle, false, x, x + text_offset + margin_width * 2, y, textfield_width, false);
+		DrawTextField(renderer, textfield_font, false, x, x + text_offset + margin_width * 2, y, textfield_width, false);
 
 		// render the minimap
 		if (this->display_minimap) {
 			bool mouse_in_minimap = window_has_focus && this->mouse_in_minimap;
-			PGIRect minimap_rect = PGIRect(textfield_width, 0, minimap_width, this->height);
-			PGIRect shadow_rect = PGIRect(x + minimap_rect.x - 5, y, 5, minimap_rect.height);
+			PGIRect shadow_rect = PGIRect(x + textfield_width - 5, y, 5, this->height);
+			if (is_minimap_dirty) {
+				// only rerender the actual minimap if it is dirty
 
+				// render the background of the minimap
+				RenderRectangle(renderer, PGIRect(x + textfield_width, y, minimap_width, this->height), PGColor(30, 30, 30), PGDrawStyleFill);
+
+				DrawTextField(renderer, minimap_font, true, x + textfield_width + 1, x + textfield_width, y, minimap_width, mouse_in_minimap);
+			}
+			// render the minimap gradient between the minimap and the textfield
 			RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
-			DrawTextField(renderer, minimap_font, &minimap_rect, true, x + textfield_width, x + textfield_width, y, minimap_width, mouse_in_minimap);
 		}
 
 		// render the scrollbar
@@ -537,6 +544,9 @@ void TextField::Draw(PGRendererHandle renderer) {
 		}
 		textfile->Unlock(PGReadLock);
 	} else {
+		// render the background
+		RenderRectangle(renderer, PGIRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+
 		if (textfile->bytes >= 0) {
 			// file is currently being loaded, display the progress bar
 			PGScalar offset = this->width / 10;
@@ -554,6 +564,8 @@ void TextField::Draw(PGRendererHandle renderer) {
 		}
 	}
 	ClearRenderBounds(renderer);
+
+	is_minimap_dirty = false;
 	Control::Draw(renderer);
 }
 
@@ -1280,4 +1292,9 @@ void TextField::DisplayNotification(PGFileError error) {
 		((TextField*)control)->ClearNotification();
 	}, this, notification, "Close");
 	ShowNotification();
+}
+
+void TextField::Invalidate(bool initial_invalidate) {
+	is_minimap_dirty = true;
+	Control::Invalidate(initial_invalidate);
 }

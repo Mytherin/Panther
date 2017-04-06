@@ -205,9 +205,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
 			RenderControlsToBitmap(handle->renderer, handle->bitmap, PGIRect(0, 0, handle->manager->width, handle->manager->height), handle->manager, 1);
 
-			SkBitmap& bitmap = handle->bitmap;
+			SkBitmap* bitmap = &handle->bitmap;
 			SkBitmap subset_bitmap;
-			if (ps.rcPaint.left != 0 || ps.rcPaint.right != bitmap.width() || ps.rcPaint.bottom != bitmap.height() || ps.rcPaint.top != 0) {
+			if (ps.rcPaint.left != 0 || ps.rcPaint.right != bitmap->width() || ps.rcPaint.bottom != bitmap->height() || ps.rcPaint.top != 0) {
 				SkIRect r;
 				r.fLeft = ps.rcPaint.left;
 				r.fTop = ps.rcPaint.top;
@@ -223,29 +223,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					EndPaint(hWnd, &ps);
 					break;
 				}
-				bitmap = subset_bitmap;
+				bitmap = &subset_bitmap;
 			}
 			BITMAPINFO bmi;
 			memset(&bmi, 0, sizeof(bmi));
 			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-			bmi.bmiHeader.biWidth = bitmap.width();
-			bmi.bmiHeader.biHeight = -bitmap.height(); // top-down image
+			bmi.bmiHeader.biWidth = bitmap->width();
+			bmi.bmiHeader.biHeight = -bitmap->height(); // top-down image
 			bmi.bmiHeader.biPlanes = 1;
 			bmi.bmiHeader.biBitCount = 32;
 			bmi.bmiHeader.biCompression = BI_RGB;
 			bmi.bmiHeader.biSizeImage = 0;
 
-			bitmap.lockPixels();
+			bitmap->lockPixels();
 			int ret = SetDIBitsToDevice(hdc,
 				ps.rcPaint.left, ps.rcPaint.top,
-				bitmap.width(), bitmap.height(),
+				bitmap->width(), bitmap->height(),
 				0, 0,
-				0, bitmap.height(),
-				bitmap.getPixels(),
+				0, bitmap->height(),
+				bitmap->getPixels(),
 				&bmi,
 				DIB_RGB_COLORS);
 			(void)ret; // we're ignoring potential failures for now.
-			bitmap.unlockPixels();
+			bitmap->unlockPixels();
 			EndPaint(hWnd, &ps);
 			break;
 		}

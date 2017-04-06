@@ -32,13 +32,13 @@ void BasicTextField::PeriodicRender(void) {
 		display_carets_count = 0;
 		if (!current_focus) {
 			current_focus = true;
-			this->Invalidate();
+			this->InvalidateTextField();
 		}
 		return;
 	} else if (current_focus) {
 		if (current_focus) {
 			current_focus = false;
-			this->Invalidate();
+			this->InvalidateTextField();
 		}
 	}
 
@@ -46,7 +46,7 @@ void BasicTextField::PeriodicRender(void) {
 	if (display_carets_count % FLICKER_CARET_INTERVAL == 0) {
 		display_carets_count = 0;
 		display_carets = !display_carets;
-		this->Invalidate();
+		this->InvalidateTextField();
 	}
 }
 
@@ -394,4 +394,8 @@ void BasicTextField::InitializeKeybindings() {
 		tf->GetTextFile().GetActiveCursor().SelectLine();
 		tf->StartDragging(button, PGDragSelection);
 	};
+}
+
+void BasicTextField::InvalidateTextField() {
+	Control::Invalidate(true);
 }
