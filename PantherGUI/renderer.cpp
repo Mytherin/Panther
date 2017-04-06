@@ -610,7 +610,7 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 		selection_end += font->character_width;
 	}
 	// render the selection rectangle
-	PGScalar lineheight = GetTextHeight(font);
+	PGScalar lineheight = GetTextHeight(font) + 1;
 	RenderRectangle(renderer, PGRect(x + selection_start, y, selection_end - selection_start, lineheight), selection_color, PGDrawStyleFill);
 
 	start += render_start;
