@@ -141,6 +141,9 @@ CGImageRef SkCreateCGImageRef(const SkBitmap& bm) {
 
 void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, PGIRect rectangle, float scale_factor) {
     SkBitmap snipped_bitmap;
+
+    snipped_bitmap.setAlphaType(kOpaque_SkAlphaType);
+
     SkIRect r;
     r.fLeft = rectangle.x;
     r.fTop = rectangle.y;
