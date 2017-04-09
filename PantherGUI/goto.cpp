@@ -278,7 +278,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 					tabs->SwitchToTab(entry.data);
 				} else {
 					PGFileError error;
-					g->preview = std::shared_ptr<TextFile>(TextFile::OpenTextFilePreview(g->textfield, entry.text, error));
+					g->preview = std::shared_ptr<TextFile>(TextFile::OpenTextFile(g->textfield, entry.text, error));
 					tabs->OpenTemporaryFile(g->preview);
 				}
 			}, (void*)this);
@@ -319,9 +319,7 @@ void PGGotoAnything::Cancel(bool success) {
 				tabs->SwitchToTab(current_textfile);
 			} else {
 				if (preview) {
-					assert(preview);
-					std::string path = preview->GetFullPath();
-					tabs->OpenFile(path);
+					tabs->OpenFile(preview);
 					tabs->CloseTemporaryFile();
 					preview = nullptr;
 				}

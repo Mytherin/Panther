@@ -18,8 +18,14 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 void TabControl::ClearEmptyFlag(Control* c, void* data) {
 	TextField* tf = dynamic_cast<TextField*>(c);
 	TabControl* tb = static_cast<TabControl*>(data);
-	if (tf == tb->GetTextField() && tb->is_empty) {
-		tb->is_empty = false;
+	if (tf == tb->GetTextField()) {
+		if (tb->temporary_textfile != nullptr && 
+			tf->GetTextfilePointer() == tb->temporary_textfile) {
+			tb->OpenFile(tb->temporary_textfile);
+			tb->CloseTemporaryFile();
+		} else if (tb->is_empty) {
+			tb->is_empty = false;
+		}
 	}
 }
 
@@ -548,8 +554,8 @@ void TabControl::OpenFile(std::string path) {
 }
 
 void TabControl::OpenTemporaryFile(std::shared_ptr<TextFile> textfile) {
+	SwitchToFile(textfile);
 	this->temporary_textfile = textfile;
-	SwitchToFile(temporary_textfile);
 	if (temporary_textfile) {
 		Tab tab = Tab(temporary_textfile, -1);
 		tab.width = MeasureTabWidth(tab);
@@ -982,6 +988,9 @@ void TabControl::SwitchToTab(std::shared_ptr<TextFile> textfile) {
 }
 
 bool TabControl::SwitchToTab(std::string path) {
+	if (temporary_textfile && temporary_textfile->path == path) {
+		return true;
+	}
 	for (int i = 0; i < tabs.size(); i++) {
 		if (tabs[i].file->path == path) {
 			SetActiveTab(i);
@@ -994,6 +1003,8 @@ bool TabControl::SwitchToTab(std::string path) {
 
 
 void TabControl::SwitchToFile(std::shared_ptr<TextFile> file) {
+	if (textfield->GetTextfilePointer() == file) return;
+
 	textfield->SetTextFile(file);
 	if (temporary_textfile && file != temporary_textfile) {
 		CloseTemporaryFile();

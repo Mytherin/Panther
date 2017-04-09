@@ -161,36 +161,6 @@ TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename
 	return file;
 }
 
-#define TEXT_PREVIEW_SIZE 8192
-
-TextFile* TextFile::OpenTextFilePreview(BasicTextField* textfield, std::string filename, PGFileError& error) {
-	lng size = 0;
-	char* base = (char*)panther::ReadPreview(filename, TEXT_PREVIEW_SIZE, size, error);
-	if (!base || size < 0) {
-		// FIXME: proper error message
-		return nullptr;
-	}
-	char* output_text = nullptr;
-	lng output_size = 0;
-	PGFileEncoding result_encoding;
-	if (!PGTryConvertToUTF8(base, size, &output_text, &output_size, &result_encoding) || !output_text) {
-		return nullptr;
-	}
-	if (output_text != base) {
-		panther::DestroyFileContents(base);
-		base = output_text;
-		size = output_size;
-	}
-	auto stats = PGGetFileFlags(filename);
-	TextFile* file = new TextFile(textfield, filename, base, size, true);
-	file->encoding = result_encoding;
-	if (stats.flags == PGFileFlagsEmpty) {
-		file->last_modified_time = stats.modification_time;
-		file->last_modified_notification = stats.modification_time;
-	}
-	return file;
-}
-
 TextFile::~TextFile() {
 	pending_delete = true;
 	if (current_task) {
