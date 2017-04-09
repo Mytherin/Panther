@@ -688,7 +688,9 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 
 		if (temporary_textfile && x > this->width - temporary_tab_width) {
 			if (click_count > 0) {
-				OpenFile(temporary_textfile->path);
+				auto file = temporary_textfile;
+				CloseTemporaryFile();
+				OpenFile(file);
 			}
 			return;
 		}
