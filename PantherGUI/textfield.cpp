@@ -819,15 +819,20 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		});
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuFlags flags = this->textfile->FileInMemory() ? PGPopupMenuGrayed : PGPopupMenuFlagsNone;
-		PGPopupMenuInsertEntry(menu, "View File In Explorer", [](Control* control, PGPopupInformation* info) {
+		PGPopupMenuInsertEntry(menu, "Open File in Explorer", [](Control* control, PGPopupInformation* info) {
 			OpenFolderInExplorer(dynamic_cast<TextField*>(control)->textfile->GetFullPath());
 		}, flags);
-		PGPopupMenuInsertEntry(menu, "Open Directory in Terminal", [](Control* control, PGPopupInformation* info) {
+		PGPopupMenuInsertEntry(menu, "Open File in Terminal", [](Control* control, PGPopupInformation* info) {
 			OpenFolderInTerminal(dynamic_cast<TextField*>(control)->textfile->GetFullPath());
 		}, flags);
-		PGPopupMenuInsertEntry(menu, "Copy File Path", [](Control* control, PGPopupInformation* info) {
+		PGPopupMenuInsertSeparator(menu);
+		PGPopupMenuInsertEntry(menu, "Copy File Name", [](Control* control, PGPopupInformation* info) {
+			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->GetName());
+		}, flags);
+		PGPopupMenuInsertEntry(menu, "Copy Full Path", [](Control* control, PGPopupInformation* info) {
 			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->GetFullPath());
 		}, flags);
+		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuInsertEntry(menu, "Reveal in Side Bar", nullptr, flags);
 		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
 		return;

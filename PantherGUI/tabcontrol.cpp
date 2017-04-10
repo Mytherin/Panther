@@ -801,6 +801,26 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 				tb->CloseAllTabs(PGDirectionRight);
 			});
 			PGPopupMenuInsertSeparator(menu);
+			if (this->textfield->GetTextFile().FileInMemory()) {
+				PGPopupMenuInsertEntry(menu, "Open File in File Explorer", [](Control* control, PGPopupInformation* info) {
+					TabControl* tb = dynamic_cast<TabControl*>(control);
+					OpenFolderInExplorer(tb->GetTextField()->GetTextFile().GetFullPath());
+				});
+				PGPopupMenuInsertEntry(menu, "Open File in Terminal", [](Control* control, PGPopupInformation* info) {
+					TabControl* tb = dynamic_cast<TabControl*>(control);
+					OpenFolderInTerminal(tb->GetTextField()->GetTextFile().GetFullPath());
+				});
+				PGPopupMenuInsertSeparator(menu);
+				PGPopupMenuInsertEntry(menu, "Copy File Name", [](Control* control, PGPopupInformation* info) {
+					TabControl* tb = dynamic_cast<TabControl*>(control);
+					SetClipboardText(tb->window, tb->GetTextField()->GetTextFile().GetName());
+				});
+				PGPopupMenuInsertEntry(menu, "Copy Full Path", [](Control* control, PGPopupInformation* info) {
+					TabControl* tb = dynamic_cast<TabControl*>(control);
+					SetClipboardText(tb->window, tb->GetTextField()->GetTextFile().GetFullPath());
+				});
+				PGPopupMenuInsertSeparator(menu);
+			}
 		}
 		PGPopupMenuInsertEntry(menu, "New File", [](Control* control, PGPopupInformation* info) {
 			dynamic_cast<TabControl*>(control)->NewTab();
