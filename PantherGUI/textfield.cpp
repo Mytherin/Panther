@@ -34,7 +34,9 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 	display_linenumbers(true), notification(nullptr), tabcontrol(nullptr),
 	vscroll_left(0), hscroll_left(0), vscroll_speed(0), active_searchbox(nullptr),
 	is_minimap_dirty(true) {
-	textfile->SetTextField(this);
+	if (textfile) {
+		textfile->SetTextField(this);
+	}
 
 	ControlManager* manager = GetControlManager(this);
 	manager->RegisterMouseRegion(&minimap_region, this, [](Control* tf, bool mouse_enter, void* data) {
@@ -1078,7 +1080,7 @@ void TextField::InvalidateMinimap() {
 void TextField::SetTextFile(std::shared_ptr<TextFile> textfile) {
 	vscroll_left = 0;
 	vscroll_speed = 0;
-	if (this->textfile != textfile) {
+	if (this->textfile != textfile && this->textfile) {
 		this->textfile->last_modified_deletion = false;
 		this->textfile->last_modified_notification = this->textfile->last_modified_time;
 		ClearNotification();

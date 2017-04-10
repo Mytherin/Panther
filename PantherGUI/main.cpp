@@ -578,6 +578,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		{
 			if (wParam == 0 && lParam == 0) {
 				handle->manager->PeriodicRender();
+				if (handle->pending_destroy) {
+					SendMessage(handle->hwnd, WM_CLOSE, 0, 0);
+					break;
+				}
 				if (handle->pending_drag_drop) {
 					handle->pending_drag_drop = false;
 					PGPerformDragDrop(handle);
@@ -655,7 +659,6 @@ PGWindowHandle PGCreateWindow(std::vector<std::shared_ptr<TextFile>> initial_fil
 }
 
 PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<TextFile>> initial_files) {
-	assert(initial_files.size() > 0);
 	HINSTANCE hInstance = GetModuleHandle(nullptr);
 	// The parameters to CreateWindow explained:
 	// szWindowClass: the name of the application
@@ -843,7 +846,7 @@ void DestroyWindow(PGWindowHandle window) {
 
 void PGCloseWindow(PGWindowHandle window) {
 	if (!window) return;
-	SendMessage(window->hwnd, WM_CLOSE, 0, 0);
+	window->pending_destroy = true;
 }
 
 void ShowWindow(PGWindowHandle window) {

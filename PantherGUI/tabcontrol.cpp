@@ -36,11 +36,14 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	if (textfield) {
 		textfield->SetTabControl(this);
 	}
-
 	if (files.size() == 0) {
 		is_empty = true;
 		files.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
 	}
+	if (textfield->GetTextfilePointer() == nullptr) {
+		textfield->SetTextFile(files[0]);
+	}
+	
 	for (auto it = files.begin(); it != files.end(); it++) {
 		auto ptr = file_manager.OpenFile(*it);
 		this->tabs.push_back(OpenTab(ptr));

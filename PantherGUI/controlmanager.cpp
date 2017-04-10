@@ -207,12 +207,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 		// have to add textfields
 		// the new textfields will be empty
 		for (lng i = current_textfields; i < total_textfields; i++) {
-			std::vector<std::shared_ptr<TextFile>> textfiles;
-			if (initial_files.size() > 0) {
-				textfiles = initial_files;
-			} else {
-				textfiles.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
-			}
+			std::vector<std::shared_ptr<TextFile>> textfiles = initial_files;
 			TextFieldContainer* container = new TextFieldContainer(this->window, textfiles);
 			this->AddControl(container);
 			textfields.push_back(container);
@@ -313,7 +308,6 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 
 void ControlManager::CreateNewWindow() {
 	std::vector<std::shared_ptr<TextFile>> files;
-	files.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
 	PGWindowHandle new_window = PGCreateWindow(files);
 	ShowWindow(new_window);
 }

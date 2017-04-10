@@ -26,6 +26,7 @@ public:
 	bool pending_popup_menu = false;
 	bool pending_drag_drop = false;
 	bool pending_confirmation_box = false;
+	bool pending_destroy = false;
 	bool dragging = false;
 
 	struct DragDropData {
@@ -50,7 +51,9 @@ public:
 		void* data;
 	} confirmation_box_data;
 
-	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), pending_popup_menu(false), workspace(this) {}
+	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), 
+		pending_popup_menu(false), workspace(this), pending_destroy(false),
+		pending_confirmation_box(false) {}
 };
 
 struct PGTimerParameter {
