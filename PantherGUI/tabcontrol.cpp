@@ -293,6 +293,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 						ShowWindow(new_window);
 						// close the tab in the original tab control
 						data->tabs->active_tab_hidden = false;
+						if (data->tabs->tabs.size() == 1) data->tabs->is_empty = true;
 						data->tabs->ActuallyCloseTab(data->file);
 						delete data;
 					}
@@ -769,6 +770,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 			if (drag_data && drag_data->tabs != this) {
 				// we have drag data, and this tab control is not the original tabcontrol
 				// we have to close the tab of the original tab control
+				if (drag_data->tabs->tabs.size() == 1) drag_data->tabs->is_empty = true;
 				drag_data->tabs->ActuallyCloseTab(drag_data->file);
 				drag_data->tabs->active_tab_hidden = false;
 				delete this->drag_data;
@@ -801,7 +803,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 				tb->CloseAllTabs(PGDirectionRight);
 			});
 			PGPopupMenuInsertSeparator(menu);
-			if (this->textfield->GetTextFile().FileInMemory()) {
+			if (!this->textfield->GetTextFile().FileInMemory()) {
 				PGPopupMenuInsertEntry(menu, "Open File in File Explorer", [](Control* control, PGPopupInformation* info) {
 					TabControl* tb = dynamic_cast<TabControl*>(control);
 					OpenFolderInExplorer(tb->GetTextField()->GetTextFile().GetFullPath());
