@@ -76,6 +76,10 @@ public:
 	void OnActiveTextFieldChanged(PGControlDataCallback callback, void* data);
 	void UnregisterOnActiveTextFieldChanged(PGControlDataCallback callback, void* data);
 
+	void OnActiveFileChanged(PGControlDataCallback callback, void* data);
+	void UnregisterOnActiveFileChanged(PGControlDataCallback callback, void* data);
+
+	void ActiveFileChanged(Control *control);
 	void TextChanged(Control *control);
 	void SelectionChanged(Control *control);
 	void ActiveTextFieldChanged(Control *control);
@@ -107,6 +111,7 @@ private:
 	std::vector<std::pair<PGControlDataCallback, void*>> selection_changed_callbacks;
 	std::vector<std::pair<PGControlDataCallback, void*>> text_changed_callbacks;
 	std::vector<std::pair<PGControlDataCallback, void*>> active_textfield_callbacks;
+	std::vector<std::pair<PGControlDataCallback, void*>> active_file_callbacks;
 };
 
 ControlManager* GetControlManager(Control* c);

@@ -1080,6 +1080,7 @@ void TextField::SetTextFile(std::shared_ptr<TextFile> textfile) {
 	}
 	this->textfile = textfile;
 	textfile->SetTextField(this);
+	GetControlManager(this)->ActiveFileChanged(this);
 	this->SelectionChanged();
 	this->TextChanged();
 }

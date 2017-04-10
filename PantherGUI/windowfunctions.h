@@ -367,7 +367,7 @@ bool WindowHasFocus(PGWindowHandle window);
 PGMouseButton GetMouseState(PGWindowHandle window);
 PGPoint GetMousePosition(PGWindowHandle window);
 PGPoint GetMousePosition(PGWindowHandle window, Control* c);
-void SetWindowTitle(PGWindowHandle window, char* title);
+void SetWindowTitle(PGWindowHandle window, std::string title);
 void RegisterControl(PGWindowHandle window, Control *control);
 
 class PGWorkspace;

@@ -488,6 +488,14 @@ void ControlManager::UnregisterOnActiveTextFieldChanged(PGControlDataCallback ca
 	UnregisterCallback(active_textfield_callbacks, callback, data);
 }
 
+void ControlManager::OnActiveFileChanged(PGControlDataCallback callback, void* data) {
+	this->active_file_callbacks.push_back(std::pair<PGControlDataCallback, void*>(callback, data));
+}
+
+void ControlManager::UnregisterOnActiveFileChanged(PGControlDataCallback callback, void* data) {
+	UnregisterCallback(active_file_callbacks, callback, data);
+}
+
 void ControlManager::TextChanged(Control *control) {
 	TriggerCallback(text_changed_callbacks, control);
 }
@@ -498,6 +506,14 @@ void ControlManager::SelectionChanged(Control *control) {
 
 void ControlManager::ActiveTextFieldChanged(Control *control) {
 	TriggerCallback(active_textfield_callbacks, control);
+}
+
+void ControlManager::ActiveFileChanged(Control *control) {
+	TextField* field = dynamic_cast<TextField*>(control);
+	assert(field);
+	std::string text = field->GetTextFile().GetFullPath() + std::string(" - Panther");
+	SetWindowTitle(this->window, text.c_str());
+	TriggerCallback(active_file_callbacks, control);
 }
 
 void PGSingleMouseRegion::MouseMove(PGPoint mouse) {

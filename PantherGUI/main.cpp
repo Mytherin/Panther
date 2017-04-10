@@ -900,8 +900,8 @@ PGTime GetTime() {
 	return (PGTime)GetTickCount();
 }
 
-void SetWindowTitle(PGWindowHandle window, char* title) {
-	SetWindowText(window->hwnd, title);
+void SetWindowTitle(PGWindowHandle window, std::string title) {
+	SetWindowText(window->hwnd, title.c_str());
 }
 
 void SetClipboardTextOS(PGWindowHandle window, std::string text) {
