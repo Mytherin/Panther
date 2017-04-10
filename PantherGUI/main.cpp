@@ -586,7 +586,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					int index;
 					handle->pending_popup_menu = false;
 					auto popup_menu = handle->popup_data.menu;
+					auto current_cursor = handle->cursor;
+					handle->cursor = nullptr;
 					index = TrackPopupMenu(handle->popup_data.menu->menu, handle->popup_data.alignment | TPM_RETURNCMD, handle->popup_data.point.x, handle->popup_data.point.y, 0, handle->hwnd, NULL);
+					handle->cursor = current_cursor;
 					DestroyMenu(handle->popup_data.menu->menu);
 					if (index != 0) {
 						PGPopupCallback callback = popup_menu->callbacks[index];
