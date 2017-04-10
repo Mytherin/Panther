@@ -133,7 +133,7 @@ void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect
 	lng w = (lng)(rect.width * scale_factor);
 	lng h = (lng)(rect.height * scale_factor);
 	if ((lng)bitmap.width() != w || (lng)bitmap.height() != h) {
-		manager->InvalidateChildren();
+		manager->Invalidate();
 		bitmap.allocN32Pixels(w, h);
 		bitmap.setAlphaType(kOpaque_SkAlphaType);
 #ifdef PANTHER_DEBUG

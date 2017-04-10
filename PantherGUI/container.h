@@ -54,7 +54,6 @@ public:
 	void RemoveControl(Control* control);
 
 	void Invalidate(bool initial_invalidate = true);
-	void InvalidateChildren();
 
 	virtual PGControlType GetControlType() { return PGControlTypeContainer; }
 protected:

@@ -685,7 +685,6 @@ int TabControl::GetSelectedTab(PGScalar x) {
 void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	x -= this->x; y -= this->y;
 	if (button == PGLeftMouseButton) {
-
 		if (temporary_textfile && x > this->width - temporary_tab_width) {
 			if (click_count > 0) {
 				auto file = temporary_textfile;
