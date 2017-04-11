@@ -36,7 +36,10 @@ void PGDirectory::FindFile(lng file_number, PGDirectory** directory, PGFile* fil
 	file->path = PGPathJoin(this->path, file->path);
 }
 
-lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile* file) {
+lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile* file, bool search_only_expanded) {
+	if (search_only_expanded && !expanded) {
+		return -1;
+	}
 	if (full_name.substr(0, this->path.size()) != this->path) {
 		return -1;
 	}
@@ -44,12 +47,15 @@ lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile
 	if (std::find(remainder.begin(), remainder.end(), GetSystemPathSeparator()) == remainder.end()) {
 		// this is the final directory
 		lng entry = 1;
+		for (auto it = directories.begin(); it != directories.end(); it++) {
+			entry += (*it)->DisplayedFiles();
+		}
 		for (auto it = files.begin(); it != files.end(); it++) {
 			if (it->path == remainder) {
 				*directory = this;
 				*file = *it;
 				this->expanded = true;
-				return directories.size() + entry;
+				return entry;
 			}
 			entry++;
 		}
@@ -57,13 +63,12 @@ lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile
 		lng entry = 1;
 		// this is not the final directory; search recursively in the other directories
 		for (auto it = directories.begin(); it != directories.end(); it++) {
-			lng directory_entry = (*it)->FindFile(full_name, directory, file);
-			if (directory_entry < 0) {
-				return entry + directory_entry;
-			} else {
+			lng directory_entry = (*it)->FindFile(full_name, directory, file, search_only_expanded);
+			if (directory_entry >= 0) {
 				this->expanded = true;
+				return entry + directory_entry;
 			}
-			entry++;
+			entry += (*it)->DisplayedFiles();
 		}
 	}
 	return -1;

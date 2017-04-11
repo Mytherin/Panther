@@ -835,7 +835,10 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->GetFullPath());
 		}, flags);
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, "Reveal in Side Bar", nullptr, flags);
+		PGPopupMenuInsertEntry(menu, "Reveal in Side Bar", [](Control* control, PGPopupInformation* info) {
+			ControlManager* cm = GetControlManager(control);
+			cm->active_projectexplorer->RevealFile(dynamic_cast<TextField*>(control)->GetTextFile().GetFullPath(), false);
+		}, flags);
 		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
 		return;
 	}

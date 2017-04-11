@@ -376,6 +376,29 @@ lng ProjectExplorer::FindFile(std::string full_name, PGDirectory** directory, PG
 	return -1;
 }
 
+bool ProjectExplorer::RevealFile(std::string full_name, bool search_only_expanded) {
+	PGDirectory* directory = nullptr;
+	PGFile file;
+	lng index = 0;
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		lng entry = (*it)->FindFile(full_name, &directory, &file, search_only_expanded);
+		if (entry >= 0) {
+			this->selected_files.clear();
+			this->selected_files.push_back(index + entry);
+			if (scrollbar_offset > index + entry) {
+				scrollbar_offset = index + entry;
+			} else if (scrollbar_offset + RenderedFiles() < index + entry) {
+				scrollbar_offset = index + entry - RenderedFiles() + 1;
+			}
+			(*it)->expanded = true;
+			this->Invalidate();
+			return true;
+		}
+		index += (*it)->DisplayedFiles();
+	}
+	return false;
+}
+
 void ProjectExplorer::FindFile(lng file_number, PGDirectory** directory, PGFile* file) {
 	*directory = nullptr;
 	lng file_count = 0;
@@ -469,7 +492,7 @@ lng ProjectExplorer::TotalFiles() {
 }
 
 lng ProjectExplorer::MaximumScrollOffset() {
-	return TotalFiles() - RenderedFiles();
+	return std::max(0LL, TotalFiles() - RenderedFiles());
 }
 
 lng ProjectExplorer::RenderedFiles() {
@@ -485,3 +508,4 @@ void ProjectExplorer::OnResize(PGSize old_size, PGSize new_size) {
 void ProjectExplorer::LosesFocus(void) {
 	FinishRename(false, false);
 }
+

@@ -16,7 +16,8 @@ struct PGDirectory {
 
 	void ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist);
 	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
-	lng FindFile(std::string full_name, PGDirectory** directory, PGFile* file);
+
+	lng FindFile(std::string full_name, PGDirectory** directory, PGFile* file, bool search_only_expanded = false);
 
 	PGDirectory(std::string path);
 	~PGDirectory();

@@ -1035,6 +1035,10 @@ bool TabControl::SwitchToTab(std::string path) {
 
 
 void TabControl::SwitchToFile(std::shared_ptr<TextFile> file) {
+	ControlManager* cm = GetControlManager(this);
+	if (cm->active_projectexplorer) {
+		cm->active_projectexplorer->RevealFile(file->GetFullPath(), true);
+	}
 	if (textfield->GetTextfilePointer() == file) return;
 
 	textfield->SetTextFile(file);
