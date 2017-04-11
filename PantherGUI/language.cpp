@@ -21,3 +21,12 @@ PGLanguage* PGLanguageManager::_GetLanguage(std::string extension) {
 	}
 	return nullptr;
 }
+
+PGLanguage* PGLanguageManager::_GetLanguageFromName(std::string name) {
+	for (auto it = languages.begin(); it != languages.end(); it++) {
+		if ((*it)->GetName() == name) {
+			return *it;
+		}
+	}
+	return nullptr;
+}

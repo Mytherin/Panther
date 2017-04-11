@@ -22,12 +22,14 @@ public:
 	static std::vector<PGLanguage*>& GetLanguages() { return PGLanguageManager::GetInstance()->_GetLanguages(); }
 	static void AddLanguage(PGLanguage* language) { PGLanguageManager::GetInstance()->_AddLanguage(language); }
 	static PGLanguage* GetLanguage(std::string extension) { return PGLanguageManager::GetInstance()->_GetLanguage(extension); }
+	static PGLanguage* GetLanguageFromName(std::string name) { return PGLanguageManager::GetInstance()->_GetLanguageFromName(name); }
 private:
 	PGLanguageManager();
 	virtual ~PGLanguageManager();
 
 	void _AddLanguage(PGLanguage* language);
 	PGLanguage* _GetLanguage(std::string extension);
+	PGLanguage* _GetLanguageFromName(std::string name);
 	std::vector<PGLanguage*>& _GetLanguages() { return languages; }
 
 	std::vector<PGLanguage*> languages;

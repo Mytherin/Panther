@@ -56,8 +56,9 @@ struct PGTextFileSettings {
 	PGVerticalScroll yoffset = PGVerticalScroll(-1, -1);
 	bool wordwrap;
 	std::vector<PGCursorRange> cursor_data;
+	PGLanguage* language;
 
-	PGTextFileSettings() : line_ending(PGLineEndingUnknown), xoffset(-1), yoffset(-1, -1), wordwrap(false), cursor_data() { }
+	PGTextFileSettings() : line_ending(PGLineEndingUnknown), xoffset(-1), yoffset(-1, -1), wordwrap(false), cursor_data(), language(nullptr) { }
 };
 
 class TextFile {

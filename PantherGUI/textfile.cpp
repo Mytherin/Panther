@@ -3120,6 +3120,16 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 		Cursor::NormalizeCursors(this, this->cursors, false);
 		settings.cursor_data.clear();
 	}
+	if (settings.language && settings.language != this->language) {
+		this->language = settings.language;
+		this->highlighter = this->language ? std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter()) : nullptr;
+		if (this->is_loaded) {
+			for (auto it = buffers.begin(); it != buffers.end(); it++) {
+				(*it)->parsed = false;
+			}
+			this->InvalidateParsing();
+		}
+	}
 }
 
 void TextFile::AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {

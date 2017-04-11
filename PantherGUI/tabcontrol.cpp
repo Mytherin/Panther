@@ -416,6 +416,10 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 							settings.line_ending = PGLineEndingMacOS;
 						}
 					}
+					if (it->count("language") > 0) {
+						std::string language_name = (*it)["language"];
+						settings.language = PGLanguageManager::GetLanguageFromName(language_name);
+					}
 					if (it->count("xoffset") > 0) {
 						// if xoffset is specified, set the xoffset of the file
 						auto xoffset = (*it)["xoffset"];
@@ -522,6 +526,9 @@ void TabControl::WriteWorkspace(nlohmann::json& j) {
 			case PGLineEndingMacOS:
 				endings = "MacOS";
 				break;
+		}
+		if (file->language) {
+			cur["language"] = file->language->GetName();
 		}
 		cur["lineending"] = endings;
 		if (file->wordwrap) {

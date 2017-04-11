@@ -141,6 +141,10 @@
 	"goto": [
 		{ "key": "enter", "command": "confirm" },
 		{ "key": "escape", "command": "cancel" }
+	],
+	"searchbox": [
+		{ "key": "enter", "command": "confirm" },
+		{ "key": "escape", "command": "cancel" }
 	]
 }
 
