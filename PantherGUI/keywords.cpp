@@ -9,7 +9,7 @@ struct KWParserState {
 };
 
 static bool KeywordCharacter(char c) {
-	return c == '#' || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57);
+	return c == '#' || c == '_' || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57);
 } 
 
 PGParserState KeywordHighlighter::IncrementalParseLine(TextLine& line, lng linenr, PGParserState s, PGParseErrors& errors, PGSyntax& current) {

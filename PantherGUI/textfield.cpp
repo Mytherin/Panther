@@ -1202,7 +1202,10 @@ void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, 
 	if (!textfile->GetWordWrap()) {
 		return BasicTextField::GetLineCharacterFromPosition(x, y, line, character);
 	}
-	lng line_offset = std::max(std::min((lng)(y / GetTextHeight(textfield_font)), (lng)(rendered_lines.size() - 1)), (lng)0);
+	auto offset = textfile->GetLineOffset();
+	PGScalar line_height = GetTextHeight(textfield_font);
+	y += line_height * offset.line_fraction;
+	lng line_offset = std::max(std::min((lng)(y / line_height), (lng)(rendered_lines.size() - 1)), (lng)0);
 	line = rendered_lines[line_offset].line;
 	_GetCharacterFromPosition(x, rendered_lines[line_offset].tline, character);
 	character += rendered_lines[line_offset].position;

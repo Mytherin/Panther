@@ -102,8 +102,11 @@ void BasicTextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& l
 
 void BasicTextField::GetLineFromPosition(PGScalar y, lng& line) {
 	// find the line position of the mouse
-	lng lineoffset_y = textfile->GetLineOffset().linenumber;
-	lng line_offset = std::max(std::min((lng)(y / GetTextHeight(textfield_font)), textfile->GetLineCount() - lineoffset_y - 1), (lng)0);
+	auto offset = textfile->GetLineOffset();
+	lng lineoffset_y = offset.linenumber;
+	PGScalar line_height = GetTextHeight(textfield_font);
+	y += line_height * offset.line_fraction;
+	lng line_offset = std::max(std::min((lng)(y / line_height), textfile->GetLineCount() - lineoffset_y - 1), (lng)0);
 	line = lineoffset_y + line_offset;
 }
 
