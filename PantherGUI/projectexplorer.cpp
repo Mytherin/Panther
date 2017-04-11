@@ -8,7 +8,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(ProjectExplorer);
 #define FOLDER_IDENT 8
 
 ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
-	PGContainer(window), dragging_scrollbar(false), renaming_file(-1) {
+	PGContainer(window), dragging_scrollbar(false), renaming_file(-1), scrollbar_offset(0) {
 #ifdef WIN32
 	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI"));
 #else
@@ -385,11 +385,7 @@ bool ProjectExplorer::RevealFile(std::string full_name, bool search_only_expande
 		if (entry >= 0) {
 			this->selected_files.clear();
 			this->selected_files.push_back(index + entry);
-			if (scrollbar_offset > index + entry) {
-				scrollbar_offset = index + entry;
-			} else if (scrollbar_offset + RenderedFiles() < index + entry) {
-				scrollbar_offset = index + entry - RenderedFiles() + 1;
-			}
+			ScrollToFile(index + entry);
 			(*it)->expanded = true;
 			this->Invalidate();
 			return true;
