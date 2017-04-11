@@ -104,6 +104,7 @@ public:
 	void ReopenLastFile();
 
 	void OpenTemporaryFile(std::shared_ptr<TextFile> textfile);
+	void OpenTemporaryFileAsActualFile();
 	void CloseTemporaryFile();
 
 	TextField* GetTextField() { return textfield; }

@@ -21,8 +21,9 @@ void TabControl::ClearEmptyFlag(Control* c, void* data) {
 	if (tf == tb->GetTextField()) {
 		if (tb->temporary_textfile != nullptr && 
 			tf->GetTextfilePointer() == tb->temporary_textfile) {
-			tb->OpenFile(tb->temporary_textfile);
-			tb->CloseTemporaryFile();
+			// if the user changes text in the temporary file,
+			// open the temporary file as permanent file
+			tb->OpenTemporaryFileAsActualFile();
 		} else if (tb->is_empty) {
 			tb->is_empty = false;
 		}
@@ -454,12 +455,19 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 				}
 			}
 		}
+		if (tabs.size() == 0) {
+			is_empty = true;
+			auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
+			file_manager.OpenFile(textfile);
+			tabs.push_back(OpenTab(textfile));
+		}
 		if (tb.count("selected_tab") > 0 && tb["selected_tab"].is_number()) {
 			// if the selected tab is specified, switch to the selected tab
 			lng selected_tab = tb["selected_tab"];
 			selected_tab = std::max((lng)0, std::min((lng)tabs.size() - 1, selected_tab));
 			SwitchToTab(tabs[selected_tab].file);
 		}
+		assert(tabs.size() > 0);
 		j.erase(j.find("tabs"));
 	}
 }
@@ -547,9 +555,9 @@ void TabControl::NewTab() {
 
 void TabControl::OpenFile(std::string path) {
 	if (temporary_textfile && temporary_textfile->path == path) {
-		auto file = temporary_textfile;
-		CloseTemporaryFile();
-		OpenFile(file);
+		// if the file is currently opened as temporary file
+		// open the temporary file as permanent file
+		OpenTemporaryFileAsActualFile();
 		return;
 	}
 	if (!SwitchToTab(path)) {
@@ -564,8 +572,10 @@ void TabControl::OpenFile(std::string path) {
 }
 
 void TabControl::OpenTemporaryFile(std::shared_ptr<TextFile> textfile) {
+	bool is_empty = this->is_empty;
 	SwitchToFile(textfile);
 	this->temporary_textfile = textfile;
+	this->is_empty = is_empty;
 	if (temporary_textfile) {
 		Tab tab = Tab(temporary_textfile, -1);
 		tab.width = MeasureTabWidth(tab);
@@ -574,6 +584,14 @@ void TabControl::OpenTemporaryFile(std::shared_ptr<TextFile> textfile) {
 		temporary_tab_width = BASE_TAB_OFFSET;
 	}
 	this->Invalidate();
+}
+
+void TabControl::OpenTemporaryFileAsActualFile() {
+	auto file = temporary_textfile;
+	bool is_empty = this->is_empty;
+	CloseTemporaryFile();
+	this->is_empty = is_empty;
+	OpenFile(file);
 }
 
 void TabControl::CloseTemporaryFile() {
@@ -697,9 +715,7 @@ void TabControl::MouseDown(int x, int y, PGMouseButton button, PGModifier modifi
 	if (button == PGLeftMouseButton) {
 		if (temporary_textfile && x > this->width - temporary_tab_width) {
 			if (click_count > 0) {
-				auto file = temporary_textfile;
-				CloseTemporaryFile();
-				OpenFile(file);
+				OpenTemporaryFileAsActualFile();
 			}
 			return;
 		}
