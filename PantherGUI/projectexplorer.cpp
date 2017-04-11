@@ -114,6 +114,7 @@ void ProjectExplorer::ScrollToFile(lng file_number) {
 	} else if (scrollbar_offset + RenderedFiles() <= file_number) {
 		scrollbar_offset = file_number - RenderedFiles() + 1;
 	}
+	scrollbar_offset = std::min((double)MaximumScrollOffset(), std::max(0.0, scrollbar_offset));
 }
 
 void ProjectExplorer::FinishRename(bool success, bool update_selection) {
