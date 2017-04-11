@@ -5,25 +5,30 @@
 
 using namespace nlohmann;
 
-PGWorkspace::PGWorkspace(PGWindowHandle window) : 
-	window(window), filename("") {
-	
-
+PGWorkspace::PGWorkspace() {
 }
 
 void PGWorkspace::LoadWorkspace(std::string filename) {
 	this->filename = filename;
 	std::ifstream i(filename);
-	if (!i) {
-		return;
-	}
 	json j;
+	if (!i) {
+		goto default_workspace;
+	}
 	if (!(i >> j)) {
-		assert(0);
+		goto default_workspace;
+	}
+	this->settings = j;
+	if (j.count("windows") > 0 && j["windows"].is_array() && j["windows"].size() > 0) {
+		for (int index = 0; index < j["windows"].size(); index++) {
+			auto window = PGCreateWindow(this, std::vector<std::shared_ptr<TextFile>>());
+			PGLoadWorkspace(window, j["windows"][index]);
+		}
 		return;
 	}
-	PGLoadWorkspace(window, j);
+default_workspace:
 	this->settings = j;
+	auto window = PGCreateWindow(this, std::vector<std::shared_ptr<TextFile>>());
 }
 
 void PGWorkspace::WriteWorkspace() {
@@ -31,8 +36,13 @@ void PGWorkspace::WriteWorkspace() {
 	if (filename.size() == 0) return;
 
 	json j = settings;
-
-	PGWriteWorkspace(window, j);
+	j["windows"] = nlohmann::json::array();
+	int index = 0;
+	for (auto it = windows.begin(); it != windows.end(); it++) {
+		j["windows"][index] = nlohmann::json::object();
+		PGWriteWorkspace(*it, j["windows"][index]);
+		index++;
+	}
 
 	// we write the workspace to a temporary file first (workspace.json.tmp)
 	std::string temp_filename = filename + ".tmp";

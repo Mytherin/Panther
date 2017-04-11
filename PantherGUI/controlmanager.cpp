@@ -316,7 +316,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 
 void ControlManager::CreateNewWindow() {
 	std::vector<std::shared_ptr<TextFile>> files;
-	PGWindowHandle new_window = PGCreateWindow(files);
+	PGWindowHandle new_window = PGCreateWindow(PGGetWorkspace(window), files);
 	ShowWindow(new_window);
 }
 

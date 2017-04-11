@@ -207,6 +207,7 @@
     <ClCompile Include="filemanager.cpp" />
     <ClCompile Include="findresults.cpp" />
     <ClCompile Include="findtext.cpp" />
+    <ClCompile Include="globalsettings.cpp" />
     <ClCompile Include="goto.cpp" />
     <ClCompile Include="keybindings.cpp" />
     <ClCompile Include="keywords.cpp" />
@@ -288,6 +289,7 @@
     <ClInclude Include="filemanager.h" />
     <ClInclude Include="findresults.h" />
     <ClInclude Include="findtext.h" />
+    <ClInclude Include="globalsettings.h" />
     <ClInclude Include="goto.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="keybindings.h" />

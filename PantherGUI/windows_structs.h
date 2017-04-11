@@ -19,7 +19,7 @@ public:
 	PGDropSource* source = nullptr;
 	PGTimerHandle timer;
 	HCURSOR cursor;
-	PGWorkspace workspace;
+	PGWorkspace* workspace;
 	PGPopupMenuHandle menu;
 	SkBitmap bitmap;
 	
@@ -51,8 +51,8 @@ public:
 		void* data;
 	} confirmation_box_data;
 
-	PGWindow() : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), 
-		pending_popup_menu(false), workspace(this), pending_destroy(false),
+	PGWindow(PGWorkspace* workspace) : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), 
+		pending_popup_menu(false), workspace(workspace), pending_destroy(false),
 		pending_confirmation_box(false) {}
 };
 

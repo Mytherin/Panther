@@ -34,12 +34,15 @@
 
 #include "keybindings.h"
 #include "settings.h"
+#include "globalsettings.h"
 
 #include "dirent.h"
 
 #include "splitter.h"
 
 void DestroyWindow(PGWindowHandle window);
+
+std::vector<PGWorkspace*> open_workspaces;
 
 std::map<HWND, PGWindowHandle> handle_map = {};
 WNDCLASSEX wcex;
@@ -108,22 +111,48 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	PGSettingsManager::Initialize();
 	PGKeyBindingsManager::Initialize();
+	PGGlobalSettings::Initialize("globalsettings.json");
 
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(2);
 
-	// "E:\\Github Projects\\Tibialyzer4\\Database Scan\\tibiawiki_pages_current.xml"
-	// "E:\\killinginthenameof.xml"
-	// "C:\\Users\\wieis\\Desktop\\syntaxtest.py"
-	// "C:\\Users\\wieis\\Desktop\\syntaxtest.c"
+	// load a workspace
+	auto settings = PGGlobalSettings::GetSettings();
+	if (settings.count("workspaces") == 0 || !settings["workspaces"].is_array()) {
+		// no known workspaces in the settings, initialize the settings
+		settings["workspaces"] = nlohmann::json::array();
+	}
+	lng active_workspace = 0;
+	if (settings.count("active_workspace") != 0 && settings["active_workspace"].is_number()) {
+		active_workspace = min(max(0LL, settings["active_workspace"].get<lng>()), settings["workspaces"].array().size() - 1);
+	} else {
+		settings["active_workspace"] = 0;
+		active_workspace = 0;
+	}
+	if (settings["workspaces"].array().size() == 0) {
+		// no known workspaces, add one
+		settings["workspaces"][0] = "workspace.json";
+		settings["active_workspace"] = 0;
+		active_workspace = 0;
+	}
+
+	std::string workspace_path = settings["workspaces"][active_workspace];
+	// load the active workspace
+	PGWorkspace* workspace = new PGWorkspace();
+	workspace->LoadWorkspace(workspace_path);
+	open_workspaces.push_back(workspace);
+	/*
 	auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
 	std::vector<std::shared_ptr<TextFile>> files;
 	files.push_back(textfile);
 
 	PGWindowHandle handle = PGCreateWindow(files);
-	handle->workspace.LoadWorkspace("workspace.json");
-	ShowWindow(handle->hwnd, cmdshow);
-	UpdateWindow(handle->hwnd);
+	handle->workspace.LoadWorkspace("workspace.json");*/
+	auto windows = workspace->GetWindows();
+	for (auto it = windows.begin(); it != windows.end(); it++) {
+		ShowWindow((*it)->hwnd, cmdshow);
+		UpdateWindow((*it)->hwnd);
+	}
 
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
@@ -654,11 +683,11 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(std::vector<std::shared_ptr<TextFile>> initial_files) {
-	return PGCreateWindow(PGPoint(CW_USEDEFAULT, CW_USEDEFAULT), initial_files);
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_ptr<TextFile>> initial_files) {
+	return PGCreateWindow(workspace, PGPoint(CW_USEDEFAULT, CW_USEDEFAULT), initial_files);
 }
 
-PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<TextFile>> initial_files) {
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextFile>> initial_files) {
 	HINSTANCE hInstance = GetModuleHandle(nullptr);
 	// The parameters to CreateWindow explained:
 	// szWindowClass: the name of the application
@@ -688,10 +717,11 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 
 	SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_COMPOSITED);
 
-	PGWindowHandle res = new PGWindow();
+	PGWindowHandle res = new PGWindow(workspace);
 	if (!res) {
 		return nullptr;
 	}
+	workspace->AddWindow(res);
 	res->hwnd = hWnd;
 	res->cursor = cursor_standard;
 	res->renderer = InitializeRenderer();
@@ -834,7 +864,14 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 }
 
 void DestroyWindow(PGWindowHandle window) {
-	window->workspace.WriteWorkspace();
+	window->workspace->RemoveWindow(window);
+	auto windows = window->workspace->GetWindows();
+	if (windows.size() == 0) {
+		open_workspaces.erase(std::find(open_workspaces.begin(), open_workspaces.end(), window->workspace));
+		delete window->workspace;
+	} else {
+		window->workspace->WriteWorkspace();
+	}
 	delete window->manager;
 	DeleteRenderer(window->renderer);
 	DeleteTimer(window->timer);
@@ -1368,39 +1405,38 @@ std::string GetOSName() {
 }
 
 PGWorkspace* PGGetWorkspace(PGWindowHandle window) {
-	return &window->workspace;
+	return window->workspace;
 }
 
 void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
-	if (j.count("window") > 0) {
-		nlohmann::json w = j["window"];
-		if (w.count("dimensions") > 0) {
-			nlohmann::json dim = w["dimensions"];
-			if (dim.count("width") > 0 && dim["width"].is_number() &&
-				dim.count("height") > 0 && dim["height"].is_number() &&
-				dim.count("x") > 0 && dim["x"].is_number() &&
-				dim.count("y") > 0 && dim["y"].is_number()) {
-				int x = dim["x"];
-				int y = dim["y"];
-				int width = dim["width"];
-				int height = dim["height"];
+	if (j.count("dimensions") > 0) {
+		nlohmann::json dim = j["dimensions"];
+		if (dim.count("width") > 0 && dim["width"].is_number() &&
+			dim.count("height") > 0 && dim["height"].is_number() &&
+			dim.count("x") > 0 && dim["x"].is_number() &&
+			dim.count("y") > 0 && dim["y"].is_number()) {
+			int x = dim["x"];
+			int y = dim["y"];
+			int width = dim["width"];
+			int height = dim["height"];
 
-				SetWindowPos(window->hwnd, 0, x, y, width, height, SWP_NOZORDER);
-			}
+			SetWindowPos(window->hwnd, 0, x, y, width, height, SWP_NOZORDER);
 		}
-		j.erase(j.find("window"));
 	}
-	window->manager->LoadWorkspace(j);
+	if (j.count("controls") > 0) {
+		window->manager->LoadWorkspace(j["controls"]);
+	}
 }
 
 void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j) {
 	PGSize window_size = GetWindowSize(window);
-	j["window"]["dimensions"]["width"] = window_size.width;
-	j["window"]["dimensions"]["height"] = window_size.height;
+	j["dimensions"]["width"] = window_size.width;
+	j["dimensions"]["height"] = window_size.height;
 	PGPoint window_position = PGGetWindowPosition(window);
-	j["window"]["dimensions"]["x"] = window_position.x;
-	j["window"]["dimensions"]["y"] = window_position.y;
-	window->manager->WriteWorkspace(j);
+	j["dimensions"]["x"] = window_position.x;
+	j["dimensions"]["y"] = window_position.y;
+	j["controls"] = nlohmann::json::object();
+	window->manager->WriteWorkspace(j["controls"]);
 }
 
 static lng filetime_to_lng(FILETIME filetime) {

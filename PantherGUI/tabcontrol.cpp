@@ -292,7 +292,7 @@ void TabControl::MouseMove(int x, int y, PGMouseButton buttons) {
 						// create a new window at the location of the mouse
 						std::vector<std::shared_ptr<TextFile>> textfiles;
 						textfiles.push_back(data->file);
-						PGWindowHandle new_window = PGCreateWindow(mouse, textfiles);
+						PGWindowHandle new_window = PGCreateWindow(PGGetWorkspace(data->tabs->window), mouse, textfiles);
 						ShowWindow(new_window);
 						// close the tab in the original tab control
 						data->tabs->active_tab_hidden = false;
