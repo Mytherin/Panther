@@ -27,18 +27,31 @@ void PGWorkspace::LoadWorkspace(std::string filename) {
 }
 
 void PGWorkspace::WriteWorkspace() {
+	std::string errmsg;
 	if (filename.size() == 0) return;
 
 	json j = settings;
 
 	PGWriteWorkspace(window, j);
 
-	std::ofstream out(filename);
+	// we write the workspace to a temporary file first (workspace.json.tmp)
+	std::string temp_filename = filename + ".tmp";
+
+	std::ofstream out(temp_filename);
 	if (!out) {
 		return;
 	}
 	if (!(out << std::setw(4) << j)) {
-		assert(0);
+		out.close();
+		goto cleanup;
+	}
+	out.close();
+
+	// after writing to the temporary file, we move it over the old workspace file 
+	auto ret = PGRenameFile(temp_filename, filename);
+	if (ret == PGIOSuccess) {
 		return;
 	}
+cleanup:
+	PGRemoveFile(temp_filename);
 }

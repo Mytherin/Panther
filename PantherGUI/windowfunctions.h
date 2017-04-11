@@ -518,6 +518,16 @@ struct PGFileInformation {
 
 PGFileInformation PGGetFileFlags(std::string path);
 
+enum PGIOError {
+	PGIOSuccess,
+	PGIOErrorPermissionDenied,
+	PGIOErrorFileNotFound,
+	PGIOErrorOther
+};
+
+PGIOError PGRenameFile(std::string source, std::string dest);
+PGIOError PGRemoveFile(std::string source);
+
 struct PGFile {
 	std::string path;
 

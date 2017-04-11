@@ -84,6 +84,8 @@ public:
 	void SelectionChanged(Control *control);
 	void ActiveTextFieldChanged(Control *control);
 	
+	void InvalidateWorkspace();
+
 	PG_CONTROL_KEYBINDINGS;
 protected:
 	virtual void SetFocusedControl(Control* c);
@@ -103,6 +105,8 @@ private:
 #ifdef PANTHER_DEBUG
 	int entrance_count = 0;
 #endif
+
+	int write_workspace_counter = 0;
 
 	MouseClickInstance last_click;
 

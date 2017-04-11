@@ -5,6 +5,7 @@
 #include "filemanager.h"
 #include "tabcontrol.h"
 #include "textfield.h"
+#include "workspace.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
@@ -55,6 +56,13 @@ void ControlManager::PeriodicRender(void) {
 	this->invalidated = 0;
 	this->invalidated_area.width = 0;
 	LeaveManager();
+
+	if (write_workspace_counter > 0) {
+		write_workspace_counter--;
+		if (write_workspace_counter == 0) {
+			PGGetWorkspace(window)->WriteWorkspace();
+		}
+	}
 }
 
 bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
@@ -492,14 +500,17 @@ void ControlManager::UnregisterOnActiveFileChanged(PGControlDataCallback callbac
 
 void ControlManager::TextChanged(Control *control) {
 	TriggerCallback(text_changed_callbacks, control);
+	this->InvalidateWorkspace();
 }
 
 void ControlManager::SelectionChanged(Control *control) {
 	TriggerCallback(selection_changed_callbacks, control);
+	this->InvalidateWorkspace();
 }
 
 void ControlManager::ActiveTextFieldChanged(Control *control) {
 	TriggerCallback(active_textfield_callbacks, control);
+	this->InvalidateWorkspace();
 }
 
 void ControlManager::ActiveFileChanged(Control *control) {
@@ -508,6 +519,13 @@ void ControlManager::ActiveFileChanged(Control *control) {
 	std::string text = field->GetTextFile().GetFullPath() + std::string(" - Panther");
 	SetWindowTitle(this->window, text.c_str());
 	TriggerCallback(active_file_callbacks, control);
+	this->InvalidateWorkspace();
+}
+
+void ControlManager::InvalidateWorkspace() {
+	if (write_workspace_counter == 0) {
+		write_workspace_counter = 150;
+	}
 }
 
 void PGSingleMouseRegion::MouseMove(PGPoint mouse) {

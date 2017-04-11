@@ -1441,6 +1441,39 @@ PGFileInformation PGGetFileFlags(std::string path) {
 	return info;
 }
 
+PGIOError PGRenameFile(std::string source, std::string dest) {
+	std::string ucs2_source = UTF8toUCS2(source);
+	std::string ucs2_target = UTF8toUCS2(dest);
+	if (!MoveFileExW((LPCWSTR)ucs2_source.c_str(), (LPCWSTR)ucs2_target.c_str(), MOVEFILE_REPLACE_EXISTING)) {
+		auto error = GetLastError();
+		switch (error) {
+			case ERROR_FILE_NOT_FOUND:
+				return PGIOErrorFileNotFound;
+			case ERROR_ACCESS_DENIED:
+				return PGIOErrorPermissionDenied;
+			default:
+				return PGIOErrorOther;
+		}
+	}
+	return PGIOSuccess;
+}
+
+PGIOError PGRemoveFile(std::string source) {
+	std::string ucs2_path = UTF8toUCS2(source);
+	if (!DeleteFileW((LPCWSTR)ucs2_path.c_str())) {
+		auto error = GetLastError();
+		switch (error) {
+			case ERROR_FILE_NOT_FOUND:
+				return PGIOErrorFileNotFound;
+			case ERROR_ACCESS_DENIED:
+				return PGIOErrorPermissionDenied;
+			default:
+				return PGIOErrorOther;
+		}
+	}
+	return PGIOSuccess;
+}
+
 PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files) {
 	DIR *dp;
 	struct dirent *ep;
