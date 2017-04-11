@@ -524,7 +524,7 @@ void ControlManager::ActiveFileChanged(Control *control) {
 
 void ControlManager::InvalidateWorkspace() {
 	if (write_workspace_counter == 0) {
-		write_workspace_counter = 150;
+		write_workspace_counter = 50;
 	}
 }
 

@@ -546,6 +546,12 @@ void TabControl::NewTab() {
 }
 
 void TabControl::OpenFile(std::string path) {
+	if (temporary_textfile && temporary_textfile->path == path) {
+		auto file = temporary_textfile;
+		CloseTemporaryFile();
+		OpenFile(file);
+		return;
+	}
 	if (!SwitchToTab(path)) {
 		PGFileError error;
 		std::shared_ptr<TextFile> textfile = file_manager.OpenFile(path, error);
