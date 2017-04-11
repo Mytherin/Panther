@@ -120,9 +120,6 @@ void Scrollbar::MouseMove(int x, int y, PGMouseButton buttons) {
 	if (buttons & PGLeftMouseButton) {
 		if (drag_type == PGScrollbarDragScrollbar) {
 			lng current_offset = current_value;
-			if (mouse.x >= this->width - 100) {
-				int x = 5;
-			}
 
 			SetScrollbarOffset(horizontal ? mouse.x - drag_offset : mouse.y - drag_offset);
 			if (current_offset != current_value) {
@@ -188,25 +185,38 @@ void Scrollbar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				return;
 			}
 		}
-		if (PGRectangleContains(scrollbar_area, mouse)) {
-			drag_offset = horizontal ? mouse.x - scrollbar_area.x : mouse.y - scrollbar_area.y;
-			drag_type = PGScrollbarDragScrollbar;
-			this->Invalidate();
-		} else if (horizontal ? mouse.x < scrollbar_area.x : mouse.y < scrollbar_area.y) {
-			// mouse click above/left of scrollbar
-			if (current_value > min_value) {
-				drag_start = GetTime();
-				drag_type = PGScrollbarDragAboveScrollbar;
-				current_value = std::max(min_value, current_value - value_size);
+		if (modifier & PGModifierShift) {
+			// shift clicking a scrollbar moves to the clicked-on value
+			lng current_offset = current_value;
+			drag_offset = horizontal ? scrollbar_area.width / 2.0f : scrollbar_area.height / 2.0f;
+
+			SetScrollbarOffset(horizontal ? mouse.x - drag_offset : mouse.y - drag_offset);
+			if (current_offset != current_value) {
 				UpdateScrollValue();
+				this->Invalidate();
 			}
+			this->Invalidate();
 		} else {
-			// mouse click to the right/below scrollbar
-			if (current_value < max_value) {
-				drag_start = GetTime();
-				drag_type = PGScrollbarDragBelowScrollbar;
-				current_value = std::min(max_value, current_value + value_size);
-				UpdateScrollValue();
+			if (PGRectangleContains(scrollbar_area, mouse)) {
+				drag_offset = horizontal ? mouse.x - scrollbar_area.x : mouse.y - scrollbar_area.y;
+				drag_type = PGScrollbarDragScrollbar;
+				this->Invalidate();
+			} else if (horizontal ? mouse.x < scrollbar_area.x : mouse.y < scrollbar_area.y) {
+				// mouse click above/left of scrollbar
+				if (current_value > min_value) {
+					drag_start = GetTime();
+					drag_type = PGScrollbarDragAboveScrollbar;
+					current_value = std::max(min_value, current_value - value_size);
+					UpdateScrollValue();
+				}
+			} else {
+				// mouse click to the right/below scrollbar
+				if (current_value < max_value) {
+					drag_start = GetTime();
+					drag_type = PGScrollbarDragBelowScrollbar;
+					current_value = std::min(max_value, current_value + value_size);
+					UpdateScrollValue();
+				}
 			}
 		}
 	}
