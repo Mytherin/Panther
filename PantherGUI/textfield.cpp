@@ -166,7 +166,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 	std::vector<std::vector<PGScalar>> cumulative_character_widths;
 
 	while ((current_line = line_iterator->GetLine()).IsValid()) {
-		if (position_y > this->height) break;
+		if (position_y > initial_position_y + this->height) break;
 
 		// only render lines that fall within the render rectangle
 		if (!(position_y + line_height < 0)) {
