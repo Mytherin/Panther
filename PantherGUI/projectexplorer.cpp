@@ -8,7 +8,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(ProjectExplorer);
 #define FOLDER_IDENT 8
 
 ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
-	PGContainer(window), dragging_scrollbar(false), renaming_file(-1), scrollbar_offset(0) {
+	PGContainer(window), dragging_scrollbar(false), renaming_file(-1), scrollbar_offset(0), file_render_height(0) {
 #ifdef WIN32
 	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI"));
 #else
@@ -23,9 +23,11 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	scrollbar->top_padding = SCROLLBAR_PADDING + SCROLLBAR_SIZE;
 	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
-		((ProjectExplorer*)scroll->parent)->scrollbar_offset = value;
+		((ProjectExplorer*)scroll->parent)->SetScrollbarOffset(value);
 	});
 	this->AddControl(scrollbar);
+
+	file_render_height = std::max(GetTextHeight(font) + 2.0f, 16.0f);
 
 	//RenderImage(renderer, bitmap, x, y);
 	//DeleteImage(bitmap);
@@ -108,13 +110,17 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 	y += file_render_height;
 }
 
+void ProjectExplorer::SetScrollbarOffset(double offset) {
+	scrollbar_offset = std::min((double)MaximumScrollOffset(), std::max(0.0, offset));
+}
+
 void ProjectExplorer::ScrollToFile(lng file_number) {
 	if (scrollbar_offset > file_number) {
 		scrollbar_offset = file_number;
 	} else if (scrollbar_offset + RenderedFiles() <= file_number) {
 		scrollbar_offset = file_number - RenderedFiles() + 1;
 	}
-	scrollbar_offset = std::min((double)MaximumScrollOffset(), std::max(0.0, scrollbar_offset));
+	SetScrollbarOffset(scrollbar_offset);
 }
 
 void ProjectExplorer::FinishRename(bool success, bool update_selection) {
@@ -212,8 +218,6 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 	mouse.x -= X();
 	mouse.y -= Y();
 
-	file_render_height = std::max(GetTextHeight(font) + 2.0f, 16.0f);
-
 	lng highlighted_entry = scrollbar_offset + (mouse.y / file_render_height);
 	if (mouse.x < 0 || mouse.x > this->width) {
 		highlighted_entry = -1;
@@ -275,7 +279,7 @@ bool ProjectExplorer::KeyboardCharacter(char character, PGModifier modifier) {
 
 void ProjectExplorer::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
-		scrollbar_offset = std::min((double)MaximumScrollOffset(), std::max(0.0, scrollbar_offset - distance));
+		SetScrollbarOffset(scrollbar_offset - distance);
 		scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);
 		this->Invalidate();
 	}
@@ -493,6 +497,9 @@ lng ProjectExplorer::MaximumScrollOffset() {
 }
 
 lng ProjectExplorer::RenderedFiles() {
+	if (file_render_height <= 0) {
+		return 0;
+	}
 	return this->height / file_render_height;
 }
 

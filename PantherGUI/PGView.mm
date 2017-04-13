@@ -84,7 +84,9 @@ NSDraggingSession* active_session = nullptr;
 void PeriodicWindowRedraw(PGWindowHandle handle) {
 	handle->manager->PeriodicRender();
 	if (handle->pending_destroy) {
+		handle->workspace->RemoveWindow(handle);
 		[handle->window performClose:handle->window];
+		handle->workspace->WriteWorkspace();
 	}
 }
 
@@ -167,6 +169,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 - (void)drawRect:(NSRect)invalidateRect {
+	if (!handle->manager) return;
 	NSRect window_size = [self getBounds];
 	if (handle->manager->width != window_size.size.width || 
 		handle->manager->height != window_size.size.height) {
@@ -843,6 +846,7 @@ void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
 }
 
 void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j) {
+	if (!window->manager) return;
 	PGSize window_size = GetWindowSize(window);
 	j["window"]["dimensions"]["width"] = window_size.width;
 	j["window"]["dimensions"]["height"] = window_size.height;
@@ -880,12 +884,16 @@ PGFileInformation PGGetFileFlags(std::string path) {
 
 PGIOError PGRenameFile(std::string source, std::string dest) {
 	NSError * _Nullable __autoreleasing err = nil;
-	if ([[NSFileManager defaultManager] moveItemAtPath:
-			[NSString stringWithUTF8String:source.c_str()] 
-			toPath:[NSString stringWithUTF8String:dest.c_str()] 
+	if ([[NSFileManager defaultManager] replaceItemAtURL: 
+			[NSURL fileURLWithPath:[NSString stringWithUTF8String:dest.c_str()]]
+			withItemAtURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:source.c_str()]]
+			backupItemName:nil
+			options:NSFileManagerItemReplacementUsingNewMetadataOnly
+			resultingItemURL:nil
 			 error:&err] == YES) {
 		return PGIOSuccess;
 	}
+	NSLog(@"%@", [err localizedDescription]);
 	return PGIOErrorOther;
 }
 
@@ -896,6 +904,7 @@ PGIOError PGRemoveFile(std::string source) {
 			 error:&err] == YES) {
 		return PGIOSuccess;
 	}
+	//NSLog(err);
 	return PGIOErrorOther;
 }
 

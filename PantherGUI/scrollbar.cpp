@@ -5,7 +5,7 @@
 #include "searchbox.h"
 
 Scrollbar::Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows) :
-	Control(window), horizontal(horizontal), arrows(arrows) {
+	Control(window), horizontal(horizontal), arrows(arrows), drag_offset(0), drag_start(0) {
 	this->parent = parent;
 	if (horizontal) {
 		this->width = parent->width;

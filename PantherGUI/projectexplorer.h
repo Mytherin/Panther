@@ -31,6 +31,7 @@ public:
 	void OnResize(PGSize old_size, PGSize new_size);
 
 	PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
+	void SetScrollbarOffset(double scrollbar_offset);
 
 	void Draw(PGRendererHandle renderer);
 
@@ -41,7 +42,7 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
 private:
-	PGScalar file_render_height;
+	PGScalar file_render_height = 0;
 
 	PGFontHandle font;
 
@@ -55,7 +56,7 @@ private:
 	std::vector<PGDirectory*> directories;
 
 	bool dragging_scrollbar;
-	double scrollbar_offset;
+	double scrollbar_offset = 0;
 
 	Scrollbar* scrollbar;
 
