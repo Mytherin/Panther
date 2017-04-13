@@ -48,10 +48,10 @@ void Splitter::MouseMove(int x, int y, PGMouseButton buttons) {
 			}
 		} else {
 			PGScalar new_height = this->parent->height - y + drag_offset;
-			if (this->vertical_anchor->fixed_height >= 0) {
-				this->vertical_anchor->fixed_height = panther::clamp(new_height, this->vertical_anchor->minimum_height, this->vertical_anchor->maximum_height);
+			if (this->bottom_anchor->fixed_height >= 0) {
+				this->bottom_anchor->fixed_height = panther::clamp(new_height, this->bottom_anchor->minimum_height, this->bottom_anchor->maximum_height);
 			} else {
-				this->vertical_anchor->percentage_height = new_height / (this->parent->height);
+				this->bottom_anchor->percentage_height = new_height / (this->parent->height);
 			}
 			for (auto it = additional_anchors.begin(); it != additional_anchors.end(); it++) {
 				if ((*it)->fixed_height >= 0) {

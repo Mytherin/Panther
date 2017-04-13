@@ -17,6 +17,7 @@
 #include "textfield.h"
 #include "tabcontrol.h"
 #include "projectexplorer.h"
+#include "toolbar.h"
 
 #include "c.h"
 #include "findresults.h"
@@ -732,36 +733,46 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 	ControlManager* manager = new ControlManager(res);
 	manager->SetPosition(PGPoint(0, 0));
 	manager->SetSize(PGSize(1000, 700));
-	manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+	manager->percentage_height = 1;
+	manager->percentage_width = 1;
 	res->manager = manager;
 
 	res->timer = CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
 		SendMessage(res->hwnd, WM_COMMAND, 0, 0);
 	}, PGTimerFlagsNone);
-
+	
 	ProjectExplorer* explorer = new ProjectExplorer(res);
 	explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	explorer->fixed_width = 200;
 	explorer->percentage_height = 1;
 	explorer->minimum_width = 50;
 
+	PGToolbar* toolbar = new PGToolbar(res);
+	toolbar->SetAnchor(PGAnchorLeft | PGAnchorTop);
+	toolbar->percentage_width = 1;
+	toolbar->fixed_height = STATUSBAR_HEIGHT;
+
 	StatusBar* bar = new StatusBar(res);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 	bar->percentage_width = 1;
 	bar->fixed_height = STATUSBAR_HEIGHT;
-	explorer->vertical_anchor = bar;
+	explorer->bottom_anchor = bar;
+	explorer->top_anchor = toolbar;
 
 	Splitter *splitter = new Splitter(res, true);
 	splitter->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	splitter->horizontal_anchor = explorer;
-	splitter->vertical_anchor = bar;
+	splitter->bottom_anchor = bar;
+	splitter->top_anchor = toolbar;
 	splitter->fixed_width = 4;
 	splitter->percentage_height = 1;
 
 	manager->AddControl(bar);
 	manager->AddControl(explorer);
 	manager->AddControl(splitter);
+	manager->AddControl(toolbar);
 
+	manager->toolbar = toolbar;
 	manager->statusbar = bar;
 	manager->active_projectexplorer = explorer;
 	manager->splitter = splitter;

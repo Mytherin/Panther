@@ -6,6 +6,7 @@
 #include "tabcontrol.h"
 #include "textfield.h"
 #include "workspace.h"
+#include "toolbar.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
@@ -174,10 +175,10 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 	PGFindText* view = new PGFindText(this->window, type);
 	this->active_findtext = view;
 	view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-	view->vertical_anchor = statusbar;
+	view->bottom_anchor = statusbar;
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		if ((*it)->vertical_anchor == statusbar) {
-			(*it)->vertical_anchor = view;
+		if ((*it)->bottom_anchor == statusbar) {
+			(*it)->bottom_anchor = view;
 		}
 	}
 	this->TriggerResize();
@@ -221,6 +222,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 			textfields.push_back(container);
 		}
 	}
+	Control* topmost_control = this->toolbar;
 	Control* bottom_control = this->active_findtext ? (Control*)this->active_findtext : (Control*)statusbar;
 	Control* leftmost_control = this->active_projectexplorer ? this->splitter : nullptr;
 
@@ -245,7 +247,8 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 	for (int i = 0; i < columns - 1; i++) {
 		// for each column, we have one horizontal splitter
 		splitters[i]->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-		splitters[i]->vertical_anchor = bottom_control;
+		splitters[i]->bottom_anchor = bottom_control;
+		splitters[i]->top_anchor = topmost_control;
 		splitters[i]->horizontal_anchor = nullptr;
 		splitters[i]->horizontal = true;
 		splitters[i]->fixed_width = 4;
@@ -258,7 +261,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 		// for each row, we have one vertical splitter
 		splitters[base + i]->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 		splitters[base + i]->horizontal_anchor = leftmost_control;
-		splitters[base + i]->vertical_anchor = nullptr;
+		splitters[base + i]->bottom_anchor = nullptr;
 		splitters[base + i]->horizontal = false;
 		splitters[base + i]->fixed_height = 4;
 		splitters[base + i]->percentage_height = -1;
@@ -274,17 +277,18 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 		container->percentage_width = 1.0 / (columns - current_column);
 		assert(current_row == rows - 1 || i + columns < textfields.size());
 		// set up the vertical anchor of the container
+		container->top_anchor = topmost_control;
 		if (current_row != rows - 1) {
 			Splitter* splitter = splitters[base + current_row];
 			// the vertical anchor is the splitter below this textfield
-			if (splitter->vertical_anchor) {
-				splitter->additional_anchors.push_back(splitter->vertical_anchor);
+			if (splitter->bottom_anchor) {
+				splitter->additional_anchors.push_back(splitter->bottom_anchor);
 			}
-			splitter->vertical_anchor = (Control*)textfields[i + columns];
-			container->vertical_anchor = splitter;
+			splitter->bottom_anchor = (Control*)textfields[i + columns];
+			container->bottom_anchor = splitter;
 		} else {
 			// final row, the vertical anchor is the bottom-most control
-			container->vertical_anchor = bottom_control;
+			container->bottom_anchor = bottom_control;
 		}
 		assert(current_column == 0 || i > 0);
 		// set up the horizontal anchor of the container
@@ -516,7 +520,7 @@ void ControlManager::ActiveTextFieldChanged(Control *control) {
 void ControlManager::ActiveFileChanged(Control *control) {
 	TextField* field = dynamic_cast<TextField*>(control);
 	assert(field);
-	std::string text = field->GetTextFile().GetFullPath() + std::string(" - Panther");
+	std::string text = field->GetTextFile().GetName() + std::string(" - Panther");
 	SetWindowTitle(this->window, text.c_str());
 	TriggerCallback(active_file_callbacks, control);
 	this->InvalidateWorkspace();

@@ -19,6 +19,9 @@ void PGWorkspace::LoadWorkspace(std::string filename) {
 		goto default_workspace;
 	}
 	this->settings = j;
+	if (j.count("workspace_name") > 0) {
+		this->workspace_name = j["workspace_name"].get<std::string>();
+	}
 	if (j.count("windows") > 0 && j["windows"].is_array() && j["windows"].size() > 0) {
 		for (int index = 0; index < j["windows"].size(); index++) {
 			auto window = PGCreateWindow(this, std::vector<std::shared_ptr<TextFile>>());
@@ -28,6 +31,7 @@ void PGWorkspace::LoadWorkspace(std::string filename) {
 	}
 default_workspace:
 	this->settings = j;
+	this->workspace_name = "Default Workspace";
 	auto window = PGCreateWindow(this, std::vector<std::shared_ptr<TextFile>>());
 }
 
@@ -36,6 +40,7 @@ void PGWorkspace::WriteWorkspace() {
 	if (filename.size() == 0) return;
 
 	json j = settings;
+	j["workspace_name"] = this->workspace_name;
 	j["windows"] = nlohmann::json::array();
 	int index = 0;
 	for (auto it = windows.begin(); it != windows.end(); it++) {

@@ -111,8 +111,10 @@ public:
 	PGScalar fixed_width = -1, fixed_height = -1;
 	PGScalar percentage_width = -1, percentage_height = -1;
 	PGAnchor anchor;
-	Control* vertical_anchor = nullptr;
+	Control* bottom_anchor = nullptr;
+	Control* top_anchor = nullptr;
 	Control* horizontal_anchor = nullptr;
+	//Control* right_anchor = nullptr;
 
 	PGWindowHandle window;
 	bool HasFocus();

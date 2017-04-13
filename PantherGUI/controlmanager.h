@@ -11,6 +11,7 @@
 class TextField;
 class StatusBar;
 class PGFindText;
+class PGToolbar;
 
 class ControlManager : public PGContainer {
 public:
@@ -50,6 +51,7 @@ public:
 	TextField* active_textfield;
 	ProjectExplorer* active_projectexplorer;
 	PGFindText* active_findtext;
+	PGToolbar* toolbar;
 	StatusBar* statusbar;
 	Control* splitter;
 

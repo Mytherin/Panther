@@ -7,7 +7,7 @@ const PGAnchor PGAnchorRight = 0x02;
 const PGAnchor PGAnchorTop = 0x04;
 const PGAnchor PGAnchorBottom = 0x08;
 
-Control::Control(PGWindowHandle handle) : 
+Control::Control(PGWindowHandle handle) :
 	percentage_width(-1), percentage_height(-1), fixed_height(-1), fixed_width(-1),
 	dirty(false) {
 	this->window = handle;
@@ -116,7 +116,7 @@ void Control::TriggerResize() {
 
 void Control::SetSize(PGSize size) {
 	PGSize oldsize(this->width, this->height);
-	this->width = size.width; 
+	this->width = size.width;
 	this->height = size.height;
 	this->OnResize(oldsize, PGSize(this->width, this->height));
 }
@@ -156,37 +156,39 @@ void Control::ResolveSize(PGSize new_size) {
 	if (size_resolved) return;
 	PGSize current_size = PGSize(this->width, this->height);
 	if (fixed_height >= 0 || percentage_height >= 0) {
-		if (vertical_anchor == nullptr) {
-			if (fixed_height > 0) {
-				this->height = fixed_height;
-			} else {
-				this->height = percentage_height * new_size.height;
-			}
-			if (this->anchor & PGAnchorTop) {
-				this->y = 0;
-			}
-			if (this->anchor & PGAnchorBottom) {
-				// bottom anchor only makes sense with a fixed height
-				this->y = new_size.height - this->height;
-			}
-		} else {
-			vertical_anchor->ResolveSize(new_size);
-			PGScalar remaining_height = 0;
-			if (fixed_height > 0) {
-				this->height = fixed_height;
-			}
-			if (this->anchor & PGAnchorTop) {
-				this->y = vertical_anchor->y + vertical_anchor->height;
-				remaining_height = new_size.height - this->y;
-			}
-			if (this->anchor & PGAnchorBottom) {
-				remaining_height = vertical_anchor->y;
-			}
+		if (fixed_height > 0) {
+			this->height = fixed_height;
+		}
+		if (top_anchor != nullptr && anchor & PGAnchorTop) {
+			top_anchor->ResolveSize(new_size);
+			this->y = top_anchor->y + top_anchor->height;
 			if (percentage_height > 0) {
+				PGScalar remaining_height = new_size.height - this->y;
+				if (bottom_anchor != nullptr) {
+					bottom_anchor->ResolveSize(new_size);
+					remaining_height = bottom_anchor->y - this->y;
+				}
 				this->height = percentage_height * remaining_height;
 			}
-			if (this->anchor & PGAnchorBottom) {
-				this->y = vertical_anchor->y - this->height;
+		} else if (bottom_anchor != nullptr && anchor & PGAnchorBottom) {
+			bottom_anchor->ResolveSize(new_size);
+			if (percentage_height > 0) {
+				PGScalar remaining_height = bottom_anchor->y;
+				if (top_anchor != nullptr) {
+					top_anchor->ResolveSize(new_size);
+					remaining_height -= top_anchor->y + top_anchor->height;
+				}
+				this->height = percentage_height * remaining_height;
+			}
+			this->y = bottom_anchor->y - this->height;
+		} else {
+			if (anchor & PGAnchorTop) {
+				this->y = 0;
+			} else if (anchor & PGAnchorBottom) {
+				assert(this->fixed_height > 0);
+				this->y = new_size.height - this->fixed_height;
+			} else {
+				assert(0);
 			}
 		}
 	}

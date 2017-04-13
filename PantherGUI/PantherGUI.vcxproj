@@ -265,6 +265,7 @@
     <ClCompile Include="third_party\re2\util\strutil.cc" />
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="togglebutton.cpp" />
+    <ClCompile Include="toolbar.cpp" />
     <ClCompile Include="unicode.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="windowfunctions.cpp" />
@@ -349,6 +350,7 @@
     <ClInclude Include="third_party\re2\util\util.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="togglebutton.h" />
+    <ClInclude Include="toolbar.h" />
     <ClInclude Include="unicode.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windowfunctions.h" />
