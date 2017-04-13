@@ -57,10 +57,12 @@ void PGWorkspace::WriteWorkspace() {
 	}
 	out.close();
 
-	// after writing to the temporary file, we move it over the old workspace file 
-	auto ret = PGRenameFile(temp_filename, filename);
-	if (ret == PGIOSuccess) {
-		return;
+	{
+		// after writing to the temporary file, we move it over the old workspace file 
+		auto ret = PGRenameFile(temp_filename, filename);
+		if (ret == PGIOSuccess) {
+			return;
+		}
 	}
 cleanup:
 	PGRemoveFile(temp_filename);

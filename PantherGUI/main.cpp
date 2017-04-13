@@ -117,7 +117,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Scheduler::SetThreadCount(2);
 
 	// load a workspace
-	auto settings = PGGlobalSettings::GetSettings();
+	nlohmann::json& settings = PGGlobalSettings::GetSettings();
 	if (settings.count("workspaces") == 0 || !settings["workspaces"].is_array()) {
 		// no known workspaces in the settings, initialize the settings
 		settings["workspaces"] = nlohmann::json::array();

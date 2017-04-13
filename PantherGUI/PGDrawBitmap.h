@@ -157,17 +157,18 @@ void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, PGIRect rectangle, floa
 
     CGImageRef img = SkCreateCGImageRef(snipped_bitmap);
     if (img) {
+
         assert(rectangle.x + rectangle.width <= bm.width());
         assert(rectangle.y + rectangle.height <= bm.height());
         CGRect r = CGRectMake(0, 0, snipped_bitmap.width(), snipped_bitmap.height());
 
-        CGContextSaveGState(cg);
+        //CGContextSaveGState(cg);
         CGContextTranslateCTM(cg, rectangle.x, rectangle.y);
         CGContextScaleCTM(cg, 1.0f / scale_factor, 1.0f / scale_factor);
 
         CGContextDrawImage(cg, r, img);
 
-        CGContextRestoreGState(cg);
+        //CGContextRestoreGState(cg);
 
         CGImageRelease(img);
     }

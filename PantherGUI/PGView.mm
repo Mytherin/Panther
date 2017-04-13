@@ -12,6 +12,8 @@
 #include <sys/time.h>
 #include <cctype>
 
+#include "globalsettings.h"
+
 #include "control.h"
 
 #import "PGView.h"
@@ -36,9 +38,9 @@ struct PGWindow {
 	bool pending_destroy = false;
 	ControlManager* manager;
 	PGRendererHandle renderer;
-	PGWorkspace workspace;
+	PGWorkspace* workspace;
 
-	PGWindow() : workspace(this) { }
+	PGWindow(PGWorkspace* workspace) : workspace(workspace) { }
 };
 
 struct PGMouseFlags {
@@ -88,7 +90,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 @implementation PGView : NSView
 
-- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(std::vector<std::shared_ptr<TextFile>>)textfiles
+- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(PGWorkspace*)workspace :(std::vector<std::shared_ptr<TextFile>>)textfiles
 {
 	if(self = [super initWithFrame:frameRect]) {
 #ifdef RETINA_API_AVAILABLE
@@ -96,8 +98,13 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 #endif
 		NSRect rect = [self getBounds];
 
-		handle = new PGWindow();
+		handle = new PGWindow(workspace);
+		if (!handle) {
+			return self;
+		}
+		workspace->AddWindow(handle);
 		handle->window = window;
+		handle->workspace = workspace;
 		handle->view = self;
 		handle->renderer = InitializeRenderer();
 
@@ -140,8 +147,6 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		manager->SetPosition(PGPoint(0, 0));
 		manager->SetSize(PGSize(rect.size.width, rect.size.height));
 		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
-
-		handle->workspace.LoadWorkspace("workspace.json");
 	}
 	return self;
 }
@@ -182,10 +187,12 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 -(void)performClose {
-	handle->workspace.WriteWorkspace();
+	handle->workspace->WriteWorkspace();
 	DeleteTimer(timer);
 	delete handle->manager;
 	DeleteRenderer(handle->renderer);
+	handle->renderer = nullptr;
+	handle->manager = nullptr;
 }
 
 -(NSRect)getBounds {
@@ -465,11 +472,15 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 - (void)windowDidResignKey:(NSNotification *)notification {
-	handle->manager->LosesFocus();
+	if (handle->manager) {
+		handle->manager->LosesFocus();	
+	}
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification {
-	handle->manager->GainsFocus();
+	if (handle->manager) {
+		handle->manager->GainsFocus();	
+	}
 }
 
 @end
@@ -495,14 +506,14 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<TextFile>> textfiles) {
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextFile>> textfiles) {
 	PGNSWindow *window;
 	NSRect contentSize = NSMakeRect(0, 0, 1000.0, 700.0);
 	NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
 
 	window = [[PGNSWindow alloc] initWithContentRect:contentSize styleMask:windowStyleMask backing:NSBackingStoreBuffered defer:YES];
 	window.backgroundColor = [NSColor whiteColor];
-	PGView *view = [[PGView alloc] initWithFrame:contentSize:window:textfiles];
+	PGView *view = [[PGView alloc] initWithFrame:contentSize:window:workspace:textfiles];
 	[view setWantsLayer:YES];
 	window.contentView = view;
 	[window makeFirstResponder:view];
@@ -514,8 +525,8 @@ PGWindowHandle PGCreateWindow(PGPoint position, std::vector<std::shared_ptr<Text
 	return [view getHandle];
 }
 
-PGWindowHandle PGCreateWindow(std::vector<std::shared_ptr<TextFile>> textfiles) {
-	return PGCreateWindow(PGPoint(20, 20), textfiles);
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_ptr<TextFile>> textfiles) {
+	return PGCreateWindow(workspace, PGPoint(20, 20), textfiles);
 }
 
 void ShowWindow(PGWindowHandle handle) {
@@ -555,8 +566,8 @@ PGTime GetTime() {
 	return millis;
 }
 
-void SetWindowTitle(PGWindowHandle window, char* title) {
-	assert(0);
+void SetWindowTitle(PGWindowHandle handle, std::string title) {
+	[handle->window setTitle:[NSString stringWithUTF8String:title.c_str()]];
 }
 
 void SetClipboardTextOS(PGWindowHandle window, std::string text) {
@@ -802,7 +813,7 @@ void PGConfirmationBox(PGWindowHandle window, std::string title, std::string mes
 
 
 PGWorkspace* PGGetWorkspace(PGWindowHandle window) {
-	return &window->workspace;
+	return window->workspace;
 }
 
 void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
@@ -864,6 +875,28 @@ PGFileInformation PGGetFileFlags(std::string path) {
 	info.modification_time = (lng) stat_info.st_mtime;
 
 	return info;
+}
+
+
+PGIOError PGRenameFile(std::string source, std::string dest) {
+	NSError * _Nullable __autoreleasing err = nil;
+	if ([[NSFileManager defaultManager] moveItemAtPath:
+			[NSString stringWithUTF8String:source.c_str()] 
+			toPath:[NSString stringWithUTF8String:dest.c_str()] 
+			 error:&err] == YES) {
+		return PGIOSuccess;
+	}
+	return PGIOErrorOther;
+}
+
+PGIOError PGRemoveFile(std::string source) {
+	NSError * _Nullable __autoreleasing err = nil;
+	if ([[NSFileManager defaultManager] removeItemAtPath:
+			[NSString stringWithUTF8String:source.c_str()]
+			 error:&err] == YES) {
+		return PGIOSuccess;
+	}
+	return PGIOErrorOther;
 }
 
 void PGLogMessage(std::string text) {

@@ -9,6 +9,7 @@ using namespace nlohmann;
 PGGlobalSettings::PGGlobalSettings(std::string path) {
 	this->path = path;
 	std::ifstream i(path);
+	this->settings = json::object();
 	if (!i) {
 		return;
 	}
@@ -32,10 +33,12 @@ void PGGlobalSettings::_WriteSettings() {
 	}
 	out.close();
 
-	// after writing to the temporary file, we move it over the old settings file 
-	auto ret = PGRenameFile(temp_filename, path);
-	if (ret == PGIOSuccess) {
-		return;
+	{
+		// after writing to the temporary file, we move it over the old settings file 
+		auto ret = PGRenameFile(temp_filename, path);
+		if (ret == PGIOSuccess) {
+			return;
+		}
 	}
 cleanup:
 	PGRemoveFile(temp_filename);

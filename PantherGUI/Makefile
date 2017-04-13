@@ -51,6 +51,7 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/file.o \
 		 $(OBJDIR)/filemanager.o \
 		 $(OBJDIR)/findtext.o \
+		 $(OBJDIR)/globalsettings.o \
 		 $(OBJDIR)/goto.o \
 		 $(OBJDIR)/keybindings.o \
 		 $(OBJDIR)/keywords.o \
