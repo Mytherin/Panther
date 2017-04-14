@@ -574,10 +574,11 @@ struct PGSingleMouseRegion : public PGMouseRegion {
 	PGIRect* rect = nullptr;
 	void* data = nullptr;
 	PGMouseCallback mouse_event;
+	PGTime enter_time;
 
 	void MouseMove(PGPoint mouse);
 
-	PGSingleMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr) : rect(rect), PGMouseRegion(control), mouse_event(mouse_event), data(data) {}
+	PGSingleMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr) : rect(rect), PGMouseRegion(control), mouse_event(mouse_event), data(data), enter_time(-1) {}
 };
 
 typedef std::vector<std::unique_ptr<PGSingleMouseRegion>> MouseRegionSet;

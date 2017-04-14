@@ -19,8 +19,10 @@ public:
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
 	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
+
 	void MouseEnter();
 	void MouseLeave();
+	void ShowTooltip();
 
 	bool IsDragging() { return clicking; }
 

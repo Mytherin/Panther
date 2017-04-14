@@ -152,6 +152,10 @@ void Control::MouseLeave() {
 
 }
 
+void Control::ShowTooltip() {
+
+}
+
 void Control::ResolveSize(PGSize new_size) {
 	if (size_resolved) return;
 	PGSize current_size = PGSize(this->width, this->height);
@@ -182,11 +186,15 @@ void Control::ResolveSize(PGSize new_size) {
 			}
 			this->y = bottom_anchor->y - this->height;
 		} else {
+			if (this->percentage_height > 0) {
+				this->height = new_size.height * percentage_height;
+			} else if (this->fixed_height > 0) {
+				this->height = this->fixed_height;
+			}
 			if (anchor & PGAnchorTop) {
 				this->y = 0;
 			} else if (anchor & PGAnchorBottom) {
-				assert(this->fixed_height > 0);
-				this->y = new_size.height - this->fixed_height;
+				this->y = new_size.height - this->height;
 			} else {
 				assert(0);
 			}

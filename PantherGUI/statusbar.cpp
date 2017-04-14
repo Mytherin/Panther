@@ -22,7 +22,10 @@ StatusBar::StatusBar(PGWindowHandle window) :
 		buttons[i] = new Button(window, this);
 		buttons[i]->background_color = PGColor(0, 0, 0, 0);
 		buttons[i]->background_stroke_color = PGColor(0, 0, 0, 0);
-		buttons[i]->SetAnchor(PGAnchorTop);
+		buttons[i]->SetAnchor(PGAnchorTop | PGAnchorRight);
+		if (i > 0) {
+			buttons[i]->horizontal_anchor = buttons[i - 1];
+		}
 		buttons[i]->percentage_height = 1;
 		this->AddControl(buttons[i]);
 	}
@@ -31,13 +34,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 	language_button = buttons[1];
 	lineending_button = buttons[2];
 	tabwidth_button = buttons[3];
-
-	for (auto it = controls.begin(); it != controls.end(); it++) {
-		(*it)->SetPosition(PGPoint(0, 0));
-		(*it)->SetSize(PGSize(this->width, this->height));
-		(*it)->SetAnchor(PGAnchorTop | PGAnchorBottom);
-	}
-
+	
 	unicode_button->OnPressed([](Button* button, void* data) {
 		Control* c = button->parent;
 		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
@@ -211,11 +208,65 @@ void StatusBar::Draw(PGRendererHandle renderer) {
 				str += " - " + status;
 			}
 			RenderText(renderer, font, str.c_str(), str.size(), x + 10, y);
-			const int padding = 20;
-			int right_position = 0;
 
+			const int padding = 20;
+			bool invalidated_text = false;
 			PGFileEncoding encoding = file.GetFileEncoding();
 			str = PGEncodingToString(encoding);
+			if (unicode_button->GetText() != str) {
+				unicode_button->SetText(str, font);
+				unicode_button->fixed_width = 2 * padding + MeasureTextWidth(font, str.c_str(), str.size());
+				invalidated_text = true;
+			}
+			PGLanguage* language = file.GetLanguage();
+			str = language ? language->GetName() : "Plain Text";
+			if (language_button->GetText() != str) {
+				language_button->SetText(str, font);
+				language_button->fixed_width = 2 * padding + MeasureTextWidth(font, str.c_str(), str.size());
+				invalidated_text = true;
+			}
+			PGLineEnding ending = file.GetLineEnding();
+			switch (ending) {
+				case PGLineEndingWindows:
+					str = "CRLF";
+					break;
+				case PGLineEndingUnix:
+					str = "LF";
+					break;
+				case PGLineEndingMacOS:
+					str = "CR";
+					break;
+				default:
+					str = "Mixed";
+			}
+			if (lineending_button->GetText() != str) {
+				lineending_button->SetText(str, font);
+				lineending_button->fixed_width = 2 * padding + MeasureTextWidth(font, str.c_str(), str.size());
+				invalidated_text = true;
+			}
+			PGLineIndentation indentation = file.GetLineIndentation();
+			switch (indentation) {
+				case PGIndentionSpaces:
+					str = "Spaces: ";
+					break;
+				case PGIndentionTabs:
+					str = "Tab-Width: ";
+					break;
+				default:
+					str = "Mixed: ";
+			}
+			str += to_string(file.GetTabWidth());
+			if (tabwidth_button->GetText() != str) {
+				tabwidth_button->SetText(str, font);
+				tabwidth_button->fixed_width = 2 * padding + MeasureTextWidth(font, str.c_str(), str.size());
+				invalidated_text = true;
+			}
+			if (invalidated_text) {
+				this->OnResize(PGSize(this->width, this->height), PGSize(this->width, this->height));
+			}
+			PGContainer::Draw(renderer);
+
+			/*
 			{
 				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
 				unicode_button->x = this->width - 2 * padding - text_width - right_position;
@@ -286,7 +337,7 @@ void StatusBar::Draw(PGRendererHandle renderer) {
 				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
 				right_position += padding;
 				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
-			}
+			}*/
 		}
 	}
 	Control::Draw(renderer);

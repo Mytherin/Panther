@@ -64,6 +64,10 @@ void Button::MouseLeave() {
 	}
 }
 
+void Button::ShowTooltip() {
+	PGLogMessage("Show Tooltip");
+}
+
 void Button::Draw(PGRendererHandle renderer) {
 	PGRect render_rectangle = PGRect(X(), Y(), this->width, this->height);
 
@@ -81,9 +85,7 @@ void Button::Draw(PGRendererHandle renderer) {
 	}
 }
 
-
 void Button::SetText(std::string text, PGFontHandle font) {
 	this->text = text;
 	this->font = font;
-
 }

@@ -750,7 +750,7 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 	PGToolbar* toolbar = new PGToolbar(res);
 	toolbar->SetAnchor(PGAnchorLeft | PGAnchorTop);
 	toolbar->percentage_width = 1;
-	toolbar->fixed_height = STATUSBAR_HEIGHT;
+	toolbar->fixed_height = TOOLBAR_HEIGHT;
 
 	StatusBar* bar = new StatusBar(res);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
