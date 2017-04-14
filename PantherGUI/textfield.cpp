@@ -705,7 +705,7 @@ PGScalar TextField::GetMinimapHeight() {
 }
 
 void TextField::GetMinimapLinesRendered(lng& lines_rendered, double& percentage) {
-	lines_rendered = this->height / (minimap_line_height == 0 ? 1 : minimap_line_height);
+	lines_rendered = minimap_region.height / (minimap_line_height == 0 ? 1 : minimap_line_height);
 	lng max_y_scroll = textfile->GetMaxYScroll();
 	if (!textfile->GetWordWrap()) {
 		percentage = max_y_scroll == 0 ? 0 : (double)textfile->GetLineOffset().linenumber / max_y_scroll;
@@ -727,7 +727,13 @@ PGVerticalScroll TextField::GetMinimapStartLine() {
 	lng lines_rendered;
 	double percentage = 0;
 	GetMinimapLinesRendered(lines_rendered, percentage);
-	auto scroll = textfile->OffsetVerticalScroll(textfile->GetLineOffset(), -(lines_rendered * percentage));
+	auto current_scroll = textfile->GetLineOffset();
+	auto scroll = textfile->OffsetVerticalScroll(current_scroll, -(lines_rendered * percentage));
+	auto max_scroll = textfile->OffsetVerticalScroll(textfile->OffsetVerticalScroll(current_scroll, lines_rendered), -(lines_rendered - 1));
+	if (scroll.linenumber > max_scroll.linenumber ||
+		(scroll.linenumber == max_scroll.linenumber && scroll.inner_line > max_scroll.inner_line)) {
+		scroll = max_scroll;
+	}
 	scroll.line_fraction = 0;
 	return scroll;
 }

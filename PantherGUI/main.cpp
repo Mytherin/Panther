@@ -1563,7 +1563,6 @@ void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
 	}
 
 	if (window->tooltip && IsWindow(window->tooltip)) {
-		CloseWindow(window->tooltip);
 		DestroyWindow(window->tooltip);
 		window->tooltip = nullptr;
 	}
