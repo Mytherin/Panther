@@ -24,9 +24,12 @@ StatusBar::StatusBar(PGWindowHandle window) :
 		buttons[i]->background_stroke_color = PGColor(0, 0, 0, 0);
 		buttons[i]->SetAnchor(PGAnchorTop | PGAnchorRight);
 		if (i > 0) {
-			buttons[i]->horizontal_anchor = buttons[i - 1];
+			buttons[i]->right_anchor = buttons[i - 1];
 		}
 		buttons[i]->percentage_height = 1;
+		buttons[i]->fixed_size = false;
+		buttons[i]->padding.left = 20;
+		buttons[i]->padding.right = 20;
 		this->AddControl(buttons[i]);
 	}
 
@@ -77,7 +80,6 @@ StatusBar::StatusBar(PGWindowHandle window) :
 			entry.multiplier = 1;
 			entry.display_name = (*it)->GetName();
 			entry.display_subtitle = "";
-			entry.ptr_data = *it;
 			entries.push_back(entry);
 		}
 		tf->DisplaySearchBox(entries, [](SearchBox* searchbox, bool success, SearchRank& rank, SearchEntry& entry, void* data) {
@@ -85,27 +87,10 @@ StatusBar::StatusBar(PGWindowHandle window) :
 				// switch language
 				TextField* tf = (TextField*)data;
 				TextFile& file = tf->GetTextFile();
-				PGLanguage* language = (PGLanguage*)entry.ptr_data;
+				PGLanguage* language = PGLanguageManager::GetLanguageFromName(entry.display_name);
 				file.SetLanguage(language);
 			}
 		}, tf);
-
-
-
-		/*
-		Control* c = button->parent;
-		TextFile& file = ((StatusBar*)c)->GetActiveTextField()->GetTextFile();
-		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
-		auto languages = PGLanguageManager::GetLanguages();
-		auto active_language = file.GetLanguage();
-		for (auto it = languages.begin(); it != languages.end(); it++) {
-			PGPopupMenuInsertEntry(menu, (*it)->GetName().c_str(), [](Control* control, PGPopupInformation* info) {
-				// FIXME: switch highlighter language
-			}, active_language == *it ? PGPopupMenuChecked : PGPopupMenuFlagsNone);
-		}
-		PGDisplayPopupMenu(menu, ConvertWindowToScreen(button->window,
-			PGPoint(button->X() + button->width - 1, button->Y())),
-			PGTextAlignRight | PGTextAlignBottom);*/
 	}, this);
 
 	lineending_button->OnPressed([](Button* button, void* data) {
@@ -209,22 +194,12 @@ void StatusBar::Draw(PGRendererHandle renderer) {
 			}
 			RenderText(renderer, font, str.c_str(), str.size(), x + 10, y);
 
-			const int padding = 20;
-			bool invalidated_text = false;
 			PGFileEncoding encoding = file.GetFileEncoding();
 			str = PGEncodingToString(encoding);
-			if (unicode_button->GetText() != str) {
-				unicode_button->SetText(str, font);
-				unicode_button->fixed_width = 2 * padding + MeasureTextWidth(font, str.c_str(), str.size());
-				invalidated_text = true;
-			}
+			unicode_button->SetText(str, font);
 			PGLanguage* language = file.GetLanguage();
 			str = language ? language->GetName() : "Plain Text";
-			if (language_button->GetText() != str) {
-				language_button->SetText(str, font);
-				language_button->fixed_width = 2 * padding + MeasureTextWidth(font, str.c_str(), str.size());
-				invalidated_text = true;
-			}
+			language_button->SetText(str, font);
 			PGLineEnding ending = file.GetLineEnding();
 			switch (ending) {
 				case PGLineEndingWindows:
@@ -239,11 +214,7 @@ void StatusBar::Draw(PGRendererHandle renderer) {
 				default:
 					str = "Mixed";
 			}
-			if (lineending_button->GetText() != str) {
-				lineending_button->SetText(str, font);
-				lineending_button->fixed_width = 2 * padding + MeasureTextWidth(font, str.c_str(), str.size());
-				invalidated_text = true;
-			}
+			lineending_button->SetText(str, font);
 			PGLineIndentation indentation = file.GetLineIndentation();
 			switch (indentation) {
 				case PGIndentionSpaces:
@@ -256,14 +227,10 @@ void StatusBar::Draw(PGRendererHandle renderer) {
 					str = "Mixed: ";
 			}
 			str += to_string(file.GetTabWidth());
-			if (tabwidth_button->GetText() != str) {
-				tabwidth_button->SetText(str, font);
-				tabwidth_button->fixed_width = 2 * padding + MeasureTextWidth(font, str.c_str(), str.size());
-				invalidated_text = true;
-			}
-			if (invalidated_text) {
-				this->OnResize(PGSize(this->width, this->height), PGSize(this->width, this->height));
-			}
+			tabwidth_button->SetText(str, font);
+
+			this->TriggerResize();
+
 			PGContainer::Draw(renderer);
 
 			/*

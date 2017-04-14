@@ -27,7 +27,8 @@ enum PGControlType {
 	PGControlTypeStatusBar,
 	PGControlTypeTabControl,
 	PGControlTypeTextField,
-	PGControlTypeTextFieldContainer
+	PGControlTypeTextFieldContainer,
+	PGControlTypeLabel
 };
 
 class Control {
@@ -115,8 +116,11 @@ public:
 	PGAnchor anchor;
 	Control* bottom_anchor = nullptr;
 	Control* top_anchor = nullptr;
-	Control* horizontal_anchor = nullptr;
-	//Control* right_anchor = nullptr;
+	Control* left_anchor = nullptr;
+	Control* right_anchor = nullptr;
+
+	PGPadding margin;
+	PGPadding padding;
 
 	PGWindowHandle window;
 	bool HasFocus();

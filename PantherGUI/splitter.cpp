@@ -30,14 +30,14 @@ void Splitter::MouseMove(int x, int y, PGMouseButton buttons) {
 	PGPoint mouse(x - this->x, y - this->y);
 	if (buttons & PGLeftMouseButton) {
 		if (horizontal) {
-			PGScalar new_width = x - this->horizontal_anchor->x - drag_offset;
-			if (this->horizontal_anchor->fixed_width >= 0) {
+			PGScalar new_width = x - this->left_anchor->x - drag_offset;
+			if (this->left_anchor->fixed_width >= 0) {
 				// fixed width resize
-				this->horizontal_anchor->fixed_width = panther::clamp(new_width, this->horizontal_anchor->minimum_width, this->horizontal_anchor->maximum_width);
+				this->left_anchor->fixed_width = panther::clamp(new_width, this->left_anchor->minimum_width, this->left_anchor->maximum_width);
 			} else {
 				// percentage width resize
 				// percentage_width * (this->parent->width - horizontal_anchor->x) == new_width
-				this->horizontal_anchor->percentage_width = new_width / (this->parent->width - horizontal_anchor->x);
+				this->left_anchor->percentage_width = new_width / (this->parent->width - left_anchor->x);
 			}
 			for (auto it = additional_anchors.begin(); it != additional_anchors.end(); it++) {
 				if ((*it)->fixed_width >= 0) {

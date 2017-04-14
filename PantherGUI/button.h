@@ -35,11 +35,15 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeButton; }
 
+	void ResolveSize(PGSize new_size);
+
 	PGColor background_color;
 	PGColor background_color_hover;
 	PGColor background_color_click;
 	PGColor background_stroke_color;
 	PGColor text_color;
+
+	bool fixed_size = true;
 private:
 	std::string text;
 	PGFontHandle font = nullptr;

@@ -5,7 +5,7 @@
 
 
 Button::Button(PGWindowHandle window, Control* parent) : 
-	Control(window) {
+	Control(window), fixed_size(true) {
 	this->parent = parent;
 	GetControlManager(this)->RegisterControlForMouseEvents(this);
 
@@ -66,6 +66,13 @@ void Button::MouseLeave() {
 
 void Button::ShowTooltip() {
 	PGLogMessage("Show Tooltip");
+}
+
+void Button::ResolveSize(PGSize new_size) {
+	if (!fixed_size && font) {
+		this->fixed_width = MeasureTextWidth(font, text);
+	}
+	Control::ResolveSize(new_size);
 }
 
 void Button::Draw(PGRendererHandle renderer) {

@@ -5,7 +5,7 @@ TextFieldContainer::TextFieldContainer(PGWindowHandle window, std::vector<std::s
 	this->width = 0;
 	this->height = TEXT_TAB_HEIGHT;
 	this->textfield = new TextField(this->window, nullptr);
-	textfield->SetAnchor(PGAnchorTop);
+	textfield->SetAnchor(PGAnchorTop | PGAnchorLeft);
 	textfield->percentage_height = 1;
 	textfield->percentage_width = 1;
 	this->tabcontrol = new TabControl(this->window, textfield, textfiles);

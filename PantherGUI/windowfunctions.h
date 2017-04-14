@@ -94,6 +94,16 @@ struct PGRect {
 	}
 };
 
+struct PGPadding {
+	PGScalar left;
+	PGScalar right;
+	PGScalar top;
+	PGScalar bottom;
+
+	PGPadding() : left(0), right(0), top(0), bottom(0) {}
+	PGPadding(PGScalar left, PGScalar right, PGScalar top, PGScalar bottom) : left(left), right(right), top(top), bottom(bottom) {}
+};
+
 struct PGCircle {
 	PGScalar x;
 	PGScalar y;

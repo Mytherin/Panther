@@ -319,9 +319,13 @@ void PGContainer::ActuallyRemoveControl(Control* control) {
 	}
 	bool trigger_resize = false;
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		if ((*it)->horizontal_anchor == control) {
+		if ((*it)->left_anchor == control) {
 			trigger_resize = true;
-			(*it)->horizontal_anchor = control->horizontal_anchor;
+			(*it)->left_anchor = control->left_anchor;
+		}
+		if ((*it)->right_anchor == control) {
+			trigger_resize = true;
+			(*it)->right_anchor = control->right_anchor;
 		}
 		if ((*it)->bottom_anchor == control) {
 			trigger_resize = true;

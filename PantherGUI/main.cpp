@@ -761,7 +761,7 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 
 	Splitter *splitter = new Splitter(res, true);
 	splitter->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-	splitter->horizontal_anchor = explorer;
+	splitter->left_anchor = explorer;
 	splitter->bottom_anchor = bar;
 	splitter->top_anchor = toolbar;
 	splitter->fixed_width = 4;

@@ -249,7 +249,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 		splitters[i]->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 		splitters[i]->bottom_anchor = bottom_control;
 		splitters[i]->top_anchor = topmost_control;
-		splitters[i]->horizontal_anchor = nullptr;
+		splitters[i]->left_anchor = nullptr;
 		splitters[i]->horizontal = true;
 		splitters[i]->fixed_width = 4;
 		splitters[i]->percentage_width = -1;
@@ -260,7 +260,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 	for (int i = 0; i < rows - 1; i++) {
 		// for each row, we have one vertical splitter
 		splitters[base + i]->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-		splitters[base + i]->horizontal_anchor = leftmost_control;
+		splitters[base + i]->left_anchor = leftmost_control;
 		splitters[base + i]->bottom_anchor = nullptr;
 		splitters[base + i]->horizontal = false;
 		splitters[base + i]->fixed_height = 4;
@@ -295,14 +295,14 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 		if (current_column != 0) {
 			Splitter* splitter = splitters[current_column - 1];
 			// the horizontal anchor is the splitter to the left of this textfield
-			if (splitter->horizontal_anchor) {
-				splitter->additional_anchors.push_back(splitter->horizontal_anchor);
+			if (splitter->left_anchor) {
+				splitter->additional_anchors.push_back(splitter->left_anchor);
 			}
-			splitter->horizontal_anchor = (Control*)textfields[i - 1];
-			container->horizontal_anchor = splitter;
+			splitter->left_anchor = (Control*)textfields[i - 1];
+			container->left_anchor = splitter;
 		} else {
 			// left-most row, the horizontal anchor is the left-most control
-			container->horizontal_anchor = leftmost_control;
+			container->left_anchor = leftmost_control;
 		}
 
 		current_column++;

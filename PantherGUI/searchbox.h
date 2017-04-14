@@ -12,6 +12,7 @@ struct SearchEntry {
 	std::string display_subtitle;
 	std::string text;
 	std::shared_ptr<TextFile> data;
+	std::string str_data;
 	void* ptr_data;
 	double multiplier;
 	double basescore;
