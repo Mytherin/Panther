@@ -384,8 +384,8 @@ void PGFindText::SetType(PGFindTextType type) {
 		default:
 			break;
 	}
+	GetControlManager(this)->TriggerResize();
 	this->TriggerResize();
-	this->Invalidate();
 }
 
 void PGFindText::Draw(PGRendererHandle renderer) {

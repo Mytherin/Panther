@@ -33,6 +33,9 @@ public:
 	virtual void SelectionChanged();
 	virtual void TextChanged();
 
+	void LosesFocus(void);
+	void GainsFocus(void);
+
 	std::string GetText();
 	void SetText(std::string text);
 

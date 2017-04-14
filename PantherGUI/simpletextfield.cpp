@@ -15,15 +15,27 @@ SimpleTextField::SimpleTextField(PGWindowHandle window) :
 SimpleTextField::~SimpleTextField() {
 }
 
+void SimpleTextField::LosesFocus(void) {
+	this->Invalidate();
+	BasicTextField::LosesFocus();
+}
+
+void SimpleTextField::GainsFocus(void) {
+	this->Invalidate();
+	BasicTextField::GainsFocus();
+}
+
 void SimpleTextField::Draw(PGRendererHandle renderer) {
 	PGScalar x = X();
 	PGScalar y = Y();
 	PGScalar max_x = x + this->width;
 	PGScalar xoffset = textfile->GetXOffset();
 
+	bool has_focus = this->ControlHasFocus();
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height),
-		valid_input ? PGStyleManager::GetColor(PGColorTextFieldCaret) : PGStyleManager::GetColor(PGColorTextFieldError),
+		valid_input ? 
+		(has_focus ? PGStyleManager::GetColor(PGColorTabControlSelected) : PGStyleManager::GetColor(PGColorTextFieldCaret)) : PGStyleManager::GetColor(PGColorTextFieldError),
 		PGDrawStyleStroke);
 
 	x += 4;
