@@ -43,6 +43,8 @@ public:
 	PGColor background_stroke_color;
 	PGColor text_color;
 
+	std::string tooltip;
+
 	bool fixed_size = true;
 private:
 	std::string text;

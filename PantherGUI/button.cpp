@@ -65,7 +65,9 @@ void Button::MouseLeave() {
 }
 
 void Button::ShowTooltip() {
-	PGLogMessage("Show Tooltip");
+	if (tooltip.size() > 0) {
+		PGCreateTooltip(this->window, PGRect(X(), Y(), this->width, this->height), tooltip);
+	}
 }
 
 void Button::ResolveSize(PGSize new_size) {

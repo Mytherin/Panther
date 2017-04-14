@@ -601,3 +601,5 @@ struct PGMouseRegionContainer : public PGMouseRegion {
 
 	PGMouseRegionContainer(MouseRegionSet* regions, Control* control) : regions(regions), PGMouseRegion(control), currently_contained(false) {}
 };
+
+void PGCreateTooltip(PGWindowHandle, PGRect rect, std::string text);

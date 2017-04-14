@@ -1551,3 +1551,49 @@ void PGLogMessage(std::string text) {
 		break;
 	}
 }
+
+void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
+	if (window->tooltip && !IsWindow(window->tooltip)) {
+		window->tooltip = nullptr;
+	}
+
+	if (window->tooltip && window->tooltip_string == text) {
+		// this tooltip already exists
+		return;
+	}
+
+	if (window->tooltip && IsWindow(window->tooltip)) {
+		CloseWindow(window->tooltip);
+		DestroyWindow(window->tooltip);
+		window->tooltip = nullptr;
+	}
+
+	// create the tooltip.
+	window->tooltip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
+		WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		window->hwnd, NULL, wcex.hInstance, NULL);
+	if (!window->tooltip) {
+		return;
+	}
+
+	window->tooltip_string = text;
+
+	SetWindowPos(window->tooltip, HWND_TOPMOST, 0, 0, 0, 0,
+		SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+	// set up tooltip information 
+	TOOLINFO ti = { 0 };
+	ti.cbSize = sizeof(TOOLINFO);
+	ti.uFlags = TTF_SUBCLASS;
+	ti.hwnd = window->hwnd;
+	ti.hinst = wcex.hInstance;
+	ti.lpszText = (LPSTR)window->tooltip_string.c_str();
+	ti.rect.left = rect.x; ti.rect.right = rect.x + rect.width;
+	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
+
+	//GetClientRect(window->hwnd, &ti.rect);
+
+	// Associate the tooltip with the "tool" window.
+	SendMessage(window->tooltip, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&ti);
+}
