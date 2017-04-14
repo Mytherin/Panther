@@ -328,7 +328,8 @@ void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDra
 void RenderPolygon(PGRendererHandle handle, PGPolygon polygon, PGColor color, double stroke_width = -1);
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width = 2);
 void RenderDashedLine(PGRendererHandle handle, PGLine line, PGColor color, PGScalar line_width, PGScalar spacing_width, int width = 2);
-void RenderImage(PGRendererHandle window, PGBitmapHandle image, int x, int y, PGScalar max_position = INT_MAX);
+void RenderImage(PGRendererHandle window, PGBitmapHandle image, int x, int y);
+void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, PGRect rect);
 // Render text at the specified location with the specified alignment, returns the width of the rendered text
 PGScalar RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGTextAlign);
 PGScalar RenderString(PGRendererHandle renderer, PGFontHandle font, const std::string& text, PGScalar x, PGScalar y, PGTextAlign alignment);

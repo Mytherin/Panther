@@ -30,6 +30,7 @@ public:
 
 	void OnPressed(PGButtonCallback callback, void* data = nullptr) { on_pressed = callback; pressed_data = data; }
 
+	void SetImage(PGBitmapHandle image) { this->image = image; }
 	void SetText(std::string text, PGFontHandle font);
 	std::string GetText() { return text; }
 
@@ -47,6 +48,7 @@ public:
 
 	bool fixed_size = true;
 private:
+	PGBitmapHandle image = nullptr;
 	std::string text;
 	PGFontHandle font = nullptr;
 

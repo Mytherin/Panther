@@ -5,7 +5,7 @@
 
 
 Button::Button(PGWindowHandle window, Control* parent) : 
-	Control(window), fixed_size(true) {
+	Control(window), fixed_size(true), image(nullptr) {
 	this->parent = parent;
 	GetControlManager(this)->RegisterControlForMouseEvents(this);
 
@@ -88,6 +88,9 @@ void Button::Draw(PGRendererHandle renderer) {
 		RenderRectangle(renderer, render_rectangle, background_color, PGDrawStyleFill);
 	}
 	RenderRectangle(renderer, render_rectangle, background_stroke_color, PGDrawStyleStroke);
+	if (image) {
+		RenderImage(renderer, image, PGRect(render_rectangle.x + padding.left, render_rectangle.y + padding.top, render_rectangle.width - padding.left - padding.right, render_rectangle.height - padding.top - padding.bottom));
+	}
 	if (font) {
 		SetTextColor(font, text_color);
 		RenderText(renderer, font, text.c_str(), text.size(), render_rectangle.x + render_rectangle.width / 2, render_rectangle.y + (render_rectangle.height - GetTextHeight(font)) / 2 - 1, PGTextAlignHorizontalCenter);

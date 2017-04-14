@@ -4,8 +4,9 @@
 #include "renderer.h"
 #include "unicode.h"
 
+#include <SkColorFilter.h>
 #include <SkGradientShader.h>
-#include "SkDashPathEffect.h"
+#include <SkDashPathEffect.h>
 
 SkBitmap* PGGetBitmap(PGBitmapHandle handle) {
 	return handle->bitmap;
@@ -313,9 +314,14 @@ void RenderString(PGRendererHandle renderer, PGFontHandle font, const std::strin
 	RenderText(renderer, font, text.c_str(), text.size(), x, y, max_position);
 }
 
-void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y, PGScalar max_position) {
-	renderer->canvas->drawBitmap(*image->bitmap, x, y);
+void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y) {
+	renderer->canvas->drawBitmap(*image->bitmap, x, y, renderer->paint);
 }
+
+void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, PGRect rect) {
+	renderer->canvas->drawBitmapRect(*image->bitmap, CreateSkRect(rect), renderer->paint);
+}
+
 
 PGBitmapHandle CreateBitmapFromSize(PGScalar width, PGScalar height) {
 	PGBitmapHandle handle = new PGBitmap();
@@ -414,7 +420,7 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 					found_initial_character = true;
 					render_start = i;
 				}
-				for(int p = 0; p < offset; p++) {
+				for (int p = 0; p < offset; p++) {
 					cumulative_widths.push_back(current_width - xoffset);
 				}
 			}
@@ -457,7 +463,7 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 					render_start = i;
 					found_initial_character = true;
 				}
-				for(int p = 0; p < offset; p++) {
+				for (int p = 0; p < offset; p++) {
 					cumulative_widths.push_back(current_width - xoffset);
 				}
 			}
@@ -466,7 +472,7 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 		}
 	}
 	if (text_size > xoffset) {
-		cumulative_widths.push_back(text_size - xoffset);	
+		cumulative_widths.push_back(text_size - xoffset);
 	}
 	return cumulative_widths;
 }
@@ -594,9 +600,9 @@ void RenderCaret(PGRendererHandle renderer, PGFontHandle font, PGScalar selectio
 	RenderLine(renderer, PGLine(x + selection_offset, y, x + selection_offset, y + line_height), color);
 }
 
-void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, 
-	PGScalar x, PGScalar y, lng start, lng end, 
-	lng render_start, lng render_end, std::vector<PGScalar>& character_widths, 
+void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len,
+	PGScalar x, PGScalar y, lng start, lng end,
+	lng render_start, lng render_end, std::vector<PGScalar>& character_widths,
 	PGColor selection_color) {
 	// if the entire line is selected and the selection continues no the next line
 	// we render one extra character to indicate the selected newline
@@ -786,11 +792,11 @@ PGSize PGMeasurePopupItem(PGFontHandle font, PGPopupInformation* information, PG
 
 #include "style.h"
 
-void PGRenderPopupItem(PGRendererHandle renderer, PGPoint point, PGFontHandle font,  PGPopupInformation* info, PGSize size, PGPopupMenuFlags flags, PGScalar text_width, PGScalar hotkey_width, PGPopupType type) {
+void PGRenderPopupItem(PGRendererHandle renderer, PGPoint point, PGFontHandle font, PGPopupInformation* info, PGSize size, PGPopupMenuFlags flags, PGScalar text_width, PGScalar hotkey_width, PGPopupType type) {
 
 	PGColor background_color;
 	PGColor text_color;
-	
+
 	if (type == PGPopupTypeMenu) {
 		background_color = PGStyleManager::GetColor(PGColorMainMenuBackground);
 		if (flags & PGPopupMenuHighlighted) {

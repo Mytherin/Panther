@@ -122,10 +122,6 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 	PGScalar initial_position_y = position_y;
 	PGScalar render_width = GetTextfieldWidth();
 	if (minimap) {
-		// fill in the background of the minimap
-		/*render_width = GetMinimapWidth();
-		PGRect rect(position_x_text, position_y, render_width, this->height);
-		RenderRectangle(renderer, rect, PGColor(30, 30, 30), PGDrawStyleFill);*/
 		// start line of the minimap
 		start_line = GetMinimapStartLine();
 	}
