@@ -147,12 +147,10 @@ PGScalar BasicTextField::GetMaxXOffset() {
 
 void BasicTextField::SelectionChanged() {
 	this->RefreshCursors();
-	GetControlManager(this)->SelectionChanged(this);
 	this->Invalidate();
 }
 
 void BasicTextField::TextChanged() {
-	GetControlManager(this)->TextChanged(this);
 	this->Invalidate();
 }
 

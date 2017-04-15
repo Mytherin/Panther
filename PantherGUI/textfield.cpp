@@ -1136,6 +1136,7 @@ void TextField::SelectionChanged() {
 		}
 	}
 	BasicTextField::SelectionChanged();
+	GetControlManager(this)->SelectionChanged(this);
 }
 
 void TextField::OnResize(PGSize old_size, PGSize new_size) {
@@ -1173,6 +1174,7 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 
 void TextField::TextChanged() {
 	BasicTextField::TextChanged();
+	GetControlManager(this)->TextChanged(this);
 }
 
 bool TextField::IsDragging() {
