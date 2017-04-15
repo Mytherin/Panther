@@ -809,38 +809,19 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		PGPopupMenuHandle menu = PGCreatePopupMenu(this->window, this);
 		PGPopupMenuInsertEntry(menu, "Show Unsaved Changes...", nullptr, PGPopupMenuGrayed);
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, "Copy", "Ctrl+C"), [](Control* control, PGPopupInformation* info) {
-			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->CopyText());
-		});
-		PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, "Cut", "Ctrl+X"), nullptr, PGPopupMenuGrayed);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, "Paste", "Ctrl+V"), [](Control* control, PGPopupInformation* info) {
-			std::string clipboard_text = GetClipboardText(control->window);
-			dynamic_cast<TextField*>(control)->textfile->PasteText(clipboard_text);
-		});
+		PGPopupMenuInsertCommand(menu, "Copy", "copy", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
+		PGPopupMenuInsertCommand(menu, "Cut", "cut", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
+		PGPopupMenuInsertCommand(menu, "Paste", "paste", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, "Select Everything", "Ctrl+A"), [](Control* control, PGPopupInformation* info) {
-			dynamic_cast<TextField*>(control)->textfile->SelectEverything();
-		});
+		PGPopupMenuInsertCommand(menu, "Select Everything", "select_all", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuFlags flags = this->textfile->FileInMemory() ? PGPopupMenuGrayed : PGPopupMenuFlagsNone;
-		PGPopupMenuInsertEntry(menu, "Open File in Explorer", [](Control* control, PGPopupInformation* info) {
-			OpenFolderInExplorer(dynamic_cast<TextField*>(control)->textfile->GetFullPath());
-		}, flags);
-		PGPopupMenuInsertEntry(menu, "Open File in Terminal", [](Control* control, PGPopupInformation* info) {
-			OpenFolderInTerminal(dynamic_cast<TextField*>(control)->textfile->GetFullPath());
-		}, flags);
+		PGPopupMenuInsertCommand(menu, "Open File in Explorer", "open_file_in_explorer", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, flags);
+		PGPopupMenuInsertCommand(menu, "Open File in Terminal", "open_file_in_terminal", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, flags);
 		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, "Copy File Name", [](Control* control, PGPopupInformation* info) {
-			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->GetName());
-		}, flags);
-		PGPopupMenuInsertEntry(menu, "Copy Full Path", [](Control* control, PGPopupInformation* info) {
-			SetClipboardText(control->window, dynamic_cast<TextField*>(control)->textfile->GetFullPath());
-		}, flags);
-		PGPopupMenuInsertSeparator(menu);
-		PGPopupMenuInsertEntry(menu, "Reveal in Side Bar", [](Control* control, PGPopupInformation* info) {
-			ControlManager* cm = GetControlManager(control);
-			cm->active_projectexplorer->RevealFile(dynamic_cast<TextField*>(control)->GetTextFile().GetFullPath(), false);
-		}, flags);
+		PGPopupMenuInsertCommand(menu, "Copy File Name", "copy_file_name", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, flags);
+		PGPopupMenuInsertCommand(menu, "Copy Full Path", "copy_file_path", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, flags);
+		PGPopupMenuInsertCommand(menu, "Reveal in Side Bar", "reveal_in_sidebar", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, flags);
 		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
 		return;
 	}
@@ -1256,11 +1237,14 @@ void TextField::GetPositionFromLine(lng line, PGScalar& y) {
 }
 
 void TextField::InitializeKeybindings() {
+	std::map<std::string, PGBitmapHandle>& images = TextField::keybindings_images;
 	std::map<std::string, PGKeyFunction>& noargs = TextField::keybindings_noargs;
+	images["save"] = PGStyleManager::GetImage("data/icons/save.png");
 	noargs["save"] = [](Control* c) {
 		TextField* tf = (TextField*)c;
 		tf->GetTextFile().SaveChanges();
 	};
+	images["save_as"] = PGStyleManager::GetImage("data/icons/saveas.png");
 	noargs["save_as"] = [](Control* c) {
 		TextField* tf = (TextField*)c;
 		std::string filename = ShowSaveFileDialog();
@@ -1296,13 +1280,36 @@ void TextField::InitializeKeybindings() {
 		TextField* tf = (TextField*)c;
 		tf->textfile->AddEmptyLine(PGDirectionRight);
 	};
+	images["increase_indent"] = PGStyleManager::GetImage("data/icons/increaseindent.png");
 	noargs["increase_indent"] = [](Control* c) {
 		TextField* tf = (TextField*)c;
 		tf->textfile->IndentText(PGDirectionRight);
 	};
+	images["decrease_indent"] = PGStyleManager::GetImage("data/icons/decreaseindent.png");
 	noargs["decrease_indent"] = [](Control* c) {
 		TextField* tf = (TextField*)c;
 		tf->textfile->IndentText(PGDirectionLeft);
+	};
+	noargs["open_file_in_explorer"] = [](Control* c) {
+		TextField* t = (TextField*)c;
+		OpenFolderInExplorer(t->textfile->GetFullPath());
+	};
+	noargs["open_file_in_terminal"] = [](Control* c) {
+		TextField* t = (TextField*)c;
+		OpenFolderInTerminal(t->textfile->GetFullPath());
+	};
+	noargs["copy_file_name"] = [](Control* c) {
+		TextField* t = (TextField*)c;
+		SetClipboardText(t->window, t->textfile->GetName());
+	};
+	noargs["copy_file_path"] = [](Control* c) {
+		TextField* t = (TextField*)c;
+		SetClipboardText(t->window, t->textfile->GetFullPath());
+	};
+	noargs["reveal_in_sidebar"] = [](Control* c) {
+		TextField* t = (TextField*)c;
+		ControlManager* cm = GetControlManager(t);
+		cm->active_projectexplorer->RevealFile(t->GetTextFile().GetFullPath(), false);
 	};
 	std::map<std::string, PGKeyFunctionArgs>& args = TextField::keybindings_varargs;
 	// FIXME: duplicate of BasicTextField::insert

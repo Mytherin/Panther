@@ -243,6 +243,7 @@ void BasicTextField::ClearDragging() {
 }
 
 void BasicTextField::InitializeKeybindings() {
+	std::map<std::string, PGBitmapHandle>& images = BasicTextField::keybindings_images;
 	std::map<std::string, PGKeyFunction>& noargs = BasicTextField::keybindings_noargs;
 	noargs["undo"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
@@ -256,6 +257,7 @@ void BasicTextField::InitializeKeybindings() {
 		BasicTextField* t = (BasicTextField*)c;
 		t->textfile->SelectEverything();
 	};
+	images["copy"] = PGStyleManager::GetImage("data/icons/newproject.png");
 	noargs["copy"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
 		std::string text = t->textfile->CopyText();

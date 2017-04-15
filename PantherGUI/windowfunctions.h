@@ -218,6 +218,8 @@ typedef enum {
 	PGButtonEnter
 } PGButton;
 
+std::string PGButtonToString(PGButton);
+
 typedef long long PGTime;
 
 PGTime GetTime();
@@ -434,13 +436,17 @@ struct PGPopupInformation {
 		void* pdata;
 	};
 	PGPopupType type;
+	PGBitmapHandle image = nullptr;
 
-	PGPopupInformation(PGPopupMenuHandle handle) : handle(handle), type(PGPopupTypeEntry), pdata(nullptr) { }
-	PGPopupInformation(PGPopupMenuHandle handle, std::string data) : handle(handle), type(PGPopupTypeEntry), data(data) {}
-	PGPopupInformation(PGPopupMenuHandle handle, double data) : handle(handle), type(PGPopupTypeEntry), ddata(data) {}
-	PGPopupInformation(PGPopupMenuHandle handle, lng data) : handle(handle), type(PGPopupTypeEntry), ldata(data) {}
-	PGPopupInformation(PGPopupMenuHandle handle, void* data) : handle(handle), type(PGPopupTypeEntry), pdata(data) {}
-	PGPopupInformation(PGPopupMenuHandle handle, std::string text, std::string hotkey) : handle(handle), text(text), hotkey(hotkey), data(), type(PGPopupTypeEntry), pdata(nullptr) { }
+	PGPopupInformation(PGPopupMenuHandle handle) : handle(handle), type(PGPopupTypeEntry), pdata(nullptr), image(nullptr) { }
+	PGPopupInformation(PGPopupMenuHandle handle, std::string data) : handle(handle), type(PGPopupTypeEntry), data(data), image(nullptr) {}
+	PGPopupInformation(PGPopupMenuHandle handle, double data) : handle(handle), type(PGPopupTypeEntry), ddata(data), image(nullptr) {}
+	PGPopupInformation(PGPopupMenuHandle handle, lng data) : handle(handle), type(PGPopupTypeEntry), ldata(data), image(nullptr) {}
+	PGPopupInformation(PGPopupMenuHandle handle, void* data) : handle(handle), type(PGPopupTypeEntry), pdata(data), image(nullptr) {}
+	PGPopupInformation(PGPopupMenuHandle handle, std::string text, std::string hotkey) : handle(handle), text(text), hotkey(hotkey), data(), type(PGPopupTypeEntry), pdata(nullptr), image(nullptr) { }
+	PGPopupInformation(PGPopupMenuHandle handle, std::string text, std::string hotkey, PGBitmapHandle image) : handle(handle), text(text), hotkey(hotkey), data(), type(PGPopupTypeEntry), pdata(nullptr), image(image) {}
+	PGPopupInformation(PGPopupMenuHandle handle, std::string text, std::string hotkey, void* data) : handle(handle), text(text), hotkey(hotkey), data(), type(PGPopupTypeEntry), pdata(data), image(nullptr) {}
+	PGPopupInformation(PGPopupMenuHandle handle, std::string text, std::string hotkey, PGBitmapHandle image, void* data) : handle(handle), text(text), hotkey(hotkey), data(), type(PGPopupTypeEntry), pdata(data), image(image) {}
 };
 
 typedef void(*PGPopupCallback)(Control* control, PGPopupInformation* popup);

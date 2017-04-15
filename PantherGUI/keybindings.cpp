@@ -325,3 +325,91 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 		}
 	}
 }
+
+std::string PGButtonToString(PGButton button) {
+	switch (button) {
+		case PGButtonInsert: return "Insert";
+		case PGButtonHome: return "Home";
+		case PGButtonPageUp: return "PageUp";
+		case PGButtonPageDown: return "PageDown";
+		case PGButtonDelete: return "Delete";
+		case PGButtonEnd: return "End";
+		case PGButtonPrintScreen: return "PrintScreen";
+		case PGButtonScrollLock: return "ScrollLock";
+		case PGButtonPauseBreak: return "PauseBreak";
+		case PGButtonEscape: return "Escape";
+		case PGButtonTab: return "Tab";
+		case PGButtonCapsLock: return "CapsLock";
+		case PGButtonF1: return "F1";
+		case PGButtonF2: return "F2";
+		case PGButtonF3: return "F3";
+		case PGButtonF4: return "F4";
+		case PGButtonF5: return "F5";
+		case PGButtonF6: return "F6";
+		case PGButtonF7: return "F7";
+		case PGButtonF8: return "F8";
+		case PGButtonF9: return "F9";
+		case PGButtonF10: return "F10";
+		case PGButtonF11: return "F11";
+		case PGButtonF12: return "F12";
+		case PGButtonNumLock: return "NumLock";
+		case PGButtonDown: return "Down";
+		case PGButtonUp: return "Up";
+		case PGButtonLeft: return "Left";
+		case PGButtonRight: return "Right";
+		case PGButtonBackspace: return "Backspace";
+		case PGButtonEnter: return "Enter";
+		default: return "";
+	}
+}
+
+std::string PGKeyPress::ToString() const {
+	std::string text = "";
+	if (this->modifier & PGModifierCtrl) {
+		text += "Ctrl+";
+	}
+	if (this->modifier & PGModifierShift) {
+		text += "Shift+";
+	}
+	if (this->modifier & PGModifierAlt) {
+		text += "Alt+";
+	}
+	if (this->modifier & PGModifierCmd) {
+		text += "Cmd+";
+	}
+	if (this->character) {
+		text += panther::toupper(std::string(1, this->character));
+	} else {
+		text += PGButtonToString(this->button);
+	}
+	return text;
+}
+
+
+void PGPopupMenuInsertCommand(PGPopupMenuHandle menu,
+	std::string command_text,
+	std::string command_name,
+	std::map<std::string, PGKeyFunction>& keybindings_noargs,
+	std::map<PGKeyPress, PGKeyFunctionCall>& keybindings,
+	std::map<std::string, PGBitmapHandle>& images,
+	PGPopupMenuFlags flags) {
+	// look for the command
+	if (keybindings_noargs.count(command_name) <= 0) return; // command not found
+	PGKeyFunction command = keybindings_noargs[command_name];
+	// look for the hotkey
+	std::string hotkey = "";
+	for (auto it = keybindings.begin(); it != keybindings.end(); it++) {
+		if ((PGKeyFunction) it->second.function == command) {
+			hotkey = it->first.ToString();
+			break;
+		}
+	}
+	PGBitmapHandle image = nullptr;
+	if (images.count(command_name) > 0) {
+		image = images[command_name];
+	}
+
+	PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, command_text, hotkey, image, command), [](Control* control, PGPopupInformation* info) {
+		((PGKeyFunction)info->pdata)(control);
+	}, flags);
+}

@@ -34,6 +34,8 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 		button->fixed_height = TOOLBAR_HEIGHT - button->padding.top - button->padding.bottom;
 		button->SetAnchor(PGAnchorLeft | PGAnchorTop);
 		button->left_anchor = prev_button;
+		button->margin.left = 2;
+		button->margin.right = 2;
 		this->AddControl(button);
 		prev_button = button;
 	}

@@ -819,6 +819,9 @@ void PGRenderPopupItem(PGRendererHandle renderer, PGPoint point, PGFontHandle fo
 	if (type == PGPopupTypeSeparator) {
 		RenderLine(renderer, PGLine(point + PGPoint(15, size.height / 2), point + PGPoint(size.width - 15, size.height / 2)), text_color, 1);
 	} else if (type == PGPopupTypeSubmenu || type == PGPopupTypeEntry) {
+		if (info->image) {
+			RenderImage(renderer, info->image, PGRect(point.x + 2, point.y + 2, 16, 16));
+		}
 		SetTextColor(font, text_color);
 		RenderText(renderer, font, info->text.c_str(), info->text.size(), point.x + 20, point.y);
 		RenderText(renderer, font, info->hotkey.c_str(), info->hotkey.size(), point.x + 40 + text_width, point.y);

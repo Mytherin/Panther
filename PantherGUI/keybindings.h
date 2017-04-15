@@ -5,11 +5,22 @@
 
 #include <map>
 
+class Control;
+struct PGKeyPress;
+struct PGMousePress;
+struct PGKeyFunctionCall;
+struct PGMouseFunctionCall;
+
+typedef void(*PGKeyFunction)(Control*);
+typedef void(*PGKeyFunctionArgs)(Control*, std::map<std::string, std::string>);
+typedef void(*PGMouseFunction)(Control*, PGMouseButton button, PGPoint mouse, lng line, lng character);
+
 #define PG_CONTROL_KEYBINDINGS											\
 static void InitializeKeybindings();									\
 static std::map<std::string, PGKeyFunction> keybindings_noargs;			\
 static std::map<std::string, PGKeyFunctionArgs> keybindings_varargs;	\
 static std::map<std::string, PGMouseFunction> mousebindings_noargs;	    \
+static std::map<std::string, PGBitmapHandle> keybindings_images;		\
 static std::map<PGKeyPress, PGKeyFunctionCall> keybindings;             \
 static std::map<PGMousePress, PGMouseFunctionCall> mousebindings
 
@@ -18,14 +29,17 @@ static std::map<PGMousePress, PGMouseFunctionCall> mousebindings
 std::map<std::string, PGKeyFunction> control::keybindings_noargs;				\
 std::map<std::string, PGKeyFunctionArgs> control::keybindings_varargs;			\
 std::map<std::string, PGMouseFunction> control::mousebindings_noargs;	        \
+std::map<std::string, PGBitmapHandle> control::keybindings_images;				\
 std::map<PGKeyPress, PGKeyFunctionCall> control::keybindings;					\
 std::map<PGMousePress, PGMouseFunctionCall> control::mousebindings
 
-class Control;
-
-typedef void(*PGKeyFunction)(Control*);
-typedef void(*PGKeyFunctionArgs)(Control*, std::map<std::string, std::string>);
-typedef void(*PGMouseFunction)(Control*, PGMouseButton button, PGPoint mouse, lng line, lng character);
+void PGPopupMenuInsertCommand(PGPopupMenuHandle handle, 
+	std::string command_text, 
+	std::string command, 
+	std::map<std::string, PGKeyFunction>& keybindings_noargs, 
+	std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, 
+	std::map<std::string, PGBitmapHandle>& images, 
+	PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
 
 struct PGKeyPress {
 	PGModifier modifier = PGModifierNone;
@@ -35,6 +49,8 @@ struct PGKeyPress {
 	PGKeyPress() : 
 		modifier(PGModifierNone), button(PGButtonNone), character('\0') {
 	}
+
+	std::string ToString() const;
 
 	// comparison function needed for std::map
 	friend bool operator< (const PGKeyPress& lhs, const PGKeyPress& rhs) {
