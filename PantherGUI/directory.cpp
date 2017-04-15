@@ -87,6 +87,12 @@ PGDirectory::~PGDirectory() {
 	directories.clear();
 }
 
+void PGDirectory::CollapseAll() {
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->CollapseAll();
+	}
+	this->expanded = false;
+}
 
 void PGDirectory::Update(bool respect_gitignore) {
 	files.clear();

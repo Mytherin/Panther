@@ -53,6 +53,24 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 		p->SetShowAllFiles(toggled);
 	}, this);
 	this->AddControl(button);
+
+	Button* b = new Button(window, this);
+	b->SetImage(PGStyleManager::GetImage("data\\icons\\collapseall.png"));
+	b->padding = PGPadding(4, 4, 4, 4);
+	b->fixed_width = TOOLBAR_HEIGHT - b->padding.left - b->padding.right;
+	b->fixed_height = TOOLBAR_HEIGHT - b->padding.top - b->padding.bottom;
+	b->SetAnchor(PGAnchorLeft | PGAnchorTop);
+	b->margin.left = 2;
+	b->margin.right = 2;
+	b->left_anchor = button;
+	b->background_color = PGColor(0, 0, 0, 0);
+	b->background_stroke_color = PGColor(0, 0, 0, 0);
+	b->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
+	b->OnPressed([](Button* b, void* data) {
+		ProjectExplorer* p = (ProjectExplorer*)data;
+		p->CollapseAll();
+	}, this);
+	this->AddControl(b);
 }
 
 ProjectExplorer::~ProjectExplorer() {
@@ -82,7 +100,13 @@ void ProjectExplorer::SetShowAllFiles(bool show_all_files) {
 		(*it)->Update(!this->show_all_files);
 	}
 	this->Invalidate();
+}
 
+void ProjectExplorer::CollapseAll() {
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->CollapseAll();
+	}
+	this->Invalidate();
 }
 
 void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected, bool highlighted) {
@@ -255,10 +279,10 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 	}
 
 	y += PROJECT_EXPLORER_PADDING;
-	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height));
+	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height - PROJECT_EXPLORER_PADDING));
 
 	// render the background
-	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+	RenderRectangle(renderer, PGRect(x, y, this->width, this->height - PROJECT_EXPLORER_PADDING), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
 	SetTextColor(font, PGStyleManager::GetColor(PGColorProjectExplorerText));
 	lng offset = scrollbar_offset;
@@ -267,7 +291,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 
 	// render the files in the directory
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		DrawDirectory(renderer, **it, x + FOLDER_IDENT + 2, y, y + this->height, current_offset, offset, current_selection, highlighted_entry);
+		DrawDirectory(renderer, **it, x + FOLDER_IDENT + 2, y, y + this->height - PROJECT_EXPLORER_PADDING, current_offset, offset, current_selection, highlighted_entry);
 	}
 
 	scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);

@@ -40,6 +40,7 @@ public:
 
 	PG_CONTROL_KEYBINDINGS;
 
+	void CollapseAll();
 	void SetShowAllFiles(bool show_all_files);
 
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
