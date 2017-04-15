@@ -31,6 +31,7 @@ PGStyleManager::PGStyleManager() {
 	vs.SetColor(PGColorTextFieldCaret, PGColor(191, 191, 191));
 	vs.SetColor(PGColorTextFieldLineNumber, PGColor(43, 145, 175));
 	vs.SetColor(PGColorTextFieldError, PGColor(252, 64, 54));
+	vs.SetColor(PGColorTextFieldFindMatch, PGColor(101, 51, 6));
 	vs.SetColor(PGColorScrollbarBackground, PGColor(62, 62, 66));
 	vs.SetColor(PGColorScrollbarForeground, PGColor(104, 104, 104));
 	vs.SetColor(PGColorScrollbarHover, PGColor(158, 158, 158));
@@ -79,6 +80,7 @@ PGStyleManager::PGStyleManager() {
 	bp.SetColor(PGColorTextFieldCaret, PGColor(212, 208, 200));
 	bp.SetColor(PGColorTextFieldLineNumber, PGColor(128, 127, 123));
 	bp.SetColor(PGColorTextFieldError, PGColor(252, 64, 54));
+	bp.SetColor(PGColorTextFieldFindMatch, PGColor(128, 64, 32));
 	bp.SetColor(PGColorScrollbarBackground, PGColor(62, 62, 66));
 	bp.SetColor(PGColorScrollbarForeground, PGColor(104, 104, 104));
 	bp.SetColor(PGColorScrollbarHover, PGColor(158, 158, 158));

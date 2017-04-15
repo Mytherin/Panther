@@ -812,11 +812,15 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 		int selected_tab = GetSelectedTab(x);
 		if (selected_tab >= 0) {
 			this->currently_selected_tab = selected_tab;
-			PGPopupMenuInsertEntry(menu, "Close", [](Control* control, PGPopupInformation* info) {
-				TabControl* tb = dynamic_cast<TabControl*>(control);
-				tb->CloseTab(tb->currently_selected_tab);
-				tb->Invalidate();
-			});
+			if (selected_tab == active_tab) {
+				PGPopupMenuInsertCommand(menu, "Close", "close_tab", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images);
+			} else {
+				PGPopupMenuInsertEntry(menu, "Close", [](Control* control, PGPopupInformation* info) {
+					TabControl* tb = dynamic_cast<TabControl*>(control);
+					tb->CloseTab(tb->currently_selected_tab);
+					tb->Invalidate();
+				});
+			}
 			PGPopupMenuInsertEntry(menu, "Close Other Tabs", [](Control* control, PGPopupInformation* info) {
 				TabControl* tb = dynamic_cast<TabControl*>(control);
 				tb->CloseAllTabs(PGDirectionLeft);
@@ -832,33 +836,13 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 				tb->CloseAllTabs(PGDirectionRight);
 			});
 			PGPopupMenuInsertSeparator(menu);
-			if (!this->textfield->GetTextFile().FileInMemory()) {
-				PGPopupMenuInsertEntry(menu, "Open File in File Explorer", [](Control* control, PGPopupInformation* info) {
-					TabControl* tb = dynamic_cast<TabControl*>(control);
-					OpenFolderInExplorer(tb->GetTextField()->GetTextFile().GetFullPath());
-				});
-				PGPopupMenuInsertEntry(menu, "Open File in Terminal", [](Control* control, PGPopupInformation* info) {
-					TabControl* tb = dynamic_cast<TabControl*>(control);
-					OpenFolderInTerminal(tb->GetTextField()->GetTextFile().GetFullPath());
-				});
-				PGPopupMenuInsertSeparator(menu);
-				PGPopupMenuInsertEntry(menu, "Copy File Name", [](Control* control, PGPopupInformation* info) {
-					TabControl* tb = dynamic_cast<TabControl*>(control);
-					SetClipboardText(tb->window, tb->GetTextField()->GetTextFile().GetName());
-				});
-				PGPopupMenuInsertEntry(menu, "Copy Full Path", [](Control* control, PGPopupInformation* info) {
-					TabControl* tb = dynamic_cast<TabControl*>(control);
-					SetClipboardText(tb->window, tb->GetTextField()->GetTextFile().GetFullPath());
-				});
-				PGPopupMenuInsertSeparator(menu);
-			}
 		}
-		PGPopupMenuInsertEntry(menu, "New File", [](Control* control, PGPopupInformation* info) {
-			dynamic_cast<TabControl*>(control)->NewTab();
-			control->Invalidate();
-		});
-		PGPopupMenuInsertEntry(menu, "Open File", [](Control* control, PGPopupInformation* info) {
-		}, PGPopupMenuGrayed);
+		PGPopupMenuInsertCommand(menu, "New File", "new_tab", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images);
+		PGPopupMenuInsertCommand(menu, "Open File", "open_file", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images);
+		if (closed_tabs.size() > 0) {
+			PGPopupMenuInsertSeparator(menu);
+			PGPopupMenuInsertCommand(menu, "Reopen Last Tab", "reopen_last_file", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images);
+		}
 		PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
 	}
 }

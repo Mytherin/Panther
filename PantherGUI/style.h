@@ -18,6 +18,7 @@ enum PGColorType {
 	PGColorTextFieldCaret,
 	PGColorTextFieldLineNumber,
 	PGColorTextFieldError,
+	PGColorTextFieldFindMatch,
 	PGColorScrollbarBackground,
 	PGColorScrollbarForeground,
 	PGColorScrollbarHover,

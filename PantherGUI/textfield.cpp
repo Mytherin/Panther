@@ -329,7 +329,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 							width += MeasureTextWidth(font, " ");
 						}
 						PGRect rect(position_x_text + x_offset, position_y, width, line_height);
-						RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldText), PGDrawStyleStroke);
+						RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldFindMatch), PGDrawStyleFill);
 						if (end < length) {
 							current_match++;
 							continue;
