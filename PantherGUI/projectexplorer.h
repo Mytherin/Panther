@@ -40,6 +40,8 @@ public:
 
 	PG_CONTROL_KEYBINDINGS;
 
+	void SetShowAllFiles(bool show_all_files);
+
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
 private:
 	PGScalar file_render_height = 0;
@@ -49,6 +51,8 @@ private:
 	std::string renaming_path;
 	lng renaming_file = -1;
 	SimpleTextField* textfield = nullptr;
+
+	bool show_all_files = false;
 
 	void RenameFile();
 	void FinishRename(bool success, bool update_selection);

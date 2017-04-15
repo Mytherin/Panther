@@ -24,6 +24,8 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 	image_paths.push_back("data\\icons\\decreasecomment.png");
 	image_paths.push_back("data\\icons\\increaseindent.png");
 	image_paths.push_back("data\\icons\\decreaseindent.png");
+	image_paths.push_back("data\\icons\\showallfiles.png");
+	image_paths.push_back("data\\icons\\collapseall.png");
 	
 	Button* prev_button = nullptr;
 	for (int i = 0; i < image_paths.size(); i++) {
@@ -36,6 +38,9 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 		button->left_anchor = prev_button;
 		button->margin.left = 2;
 		button->margin.right = 2;
+		button->background_color = PGColor(0, 0, 0, 0);
+		button->background_stroke_color = PGColor(0, 0, 0, 0);
+		button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
 		this->AddControl(button);
 		prev_button = button;
 	}

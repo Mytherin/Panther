@@ -2,17 +2,22 @@
 #include "controlmanager.h"
 #include "projectexplorer.h"
 #include "style.h"
+#include "togglebutton.h"
+
+#include "toolbar.h"
+
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ProjectExplorer);
 
 #define FOLDER_IDENT 8
+#define PROJECT_EXPLORER_PADDING 24
 
 ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
-	PGContainer(window), dragging_scrollbar(false), renaming_file(-1), scrollbar_offset(0), file_render_height(0) {
+	PGContainer(window), dragging_scrollbar(false), renaming_file(-1), scrollbar_offset(0), file_render_height(0), show_all_files(true) {
 #ifdef WIN32
-	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI"));
+	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI", !show_all_files));
 #else
-	this->directories.push_back(new PGDirectory("/Users/myth/Programs/re2"));
+	this->directories.push_back(new PGDirectory("/Users/myth/Programs/re2", !show_all_files));
 #endif
 	this->directories.back()->expanded = true;
 	font = PGCreateFont("segoe ui", false, true);
@@ -31,6 +36,23 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 
 	//RenderImage(renderer, bitmap, x, y);
 	//DeleteImage(bitmap);
+
+	ToggleButton* button = new ToggleButton(window, this, show_all_files);
+	button->SetImage(PGStyleManager::GetImage("data\\icons\\showallfiles.png"));
+	button->padding = PGPadding(4, 4, 4, 4);
+	button->fixed_width = TOOLBAR_HEIGHT - button->padding.left - button->padding.right;
+	button->fixed_height = TOOLBAR_HEIGHT - button->padding.top - button->padding.bottom;
+	button->SetAnchor(PGAnchorLeft | PGAnchorTop);
+	button->margin.left = 2;
+	button->margin.right = 2;
+	button->background_color = PGColor(0, 0, 0, 0);
+	button->background_stroke_color = PGColor(0, 0, 0, 0);
+	button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
+	button->OnToggle([](Button* button, bool toggled, void* data) {
+		ProjectExplorer* p = (ProjectExplorer*)data;
+		p->SetShowAllFiles(toggled);
+	}, this);
+	this->AddControl(button);
 }
 
 ProjectExplorer::~ProjectExplorer() {
@@ -45,18 +67,27 @@ void ProjectExplorer::PeriodicRender(void) {
 		auto flags = PGGetFileFlags((*it)->path);
 		if (flags.modification_time != (*it)->last_modified_time) {
 			(*it)->last_modified_time = flags.modification_time;
-			(*it)->Update();
+			(*it)->Update(!this->show_all_files);
 			invalidated = true;
 		}
 	}
 	if (invalidated) {
-		this->Invalidate();	
+		this->Invalidate();
 	}
+}
+
+void ProjectExplorer::SetShowAllFiles(bool show_all_files) {
+	this->show_all_files = show_all_files;
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->Update(!this->show_all_files);
+	}
+	this->Invalidate();
+
 }
 
 void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected, bool highlighted) {
 	if (selected || highlighted) {
-		PGColor color = selected ? PGStyleManager::GetColor(PGColorTextFieldSelection) : PGColor(45,45,45);
+		PGColor color = selected ? PGStyleManager::GetColor(PGColorTextFieldSelection) : PGColor(45, 45, 45);
 		RenderRectangle(renderer, PGRect(x, y, this->width, file_render_height), color, PGDrawStyleFill);
 	}
 	if (!file_image) {
@@ -130,7 +161,7 @@ void ProjectExplorer::FinishRename(bool success, bool update_selection) {
 		std::string new_name = textfield->GetTextFile().GetText();
 		std::string full_name = PGPathJoin(PGFile(renaming_path).Directory(), new_name);
 		rename(renaming_path.c_str(), full_name.c_str());
-		directories[0]->Update();
+		directories[0]->Update(!this->show_all_files);
 		if (update_selection) {
 			PGDirectory* directory; PGFile file;
 			lng filenr = this->FindFile(full_name, &directory, &file);
@@ -223,6 +254,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 		highlighted_entry = -1;
 	}
 
+	y += PROJECT_EXPLORER_PADDING;
 	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height));
 
 	// render the background
@@ -235,7 +267,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 
 	// render the files in the directory
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		DrawDirectory(renderer, **it, x + FOLDER_IDENT + 2, y, y + this->height , current_offset, offset, current_selection, highlighted_entry);
+		DrawDirectory(renderer, **it, x + FOLDER_IDENT + 2, y, y + this->height, current_offset, offset, current_selection, highlighted_entry);
 	}
 
 	scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);
@@ -243,8 +275,13 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 	if (textfield) {
 		textfield->y = (renaming_file - offset) * file_render_height;
 	}
-	PGContainer::Draw(renderer);
+
 	ClearRenderBounds(renderer);
+	y = Y();
+
+	RenderRectangle(renderer, PGRect(x, y, this->width, PROJECT_EXPLORER_PADDING), PGStyleManager::GetColor(PGColorTabControlBackground), PGDrawStyleFill);
+
+	PGContainer::Draw(renderer);
 }
 
 bool ProjectExplorer::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -279,7 +316,7 @@ bool ProjectExplorer::KeyboardCharacter(char character, PGModifier modifier) {
 
 void ProjectExplorer::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
-		SetScrollbarOffset(scrollbar_offset - distance);
+		SetScrollbarOffset(scrollbar_offset - distance / 120.0f);
 		scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);
 		this->Invalidate();
 	}
@@ -287,8 +324,8 @@ void ProjectExplorer::MouseWheel(int x, int y, double hdistance, double distance
 
 void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	PGPoint mouse(x - this->x, y - this->y);
-	if (mouse.x < this->width - SCROLLBAR_SIZE) {
-		lng selected_file = scrollbar_offset + (mouse.y / file_render_height);
+	if (mouse.x < this->width - SCROLLBAR_SIZE && mouse.y > PROJECT_EXPLORER_PADDING) {
+		lng selected_file = scrollbar_offset + ((mouse.y - PROJECT_EXPLORER_PADDING) / file_render_height);
 		if (selected_file < 0 || selected_file >= TotalFiles()) return;
 
 		if (button == PGLeftMouseButton) {
@@ -452,6 +489,7 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 					if (!(t->SwitchToTab(file.path))) {
 						auto ptr = std::shared_ptr<TextFile>(TextFile::OpenTextFile(t->GetTextField(), file.path, error));
 						if (error == PGFileSuccess) {
+							assert(ptr);
 							t->OpenTemporaryFile(ptr);
 						}
 					}
@@ -500,7 +538,7 @@ lng ProjectExplorer::RenderedFiles() {
 	if (file_render_height <= 0) {
 		return 0;
 	}
-	return this->height / file_render_height;
+	return (this->height - PROJECT_EXPLORER_PADDING) / file_render_height;
 }
 
 void ProjectExplorer::OnResize(PGSize old_size, PGSize new_size) {

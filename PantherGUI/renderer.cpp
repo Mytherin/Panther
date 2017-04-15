@@ -319,6 +319,7 @@ void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y) 
 }
 
 void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, PGRect rect) {
+	renderer->paint->setColor(CreateSkColor(PGColor(255, 255, 255, 255)));
 	renderer->canvas->drawBitmapRect(*image->bitmap, CreateSkRect(rect), renderer->paint);
 }
 

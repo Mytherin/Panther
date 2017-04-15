@@ -75,9 +75,9 @@ lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile
 }
 
 
-PGDirectory::PGDirectory(std::string path) :
+PGDirectory::PGDirectory(std::string path, bool respect_gitignore) :
 	path(path), last_modified_time(-1), loaded_files(false), expanded(false) {
-	this->Update();
+	this->Update(respect_gitignore);
 }
 
 PGDirectory::~PGDirectory() {
@@ -88,30 +88,58 @@ PGDirectory::~PGDirectory() {
 }
 
 
-void PGDirectory::Update() {
+void PGDirectory::Update(bool respect_gitignore) {
 	files.clear();
+
 	std::vector<PGFile> dirs;
-	if (PGGetDirectoryFiles(path, dirs, files) == PGDirectorySuccess) {
-		// for each directory, check if it is already present
-		// if it is not we add it
-		for (auto it = dirs.begin(); it != dirs.end(); it++) {
-			std::string path = PGPathJoin(this->path, it->path);
-			bool found = false;
-			for (auto it2 = directories.begin(); it2 != directories.end(); it2++) {
-				if ((*it2)->path == path) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				directories.push_back(new PGDirectory(path));
+	if (respect_gitignore) {
+		std::vector<std::pair<bool, std::string>> _files;
+		PGListFiles(this->path.c_str(), [](void* data, const char* path, bool is_directory) {
+			auto files = (std::vector<std::pair<bool, std::string>>*)data;
+			files->push_back(std::pair<bool, std::string>(is_directory, path));
+		}, &_files, true);
+
+		for (auto it = _files.begin(); it != _files.end(); it++) {
+			if (it->first) {
+				dirs.push_back(PGFile(it->second));
+			} else {
+				files.push_back(PGFile(it->second));
 			}
 		}
-		// FIXME: if directory not found, delete it
-		loaded_files = true;
 	} else {
-		loaded_files = false;
+		if (PGGetDirectoryFiles(path, dirs, files) != PGDirectorySuccess) {
+			loaded_files = false;
+			return;
+		}
 	}
+
+	// for each directory, check if it is already present
+	// if it is not we add it
+	std::vector<PGDirectory*> current_directores = std::vector<PGDirectory*>(directories.begin(), directories.end());
+	for (auto it = dirs.begin(); it != dirs.end(); it++) {
+		std::string path = PGPathJoin(this->path, it->path);
+		bool found = false;
+		for (auto it2 = current_directores.begin(); it2 != current_directores.end(); it2++) {
+			if ((*it2)->path == path) {
+				// if the directory is already known here, update it
+				(*it2)->Update(respect_gitignore);
+				current_directores.erase(it2);
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			// if the directory is not known add it and scan it
+			directories.push_back(new PGDirectory(path, respect_gitignore));
+		}
+	}
+	// remove any directories we did not find (because they have been deleted or removed)
+	for (auto it2 = current_directores.begin(); it2 != current_directores.end(); it2++) {
+		directories.erase(std::find(directories.begin(), directories.end(), *it2));
+		delete *it2;
+	}
+	loaded_files = true;
+	return;
 }
 
 lng PGDirectory::DisplayedFiles() {
@@ -128,10 +156,10 @@ lng PGDirectory::DisplayedFiles() {
 
 void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist) {
 	std::vector<std::string> files;
-	PGListFiles(this->path.c_str(), [](void* data, const char* path) {
+	PGListFiles(this->path.c_str(), [](void* data, const char* path, bool is_directory) {
 		auto files = (std::vector<std::string>*)data;
 		files->push_back(path);
-	}, &files);
+	}, &files, false);
 
 	for (auto it = files.begin(); it != files.end(); it++) {
 		if (whitelist && !PGGlobSetMatches(whitelist, it->c_str())) {

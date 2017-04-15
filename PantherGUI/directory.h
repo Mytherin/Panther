@@ -19,10 +19,10 @@ struct PGDirectory {
 
 	lng FindFile(std::string full_name, PGDirectory** directory, PGFile* file, bool search_only_expanded = false);
 
-	PGDirectory(std::string path);
+	PGDirectory(std::string path, bool respect_gitignore);
 	~PGDirectory();
 	// Returns the number of files displayed by this directory
 	lng DisplayedFiles();
-	void Update();
+	void Update(bool respect_gitignore);
 	void GetFiles(std::vector<PGFile>& files);
 };
