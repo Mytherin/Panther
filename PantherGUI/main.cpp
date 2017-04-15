@@ -629,7 +629,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 						PGPopupCallback callback = popup_menu->callbacks[index];
 						if (callback) {
 							assert(popup_menu->data.size() > (index - BASE_INDEX));
-							callback(popup_menu->control, popup_menu->data[index - BASE_INDEX]);
+							PGPopupInformation* info = popup_menu->data[index - BASE_INDEX];
+							callback(popup_menu->control, info);
 						}
 					}
 					delete popup_menu;
@@ -646,6 +647,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					handle->confirmation_box_data.callback(handle, handle->confirmation_box_data.control, handle->confirmation_box_data.data, response);
 				}
 				break;
+			} else {
+				int index = wParam;
+				if (index != 0) {
+					PGPopupCallback callback = handle->menu->callbacks[index];
+					if (callback) {
+						assert(handle->menu->data.size() > (index - BASE_INDEX));
+						PGPopupInformation* info = handle->menu->data[index - BASE_INDEX];
+						callback(handle->menu->control, info);
+					}
+				}
 			}
 			break;
 		}
@@ -781,12 +792,14 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 
 	auto handle = PGCreateMenu(res, manager);
 	auto file = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Open File", "Ctrl+O"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
+	PGPopupMenuInsertCommand(file, "New File", "new_tab", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images, PGPopupMenuFlagsNone,
+	[](Control* c, PGPopupInformation* info) {
+		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield->GetTabControl());
+	}, handle);
+	PGPopupMenuInsertCommand(file, "Open File", "open_file", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images, PGPopupMenuFlagsNone,
+		[](Control* c, PGPopupInformation* info) {
+		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield->GetTabControl());
+	}, handle);
 	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Open Folder", "Ctrl+Shift+O"), [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});
@@ -800,23 +813,22 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 		assert(0);
 	});
 	PGPopupMenuInsertSeparator(file);
-	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Save", "Ctrl+S"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Save As", "Ctrl+Shift+S"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
+	PGPopupMenuInsertCommand(file, "Save", "save", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, PGPopupMenuFlagsNone,
+		[](Control* c, PGPopupInformation* info) {
+		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield);
+	}, handle);
+	PGPopupMenuInsertCommand(file, "Save As", "save_as", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, PGPopupMenuFlagsNone,
+		[](Control* c, PGPopupInformation* info) {
+		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield);
+	}, handle);
 	PGPopupMenuInsertSeparator(file);
-	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "New Window", "Ctrl+Shift+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Close Window", "Ctrl+Shift+W"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
+	PGPopupMenuInsertCommand(file, "New Window", "new_window", ControlManager::keybindings_noargs, ControlManager::keybindings, ControlManager::keybindings_images, PGPopupMenuFlagsNone, nullptr, handle);
+	PGPopupMenuInsertCommand(file, "Close Window", "close_window", ControlManager::keybindings_noargs, ControlManager::keybindings, ControlManager::keybindings_images, PGPopupMenuFlagsNone, nullptr, handle);
 	PGPopupMenuInsertSeparator(file);
-	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Close File", "Ctrl+W"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
+	PGPopupMenuInsertCommand(file, "Close File", "close_tab", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images, PGPopupMenuFlagsNone,
+		[](Control* c, PGPopupInformation* info) {
+		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield->GetTabControl());
+	}, handle);
 	PGPopupMenuInsertEntry(file, "Close All Files", [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});
@@ -1126,17 +1138,21 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation informa
 	int append_flags = MF_OWNERDRAW;
 	if (flags & PGPopupMenuChecked) append_flags |= MF_CHECKED;
 	if (flags & PGPopupMenuGrayed) append_flags |= MF_GRAYED;
-	int index = handle->index;
-
+	
 	handle->text_size = max(MeasureTextWidth(handle->font, information.text), handle->text_size);
 	handle->hotkey_size = max(MeasureTextWidth(handle->font, information.hotkey), handle->hotkey_size);
 
 	PGPopupInformation* info = new PGPopupInformation(information);
+	if (info->menu_handle == nullptr) {
+		info->menu_handle = handle;
+	}
+
 	info->type = PGPopupTypeEntry;
+	int index = info->menu_handle->index;
 	AppendMenu(handle->menu, append_flags, index, (LPCSTR)info);
-	handle->data.push_back(info);
-	handle->callbacks[index] = callback;
-	handle->index++;
+	info->menu_handle->data.push_back(info);
+	info->menu_handle->callbacks[index] = callback;
+	info->menu_handle->index++;
 }
 
 void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {

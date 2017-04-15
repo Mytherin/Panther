@@ -39,7 +39,9 @@ void PGPopupMenuInsertCommand(PGPopupMenuHandle handle,
 	std::map<std::string, PGKeyFunction>& keybindings_noargs, 
 	std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, 
 	std::map<std::string, PGBitmapHandle>& images, 
-	PGPopupMenuFlags flags = PGPopupMenuFlagsNone);
+	PGPopupMenuFlags flags = PGPopupMenuFlagsNone,
+	PGPopupCallback callback = nullptr,
+	PGPopupMenuHandle main_menu = nullptr);
 
 struct PGKeyPress {
 	PGModifier modifier = PGModifierNone;

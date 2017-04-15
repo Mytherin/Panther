@@ -392,7 +392,9 @@ void PGPopupMenuInsertCommand(PGPopupMenuHandle menu,
 	std::map<std::string, PGKeyFunction>& keybindings_noargs,
 	std::map<PGKeyPress, PGKeyFunctionCall>& keybindings,
 	std::map<std::string, PGBitmapHandle>& images,
-	PGPopupMenuFlags flags) {
+	PGPopupMenuFlags flags,
+	PGPopupCallback callback,
+	PGPopupMenuHandle main_menu) {
 	// look for the command
 	if (keybindings_noargs.count(command_name) <= 0) return; // command not found
 	PGKeyFunction command = keybindings_noargs[command_name];
@@ -408,8 +410,12 @@ void PGPopupMenuInsertCommand(PGPopupMenuHandle menu,
 	if (images.count(command_name) > 0) {
 		image = images[command_name];
 	}
+	auto info = PGPopupInformation(menu, command_text, hotkey, image, command);
+	info.menu_handle = main_menu;
 
-	PGPopupMenuInsertEntry(menu, PGPopupInformation(menu, command_text, hotkey, image, command), [](Control* control, PGPopupInformation* info) {
+	PGPopupMenuInsertEntry(menu, info,
+		callback ? callback : 
+	[](Control* control, PGPopupInformation* info) {
 		((PGKeyFunction)info->pdata)(control);
 	}, flags);
 }
