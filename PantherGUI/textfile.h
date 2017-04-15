@@ -174,6 +174,7 @@ public:
 	PGScalar GetXOffset() { return (PGScalar) xoffset; }
 	void SetXOffset(lng offset) { xoffset = offset; }
 	PGVerticalScroll GetLineOffset();
+	double GetScrollPercentage(PGVerticalScroll scroll);
 	double GetScrollPercentage();
 	void SetLineOffset(lng offset);
 	void SetLineOffset(PGVerticalScroll scroll);

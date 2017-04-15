@@ -43,8 +43,7 @@ Scrollbar::~Scrollbar() {
 	}
 }
 
-void Scrollbar::Draw(PGRendererHandle renderer) {
-	if (!visible) return;
+void Scrollbar::DrawBackground(PGRendererHandle renderer) {
 	PGScalar x = X();
 	PGScalar y = Y();
 	// render the background
@@ -79,11 +78,8 @@ void Scrollbar::Draw(PGRendererHandle renderer) {
 			y + arrow_regions[1].y + SCROLLBAR_ARROW_SIZE);
 		RenderTriangle(renderer, a, b, c, arrowColor, PGDrawStyleFill);
 	}
-	// render the actual scrollbar
 	PGScalar size = ComputeScrollbarSize();
 	PGScalar offset = ComputeScrollbarOffset(size);
-	PGColor scrollbar_color = drag_type == PGScrollbarDragScrollbar ? PGStyleManager::GetColor(PGColorScrollbarDrag) :
-		(mouse_on_scrollbar ? PGStyleManager::GetColor(PGColorScrollbarHover) : PGStyleManager::GetColor(PGColorScrollbarForeground));
 	// update the scrollbar area with the new size
 	if (horizontal) {
 		scrollbar_area.width = (int)size;
@@ -96,8 +92,22 @@ void Scrollbar::Draw(PGRendererHandle renderer) {
 		scrollbar_area.x = SCROLLBAR_SIZE / 4;
 		scrollbar_area.width = SCROLLBAR_SIZE / 2;
 	}
-	RenderRectangle(renderer, 
+}
+
+void Scrollbar::DrawScrollbar(PGRendererHandle renderer) {
+	PGScalar x = X();
+	PGScalar y = Y();
+	// render the actual scrollbar
+	PGColor scrollbar_color = drag_type == PGScrollbarDragScrollbar ? PGStyleManager::GetColor(PGColorScrollbarDrag) :
+		(mouse_on_scrollbar ? PGStyleManager::GetColor(PGColorScrollbarHover) : PGStyleManager::GetColor(PGColorScrollbarForeground));
+	RenderRectangle(renderer,
 		PGRect(x + scrollbar_area.x, y + scrollbar_area.y, scrollbar_area.width, scrollbar_area.height), scrollbar_color, PGDrawStyleFill);
+}
+
+void Scrollbar::Draw(PGRendererHandle renderer) {
+	if (!visible) return;
+	DrawBackground(renderer);
+	DrawScrollbar(renderer);
 	Control::Draw(renderer);
 }
 
@@ -112,7 +122,6 @@ PGScalar Scrollbar::ComputeScrollbarOffset(PGScalar scrollbar_size) {
 	return (arrows ? SCROLLBAR_ARROW_SIZE : 0) +
 		((current_value * ((horizontal ? this->width : this->height) - scrollbar_size - (arrows ? SCROLLBAR_ARROW_SIZE * 2 : 0))) /
 			std::max((lng)1, max_value));
-
 }
 
 void Scrollbar::MouseMove(int x, int y, PGMouseButton buttons) {

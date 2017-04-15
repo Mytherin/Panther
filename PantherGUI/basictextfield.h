@@ -68,6 +68,7 @@ public:
 
 	virtual void SelectionChanged();
 	virtual void TextChanged();
+	virtual void SearchMatchesChanged() { }
 
 	void PasteHistory();
 

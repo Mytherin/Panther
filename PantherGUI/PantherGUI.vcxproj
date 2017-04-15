@@ -200,6 +200,7 @@
     <ClCompile Include="control.cpp" />
     <ClCompile Include="controlmanager.cpp" />
     <ClCompile Include="cursor.cpp" />
+    <ClCompile Include="decoratedscrollbar.cpp" />
     <ClCompile Include="directory.cpp" />
     <ClCompile Include="droptarget.cpp" />
     <ClCompile Include="encoding.cpp" />
@@ -284,6 +285,7 @@
     <ClInclude Include="control.h" />
     <ClInclude Include="controlmanager.h" />
     <ClInclude Include="cursor.h" />
+    <ClInclude Include="decoratedscrollbar.h" />
     <ClInclude Include="directory.h" />
     <ClInclude Include="dirent.h" />
     <ClInclude Include="droptarget.h" />

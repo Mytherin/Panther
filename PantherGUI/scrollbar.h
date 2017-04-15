@@ -23,9 +23,9 @@ typedef void(*PGScrollbarCallback)(Scrollbar*, lng value);
 class Scrollbar : public Control {
 public:
 	Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows);
-	~Scrollbar();
+	virtual ~Scrollbar();
 
-	void Draw(PGRendererHandle renderer);
+	virtual void Draw(PGRendererHandle renderer);
 
 	void MouseMove(int x, int y, PGMouseButton buttons);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
@@ -51,7 +51,10 @@ public:
 	PGScalar top_padding = 0;
 
 	virtual PGControlType GetControlType() { return PGControlTypeScrollbar; }
-private:
+protected:
+	void DrawBackground(PGRendererHandle renderer);
+	void DrawScrollbar(PGRendererHandle renderer);
+
 	PGScrollbarCallback callback;
 	PGScrollbarDragType drag_type = PGScrollbarDragNone;
 

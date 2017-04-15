@@ -8,7 +8,7 @@
 #include "searchbox.h"
 
 #include "notification.h"
-#include "scrollbar.h"
+#include "decoratedscrollbar.h"
 
 #include <map>
 
@@ -79,6 +79,7 @@ public:
 	PGScalar GetMaxXOffset() { return max_xoffset; }
 
 	void TextChanged();
+	void SearchMatchesChanged();
 
 	void IncreaseFontSize(int modifier);
 
@@ -108,7 +109,7 @@ private:
 	double vscroll_speed = 0;
 	double hscroll_left = 0;
 
-	std::unique_ptr<Scrollbar> scrollbar;
+	std::unique_ptr<DecoratedScrollbar> scrollbar;
 	std::unique_ptr<Scrollbar> horizontal_scrollbar;
 
 	PGFontHandle minimap_font;

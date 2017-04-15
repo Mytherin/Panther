@@ -30,7 +30,7 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 }
 
 TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
-	BasicTextField(window, file), display_scrollbar(true), display_minimap(true), 
+	BasicTextField(window, file), display_scrollbar(true), display_minimap(true),
 	display_linenumbers(true), notification(nullptr), tabcontrol(nullptr),
 	vscroll_left(0), hscroll_left(0), vscroll_speed(0), active_searchbox(nullptr),
 	is_minimap_dirty(true) {
@@ -46,7 +46,7 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 	textfield_font = PGCreateFont();
 	minimap_font = PGCreateFont();
 
-	scrollbar = std::unique_ptr<Scrollbar>(new Scrollbar(this, window, false, false));
+	scrollbar = std::unique_ptr<DecoratedScrollbar>(new DecoratedScrollbar(this, window, false, false));
 	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
 	scrollbar->bottom_padding = SCROLLBAR_PADDING;
 	scrollbar->top_padding = SCROLLBAR_PADDING + SCROLLBAR_SIZE;
@@ -173,7 +173,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 					return lhs.BeginCursorPosition() < rhs;
 				});
 				lng selected_entry = entry - cursors.begin();
-				current_cursor = std::max((lng) 0, std::min(selected_entry, (lng) cursors.size() - 1));
+				current_cursor = std::max((lng)0, std::min(selected_entry, (lng)cursors.size() - 1));
 				selected_line = cursors[current_cursor].SelectedPosition().line;
 			}
 
@@ -219,6 +219,59 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 				}
 			}
 			if (!minimap) cumulative_character_widths.push_back(character_widths);
+
+			bool render_search_match = false;
+			// render any search matches
+			while (current_match < matches.size()) {
+				auto match = matches[current_match];
+				if (match > current_range) {
+					// this match is not rendered on this line yet
+					break;
+				}
+				if (match <= current_range) {
+					// this match has already been rendered
+					current_match++;
+					continue;
+				}
+
+				// we should render the match on this line
+				lng start, end;
+				if (match.startpos() < current_range.startpos()) {
+					start = 0;
+				} else {
+					start = match.start_position - current_range.start_position;
+				}
+				if (match.endpos() > current_range.endpos()) {
+					end = length + 1;
+				} else {
+					end = match.end_position - current_range.start_position;
+				}
+				if ((end >= render_start && start <= render_end) && start != end) {
+					PGScalar x_offset = panther::clamped_access<PGScalar>(character_widths, start - render_start);
+					PGScalar width = panther::clamped_access<PGScalar>(character_widths, end - render_start) - x_offset;
+					if (end == length + 1) {
+						width += MeasureTextWidth(font, " ");
+					}
+					PGRect rect(position_x_text + x_offset, position_y, width, line_height);
+					RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldFindMatch), PGDrawStyleFill);
+					render_search_match = true;
+					if (end < length) {
+						current_match++;
+						continue;
+					}
+				} else if (end < render_start) {
+					current_match++;
+					continue;
+				}
+				break;
+			}
+			if (render_search_match) {
+				// search match rendered on this line
+				if (minimap) {
+					// on the minimap, render a small rectangle to the left of the line to indicate that there is a search match on this line
+					RenderRectangle(renderer, PGRect(position_x_text - line_height, position_y, line_height, line_height), PGStyleManager::GetColor(PGColorTextFieldFindMatch), PGDrawStyleFill);
+				}
+			}
 
 			// render the selections and cursors, if there are any on this line
 			while (current_cursor < cursors.size()) {
@@ -295,54 +348,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 				}
 				break;
 			}
-
-			if (!minimap) {
-				// render any search matches
-				while (current_match < matches.size()) {
-					auto match = matches[current_match];
-					if (match > current_range) {
-						// this match is not rendered on this line yet
-						break;
-					}
-					if (match <= current_range) {
-						// this match has already been rendered
-						current_match++;
-						continue;
-					}
-
-					// we should render the match on this line
-					lng start, end;
-					if (match.startpos() < current_range.startpos()) {
-						start = 0;
-					} else {
-						start = match.start_position - current_range.start_position;
-					}
-					if (match.endpos() > current_range.endpos()) {
-						end = length + 1;
-					} else {
-						end = match.end_position - current_range.start_position;
-					}
-					if ((end >= render_start && start <= render_end) && start != end) {
-						PGScalar x_offset = panther::clamped_access<PGScalar>(character_widths, start - render_start);
-						PGScalar width = panther::clamped_access<PGScalar>(character_widths, end - render_start) - x_offset;
-						if (end == length + 1) {
-							width += MeasureTextWidth(font, " ");
-						}
-						PGRect rect(position_x_text + x_offset, position_y, width, line_height);
-						RenderRectangle(renderer, rect, PGStyleManager::GetColor(PGColorTextFieldFindMatch), PGDrawStyleFill);
-						if (end < length) {
-							current_match++;
-							continue;
-						}
-					} else if (end < render_start) {
-						current_match++;
-						continue;
-					}
-
-					break;
-				}
-			}
-
+			
 			// render the actual text
 			if (!minimap) {
 				// for the main textfield we render the actual text later
@@ -350,22 +356,12 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 			}
 
 			lng position = 0;
-
-			// render the background text buffers (for debug purposes)
-			/*
-			if (line_iterator->CurrentBuffer() != buffer) {
-				buffer = line_iterator->CurrentBuffer();
-				toggle = !toggle;
-			}
-			if (toggle && !minimap) {
-				RenderRectangle(renderer, PGRect(position_x_text, position_y, this->width, line_height), PGColor(72, 72, 72, 60), PGDrawStyleFill);
-			}*/
-
+			
 			PGScalar bitmap_x = position_x_text + character_widths[0];
 			PGScalar bitmap_y = position_y;
 			PGSyntax* syntax = current_line.syntax;
 			if (syntax) {
-				for(auto it = syntax->syntax.begin(); it != syntax->syntax.end(); it++) {
+				for (auto it = syntax->syntax.begin(); it != syntax->syntax.end(); it++) {
 					bool squiggles = false;
 					//assert(syntax->end > position);
 					if (it->end <= position) {
@@ -422,7 +418,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 				SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));
 				RenderText(renderer, font, line + position, render_end - position - 1, bitmap_x, bitmap_y);
 			}
-			
+
 			if ((lng)selected_word.size() > 0 && length >= (lng)selected_word.size()) {
 				// FIXME: use strstr here instead of implementing the search ourself
 				for (lng i = 0; i <= length - selected_word.size(); i++) {
@@ -446,7 +442,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 						}
 					}
 				}
-}
+			}
 		}
 next_line:
 		(*line_iterator)++;
@@ -608,7 +604,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 			xoffset = this->textfile->GetXOffset();
 			if (xoffset > max_xoffset) {
 				xoffset = max_xoffset;
-				this->textfile->SetXOffset(max_xoffset); 
+				this->textfile->SetXOffset(max_xoffset);
 			} else if (xoffset < 0) {
 				xoffset = 0;
 				this->textfile->SetXOffset(xoffset);
@@ -945,29 +941,30 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 
 	if (modifier == PGModifierCtrl) {
 		switch (character) {
-		case 'Q': {
-			PGNotification* notification = new PGNotification(window, PGNotificationTypeError, "Unknown error.");
-			notification->SetSize(PGSize(this->width * 0.6f, GetTextHeight(notification->GetFont()) + 10));
-			notification->SetPosition(PGPoint(this->x + this->width * 0.2f, this->y));
+			case 'Q':
+			{
+				PGNotification* notification = new PGNotification(window, PGNotificationTypeError, "Unknown error.");
+				notification->SetSize(PGSize(this->width * 0.6f, GetTextHeight(notification->GetFont()) + 10));
+				notification->SetPosition(PGPoint(this->x + this->width * 0.2f, this->y));
 
-			notification->AddButton([](Control* control, void* data) {
-				dynamic_cast<PGContainer*>(control->parent)->RemoveControl((Control*)data);
-			}, this, notification, "Cancel");
-			dynamic_cast<PGContainer*>(this->parent)->AddControl(notification);
+				notification->AddButton([](Control* control, void* data) {
+					dynamic_cast<PGContainer*>(control->parent)->RemoveControl((Control*)data);
+				}, this, notification, "Cancel");
+				dynamic_cast<PGContainer*>(this->parent)->AddControl(notification);
 
-			return true;
-		}
+				return true;
+			}
 		}
 	}
 	if (modifier == PGModifierCtrlShift) {
 		switch (character) {
-		case 'Q':
-			// toggle word wrap
-			textfile->SetWordWrap(!textfile->GetWordWrap(), GetTextfieldWidth());
-			this->Invalidate();
-			return true;
-		default:
-			break;
+			case 'Q':
+				// toggle word wrap
+				textfile->SetWordWrap(!textfile->GetWordWrap(), GetTextfieldWidth());
+				this->Invalidate();
+				return true;
+			default:
+				break;
 		}
 	}
 	return BasicTextField::KeyboardCharacter(character, modifier);
@@ -1215,7 +1212,7 @@ void TextField::GetPositionFromLineCharacter(lng line, lng character, PGScalar& 
 	if (rendered_lines.front().line > line || rendered_lines.back().line < line) return;
 	lng index = 0;
 	for (index = 1; index < rendered_lines.size(); index++) {
-		if (rendered_lines[index].line > line || 
+		if (rendered_lines[index].line > line ||
 			(rendered_lines[index].line == line && rendered_lines[index].position > character)) {
 			index = index - 1;
 			break;
@@ -1399,29 +1396,29 @@ void TextField::DisplayNotification(PGFileError error) {
 	if (error == PGFileSuccess) return;
 	std::string error_message;
 	switch (error) {
-	case PGFileAccessDenied:
-		error_message = "Access denied.";
-		break;
-	case PGFileNoSpace:
-		error_message = "No space left on device.";
-		break;
-	case PGFileTooLarge:
-		error_message = "File too large.";
-		break;
-	case PGFileReadOnlyFS:
-		error_message = "Read only file system.";
-		break;
-	case PGFileNameTooLong:
-		error_message = "File name too long.";
-		break;
-	case PGFileIOError:
-		error_message = "Unspecified I/O Error.";
-		break;
-	case PGFileEncodingFailure:
-		error_message = "Failed to encode/decode file.";
-		break;
-	default:
-		return;
+		case PGFileAccessDenied:
+			error_message = "Access denied.";
+			break;
+		case PGFileNoSpace:
+			error_message = "No space left on device.";
+			break;
+		case PGFileTooLarge:
+			error_message = "File too large.";
+			break;
+		case PGFileReadOnlyFS:
+			error_message = "Read only file system.";
+			break;
+		case PGFileNameTooLong:
+			error_message = "File name too long.";
+			break;
+		case PGFileIOError:
+			error_message = "Unspecified I/O Error.";
+			break;
+		case PGFileEncodingFailure:
+			error_message = "Failed to encode/decode file.";
+			break;
+		default:
+			return;
 	}
 	CreateNotification(PGNotificationTypeError, error_message);
 
@@ -1436,4 +1433,25 @@ void TextField::DisplayNotification(PGFileError error) {
 void TextField::Invalidate(bool initial_invalidate) {
 	is_minimap_dirty = true;
 	Control::Invalidate(initial_invalidate);
+}
+
+void TextField::SearchMatchesChanged() {
+	lng line, character;
+	scrollbar->center_decorations.clear();
+	double prev_percentage = -1.0;
+	double total_lines = textfile->GetLineCount();
+	for (auto it = textfile->matches.begin(); it != textfile->matches.end(); it++) {
+		PGTextPosition positions[2] = { it->startpos(), it->endpos() };
+		for (int i = 0; i < 2; i++) {
+			PGTextPosition pos = positions[i];
+			pos.buffer->GetCursorFromBufferLocation(pos.position, line, character);
+			double percentage = line / total_lines;
+			lng distance = std::abs((percentage * scrollbar->height) - (prev_percentage * scrollbar->height));
+			if (distance >= 1) {
+				scrollbar->center_decorations.push_back(PGScrollbarDecoration(percentage, PGStyleManager::GetColor(PGColorTextFieldFindMatch)));
+				prev_percentage = percentage;
+			}
+		}
+
+	}
 }

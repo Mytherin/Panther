@@ -1105,9 +1105,8 @@ std::vector<std::string> TextFile::SplitLines(const std::string& text) {
 	return lines;
 }
 
-double TextFile::GetScrollPercentage() {
+double TextFile::GetScrollPercentage(PGVerticalScroll scroll) {
 	if (wordwrap) {
-		PGVerticalScroll scroll = GetLineOffset();
 		auto buffer = GetBuffer(scroll.linenumber);
 
 		double width = buffer->cumulative_width;
@@ -1121,8 +1120,12 @@ double TextFile::GetScrollPercentage() {
 		width += ((double)scroll.inner_line / (double)inner_lines) * buffer->line_lengths[scroll.linenumber - buffer->start_line];
 		return width / total_width;
 	} else {
-		return linecount == 0 ? 0 : (double)yoffset.linenumber / linecount;
+		return linecount == 0 ? 0 : (double)scroll.linenumber / linecount;
 	}
+}
+
+double TextFile::GetScrollPercentage() {
+	return (GetScrollPercentage(GetLineOffset()));
 }
 
 PGVerticalScroll TextFile::GetLineOffset() {
@@ -2824,7 +2827,10 @@ void TextFile::RunTextFinder(std::shared_ptr<Task> task, TextFile* textfile, PGR
 	}*/
 #endif
 	if (regex_handle) PGDeleteRegex(regex_handle);
-	if (textfile->textfield) textfile->textfield->Invalidate();
+	if (textfile->textfield) {
+		textfile->textfield->SearchMatchesChanged();
+		textfile->textfield->Invalidate();
+	}
 }
 
 void TextFile::ClearMatches() {
@@ -2833,6 +2839,7 @@ void TextFile::ClearMatches() {
 	this->Lock(PGWriteLock);
 	matches.clear();
 	this->Unlock(PGWriteLock);
+	textfield->SearchMatchesChanged();
 	textfield->Invalidate();
 }
 
@@ -2899,6 +2906,7 @@ void TextFile::FindAllMatches(PGRegexHandle regex_handle, int context_lines, PGM
 		current_buffer = match.end_buffer;
 		current_position = match.end_position;
 	}
+	textfield->SearchMatchesChanged();
 }
 
 void TextFile::FindAllMatches(PGRegexHandle handle, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap) {
@@ -2907,7 +2915,10 @@ void TextFile::FindAllMatches(PGRegexHandle handle, bool select_first_match, lng
 		Lock(PGWriteLock);
 		matches.clear();
 		Unlock(PGWriteLock);
-		if (textfield) textfield->SelectionChanged();
+		if (textfield) {
+			textfield->SelectionChanged();
+			textfield->SearchMatchesChanged();
+		}
 		return;
 	}
 
@@ -3001,6 +3012,9 @@ bool TextFile::FindMatch(PGRegexHandle handle, PGDirection direction, bool wrap,
 		matches.push_back(match);
 	}
 	Unlock(PGWriteLock);
+	if (textfield) {
+		textfield->SearchMatchesChanged();
+	}
 	return match.start_buffer != nullptr;
 
 	return false;
