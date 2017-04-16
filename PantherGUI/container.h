@@ -57,6 +57,8 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeContainer; }
 protected:
+	bool everything_dirty = false;
+
 	Control* focused_control = nullptr;
 
 	virtual void SetFocusedControl(Control* c);

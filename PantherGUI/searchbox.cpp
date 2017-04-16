@@ -108,7 +108,7 @@ bool SearchBox::KeyboardButton(PGButton button, PGModifier modifier) {
 
 void SearchBox::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	PGPoint mouse(x - this->x, y - this->y);
-	if (button & PGLeftMouseButton && y > field->height) {
+	if (button & PGLeftMouseButton && mouse.y > field->height) {
 		if (!scrollbar->visible || mouse.x < this->width - scrollbar->width) {
 			lng selected_entry = (mouse.y - field->height) / entry_height;
 			if (selected_entry >= 0 && selected_entry < GetRenderedEntries()) {
@@ -122,7 +122,7 @@ void SearchBox::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 
 void SearchBox::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 	PGPoint mouse(x - this->x, y - this->y);
-	if (button & PGLeftMouseButton && y > field->height) {
+	if (button & PGLeftMouseButton && mouse.y > field->y + field->height) {
 		if (!scrollbar->visible || mouse.x < this->width - scrollbar->width) {
 			lng selected_entry = (mouse.y - field->height) / entry_height;
 			if (selected_entry >= 0 && selected_entry < GetRenderedEntries()) {

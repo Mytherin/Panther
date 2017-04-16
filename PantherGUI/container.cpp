@@ -5,7 +5,7 @@
 
 
 PGContainer::PGContainer(PGWindowHandle window) :
-	Control(window) {
+	Control(window), everything_dirty(false) {
 }
 
 PGContainer::~PGContainer() {
@@ -73,10 +73,18 @@ void PGContainer::Draw(PGRendererHandle renderer) {
 	FlushRemoves();
 	if (!dirty) return;
 	for (auto it = controls.begin(); it != controls.end(); it++) {
-		if ((*it)->dirty) {
+		if ((*it)->dirty || everything_dirty) {
+			if (everything_dirty) {
+				(*it)->dirty = true;
+				PGContainer* container = dynamic_cast<PGContainer*>(*it);
+				if (container) {
+					container->everything_dirty = true;
+				}
+			}
 			(*it)->Draw(renderer);
 		}
 	}
+	everything_dirty = false;
 	Control::Draw(renderer);
 }
 
@@ -353,12 +361,9 @@ Control* PGContainer::GetMouseOverControl(int x, int y) {
 }
 
 void PGContainer::Invalidate(bool initial_invalidate) {
-	if (!this->dirty) {
-		FlushRemoves();
-		this->dirty = true;
-		for (auto it = controls.begin(); it != controls.end(); it++) {
-			(*it)->Invalidate();
-		}
+	this->dirty = true;
+	if (initial_invalidate) {
+		everything_dirty = true;
 	}
 	Control::Invalidate(initial_invalidate);
 }

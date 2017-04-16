@@ -9,6 +9,11 @@ public:
 	TextFieldContainer(PGWindowHandle window, std::vector<std::shared_ptr<TextFile>> textfiles);
 
 	virtual PGControlType GetControlType() { return PGControlTypeTextFieldContainer; }
+	
+	virtual void Invalidate(bool initial_invalidate = true) {
+		everything_dirty = true;
+		PGContainer::Invalidate(initial_invalidate);
+	}
 
 	TextField* textfield;
 	TabControl* tabcontrol;
