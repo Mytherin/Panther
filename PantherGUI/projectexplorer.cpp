@@ -24,9 +24,13 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	SetTextFontSize(font, 12);
 
 	scrollbar = new Scrollbar(this, window, false, false);
-	scrollbar->bottom_padding = SCROLLBAR_PADDING;
-	scrollbar->top_padding = SCROLLBAR_PADDING + SCROLLBAR_SIZE;
-	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
+	scrollbar->padding.bottom = SCROLLBAR_PADDING;
+	scrollbar->padding.top = SCROLLBAR_PADDING;
+	scrollbar->margin.top = TOOLBAR_HEIGHT;
+	scrollbar->SetAnchor(PGAnchorRight | PGAnchorTop);
+	scrollbar->fixed_width = SCROLLBAR_SIZE;
+	scrollbar->percentage_height = 1;
+	//scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
 		((ProjectExplorer*)scroll->parent)->SetScrollbarOffset(value);
 	});
@@ -565,12 +569,6 @@ lng ProjectExplorer::RenderedFiles() {
 		return 0;
 	}
 	return (this->height - PROJECT_EXPLORER_PADDING) / file_render_height;
-}
-
-void ProjectExplorer::OnResize(PGSize old_size, PGSize new_size) {
-	scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, SCROLLBAR_PADDING));
-	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, this->height - 2 * SCROLLBAR_PADDING));
-	PGContainer::OnResize(old_size, new_size);
 }
 
 void ProjectExplorer::LosesFocus(void) {

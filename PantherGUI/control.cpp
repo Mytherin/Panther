@@ -187,7 +187,7 @@ void Control::ResolveSize(PGSize new_size) {
 			this->y = bottom_anchor->y - this->height - bottom_anchor->margin.top - this->margin.bottom;
 		} else {
 			if (this->percentage_height > 0) {
-				this->height = new_size.height * percentage_height;
+				this->height = (new_size.height - margin.top - margin.bottom) * percentage_height;
 			}
 			if (anchor & PGAnchorTop) {
 				this->y = margin.top;
@@ -226,7 +226,7 @@ void Control::ResolveSize(PGSize new_size) {
 			this->x = right_anchor->x - this->width - right_anchor->margin.left - this->margin.right;
 		} else {
 			if (this->percentage_width > 0) {
-				this->width = new_size.width * percentage_width;
+				this->width = (new_size.width - margin.left - margin.right) * percentage_width;
 			}
 			if (anchor & PGAnchorLeft) {
 				this->x = margin.left;

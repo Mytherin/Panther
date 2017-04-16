@@ -32,9 +32,13 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bo
 	this->Filter("");
 
 	scrollbar = new Scrollbar(this, window, false, false);
-	scrollbar->bottom_padding = 0;
-	scrollbar->top_padding = SCROLLBAR_SIZE;
-	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, field->height));
+	scrollbar->padding.bottom = SCROLLBAR_PADDING;
+	scrollbar->padding.top = SCROLLBAR_PADDING;
+	scrollbar->SetAnchor(PGAnchorRight | PGAnchorTop);
+	scrollbar->margin.top = field->height + 2;
+	scrollbar->margin.bottom = 2;
+	scrollbar->fixed_width = SCROLLBAR_SIZE;
+	scrollbar->percentage_height = 1;	
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
 		((SearchBox*)scroll->parent)->scroll_position = value;
 	});
@@ -230,8 +234,6 @@ void SearchBox::Draw(PGRendererHandle renderer) {
 		scrollbar->visible = false;
 	} else {
 		scrollbar->visible = true;
-		scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, field->height + SCROLLBAR_PADDING));
-		scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, current_y - initial_y - 2 * SCROLLBAR_PADDING - 7));
 		scrollbar->UpdateValues(0, displayed_entries.size() - GetRenderedEntries(), GetRenderedEntries(), scroll_position);
 	}
 	PGContainer::Draw(renderer);

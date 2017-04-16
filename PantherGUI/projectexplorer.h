@@ -27,9 +27,7 @@ public:
 	void LosesFocus(void);
 
 	bool RevealFile(std::string file, bool search_only_expanded);
-
-	void OnResize(PGSize old_size, PGSize new_size);
-
+	
 	PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
 	void SetScrollbarOffset(double scrollbar_offset);
 

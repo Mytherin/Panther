@@ -47,11 +47,11 @@ void Scrollbar::DrawBackground(PGRendererHandle renderer) {
 	PGScalar x = X();
 	PGScalar y = Y();
 	// render the background
-	if (horizontal) {
-		RenderRectangle(renderer, PGIRect(x - bottom_padding, y, this->width + bottom_padding + top_padding, this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
-	} else {
-		RenderRectangle(renderer, PGIRect(x, y - bottom_padding, this->width, this->height + bottom_padding + top_padding), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
-	}
+	RenderRectangle(renderer, PGIRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
+
+	x += padding.left;
+	y += padding.top;
+
 	if (arrows) {
 		arrow_regions[0] = PGIRect(0, 0, SCROLLBAR_ARROW_SIZE, SCROLLBAR_ARROW_SIZE);
 		arrow_regions[1] = PGIRect(horizontal ? this->width - SCROLLBAR_ARROW_SIZE : 0, horizontal ? 0 : this->height - SCROLLBAR_ARROW_SIZE, SCROLLBAR_ARROW_SIZE, SCROLLBAR_ARROW_SIZE);
@@ -113,14 +113,14 @@ void Scrollbar::Draw(PGRendererHandle renderer) {
 
 PGScalar Scrollbar::ComputeScrollbarSize() {
 	return std::max((PGScalar)SCROLLBAR_MINIMUM_SIZE,
-		(value_size * ((horizontal ? this->width : this->height) - (arrows ? SCROLLBAR_ARROW_SIZE * 2 : 0))) /
+		(value_size * ((horizontal ? Width() : Height()) - (arrows ? SCROLLBAR_ARROW_SIZE * 2 : 0))) /
 		(max_value + value_size));
 }
 
 PGScalar Scrollbar::ComputeScrollbarOffset(PGScalar scrollbar_size) {
 	assert(min_value == 0); // min value other than 0 is not supported right now
-	return (arrows ? SCROLLBAR_ARROW_SIZE : 0) +
-		((current_value * ((horizontal ? this->width : this->height) - scrollbar_size - (arrows ? SCROLLBAR_ARROW_SIZE * 2 : 0))) /
+	return (horizontal ? padding.left : padding.top) + (arrows ? SCROLLBAR_ARROW_SIZE : 0) +
+		((current_value * ((horizontal ? Width() : Height()) - scrollbar_size - (arrows ? SCROLLBAR_ARROW_SIZE * 2 : 0))) /
 			std::max((lng)1, max_value));
 }
 
@@ -161,7 +161,7 @@ void Scrollbar::MouseMove(int x, int y, PGMouseButton buttons) {
 void Scrollbar::SetScrollbarOffset(PGScalar offset) {
 	// compute lineoffset_y from scrollbar offset
 	lng new_value = (lng)((std::max((lng)1, max_value) * (offset - (arrows ? SCROLLBAR_ARROW_SIZE : 0))) /
-		((horizontal ? this->width - scrollbar_area.width : this->height - scrollbar_area.height) - (arrows ? 2 * SCROLLBAR_ARROW_SIZE : 0)));
+		((horizontal ? Width() - scrollbar_area.width : Height() - scrollbar_area.height) - (arrows ? 2 * SCROLLBAR_ARROW_SIZE : 0)));
 	new_value = std::max(min_value, std::min(new_value, max_value));
 	current_value = new_value;
 	if (horizontal) {

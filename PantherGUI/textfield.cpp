@@ -48,14 +48,14 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 
 	scrollbar = std::unique_ptr<DecoratedScrollbar>(new DecoratedScrollbar(this, window, false, false));
 	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
-	scrollbar->bottom_padding = SCROLLBAR_PADDING;
-	scrollbar->top_padding = SCROLLBAR_PADDING + SCROLLBAR_SIZE;
+	scrollbar->padding.bottom = SCROLLBAR_PADDING;
+	scrollbar->padding.top = SCROLLBAR_PADDING;
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
 		((TextField*)scroll->parent)->GetTextFile().SetScrollOffset(value);
 	});
 	horizontal_scrollbar = std::unique_ptr<Scrollbar>(new Scrollbar(this, window, true, false));
-	horizontal_scrollbar->bottom_padding = SCROLLBAR_PADDING;
-	horizontal_scrollbar->top_padding = SCROLLBAR_PADDING + SCROLLBAR_SIZE;
+	horizontal_scrollbar->padding.right = SCROLLBAR_PADDING;
+	horizontal_scrollbar->padding.left = SCROLLBAR_PADDING;
 	horizontal_scrollbar->SetPosition(PGPoint(0, this->height - SCROLLBAR_SIZE));
 	horizontal_scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
 		((TextField*)scroll->parent)->GetTextFile().SetXOffset(value);
@@ -1154,10 +1154,10 @@ void TextField::OnResize(PGSize old_size, PGSize new_size) {
 		minimap_region.width = 0;
 		minimap_region.height = 0;
 	}
-	scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, SCROLLBAR_PADDING));
-	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, this->height - (display_horizontal_scrollbar ? SCROLLBAR_SIZE : 0) - 2 * SCROLLBAR_PADDING));
-	horizontal_scrollbar->SetPosition(PGPoint(SCROLLBAR_PADDING, this->height - horizontal_scrollbar->height));
-	horizontal_scrollbar->SetSize(PGSize(this->width - SCROLLBAR_SIZE - 2 * SCROLLBAR_PADDING, SCROLLBAR_SIZE));
+	scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, 0));
+	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, this->height - (display_horizontal_scrollbar ? SCROLLBAR_SIZE : 0)));
+	horizontal_scrollbar->SetPosition(PGPoint(0, this->height - horizontal_scrollbar->height));
+	horizontal_scrollbar->SetSize(PGSize(this->width - SCROLLBAR_SIZE, SCROLLBAR_SIZE));
 }
 
 PGCursorType TextField::GetCursor(PGPoint mouse) {

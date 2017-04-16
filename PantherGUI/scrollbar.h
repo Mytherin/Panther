@@ -47,11 +47,11 @@ public:
 	bool mouse_on_arrow[2]{ false, false };
 	bool mouse_on_scrollbar = false;
 
-	PGScalar bottom_padding = 0;
-	PGScalar top_padding = 0;
-
 	virtual PGControlType GetControlType() { return PGControlTypeScrollbar; }
 protected:
+	PGScalar Width() { return this->width - padding.left - padding.right; }
+	PGScalar Height() { return this->height - padding.top - padding.bottom; }
+
 	void DrawBackground(PGRendererHandle renderer);
 	void DrawScrollbar(PGRendererHandle renderer);
 
