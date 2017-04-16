@@ -886,7 +886,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 					}
 
 					lng end_position = GetPositionInLine(textfield_font, mouse.x, textline.GetLine(), textline.GetLength());
-					lng start_position = GetPositionInLine(textfield_font, drag_offset, textline.GetLine(), textline.GetLength());
+					lng start_position = GetPositionInLine(textfield_font, drag_offset - text_offset + textfile->GetXOffset(), textline.GetLine(), textline.GetLength());
 					if (start_position != end_position && single_cursor) {
 						single_cursor = false;
 						cursors.clear();
