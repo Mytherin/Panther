@@ -410,7 +410,7 @@ void PGPopupMenuInsertCommand(PGPopupMenuHandle menu,
 	if (images.count(command_name) > 0) {
 		image = images[command_name];
 	}
-	auto info = PGPopupInformation(menu, command_text, hotkey, image, command);
+	auto info = PGPopupInformation(menu, command_text, hotkey, image, (void*) command);
 	info.menu_handle = main_menu;
 
 	PGPopupMenuInsertEntry(menu, info,

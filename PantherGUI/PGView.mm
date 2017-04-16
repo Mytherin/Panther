@@ -8,6 +8,7 @@
 #include "container.h"
 #include "statusbar.h"
 #include "workspace.h"
+#include "toolbar.h"
 
 #include <sys/time.h>
 #include <cctype>
@@ -39,6 +40,7 @@ struct PGWindow {
 	ControlManager* manager;
 	PGRendererHandle renderer;
 	PGWorkspace* workspace;
+	std::string tooltip_text;
 
 	PGWindow(PGWorkspace* workspace) : workspace(workspace) { }
 };
@@ -114,8 +116,9 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 		ControlManager* manager = new ControlManager(handle);
 		manager->SetPosition(PGPoint(0, 0));
-		manager->SetSize(PGSize(1000, 700));
-		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
+		manager->SetSize(PGSize(rect.size.width, rect.size.height));
+		manager->percentage_height = 1;
+		manager->percentage_width = 1;
 		handle->manager = manager;
 		
 		ProjectExplorer* explorer = new ProjectExplorer(handle);
@@ -123,32 +126,38 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		explorer->fixed_width = 200;
 		explorer->percentage_height = 1;
 		explorer->minimum_width = 50;
-		
+
+		PGToolbar* toolbar = new PGToolbar(handle);
+		toolbar->SetAnchor(PGAnchorLeft | PGAnchorTop);
+		toolbar->percentage_width = 1;
+		toolbar->fixed_height = TOOLBAR_HEIGHT;
+
 		StatusBar* bar = new StatusBar(handle);
 		bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 		bar->percentage_width = 1;
 		bar->fixed_height = STATUSBAR_HEIGHT;
-		explorer->vertical_anchor = bar;
+		explorer->bottom_anchor = bar;
+		explorer->top_anchor = toolbar;
 
 		Splitter *splitter = new Splitter(handle, true);
 		splitter->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-		splitter->horizontal_anchor = explorer;
-		splitter->vertical_anchor = bar;
+		splitter->left_anchor = explorer;
+		splitter->bottom_anchor = bar;
+		splitter->top_anchor = toolbar;
 		splitter->fixed_width = 4;
 		splitter->percentage_height = 1;
 
 		manager->AddControl(bar);
 		manager->AddControl(explorer);
 		manager->AddControl(splitter);
+		manager->AddControl(toolbar);
 
+		manager->toolbar = toolbar;
 		manager->statusbar = bar;
 		manager->active_projectexplorer = explorer;
 		manager->splitter = splitter;
 
 		manager->SetTextFieldLayout(1, 1, textfiles);
-		manager->SetPosition(PGPoint(0, 0));
-		manager->SetSize(PGSize(rect.size.width, rect.size.height));
-		manager->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop | PGAnchorBottom);
 	}
 	return self;
 }
@@ -910,6 +919,18 @@ PGIOError PGRemoveFile(std::string source) {
 
 void PGLogMessage(std::string text) {
 	NSLog(@"%s", text.c_str());
+}
+
+
+void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
+	if (window->tooltip_text == text) {
+		return;
+	}
+	window->tooltip_text = text;
+	[window->view addToolTipRect:NSMakeRect(rect.x, rect.y, rect.width, rect.height)
+				owner:[NSString stringWithUTF8String:text.c_str()]
+				userData:nullptr];
+	assert(0); // tooltips not correctly displayed?
 }
 
 #include <dirent.h>

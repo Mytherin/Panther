@@ -42,7 +42,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	//DeleteImage(bitmap);
 
 	ToggleButton* button = new ToggleButton(window, this, show_all_files);
-	button->SetImage(PGStyleManager::GetImage("data\\icons\\showallfiles.png"));
+	button->SetImage(PGStyleManager::GetImage("data/icons/showallfiles.png"));
 	button->padding = PGPadding(4, 4, 4, 4);
 	button->fixed_width = TOOLBAR_HEIGHT - button->padding.left - button->padding.right;
 	button->fixed_height = TOOLBAR_HEIGHT - button->padding.top - button->padding.bottom;
@@ -60,7 +60,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	this->AddControl(button);
 
 	Button* b = new Button(window, this);
-	b->SetImage(PGStyleManager::GetImage("data\\icons\\collapseall.png"));
+	b->SetImage(PGStyleManager::GetImage("data/icons/collapseall.png"));
 	b->padding = PGPadding(4, 4, 4, 4);
 	b->fixed_width = TOOLBAR_HEIGHT - b->padding.left - b->padding.right;
 	b->fixed_height = TOOLBAR_HEIGHT - b->padding.top - b->padding.bottom;

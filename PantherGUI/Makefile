@@ -45,6 +45,7 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/control.o \
 		 $(OBJDIR)/controlmanager.o \
 		 $(OBJDIR)/cursor.o \
+		 $(OBJDIR)/decoratedscrollbar.o \
 		 $(OBJDIR)/directory.o \
 		 $(OBJDIR)/encoding.o \
 		 $(OBJDIR)/findresults.o \
@@ -82,6 +83,7 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/textposition.o \
 		 $(OBJDIR)/thread.o \
 		 $(OBJDIR)/togglebutton.o \
+		 $(OBJDIR)/toolbar.o \
 		 $(OBJDIR)/unicode.o \
 		 $(OBJDIR)/utils.o \
 		 $(OBJDIR)/windowfunctions.o \
