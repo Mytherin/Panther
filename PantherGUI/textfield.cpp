@@ -160,6 +160,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 		rendered_lines.clear();
 	}
 	std::vector<std::vector<PGScalar>> cumulative_character_widths;
+	std::vector<std::pair<lng, lng>> render_start_end;
 
 	while ((current_line = line_iterator->GetLine()).IsValid()) {
 		if (position_y > initial_position_y + this->height) break;
@@ -214,11 +215,17 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 					render_end = 1;
 				} else {
 					// the entire line is out of bounds, nothing to render
-					if (!minimap) cumulative_character_widths.push_back(character_widths);
+					if (!minimap) {
+						cumulative_character_widths.push_back(character_widths);
+						render_start_end.push_back(std::pair<lng, lng>(-1, -1));
+					}
 					goto next_line;
 				}
 			}
-			if (!minimap) cumulative_character_widths.push_back(character_widths);
+			if (!minimap) {
+				cumulative_character_widths.push_back(character_widths);
+				render_start_end.push_back(std::pair<lng, lng>(render_start, render_end));
+			}
 
 			bool render_search_match = false;
 			// render any search matches
@@ -449,15 +456,15 @@ next_line:
 		position_y += line_height;
 	}
 	if (!minimap) {
+		SetRenderBounds(renderer, PGRect(position_x_text, y, textfield_region.width, this->height));
 		position_y = initial_position_y;
 		lng index = 0;
 		for (auto it2 = rendered_lines.begin(); it2 != rendered_lines.end(); it2++) {
 			char* line = it2->tline.GetLine();
 			lng length = it2->tline.GetLength();
 
-			lng render_start = 0, render_end = length;
+			lng render_start = render_start_end[index].first, render_end = render_start_end[index].second;
 			auto character_widths = cumulative_character_widths[index++];
-			render_end = render_start + character_widths.size();
 			if (character_widths.size() == 0) {
 				position_y += line_height;
 				continue;
@@ -552,6 +559,7 @@ next_line:
 			}
 			position_y += line_height;
 		}
+		ClearRenderBounds(renderer);
 	}
 
 	if (!minimap) {

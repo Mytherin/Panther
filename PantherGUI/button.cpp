@@ -87,7 +87,7 @@ void Button::Draw(PGRendererHandle renderer) {
 	} else {
 		RenderRectangle(renderer, render_rectangle, background_color, PGDrawStyleFill);
 	}
-	RenderRectangle(renderer, render_rectangle, background_stroke_color, PGDrawStyleStroke);
+	RenderRectangle(renderer, render_rectangle, background_stroke_color, PGDrawStyleStroke, 1.0f);
 	if (image) {
 		RenderImage(renderer, image, PGRect(render_rectangle.x + padding.left, render_rectangle.y + padding.top, render_rectangle.width - padding.left - padding.right, render_rectangle.height - padding.top - padding.bottom));
 	}
