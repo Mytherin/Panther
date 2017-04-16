@@ -162,7 +162,7 @@ lng PGDirectory::DisplayedFiles() {
 
 void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist) {
 	std::vector<std::string> files;
-	PGListFiles(this->path.c_str(), [](void* data, const char* path, bool is_directory) {
+	PGListAllFiles(this->path.c_str(), [](void* data, const char* path, bool is_directory) {
 		auto files = (std::vector<std::string>*)data;
 		files->push_back(path);
 	}, &files, false);

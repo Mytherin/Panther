@@ -194,7 +194,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				entry.text = it->file->GetFullPath();
 				entry.data = it->file;
 				blacklisted_entries.insert(entry.text);
-				entry.basescore = it->file->GetLanguage() == nullptr ? 0 : 0.2;
+				entry.basescore = 0;
 				entry.multiplier = 1.5;
 				entries.push_back(entry);
 			}
@@ -231,7 +231,8 @@ void PGGotoAnything::SetType(PGGotoType type) {
 						bool ignored = whitelisted.find(it2->path) == whitelisted.end();
 						entry.text = it2->path;
 						entry.data = nullptr;
-						entry.basescore = PGLanguageManager::GetLanguage(it2->Extension()) == nullptr ? 0 : 0.2;
+						entry.basescore = 0;
+						//entry.basescore = PGLanguageManager::GetLanguage(it2->Extension()) == nullptr ? 0 : 0.2;
 						entry.multiplier = 1;
 						if (ignored) {
 							entry.basescore = -1;

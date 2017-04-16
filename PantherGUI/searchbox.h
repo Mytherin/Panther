@@ -21,11 +21,8 @@ struct SearchEntry {
 struct SearchRank {
 	lng index;
 	double score;
-	lng pos;
-	lng subpos;
-	lng text_pos;
 
-	SearchRank(lng index, double score) : index(index), score(score), pos(-1), text_pos(-1) {}
+	SearchRank(lng index, double score) : index(index), score(score) {}
 
 	friend bool operator<(const SearchRank& l, const SearchRank& r) {
 		return l.score < r.score;
@@ -87,7 +84,7 @@ private:
 	PGScalar entry_height = 0;
 	lng scroll_position = 0;
 	lng selected_entry;
-	lng filter_size;
+	std::string filter;
 	SearchBoxRenderFunction render_function = nullptr;
 	SearchBoxSelectionChangedFunction selection_changed = nullptr;
 	void* selection_changed_data = nullptr;

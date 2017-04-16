@@ -8,7 +8,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(SearchBox);
 
 SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles) :
-	PGContainer(window), selected_entry(-1), entries(entries), filter_size(0),
+	PGContainer(window), selected_entry(-1), entries(entries),
 	scrollbar(nullptr), scroll_position(0), render_subtitles(render_subtitles),
 	close_function(nullptr), close_data(nullptr) {
 	font = PGCreateFont("myriad", false, true);
@@ -146,29 +146,63 @@ void SearchBox::MouseWheel(int x, int y, double hdistance, double distance, PGMo
 	}
 }
 
+void RenderEntry(PGRendererHandle renderer, PGFontHandle font, std::string text, std::string filter, PGScalar x, PGScalar y) {
+	std::vector<size_t> bold_positions;
+	std::string search_text = panther::tolower(text);
 
-void RenderTextPartialBold(PGRendererHandle renderer, PGFontHandle font, std::string text, lng start_bold, lng bold_size, PGScalar x, PGScalar y) {
+	size_t pos = search_text.find(filter);
+	if (pos != std::string::npos) {
+		for (size_t i = 0; i < filter.size(); i++) {
+			bold_positions.push_back(pos + i);
+		}
+	} else {
+		size_t prev_offset = 0;
+		for (size_t i = 0; i < filter.size(); i++) {
+			size_t offset = search_text.find(filter[i], prev_offset);
+			if (offset == std::string::npos) {
+				if (prev_offset == 0) {
+					continue;
+				} else {
+					offset = search_text.find(filter[i], 0);
+					if (offset == std::string::npos) {
+						continue;
+					}
+				}
+			}
+			bold_positions.push_back(offset);
+			prev_offset = offset;
+		}
+		std::sort(bold_positions.begin(), bold_positions.end());
+	}
 	PGScalar current_position = 0;
 	lng current_character = 0;
-	assert(bold_size == 0 || (start_bold == 0 || start_bold < (lng) text.size()));
-	if (start_bold > 0 && text.size() > 0) {
-		SetTextStyle(font, PGTextStyleNormal);
-		lng length = std::min(start_bold, (lng) text.size() - 1);
-		RenderText(renderer, font, text.c_str(), length, x + current_position, y);
-		current_position += MeasureTextWidth(font, text.c_str(), length);
-		current_character += length;
-	}
-	if (bold_size > 0 && start_bold >= 0) {
+	for (size_t i = 0; i < bold_positions.size(); i++) {
+		size_t bold = bold_positions[i];
+		if (bold < current_character) continue;
+		if (bold > current_character) {
+			SetTextStyle(font, PGTextStyleNormal);
+			RenderText(renderer, font, text.c_str() + current_character, bold - current_character, x + current_position, y);
+			current_position += MeasureTextWidth(font, text.c_str() + current_character, bold - current_character);
+		}
+		current_character = bold;
+		while (i + 1 < bold_positions.size()) {
+			if (bold_positions[i + 1] == bold + 1) {
+				i++;
+				bold = bold_positions[i];
+			} else {
+				break;
+			}
+		}
+		bold++;
 		SetTextStyle(font, PGTextStyleBold);
-		RenderText(renderer, font, text.c_str() + current_character, bold_size, x + current_position, y);
-		current_position += MeasureTextWidth(font, text.c_str() + current_character, bold_size);
-		current_character += bold_size;
+		RenderText(renderer, font, text.c_str() + current_character, bold - current_character, x + current_position, y);
+		current_position += MeasureTextWidth(font, text.c_str() + current_character, bold - current_character);
+		current_character = bold;
 	}
-	if (current_character < text.size()) {
+	if (text.size() != current_character) {
 		SetTextStyle(font, PGTextStyleNormal);
 		RenderText(renderer, font, text.c_str() + current_character, text.size() - current_character, x + current_position, y);
 	}
-
 }
 
 void SearchBox::Draw(PGRendererHandle renderer) {
@@ -218,11 +252,12 @@ void SearchBox::Draw(PGRendererHandle renderer) {
 		}
 		// render the text
 		SetTextFontSize(font, 13);
-		RenderTextPartialBold(renderer, font, entry.display_name, rank.pos, filter_size, current_x + 5, current_y + 1);
+		RenderEntry(renderer, font, entry.display_name, filter, current_x + 5, current_y + 1);
 		current_y += GetTextHeight(font) + 1;
 		if (render_subtitles) {
 			SetTextFontSize(font, 11);
-			RenderTextPartialBold(renderer, font, entry.display_subtitle, rank.subpos, filter_size, current_x + 5, current_y + 2);
+			RenderEntry(renderer, font, entry.display_subtitle, filter, current_x + 5, current_y + 2);
+			//RenderTextPartialBold(renderer, font, entry.display_subtitle, rank.subpos, filter_size, current_x + 5, current_y + 2);
 			current_y += GetTextHeight(font) + 1;
 		}
 		current_y += 3;
@@ -271,18 +306,49 @@ void SearchBox::Close(bool success) {
 	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);*/
 }
 
+size_t StringDistance(std::string s, std::string t) {
+	size_t similarity = t.size() + s.size();
+	size_t pos = utf8_tolower(t).find(s);
+	if (pos != std::string::npos) {
+		return pos;
+	}
+	similarity = t.size();
+	size_t prev_offset = 0;
+	size_t max_score = t.size() + s.size();
+	size_t found_characters = 0;
+	for (size_t i = 0; i < s.size(); i++) {
+		size_t offset = t.find(s[i]);
+		if (offset == std::string::npos) {
+			similarity += s.size() / 2;
+			continue;
+		}
+		found_characters++;
+		t.erase(t.begin() + offset);
+		if (offset != prev_offset) {
+			similarity += panther::abs((lng)offset - (lng)prev_offset) / 2;
+		}
+		prev_offset = offset;
+	}
+	if (similarity >= max_score || found_characters == 0 || found_characters < s.size() / 2) {
+		return std::string::npos;
+	}
+	return similarity;
+}
+
 void SearchBox::Filter(std::string filter) {
 	filter = utf8_tolower(filter);
 	displayed_entries.clear();
-	filter_size = filter.size();
+	this->filter = filter;
 
 	for (lng index = 0; index < entries.size(); index++) {
 		SearchEntry& entry = entries[index];
-		size_t pos = utf8_tolower(entry.display_name).find(filter);
-		size_t subpos = utf8_tolower(entry.display_subtitle).find(filter);
-		size_t textpos = utf8_tolower(entry.text).find(filter);
-		if (pos != std::string::npos || subpos != std::string::npos || textpos != std::string::npos) {
-			size_t score_pos = std::min(textpos, pos);
+		size_t cost1 = StringDistance(filter, utf8_tolower(entry.display_name));
+		size_t cost2 = StringDistance(filter, utf8_tolower(entry.display_subtitle));
+		size_t cost3 = StringDistance(filter, utf8_tolower(entry.text));
+		if (cost1 != std::string::npos || cost2 != std::string::npos || cost3 != std::string::npos) {
+			cost2 = cost2 == std::string::npos ? cost2 : cost2 + entry.display_subtitle.size();
+			cost3 = cost3 == std::string::npos ? cost3 : cost3 + 2 * entry.text.size();
+			size_t score_pos = std::min(std::min(cost1, cost2), cost3);
 			double score = ((score_pos == 0 ? 1.1 : 1.0 / score_pos) * entry.multiplier) + entry.basescore;
 			//displayed_entries.push_back(SearchRank(index, score));
 			if (displayed_entries.size() >= SEARCHBOX_MAX_ENTRIES) {
@@ -294,14 +360,11 @@ void SearchBox::Filter(std::string filter) {
 				}
 			}
 			SearchRank rank = SearchRank(index, score);
-			rank.pos = pos;
-			rank.subpos = subpos;
-			rank.text_pos = textpos;
 			// insertion sort
 			displayed_entries.insert(
 				std::upper_bound(displayed_entries.begin(), displayed_entries.end(), rank),
 				rank
-				);
+			);
 		}
 	}
 	std::reverse(displayed_entries.begin(), displayed_entries.end());
