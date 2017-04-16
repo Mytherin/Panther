@@ -919,6 +919,9 @@ void TextFile::InsertLines(std::string text, size_t i) {
 	Cursor& cursor = cursors[i];
 	assert(cursor.SelectionIsEmpty());
 	assert(text.size() > 0);
+#ifdef PANTHER_DEBUG
+	assert(std::find(text.begin(), text.end(), '\r') == text.end());
+#endif
 	auto lines = SplitLines(text);
 	lng added_lines = lines.size() - 1;
 	// the first line gets added to the current line we are on

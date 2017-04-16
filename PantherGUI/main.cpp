@@ -972,6 +972,7 @@ void SetWindowTitle(PGWindowHandle window, std::string title) {
 
 void SetClipboardTextOS(PGWindowHandle window, std::string text) {
 	if (text.size() == 0) return;
+	panther::replace(text, "\n", "\r\n");
 	if (OpenClipboard(window->hwnd)) {
 		char* result = nullptr;
 		size_t length = PGConvertText(text, &result, PGEncodingUTF8, PGEncodingUTF16Platform);
@@ -1009,6 +1010,7 @@ std::string GetClipboardText(PGWindowHandle window) {
 		text = std::string(result, length);
 		free(result);
 		assert(utf8_strlen(text) >= 0);
+		panther::replace(text, "\r\n", "\n");
 		return text;
 	}
 	return nullptr;
