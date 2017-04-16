@@ -31,6 +31,8 @@ TextFile::TextFile(BasicTextField* textfield) :
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
+	this->indentation = PGIndentionTabs;
+	this->tabwidth = 4;
 	default_font = PGCreateFont();
 	SetTextFontSize(default_font, 10);
 	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
