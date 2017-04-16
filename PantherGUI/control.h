@@ -124,7 +124,6 @@ public:
 
 	PGWindowHandle window;
 	bool HasFocus();
-
 protected:
 	bool PressKey(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, PGButton button, PGModifier modifier);
 	bool PressCharacter(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, char character, PGModifier modifier);

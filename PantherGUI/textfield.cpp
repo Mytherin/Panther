@@ -865,9 +865,8 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				auto start_scroll = textfile->GetVerticalScroll(end_pos.line, end_pos.position);
 				textfile->ClearCursors();
 				bool backwards = end_pos.line > line || (end_pos.line == line && end_pos.position > character);
-				bool first = true;
 				PGScalar start_x;
-				bool single_cursor = false;
+				bool single_cursor = true;
 				auto iterator = textfile->GetScrollIterator(this, start_scroll);
 				while (true) {
 					TextLine textline = iterator->GetLine();
@@ -876,34 +875,24 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 					lng iterator_line = iterator->GetCurrentLineNumber();
 					lng iterator_character = iterator->GetCurrentCharacterNumber();
 
-					if (!first) {
-						if (backwards) {
-							if (iterator_line < line ||
-								(iterator_line == line && iterator_character + textline.GetLength() < character))
-								break;
-						} else {
-							if (iterator_line > line ||
-								(iterator_line == line && iterator_character > character))
-								break;
-						}
+					if (backwards) {
+						if (iterator_line < line ||
+							(iterator_line == line && iterator_character + textline.GetLength() < character))
+							break;
+					} else {
+						if (iterator_line > line ||
+							(iterator_line == line && iterator_character > character))
+							break;
 					}
 
 					lng end_position = GetPositionInLine(textfield_font, mouse.x, textline.GetLine(), textline.GetLength());
-					lng start_position;
-					if (first) {
-						start_position = end_pos.position - iterator_character;
-						single_cursor = start_position == end_position;
-						start_x = MeasureTextWidth(textfield_font, textline.GetLine(), start_position);
-						first = false;
-					} else {
-						start_position = GetPositionInLine(textfield_font, start_x, textline.GetLine(), textline.GetLength());
+					lng start_position = GetPositionInLine(textfield_font, drag_offset, textline.GetLine(), textline.GetLength());
+					if (start_position != end_position && single_cursor) {
+						single_cursor = false;
+						cursors.clear();
 					}
 
 					if (single_cursor || start_position != end_position) {
-						if (single_cursor) {
-							start_position = end_position;
-						}
-
 						Cursor cursor = Cursor(textfile.get(), iterator_line, iterator_character + end_position, iterator_line, iterator_character + start_position);
 						if (backwards) {
 							cursors.insert(cursors.begin(), cursor);
