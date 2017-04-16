@@ -1577,12 +1577,7 @@ void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
 		// this tooltip already exists
 		return;
 	}
-
-	if (window->tooltip && IsWindow(window->tooltip)) {
-		DestroyWindow(window->tooltip);
-		window->tooltip = nullptr;
-	}
-
+	
 	// create the tooltip.
 	window->tooltip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
 		WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -1606,8 +1601,6 @@ void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
 	ti.lpszText = (LPSTR)window->tooltip_string.c_str();
 	ti.rect.left = rect.x; ti.rect.right = rect.x + rect.width;
 	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
-
-	//GetClientRect(window->hwnd, &ti.rect);
 
 	// Associate the tooltip with the "tool" window.
 	SendMessage(window->tooltip, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&ti);

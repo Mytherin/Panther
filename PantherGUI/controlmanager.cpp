@@ -542,7 +542,7 @@ void PGSingleMouseRegion::MouseMove(PGPoint mouse) {
 				this->enter_time = GetTime();
 				c->MouseEnter();
 			} else {
-				if ((GetTime() - this->enter_time) > 500) {
+				if ((GetTime() - this->enter_time) > 250) {
 					c->ShowTooltip();
 				}
 			}

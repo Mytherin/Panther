@@ -48,6 +48,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	button->background_color = PGColor(0, 0, 0, 0);
 	button->background_stroke_color = PGColor(0, 0, 0, 0);
 	button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
+	button->tooltip = "Show All Files";
 	button->OnToggle([](Button* button, bool toggled, void* data) {
 		ProjectExplorer* p = (ProjectExplorer*)data;
 		p->SetShowAllFiles(toggled);
@@ -66,6 +67,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	b->background_color = PGColor(0, 0, 0, 0);
 	b->background_stroke_color = PGColor(0, 0, 0, 0);
 	b->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
+	b->tooltip = "Collapse All";
 	b->OnPressed([](Button* b, void* data) {
 		ProjectExplorer* p = (ProjectExplorer*)data;
 		p->CollapseAll();
