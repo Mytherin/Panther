@@ -132,9 +132,7 @@ protected:
 	Tab OpenTab(std::shared_ptr<TextFile> textfile);
 
 	PGScalar MeasureTabWidth(Tab& tab);
-
-	FileManager file_manager;
-
+	
 	PGFontHandle font;
 
 	int GetSelectedTab(PGScalar x);

@@ -187,6 +187,7 @@ public:
 	lng GetActiveCursorIndex();
 	std::vector<Cursor>& GetCursors() { return cursors; }
 	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
+	void SetFilePath(std::string path);
 	std::string GetFullPath() { return path; }
 	std::string GetName() { return name; }
 	void SetName(std::string name) { this->name = name; }
@@ -194,6 +195,8 @@ public:
 	void SetExtension(std::string extension) { this->ext = extension; }
 	bool GetReadOnly() { return read_only; }
 	void SetReadOnly(bool read_only) { this->read_only = read_only; }
+
+	void UpdateModificationTime();
 
 	void SetTabWidth(int tabwidth);
 	int GetTabWidth() { return tabwidth; }

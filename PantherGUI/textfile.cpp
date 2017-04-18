@@ -2603,22 +2603,30 @@ void TextFile::SaveChanges() {
 	}
 	this->Unlock(PGReadLock);
 	panther::CloseFile(handle);
-	auto stats = PGGetFileFlags(path);
-	if (stats.flags == PGFileFlagsEmpty) {
-		last_modified_time = stats.modification_time;
-		last_modified_notification = stats.modification_time;
-	}
+	UpdateModificationTime();
 	if (textfield) textfield->SelectionChanged();
 }
 
 
 void TextFile::SaveAs(std::string path) {
 	if (!is_loaded) return;
+	this->SetFilePath(path);
+	this->SaveChanges();
+}
+
+void TextFile::SetFilePath(std::string path) {
 	this->path = path;
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
-	this->SaveChanges();
+}
+
+void TextFile::UpdateModificationTime() {
+	auto stats = PGGetFileFlags(path);
+	if (stats.flags == PGFileFlagsEmpty) {
+		last_modified_time = stats.modification_time;
+		last_modified_notification = stats.modification_time;
+	}
 }
 
 std::string TextFile::GetText() {

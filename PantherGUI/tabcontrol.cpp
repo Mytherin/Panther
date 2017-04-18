@@ -31,7 +31,7 @@ void TabControl::ClearEmptyFlag(Control* c, void* data) {
 }
 
 TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files) :
-	Control(window), active_tab(0), textfield(textfield), file_manager(), dragging_tab(nullptr, -1),
+	Control(window), active_tab(0), textfield(textfield), dragging_tab(nullptr, -1),
 	active_tab_hidden(false), drag_tab(false), current_id(0), temporary_textfile(nullptr), current_selection(-1),
 	target_scroll(0), scroll_position(0), drag_data(nullptr), temporary_tab_width(0), is_empty(false) {
 	if (textfield) {
@@ -46,7 +46,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	}
 	
 	for (auto it = files.begin(); it != files.end(); it++) {
-		auto ptr = file_manager.OpenFile(*it);
+		auto ptr = FileManager::OpenFile(*it);
 		this->tabs.push_back(OpenTab(ptr));
 	}
 	this->font = PGCreateFont("myriad", false, true);
@@ -373,7 +373,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 		if (tb.count("files") > 0) {
 			nlohmann::json& f = tb["files"];
 			if (f.is_array() && f.size() > 0) {
-				file_manager.ClearFiles();
+				//FileManager::ClearFiles();
 				tabs.clear();
 				for (auto it = f.begin(); it != f.end(); ++it) {
 					std::shared_ptr<TextFile> textfile = nullptr;
@@ -390,12 +390,12 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 							textfile->name = "untitled";
 						}
 						textfile->SetUnsavedChanges(true);
-						file_manager.OpenFile(textfile);
+						FileManager::OpenFile(textfile);
 					} else if (path.size() > 0) {
 						// otherwise, if there is a file speciifed
 						// we load the text from the file instead
 						PGFileError error;
-						textfile = file_manager.OpenFile(path, error);
+						textfile = FileManager::OpenFile(path, error);
 					} else {
 						continue;
 					}
@@ -459,7 +459,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 		if (tabs.size() == 0) {
 			is_empty = true;
 			auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
-			file_manager.OpenFile(textfile);
+			FileManager::OpenFile(textfile);
 			tabs.push_back(OpenTab(textfile));
 		}
 		if (tb.count("selected_tab") > 0 && tb["selected_tab"].is_number()) {
@@ -551,7 +551,7 @@ void TabControl::NewTab() {
 		active_tab = -1;
 		tabs.clear();
 	}
-	std::shared_ptr<TextFile> file = file_manager.OpenFile();
+	std::shared_ptr<TextFile> file = FileManager::OpenFile();
 	tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
 	active_tab++;
 	SwitchToFile(tabs[active_tab].file);
@@ -566,7 +566,7 @@ void TabControl::OpenFile(std::string path) {
 	}
 	if (!SwitchToTab(path)) {
 		PGFileError error;
-		std::shared_ptr<TextFile> textfile = file_manager.OpenFile(path, error);
+		std::shared_ptr<TextFile> textfile = FileManager::OpenFile(path, error);
 		if (textfile) {
 			AddTab(textfile);
 		} else if (textfield) {
@@ -578,7 +578,7 @@ void TabControl::OpenFile(std::string path) {
 void TabControl::OpenTemporaryFile(std::shared_ptr<TextFile> textfile) {
 	bool is_empty = this->is_empty;
 	SwitchToFile(textfile);
-	this->temporary_textfile = textfile;
+	this->temporary_textfile = FileManager::OpenFile(textfile);
 	this->is_empty = is_empty;
 	if (temporary_textfile) {
 		Tab tab = Tab(temporary_textfile, -1);
@@ -592,18 +592,21 @@ void TabControl::OpenTemporaryFile(std::shared_ptr<TextFile> textfile) {
 
 void TabControl::OpenTemporaryFileAsActualFile() {
 	auto file = temporary_textfile;
-	bool is_empty = this->is_empty;
-	CloseTemporaryFile();
-	this->is_empty = is_empty;
-	OpenFile(file);
+	AddTab(file);
+	this->temporary_textfile = nullptr;
+	this->temporary_tab_width = BASE_TAB_OFFSET;
+	this->Invalidate();
 }
 
 void TabControl::CloseTemporaryFile() {
-	if (textfield->GetTextfilePointer() == temporary_textfile) {
-		SwitchToFile(tabs[active_tab].file);
-	}
+	if (!this->temporary_textfile) return;
+	auto file = this->temporary_textfile;
 	this->temporary_textfile = nullptr;
 	this->temporary_tab_width = BASE_TAB_OFFSET;
+	if (textfield->GetTextfilePointer() == file) {
+		SwitchToFile(tabs[active_tab].file);
+	}
+	FileManager::CloseFile(file);
 	this->Invalidate();
 }
 
@@ -633,7 +636,7 @@ void TabControl::SetActiveTab(int active_tab) {
 
 void TabControl::ReopenFile(PGClosedTab tab) {
 	PGFileError error;
-	std::shared_ptr<TextFile> textfile = file_manager.OpenFile(tab.filepath, error);
+	std::shared_ptr<TextFile> textfile = FileManager::OpenFile(tab.filepath, error);
 	if (textfile) {
 		textfile->SetSettings(tab.settings);
 		AddTab(textfile, tab.id, tab.neighborid);
@@ -644,14 +647,14 @@ void TabControl::ReopenFile(PGClosedTab tab) {
 
 
 void TabControl::OpenFile(std::shared_ptr<TextFile> textfile) {
-	std::shared_ptr<TextFile> ptr = file_manager.OpenFile(textfile);
+	std::shared_ptr<TextFile> ptr = FileManager::OpenFile(textfile);
 	if (ptr) {
 		AddTab(ptr);
 	}
 }
 
 void TabControl::OpenFile(std::shared_ptr<TextFile> textfile, lng index) {
-	std::shared_ptr<TextFile> ptr = file_manager.OpenFile(textfile);
+	std::shared_ptr<TextFile> ptr = FileManager::OpenFile(textfile);
 	if (ptr) {
 		AddTab(ptr, index);
 	}
@@ -935,7 +938,7 @@ void TabControl::ActuallyCloseTab(int tab) {
 			if (is_empty) {
 				close_window = true;
 			} else {
-				auto ptr = file_manager.OpenFile(std::shared_ptr<TextFile>(new TextFile(nullptr)));
+				auto ptr = FileManager::OpenFile(std::shared_ptr<TextFile>(new TextFile(nullptr)));
 				tabs.push_back(OpenTab(ptr));
 				SwitchToFile(tabs[1].file);
 				is_empty = true;
@@ -947,7 +950,7 @@ void TabControl::ActuallyCloseTab(int tab) {
 	if (tabs[tab].file->path.size() > 0) {
 		closed_tabs.push_back(PGClosedTab(tabs[tab], tab == 0 ? -1 : tabs[tab - 1].id, tabs[tab].file->GetSettings()));
 	}
-	file_manager.CloseFile(tabs[tab].file);
+	FileManager::CloseFile(tabs[tab].file);
 	tabs.erase(tabs.begin() + tab);
 	this->Invalidate();
 	if (close_window) {

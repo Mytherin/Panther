@@ -191,6 +191,12 @@ void ProjectExplorer::FinishRename(bool success, bool update_selection) {
 		std::string new_name = textfield->GetTextFile().GetText();
 		std::string full_name = PGPathJoin(PGFile(renaming_path).Directory(), new_name);
 		rename(renaming_path.c_str(), full_name.c_str());
+		auto file = FileManager::FindFile(renaming_path);
+		if (file) {
+			file->SetFilePath(full_name);
+			file->UpdateModificationTime();
+			GetControlManager(this)->Invalidate();
+		}
 		directories[0]->Update(!this->show_all_files);
 		if (update_selection) {
 			PGDirectory* directory; PGFile file;
