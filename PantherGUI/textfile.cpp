@@ -127,7 +127,8 @@ bool TextFile::Reload(PGFileError& error) {
 	if (lines.size() == 0 || (lines.size() == 1 && lines[0].size() == 0)) {
 		this->DeleteCharacter(PGDirectionLeft);
 	} else {
-		// FIXME: does not replace \r characters with \n
+		panther::replace(text, "\r\n", "\n");
+		panther::replace(text, "\r", "\n");
 		PasteText(text);
 	}
 	this->SetUnsavedChanges(false);
