@@ -900,6 +900,9 @@ bool TabControl::CloseAllTabs(PGDirection direction) {
 }
 
 bool TabControl::CloseTabConfirmation(int tab, bool respect_hot_exit) {
+	if (is_empty) {
+		return true;
+	}
 	bool hot_exit = false;
 	if (respect_hot_exit) {
 		PGSettingsManager::GetSetting("hot_exit", hot_exit);
@@ -957,7 +960,7 @@ void TabControl::ActuallyCloseTab(int tab) {
 }
 
 void TabControl::CloseTab(int tab) {
-	if (tabs[tab].file->HasUnsavedChanges()) {
+	if (!is_empty && tabs[tab].file->HasUnsavedChanges()) {
 		// if there are unsaved changes, we show a confirmation box
 		int* tabnumbers = new int[1];
 		tabnumbers[0] = tab;
