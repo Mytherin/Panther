@@ -117,6 +117,8 @@ public:
 
 	PG_CONTROL_KEYBINDINGS;
 
+	void OnResize(PGSize old_size, PGSize new_size);
+
 	virtual PGControlType GetControlType() { return PGControlTypeTabControl; }
 protected:
 	static void ClearEmptyFlag(Control* c, void* data);

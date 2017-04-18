@@ -209,7 +209,7 @@ public:
 
 	PGStoreFileType WorkspaceFileStorage();
 
-	bool HasUnsavedChanges() { return unsaved_changes; }
+	bool HasUnsavedChanges() { return FileInMemory() || unsaved_changes; }
 	bool FileInMemory() { return path.size() == 0; }
 
 	void ClearMatches();

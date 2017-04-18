@@ -51,8 +51,8 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	}
 	this->font = PGCreateFont("myriad", false, true);
 	SetTextFontSize(this->font, 12);
-	file_icon_width = 0;
-	file_icon_height = 0;
+	file_icon_height = (this->height - 2) * 0.6f;
+	file_icon_width = file_icon_height * 0.8f;
 
 	tab_padding = 5;
 
@@ -132,9 +132,6 @@ void TabControl::RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& positi
 
 	current_x += 15;
 	std::string ext = file->GetExtension();
-
-	file_icon_height = tab_height * 0.6f;
-	file_icon_width = file_icon_height * 0.8f;
 
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
 
@@ -1143,3 +1140,9 @@ void PGTabMouseRegion::MouseMove(PGPoint mouse) {
 		tabs->Invalidate();
 	}
 }
+
+void TabControl::OnResize(PGSize old_size, PGSize new_size) {
+	file_icon_height = (new_size.height - 2) * 0.6f;
+	file_icon_width = file_icon_height * 0.8f;
+}
+
