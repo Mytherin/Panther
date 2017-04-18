@@ -303,7 +303,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 	scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);
 
 	if (textfield) {
-		textfield->y = (renaming_file - offset) * file_render_height;
+		textfield->y = PROJECT_EXPLORER_PADDING + (renaming_file - offset) * file_render_height;
 	}
 
 	ClearRenderBounds(renderer);
