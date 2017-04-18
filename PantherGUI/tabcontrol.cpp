@@ -664,6 +664,7 @@ void TabControl::AddTab(std::shared_ptr<TextFile> file) {
 		tabs.clear();
 		tabs.push_back(OpenTab(file));
 		active_tab = 0;
+		is_empty = false;
 	} else {
 		tabs.insert(tabs.begin() + active_tab + 1, OpenTab(file));
 		active_tab++;
