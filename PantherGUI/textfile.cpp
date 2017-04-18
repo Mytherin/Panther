@@ -1119,12 +1119,10 @@ double TextFile::GetScrollPercentage(PGVerticalScroll scroll) {
 		for (lng i = buffer->start_line; i < scroll.linenumber; i++)
 			width += buffer->line_lengths[i - buffer->start_line];
 
-		double percentage = width / total_width;
-
 		TextLine textline = GetLine(scroll.linenumber);
 		lng inner_lines = textline.RenderedLines(buffer, scroll.linenumber, GetLineCount(), textfield->GetTextfieldFont(), wordwrap_width);
 		width += ((double)scroll.inner_line / (double)inner_lines) * buffer->line_lengths[scroll.linenumber - buffer->start_line];
-		return width / total_width;
+		return total_width == 0 ? 0 : width / total_width;
 	} else {
 		return linecount == 0 ? 0 : (double)scroll.linenumber / linecount;
 	}
