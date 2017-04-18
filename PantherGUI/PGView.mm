@@ -644,12 +644,12 @@ void PGCloseWindow(PGWindowHandle handle) {
 }
 
 PGSize GetWindowSize(PGWindowHandle window) {
-	auto size = [window->view frame].size;
+	auto size = [window->window frame].size;
 	return PGSize(size.width, size.height);
 }
 
 PGPoint PGGetWindowPosition(PGWindowHandle window) {
-	auto pos = [window->view frame].origin;
+	auto pos = [window->window frame].origin;
 	return PGPoint(pos.x, pos.y);
 }
 
@@ -842,11 +842,7 @@ void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
 				int width = dim["width"];
 				int height = dim["height"];
 
-				NSRect rect;
-				rect.origin.x = x;
-				rect.origin.y = y;
-				rect.size.width = width;
-				rect.size.height = height;
+				NSRect rect = NSMakeRect(x, y, width, height);
 				[window->window setFrame:rect display:false];
 			}
 		}
