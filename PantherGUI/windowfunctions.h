@@ -32,7 +32,8 @@ typedef struct PGBitmap* PGBitmapHandle;
 struct PGDropData;
 typedef struct PGDropData* PGDropHandle;
 
-typedef float PGScalar;
+struct PGTooltip;
+typedef struct PGTooltip* PGTooltipHandle;
 
 class Control;
 
@@ -592,11 +593,10 @@ struct PGSingleMouseRegion : public PGMouseRegion {
 	PGIRect* rect = nullptr;
 	void* data = nullptr;
 	PGMouseCallback mouse_event;
-	PGTime enter_time;
 
 	void MouseMove(PGPoint mouse);
 
-	PGSingleMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr) : rect(rect), PGMouseRegion(control), mouse_event(mouse_event), data(data), enter_time(-1) {}
+	PGSingleMouseRegion(PGIRect* rect, Control* control, PGMouseCallback mouse_event, void* data = nullptr) : rect(rect), PGMouseRegion(control), mouse_event(mouse_event), data(data) {}
 };
 
 typedef std::vector<std::unique_ptr<PGSingleMouseRegion>> MouseRegionSet;
@@ -610,4 +610,6 @@ struct PGMouseRegionContainer : public PGMouseRegion {
 	PGMouseRegionContainer(MouseRegionSet* regions, Control* control) : regions(regions), PGMouseRegion(control), currently_contained(false) {}
 };
 
-void PGCreateTooltip(PGWindowHandle, PGRect rect, std::string text);
+PGTooltipHandle PGCreateTooltip(PGWindowHandle, PGRect rect, std::string text);
+void PGUpdateTooltipRegion(PGTooltipHandle, PGRect rect);
+void PGDestroyTooltip(PGTooltipHandle);

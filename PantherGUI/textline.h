@@ -1,6 +1,7 @@
 #pragma once
 
 #include "textbuffer.h"
+#include "windowfunctions.h"
 
 struct TextLine {
 	friend class TextLineIterator;

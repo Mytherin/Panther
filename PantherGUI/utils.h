@@ -14,6 +14,8 @@ typedef enum {
 typedef long long lng;
 typedef size_t ulng;
 
+typedef float PGScalar;
+
 struct PGUTF8Character {
 	char length;
 	char character[4];

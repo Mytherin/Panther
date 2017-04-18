@@ -9,7 +9,7 @@ const PGAnchor PGAnchorBottom = 0x08;
 
 Control::Control(PGWindowHandle handle) :
 	percentage_width(-1), percentage_height(-1), fixed_height(-1), fixed_width(-1),
-	dirty(false), margin(PGPadding()), padding(PGPadding()) {
+	dirty(false), margin(PGPadding()), padding(PGPadding()), tooltip(nullptr) {
 	this->window = handle;
 	this->x = 0;
 	this->y = 0;
@@ -21,6 +21,9 @@ Control::Control(PGWindowHandle handle) :
 Control::~Control() {
 	if (this->destroy_data.function) {
 		this->destroy_data.function(this, destroy_data.data);
+	}
+	if (tooltip) {
+		PGDestroyTooltip(tooltip);
 	}
 }
 
@@ -152,10 +155,6 @@ void Control::MouseLeave() {
 
 }
 
-void Control::ShowTooltip() {
-
-}
-
 void Control::ResolveSize(PGSize new_size) {
 	if (size_resolved) return;
 	PGSize current_size = PGSize(this->width, this->height);
@@ -237,6 +236,9 @@ void Control::ResolveSize(PGSize new_size) {
 			}
 		}
 	}
+	if (tooltip) {
+		PGUpdateTooltipRegion(tooltip, PGRect(X(), Y(), this->width, this->height));
+	}
 	this->size_resolved = true;
 	this->OnResize(current_size, PGSize(this->width, this->height));
 }
@@ -273,4 +275,11 @@ bool Control::PressMouseButton(std::map<PGMousePress, PGMouseFunctionCall>& mous
 		return true;
 	}
 	return false;
+}
+
+void Control::SetTooltip(std::string tooltip) {
+	if (this->tooltip) {
+		PGDestroyTooltip(this->tooltip);
+	}
+	this->tooltip = PGCreateTooltip(this->window, PGRect(X(), Y(), this->width, this->height), tooltip);
 }

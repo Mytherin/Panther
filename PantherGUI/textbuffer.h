@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "windowfunctions.h"
-
 extern lng TEXT_BUFFER_SIZE;
 
 class TextFile;

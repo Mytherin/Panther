@@ -58,7 +58,6 @@ public:
 	// it must register with the ControlManager
 	virtual void MouseEnter();
 	virtual void MouseLeave();
-	virtual void ShowTooltip();
 
 	virtual void LosesFocus(void);
 	virtual void GainsFocus(void);
@@ -124,10 +123,14 @@ public:
 
 	PGWindowHandle window;
 	bool HasFocus();
+
+	void SetTooltip(std::string tooltip);
 protected:
 	bool PressKey(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, PGButton button, PGModifier modifier);
 	bool PressCharacter(std::map<PGKeyPress, PGKeyFunctionCall>& keybindings, char character, PGModifier modifier);
 	bool PressMouseButton(std::map<PGMousePress, PGMouseFunctionCall>& mousebindings, PGMouseButton button, PGPoint mouse, PGModifier modifier, int clicks, lng line, lng character);
 private:
+	PGTooltipHandle tooltip = nullptr;
+
 	PGFunctionData destroy_data;
 };

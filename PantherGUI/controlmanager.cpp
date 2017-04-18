@@ -538,15 +538,8 @@ void PGSingleMouseRegion::MouseMove(PGPoint mouse) {
 	if (this->rect == nullptr) {
 		PGIRect rectangle = PGIRect(c->X(), c->Y(), c->width, c->height);
 		bool contains = PGRectangleContains(rectangle, mouse);
-		if (contains) {
-			if (!this->mouse_inside) {
-				this->enter_time = GetTime();
-				c->MouseEnter();
-			} else {
-				if ((GetTime() - this->enter_time) > 250) {
-					c->ShowTooltip();
-				}
-			}
+		if (contains && !this->mouse_inside) {
+			c->MouseEnter();
 		} else if (this->mouse_inside && !contains) {
 			c->MouseLeave();
 		}

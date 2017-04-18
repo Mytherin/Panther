@@ -40,10 +40,17 @@ struct PGWindow {
 	ControlManager* manager;
 	PGRendererHandle renderer;
 	PGWorkspace* workspace;
-	std::string tooltip_text;
 
 	PGWindow(PGWorkspace* workspace) : workspace(workspace) { }
 };
+
+struct PGTooltip {
+	PGWindowHandle window;
+	NSToolTipTag tooltip;
+	PGRect region;
+	NSString* text;
+};
+
 
 struct PGMouseFlags {
 	int x;
@@ -918,15 +925,41 @@ void PGLogMessage(std::string text) {
 }
 
 
-void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
-	if (window->tooltip_text == text) {
+PGTooltipHandle PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
+	// we have to invert the Y coordinate for OSX
+	auto bounds = [window->view getBounds];
+	rect = PGRect(rect.x, bounds.size.height - rect.y - rect.height, rect.width, rect.height);
+	PGTooltipHandle handle = new PGTooltip();
+	handle->region = rect;
+	handle->window = window;
+	handle->text = [NSString stringWithUTF8String:text.c_str()];
+	NSRect r = NSMakeRect(rect.x, rect.y, rect.width, rect.height);
+	handle->tooltip = [window->view addToolTipRect:r
+				owner:handle->text
+				userData:nullptr];
+	return handle;
+}
+
+void PGUpdateTooltipRegion(PGTooltipHandle handle, PGRect rect) {
+	// we have to invert the Y coordinate for OSX
+	auto bounds = [handle->window->view getBounds];
+	rect = PGRect(rect.x, bounds.size.height - rect.y - rect.height, rect.width, rect.height);
+	if (!(handle->region.x != rect.x || handle->region.y != rect.y || 
+		handle->region.width != rect.width || handle->region.height != rect.height)) {
+		// the current region is identical to the old region; don't update
 		return;
 	}
-	window->tooltip_text = text;
-	[window->view addToolTipRect:NSMakeRect(rect.x, rect.y, rect.width, rect.height)
-				owner:[NSString stringWithUTF8String:text.c_str()]
+	[handle->window->view removeToolTip:handle->tooltip];
+	NSRect r = NSMakeRect(rect.x, rect.y, rect.width, rect.height);
+	handle->region = rect;
+	handle->tooltip = [handle->window->view addToolTipRect:r
+				owner:handle->text
 				userData:nullptr];
-	assert(0); // tooltips not correctly displayed?
+}
+
+void PGDestroyTooltip(PGTooltipHandle handle) {
+	[handle->window->view removeToolTip:handle->tooltip];
+	delete handle;
 }
 
 #include <dirent.h>

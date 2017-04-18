@@ -20,6 +20,7 @@
 
 	SkBitmap bitmap;
 }
+
 -(void)performClose;
 -(ControlManager*)getManager;
 -(PGWindowHandle)getHandle;

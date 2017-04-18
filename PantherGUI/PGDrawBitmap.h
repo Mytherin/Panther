@@ -167,7 +167,6 @@ void SkCGDrawBitmap(CGContextRef cg, const SkBitmap& bm, PGIRect rectangle, floa
         CGContextScaleCTM(cg, 1.0f / scale_factor, 1.0f / scale_factor);
 
         CGContextDrawImage(cg, r, img);
-
         //CGContextRestoreGState(cg);
 
         CGImageRelease(img);

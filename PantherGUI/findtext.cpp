@@ -132,11 +132,11 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	toggle_wrap->SetText(std::string("W"), font);
 	toggle_highlight->SetText(std::string("H"), font);
 
-	toggle_regex->tooltip = "Toggle regular expressions (Ctrl+R)";
-	toggle_matchcase->tooltip = "Toggle case sensitive search (Ctrl+C)";
-	toggle_wholeword->tooltip = "Toggle whole word search (Ctrl+W)";
-	toggle_wrap->tooltip = "Toggle search wrap (Ctrl+Z)";
-	toggle_highlight->tooltip = "Highlight search matches (Ctrl+H)";
+	toggle_regex->SetTooltip("Toggle regular expressions (Ctrl+R)");
+	toggle_matchcase->SetTooltip("Toggle case sensitive search (Ctrl+C)");
+	toggle_wholeword->SetTooltip("Toggle whole word search (Ctrl+W)");
+	toggle_wrap->SetTooltip("Toggle search wrap (Ctrl+Z)");
+	toggle_highlight->SetTooltip("Highlight search matches (Ctrl+H)");
 
 	toggle_highlight->OnToggle([](Button* b, bool toggled, void* setting_name) {
 		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
