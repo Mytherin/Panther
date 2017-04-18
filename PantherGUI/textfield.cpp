@@ -600,8 +600,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 		PGScalar position_x = x;
 		PGScalar position_y = y;
 		// textfield/minimap dimensions
-		PGScalar minimap_width = this->display_minimap ? GetMinimapWidth() : 0;
-		PGScalar textfield_width = this->width - minimap_width;
+		PGScalar textfield_width = this->width - (this->display_minimap ? minimap_region.width + 5 : 0);
 		// determine x-offset and clamp it
 		PGScalar max_textsize = textfile->GetMaxLineWidth(textfield_font);
 		PGScalar xoffset = 0;
@@ -622,7 +621,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 		RenderRectangle(renderer, PGIRect(x, y, textfield_width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
 		// render the actual text field
-		textfield_region.width = textfield_width - text_offset - 5;
+		textfield_region.width = textfield_width - text_offset - margin_width * 2;
 		textfield_region.height = this->height;
 		textfile->SetWordWrap(textfile->GetWordWrap(), GetTextfieldWidth());
 		PGIRect rectangle = PGIRect(0, 0, this->width, this->height);
@@ -636,12 +635,14 @@ void TextField::Draw(PGRendererHandle renderer) {
 				// only rerender the actual minimap if it is dirty
 
 				// render the background of the minimap
-				RenderRectangle(renderer, PGIRect(x + textfield_width, y, minimap_width, this->height), PGColor(30, 30, 30), PGDrawStyleFill);
+				RenderRectangle(renderer, PGIRect(x + textfield_width, y, minimap_region.width, this->height), PGColor(30, 30, 30), PGDrawStyleFill);
 
-				DrawTextField(renderer, minimap_font, true, x + textfield_width + 1, x + textfield_width, y, minimap_width, mouse_in_minimap);
+				DrawTextField(renderer, minimap_font, true, x + textfield_width + 1, x + textfield_width, y, minimap_region.width, mouse_in_minimap);
 			}
-			// render the minimap gradient between the minimap and the textfield
-			RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
+			if (!textfile->GetWordWrap()) {
+				// render the minimap gradient between the minimap and the textfield
+				RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));	
+			}
 		}
 
 		// render the scrollbar
@@ -687,12 +688,10 @@ void TextField::Draw(PGRendererHandle renderer) {
 
 PGScalar TextField::GetTextfieldWidth() {
 	return textfield_region.width;
-	return display_minimap ? this->width - SCROLLBAR_SIZE - GetMinimapWidth() : this->width - SCROLLBAR_SIZE;
 }
 
 PGScalar TextField::GetTextfieldHeight() {
 	return textfield_region.height;
-	return display_horizontal_scrollbar ? this->height - SCROLLBAR_SIZE : this->height;
 }
 
 #define MAXIMUM_MINIMAP_WIDTH 150.0f
