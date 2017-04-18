@@ -740,6 +740,16 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 }
 
 std::string ShowSaveFileDialog() {
+    NSSavePanel *panel = [NSSavePanel savePanel];
+
+	NSInteger result = [panel runModal];
+	if (result == NSFileHandlingPanelOKButton) {
+		NSURL* fileURL = [panel URL];
+
+		std::string str = std::string([[fileURL absoluteString] UTF8String]);
+		assert(str.substr(0, 7) == std::string("file://"));
+		return str;
+	}
 	return "";
 }
 

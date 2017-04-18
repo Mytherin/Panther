@@ -2528,7 +2528,7 @@ bool TextFile::WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const cha
 
 void TextFile::SaveChanges() {
 	if (!is_loaded) return;
-	if (this->path == "") return;
+	if (this->FileInMemory()) return;
 
 	saved_undo_count = deltas.size();
 	SetUnsavedChanges(false);

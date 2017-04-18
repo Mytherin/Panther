@@ -13,19 +13,19 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 
 
 	std::vector<std::string> image_paths;
-	image_paths.push_back("data\\icons\\back.png");
-	image_paths.push_back("data\\icons\\next.png");
-	image_paths.push_back("data\\icons\\reload.png");
-	image_paths.push_back("data\\icons\\save.png");
-	image_paths.push_back("data\\icons\\saveas.png");
-	image_paths.push_back("data\\icons\\newproject.png");
-	image_paths.push_back("data\\icons\\removeproject.png");
-	image_paths.push_back("data\\icons\\commentselection.png");
-	image_paths.push_back("data\\icons\\decreasecomment.png");
-	image_paths.push_back("data\\icons\\increaseindent.png");
-	image_paths.push_back("data\\icons\\decreaseindent.png");
-	image_paths.push_back("data\\icons\\showallfiles.png");
-	image_paths.push_back("data\\icons\\collapseall.png");
+	image_paths.push_back("data/icons/back.png");
+	image_paths.push_back("data/icons/next.png");
+	image_paths.push_back("data/icons/reload.png");
+	image_paths.push_back("data/icons/save.png");
+	image_paths.push_back("data/icons/saveas.png");
+	image_paths.push_back("data/icons/newproject.png");
+	image_paths.push_back("data/icons/removeproject.png");
+	image_paths.push_back("data/icons/commentselection.png");
+	image_paths.push_back("data/icons/decreasecomment.png");
+	image_paths.push_back("data/icons/increaseindent.png");
+	image_paths.push_back("data/icons/decreaseindent.png");
+	image_paths.push_back("data/icons/showallfiles.png");
+	image_paths.push_back("data/icons/collapseall.png");
 	
 	Button* prev_button = nullptr;
 	for (int i = 0; i < image_paths.size(); i++) {

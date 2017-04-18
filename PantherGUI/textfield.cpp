@@ -1238,7 +1238,15 @@ void TextField::InitializeKeybindings() {
 	images["save"] = PGStyleManager::GetImage("data/icons/save.png");
 	noargs["save"] = [](Control* c) {
 		TextField* tf = (TextField*)c;
-		tf->GetTextFile().SaveChanges();
+		auto file = tf->GetTextfilePointer();
+		if (file->FileInMemory()) {
+			std::string filename = ShowSaveFileDialog();
+			if (filename.size() != 0) {
+				file->SaveAs(filename);
+			}
+		} else {
+			file->SaveChanges();
+		}
 	};
 	images["save_as"] = PGStyleManager::GetImage("data/icons/saveas.png");
 	noargs["save_as"] = [](Control* c) {
