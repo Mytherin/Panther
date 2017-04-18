@@ -99,7 +99,7 @@ bool Control::HasFocus() {
 }
 
 void Control::OnResize(PGSize old_size, PGSize new_size) {
-
+	this->Invalidate();
 }
 
 void Control::LoadWorkspace(nlohmann::json& j) {
