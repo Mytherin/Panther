@@ -51,6 +51,7 @@ private:
 	lng renaming_file = -1;
 	SimpleTextField* textfield = nullptr;
 
+	lng selected_entry = 0;
 	bool show_all_files = false;
 
 	void RenameFile();
@@ -68,6 +69,7 @@ private:
 	enum PGSelectFileType {
 		PGSelectSingleFile,
 		PGSelectAddSingleFile,
+		PGSelectSelectRangeFile,
 		PGSelectAddRangeFile
 	};
 

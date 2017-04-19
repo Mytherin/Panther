@@ -372,6 +372,8 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			if (modifier == PGModifierCtrl) {
 				select_type = PGSelectAddSingleFile;
 			} else if (modifier == PGModifierShift) {
+				select_type = PGSelectSelectRangeFile;
+			} else if (modifier == PGModifierCtrlShift) {
 				select_type = PGSelectAddRangeFile;
 			} else if (modifier == PGModifierNone) {
 				select_type = PGSelectSingleFile;
@@ -402,10 +404,13 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			});
 			PGPopupMenuInsertSeparator(menu);
 			PGPopupMenuInsertEntry(menu, "Cut", [](Control* control, PGPopupInformation* info) {
+
 			});
 			PGPopupMenuInsertEntry(menu, "Copy", [](Control* control, PGPopupInformation* info) {
+
 			});
 			PGPopupMenuInsertEntry(menu, "Paste", [](Control* control, PGPopupInformation* info) {
+
 			});
 			PGPopupMenuInsertSeparator(menu);
 			PGPopupInformation info(menu, directory);
@@ -422,6 +427,7 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			});
 			PGPopupMenuInsertSeparator(menu);
 			PGPopupMenuInsertEntry(menu, "Delete", [](Control* control, PGPopupInformation* info) {
+
 			});
 
 			PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
@@ -501,6 +507,8 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 		PGDirectory* directory;
 		this->FindFile(selected_file, &directory, &file);
 
+		this->selected_entry = selected_file;
+
 		if (directory && click) {
 			// (un)expand the selected directory
 			lng current_count = directory->DisplayedFiles();
@@ -532,19 +540,29 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 				}
 			}
 		}
-	} else if (type == PGSelectAddRangeFile) {
+	} else if (type == PGSelectSelectRangeFile || type == PGSelectAddRangeFile) {
 		if (selected_files.size() == 0) {
 			SelectFile(selected_file, type, open_file, click);
 			return;
 		}
-		lng start = selected_files.back();
+		lng start = selected_entry;
 		lng end = selected_file;
 		if (start > end) {
 			std::swap(start, end);
 		}
-		selected_files.clear();
-		for (; start <= end; start++) {
-			selected_files.push_back(start);
+		if (type == PGSelectAddRangeFile) {
+			for (; start <= end; start++) {
+				auto bound = std::upper_bound(selected_files.begin(), selected_files.end(), start);
+				if (bound == selected_files.begin() || *(bound - 1) != start) {
+					selected_files.insert(bound, start);
+				}
+			}
+
+		} else {
+			selected_files.clear();
+			for (; start <= end; start++) {
+				selected_files.push_back(start);
+			}
 		}
 	} else if (type == PGSelectAddSingleFile) {
 		auto entry = std::find(selected_files.begin(), selected_files.end(), selected_file);
