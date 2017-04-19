@@ -1479,7 +1479,7 @@ static lng filetime_to_lng(FILETIME filetime) {
 PGFileInformation PGGetFileFlags(std::string path) {
 	PGFileInformation info;
 	std::string ucs2_path = UTF8toUCS2(path);
-	HANDLE handle = CreateFile2((LPCWSTR)ucs2_path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, NULL);
+	HANDLE handle = CreateFileW((LPCWSTR)ucs2_path.c_str(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (handle == INVALID_HANDLE_VALUE) {
 		DWORD error = GetLastError();
 		if (error == ERROR_FILE_NOT_FOUND) {
