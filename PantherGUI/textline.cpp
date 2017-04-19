@@ -87,6 +87,7 @@ lng* TextLine::WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, char*
 
 
 bool TextLine::WrapLine(char* line, lng length, PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap) {
+	assert(wrap_width > 0);
 	PGScalar current_width = 0;
 	lng i = start_wrap;
 	lng last_space = -1;

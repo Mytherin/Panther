@@ -22,7 +22,6 @@ public:
 
 	void MouseEnter();
 	void MouseLeave();
-	void ShowTooltip();
 
 	bool IsDragging() { return clicking; }
 

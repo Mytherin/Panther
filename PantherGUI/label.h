@@ -25,6 +25,7 @@ public:
 	PGColor background_color;
 	PGColor text_color;
 
+	bool wrap_text = false;
 	bool fixed_size = true;
 private:
 	std::string text;

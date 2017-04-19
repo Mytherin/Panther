@@ -3,6 +3,8 @@
 #include "windowfunctions.h"
 #include "controlmanager.h"
 
+PGScalar PGMarginAuto = INFINITY;
+
 PGTextAlign PGTextAlignBottom = 0x01;
 PGTextAlign PGTextAlignTop = 0x02;
 PGTextAlign PGTextAlignLeft = 0x04;

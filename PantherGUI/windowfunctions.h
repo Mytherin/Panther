@@ -95,6 +95,8 @@ struct PGRect {
 	}
 };
 
+extern PGScalar PGMarginAuto;
+
 struct PGPadding {
 	PGScalar left;
 	PGScalar right;
@@ -102,6 +104,7 @@ struct PGPadding {
 	PGScalar bottom;
 
 	PGPadding() : left(0), right(0), top(0), bottom(0) {}
+	PGPadding(PGScalar padding) : left(padding), right(padding), top(padding), bottom(padding) {}
 	PGPadding(PGScalar left, PGScalar right, PGScalar top, PGScalar bottom) : left(left), right(right), top(top), bottom(bottom) {}
 };
 

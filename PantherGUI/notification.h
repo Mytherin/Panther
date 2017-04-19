@@ -9,19 +9,22 @@ enum PGNotificationType {
 	PGNotificationTypeWarning
 };
 
+class Label;
+
 class PGNotification : public PGContainer {
 public:
-	PGNotification(PGWindowHandle window, PGNotificationType type, std::string text);
+	PGNotification(PGWindowHandle window, PGNotificationType type, PGScalar width, std::string text);
 	~PGNotification();
-
-	PGFontHandle GetFont() { return font; }
 
 	void Draw(PGRendererHandle renderer);
 
 	void AddButton(PGControlDataCallback, Control* control, void* data, std::string button_text);
 private:
+	void RecomputeHeight();
+
 	PGNotificationType type;
-	std::string text;
+
+	Label* label;
 
 	struct ButtonData {
 		PGControlDataCallback callback;

@@ -163,10 +163,11 @@ void Control::ResolveSize(PGSize new_size) {
 			this->height = fixed_height + padding.top + padding.bottom;
 		}
 		if (top_anchor != nullptr && anchor & PGAnchorTop) {
+			assert(margin.bottom != PGMarginAuto && margin.top != PGMarginAuto);
 			top_anchor->ResolveSize(new_size);
 			this->y = top_anchor->y + top_anchor->height + top_anchor->margin.bottom + this->margin.top;
 			if (percentage_height > 0) {
-				PGScalar remaining_height = new_size.height - this->y;
+				PGScalar remaining_height = new_size.height - this->y - this->margin.bottom;
 				if (bottom_anchor != nullptr) {
 					bottom_anchor->ResolveSize(new_size);
 					remaining_height = bottom_anchor->y - this->y - this->margin.bottom - bottom_anchor->margin.top;
@@ -174,23 +175,33 @@ void Control::ResolveSize(PGSize new_size) {
 				this->height = percentage_height * remaining_height;
 			}
 		} else if (bottom_anchor != nullptr && anchor & PGAnchorBottom) {
+			assert(margin.bottom != PGMarginAuto && margin.top != PGMarginAuto);
 			bottom_anchor->ResolveSize(new_size);
 			if (percentage_height > 0) {
-				PGScalar remaining_height = bottom_anchor->y;
+				PGScalar remaining_height = bottom_anchor->y - this->margin.left;
 				if (top_anchor != nullptr) {
 					top_anchor->ResolveSize(new_size);
-					remaining_height -= top_anchor->y + top_anchor->height - this->margin.left - top_anchor->margin.bottom;
+					remaining_height -= top_anchor->y + top_anchor->height - top_anchor->margin.bottom;
 				}
 				this->height = percentage_height * remaining_height;
 			}
 			this->y = bottom_anchor->y - this->height - bottom_anchor->margin.top - this->margin.bottom;
 		} else {
+			PGScalar remaining_height = (new_size.height 
+				- (margin.top == PGMarginAuto ? 0 : margin.top) 
+				- (margin.bottom == PGMarginAuto ? 0 : margin.bottom));
 			if (this->percentage_height > 0) {
-				this->height = (new_size.height - margin.top - margin.bottom) * percentage_height;
+				this->height = remaining_height * percentage_height;
 			}
-			if (anchor & PGAnchorTop) {
+
+			if (margin.top == PGMarginAuto && margin.bottom == PGMarginAuto) {
+				remaining_height -= this->height;
+				this->y = remaining_height / 2.0f;
+			} else if (anchor & PGAnchorTop) {
+				assert(margin.bottom != PGMarginAuto && margin.top != PGMarginAuto);
 				this->y = margin.top;
 			} else if (anchor & PGAnchorBottom) {
+				assert(margin.bottom != PGMarginAuto && margin.top != PGMarginAuto);
 				this->y = new_size.height - this->height - margin.bottom;
 			} else {
 				assert(0);
@@ -205,7 +216,7 @@ void Control::ResolveSize(PGSize new_size) {
 			left_anchor->ResolveSize(new_size);
 			this->x = left_anchor->x + left_anchor->width + left_anchor->margin.right + this->margin.left;
 			if (percentage_width > 0) {
-				PGScalar remaining_width = new_size.width - this->x;
+				PGScalar remaining_width = new_size.width - this->x - this->margin.right;
 				if (right_anchor != nullptr) {
 					right_anchor->ResolveSize(new_size);
 					remaining_width = right_anchor->x - this->x - this->margin.right - right_anchor->margin.left;
@@ -215,10 +226,10 @@ void Control::ResolveSize(PGSize new_size) {
 		} else if (right_anchor != nullptr && anchor & PGAnchorRight) {
 			right_anchor->ResolveSize(new_size);
 			if (percentage_width > 0) {
-				PGScalar remaining_width = right_anchor->x;
+				PGScalar remaining_width = right_anchor->x - this->margin.left;
 				if (left_anchor != nullptr) {
 					left_anchor->ResolveSize(new_size);
-					remaining_width -= left_anchor->x + left_anchor->width - this->margin.left - left_anchor->margin.right;
+					remaining_width -= left_anchor->x + left_anchor->width - left_anchor->margin.right;
 				}
 				this->width = percentage_width * remaining_width;
 			}

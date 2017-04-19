@@ -23,9 +23,6 @@ public:
 	static lng RenderedLines(PGTextBuffer* buffer, lng linenr, lng total_lines, char* line, lng length, PGFontHandle font, PGScalar wrap_width);
 
 	PGSyntax* syntax;
-private:
-	char* line;
-	lng length;
 
 	// computes how to wrap the line starting at start_wrap
 	// returns true if the line has to be wrapped, false if it fits entirely within wrap_width
@@ -35,4 +32,8 @@ private:
 	static lng RenderedLines(char* line, lng length, PGFontHandle font, PGScalar wrap_width);
 
 	bool WrapLine(PGFontHandle font, PGScalar wrap_width, lng start_wrap, lng& end_wrap);
+
+private:
+	char* line;
+	lng length;
 };

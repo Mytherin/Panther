@@ -939,8 +939,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 		switch (character) {
 			case 'Q':
 			{
-				PGNotification* notification = new PGNotification(window, PGNotificationTypeError, "Unknown error.");
-				notification->SetSize(PGSize(this->width * 0.6f, GetTextHeight(notification->GetFont()) + 10));
+				PGNotification* notification = new PGNotification(window, PGNotificationTypeError, this->width * 0.6f, "Unknown error.");
 				notification->SetPosition(PGPoint(this->x + this->width * 0.2f, this->y));
 
 				notification->AddButton([](Control* control, void* data) {
@@ -1080,7 +1079,7 @@ void TextField::SelectionChanged() {
 				// notify the user if they have not been notified before
 				if (!textfile->last_modified_deletion) {
 					textfile->last_modified_deletion = true;
-					CreateNotification(PGNotificationTypeWarning, std::string("File \"") + textfile->path + std::string("\" appears to have been moved or deleted."));
+					CreateNotification(PGNotificationTypeWarning, std::string("File \"") + PGFile(textfile->path).Filename() + std::string("\" appears to have been moved or deleted."));
 					assert(notification);
 					notification->AddButton([](Control* control, void* data) {
 						((TextField*)control)->ClearNotification();
@@ -1110,7 +1109,7 @@ void TextField::SelectionChanged() {
 					} else {
 						// file is too large for automatic reload: prompt the user
 						textfile->last_modified_notification = stats.modification_time;
-						CreateNotification(PGNotificationTypeWarning, std::string("File \"") + textfile->path + std::string("\" has been modified."));
+						CreateNotification(PGNotificationTypeWarning, std::string("File \"") + PGFile(textfile->path).Filename() + std::string("\" has been modified."));
 						assert(notification);
 						notification->AddButton([](Control* control, void* data) {
 							((TextField*)control)->ClearNotification();
@@ -1379,8 +1378,7 @@ void TextField::CreateNotification(PGNotificationType type, std::string text) {
 	if (this->notification) {
 		this->ClearNotification();
 	}
-	this->notification = new PGNotification(window, type, text.c_str());
-	this->notification->SetSize(PGSize(this->width * 0.6f, GetTextHeight(this->notification->GetFont()) + 10));
+	this->notification = new PGNotification(window, type, this->width * 0.6f, text);
 	this->notification->SetPosition(PGPoint(this->x + this->width * 0.2f, this->y));
 }
 
