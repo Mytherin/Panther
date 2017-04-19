@@ -497,10 +497,15 @@ enum PGResponse {
 	PGResponseCancel
 };
 
+enum PGConfirmationBoxType {
+	PGConfirmationBoxYesNoCancel,
+	PGConfirmationBoxYesNo
+};
+
 typedef void(*PGConfirmationCallback)(PGWindowHandle window, Control* control, void* data, PGResponse response);
 
-PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message);
-void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data);
+PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationBoxType type = PGConfirmationBoxYesNoCancel);
+void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data, PGConfirmationBoxType type = PGConfirmationBoxYesNoCancel);
 
 std::string GetOSName();
 
@@ -547,7 +552,11 @@ enum PGIOError {
 };
 
 PGIOError PGRenameFile(std::string source, std::string dest);
+// permanently delete a file
 PGIOError PGRemoveFile(std::string source);
+// delete a file by sending it to the recycle bin
+PGIOError PGTrashFile(std::string source);
+
 
 struct PGFile {
 	std::string path;

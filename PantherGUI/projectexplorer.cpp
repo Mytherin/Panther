@@ -365,9 +365,7 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 		if (selected_file < 0 || selected_file >= TotalFiles()) return;
 
 		if (button == PGLeftMouseButton) {
-			// FIXME: click on file opens it
 			// FIXME: dragging files
-			// FIXME: right click on files
 			PGSelectFileType select_type;
 			if (modifier == PGModifierCtrl) {
 				select_type = PGSelectAddSingleFile;
@@ -427,7 +425,8 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			});
 			PGPopupMenuInsertSeparator(menu);
 			PGPopupMenuInsertEntry(menu, "Delete", [](Control* control, PGPopupInformation* info) {
-
+				auto explorer = dynamic_cast<ProjectExplorer*>(control);
+				explorer->DeleteSelectedFiles();
 			});
 
 			PGDisplayPopupMenu(menu, PGTextAlignLeft | PGTextAlignTop);
@@ -435,6 +434,47 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 		return;
 	}
 	PGContainer::MouseDown(x, y, button, modifier, click_count);
+}
+
+
+#define DELETE_CHANGES_TITLE "Delete Files?"
+#define DELETE_CHANGES_DIALOG "Do you really want to delete the selected files?"
+
+void ProjectExplorer::DeleteSelectedFiles() {
+	// we only do something if files are selected
+	if (selected_files.size() == 0) return;
+	
+	// if there are files to delete, pop open a confirmation box
+	PGConfirmationBox(window, DELETE_CHANGES_TITLE, DELETE_CHANGES_DIALOG,
+		[](PGWindowHandle window, Control* control, void* data, PGResponse response) {
+		if (response == PGResponseYes) {
+			auto explorer = dynamic_cast<ProjectExplorer*>(control);
+			if (explorer) {
+				explorer->ActuallyDeleteSelectedFiles();
+			}
+		}
+	}, this, nullptr, PGConfirmationBoxYesNo);
+}
+
+void ProjectExplorer::ActuallyDeleteSelectedFiles() {
+	PGDirectory* directory;
+	PGFile file;
+	for (auto it = selected_files.begin(); it != selected_files.end(); it++) {
+		lng filenr = *it;
+		this->FindFile(filenr, &directory, &file);
+		if (directory) {
+			PGRemoveFile(directory->path);
+		} else {
+			auto f = FileManager::FindFile(file.path);
+			if (f) {
+				FileManager::CloseFile(f);
+				GetControlManager(this)->Invalidate();
+			}
+			PGRemoveFile(file.path);
+		}
+	}
+	directories[0]->Update(!this->show_all_files);
+	this->Invalidate();
 }
 
 void ProjectExplorer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {

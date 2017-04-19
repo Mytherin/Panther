@@ -41,11 +41,15 @@ namespace panther {
 				error = PGFileAccessDenied;
 				break;
 			default:
+				error = PGFileIOError;
 				break;
 			}
 		}
 #else
 		handle->f = fopen(filename.c_str(), access == PGFileReadOnly ? "rb" : (access == PGFileReadWrite ? "wb" : "wb+"));
+		if (!handle->f) {
+			error = PGFileIOError;
+		}
 #endif
 		if (!handle->f) {
 			delete handle;
@@ -72,6 +76,7 @@ namespace panther {
 
 		char* string = (char*)malloc(fsize + 1);
 		if (!string) {
+			error = PGFileIOError;
 			return nullptr;
 		}
 		fread(string, fsize, 1, f);

@@ -54,6 +54,8 @@ private:
 	lng selected_entry = 0;
 	bool show_all_files = false;
 
+	void DeleteSelectedFiles();
+	void ActuallyDeleteSelectedFiles();
 	void RenameFile();
 	void FinishRename(bool success, bool update_selection);
 

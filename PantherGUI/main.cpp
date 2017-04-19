@@ -638,7 +638,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				while (handle->pending_confirmation_box) {
 					handle->pending_confirmation_box = false;
 					PGResponse response = PGResponseCancel;
-					int retval = MessageBox(handle->hwnd, handle->confirmation_box_data.message.c_str(), handle->confirmation_box_data.title.c_str(), MB_YESNOCANCEL | MB_ICONWARNING);
+					int retval = MessageBox(handle->hwnd, handle->confirmation_box_data.message.c_str(), handle->confirmation_box_data.title.c_str(), (handle->confirmation_box_data.type == PGConfirmationBoxYesNoCancel ? MB_YESNOCANCEL : MB_YESNO) | MB_ICONWARNING);
 					if (retval == IDNO) {
 						response = PGResponseNo;
 					} else if (retval == IDYES) {
@@ -1410,8 +1410,8 @@ void PGMessageBox(PGWindowHandle window, std::string title, std::string message)
 	MessageBox(window->hwnd, message.c_str(), title.c_str(), MB_OK);
 }
 
-PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message) {
-	int retval = MessageBox(window->hwnd, message.c_str(), title.c_str(), MB_YESNOCANCEL | MB_ICONWARNING);
+PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationBoxType type) {
+	int retval = MessageBox(window->hwnd, message.c_str(), title.c_str(), (type == PGConfirmationBoxYesNoCancel ? MB_YESNOCANCEL : MB_YESNO) | MB_ICONWARNING);
 	if (retval == IDNO) {
 		return PGResponseNo;
 	} else if (retval == IDYES) {
@@ -1420,13 +1420,14 @@ PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::stri
 	return PGResponseCancel;
 }
 
-void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data) {
+void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data, PGConfirmationBoxType type) {
 	window->pending_confirmation_box = true;
 	window->confirmation_box_data.callback = callback;
 	window->confirmation_box_data.control = control;
 	window->confirmation_box_data.message = message;
 	window->confirmation_box_data.data = data;
 	window->confirmation_box_data.title = title;
+	window->confirmation_box_data.type = type;
 }
 
 std::string GetOSName() {
@@ -1537,6 +1538,19 @@ PGIOError PGRemoveFile(std::string source) {
 		}
 	}
 	return PGIOSuccess;
+}
+
+PGIOError PGTrashFile(std::string source) {
+	std::string actual_source = source + "\0"; // SHFileOperation requires double null-terminated strings
+	SHFILEOPSTRUCT op;
+	op.hwnd = NULL;
+	op.wFunc = FO_DELETE;
+	op.pFrom = actual_source.c_str();
+	op.pTo = NULL;
+	op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI;
+	op.hNameMappings = NULL;
+	int res = SHFileOperation(&op);
+	return res == 0 ? PGIOSuccess : PGIOErrorOther;
 }
 
 PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files) {

@@ -49,6 +49,7 @@ public:
 		PGConfirmationCallback callback;
 		Control* control;
 		void* data;
+		PGConfirmationBoxType type;
 	} confirmation_box_data;
 
 	PGWindow(PGWorkspace* workspace) : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), 

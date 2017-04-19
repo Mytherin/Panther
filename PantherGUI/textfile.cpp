@@ -147,6 +147,7 @@ TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename
 	lng output_size = 0;
 	PGFileEncoding result_encoding;
 	if (!PGTryConvertToUTF8(base, size, &output_text, &output_size, &result_encoding) || !output_text) {
+		error = PGFileEncodingFailure;
 		return nullptr;
 	}
 	if (output_text != base) {
