@@ -1570,8 +1570,8 @@ void PGLogMessage(std::string text) {
 	}
 }
 
-void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
-	if (window->tooltip && !IsWindow(window->tooltip)) {
+PGTooltipHandle PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
+	/*if (window->tooltip && !IsWindow(window->tooltip)) {
 		window->tooltip = nullptr;
 	}
 
@@ -1579,19 +1579,22 @@ void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
 		// this tooltip already exists
 		return;
 	}
-	
-	// create the tooltip.
-	window->tooltip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
+	*/
+
+	PGTooltipHandle handle = new PGTooltip();
+	handle->window = window;
+	// create the actual tooltip.
+	handle->tooltip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
 		WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		window->hwnd, NULL, wcex.hInstance, NULL);
-	if (!window->tooltip) {
-		return;
+	if (!handle->tooltip) {
+		return nullptr;
 	}
 
-	window->tooltip_string = text;
+	handle->tooltip_text = text;
 
-	SetWindowPos(window->tooltip, HWND_TOPMOST, 0, 0, 0, 0,
+	SetWindowPos(handle->tooltip, HWND_TOPMOST, 0, 0, 0, 0,
 		SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
 	// set up tooltip information 
@@ -1600,10 +1603,32 @@ void PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string text) {
 	ti.uFlags = TTF_SUBCLASS;
 	ti.hwnd = window->hwnd;
 	ti.hinst = wcex.hInstance;
-	ti.lpszText = (LPSTR)window->tooltip_string.c_str();
+	ti.lpszText = (LPSTR)handle->tooltip_text.c_str();
 	ti.rect.left = rect.x; ti.rect.right = rect.x + rect.width;
 	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
 
 	// Associate the tooltip with the "tool" window.
-	SendMessage(window->tooltip, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&ti);
+	SendMessage(handle->tooltip, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&ti);
+	return handle;
+}
+
+void PGUpdateTooltipRegion(PGTooltipHandle handle, PGRect rect) {
+	TOOLINFO ti = { 0 };
+	ti.cbSize = sizeof(TOOLINFO);
+	ti.uFlags = TTF_SUBCLASS;
+	ti.hwnd = handle->window->hwnd;
+	ti.hinst = wcex.hInstance;
+	ti.lpszText = (LPSTR)handle->tooltip_text.c_str();
+	ti.rect.left = rect.x; ti.rect.right = rect.x + rect.width;
+	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
+
+	// Associate the tooltip with the "tool" window.
+	SendMessage(handle->tooltip, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&ti);
+}
+
+void PGDestroyTooltip(PGTooltipHandle handle) {
+	if (handle->tooltip && !IsWindow(handle->tooltip)) {
+		DestroyWindow(handle->tooltip);
+	}
+	delete handle;
 }

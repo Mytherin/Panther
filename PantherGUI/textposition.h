@@ -2,6 +2,8 @@
 
 #include "textbuffer.h"
 
+#include <memory>
+
 struct PGTextPosition {
 	PGTextBuffer* buffer = nullptr;
 	lng position = 0;

@@ -22,16 +22,13 @@ public:
 	PGWorkspace* workspace;
 	PGPopupMenuHandle menu;
 	SkBitmap bitmap;
-	std::string tooltip_string;
-
-	HWND tooltip;
-
+	
 	bool pending_popup_menu = false;
 	bool pending_drag_drop = false;
 	bool pending_confirmation_box = false;
 	bool pending_destroy = false;
 	bool dragging = false;
-
+	
 	struct DragDropData {
 		PGBitmapHandle image;
 		PGDropCallback callback;
@@ -56,7 +53,13 @@ public:
 
 	PGWindow(PGWorkspace* workspace) : modifier(PGModifierNone), pending_drag_drop(false), dragging(false), 
 		pending_popup_menu(false), workspace(workspace), pending_destroy(false),
-		pending_confirmation_box(false), tooltip(nullptr) {}
+		pending_confirmation_box(false) {}
+};
+
+struct PGTooltip {
+	PGWindowHandle window;
+	std::string tooltip_text;
+	HWND tooltip;
 };
 
 struct PGTimerParameter {

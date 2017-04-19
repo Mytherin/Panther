@@ -377,9 +377,6 @@
     <ClInclude Include="button.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="scrollbar.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="findtext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -534,6 +531,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="decoratedscrollbar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scrollbar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
