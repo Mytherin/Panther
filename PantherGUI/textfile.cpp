@@ -33,6 +33,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
 	this->indentation = PGIndentionTabs;
 	this->tabwidth = 4;
+	this->encoding = PGEncodingUTF8;
 	default_font = PGCreateFont();
 	SetTextFontSize(default_font, 10);
 	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
@@ -47,10 +48,11 @@ TextFile::TextFile(BasicTextField* textfield) :
 	saved_undo_count = 0;
 }
 
-TextFile::TextFile(BasicTextField* textfield, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
+TextFile::TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
 	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr),
 	bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0, 0), last_modified_time(-1),
-	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false) {
+	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false), 
+	encoding(encoding) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
@@ -156,8 +158,7 @@ TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename
 		size = output_size;
 	}
 	auto stats = PGGetFileFlags(filename);
-	TextFile* file = new TextFile(textfield, filename, base, size, immediate_load);
-	file->encoding = result_encoding;
+	TextFile* file = new TextFile(textfield, result_encoding, filename, base, size, immediate_load);
 	if (stats.flags == PGFileFlagsEmpty) {
 		file->last_modified_time = stats.modification_time;
 		file->last_modified_notification = stats.modification_time;

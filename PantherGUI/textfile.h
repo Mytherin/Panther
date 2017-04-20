@@ -234,7 +234,7 @@ public:
 	void FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, int context_lines);
 private:
 	// load textfile from a file
-	TextFile(BasicTextField* textfield, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);
+	TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);
 
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 

@@ -382,7 +382,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 						// if we have the text stored in a buffer
 						// we load the text from the buffer, rather than from the file
 						std::string buffer = (*it)["buffer"];
-						textfile = std::shared_ptr<TextFile>(new TextFile(textfield, path.c_str(), (char*)buffer.c_str(), buffer.size(), true, false));
+						textfile = std::shared_ptr<TextFile>(new TextFile(textfield, PGEncodingUTF8, path.c_str(), (char*)buffer.c_str(), buffer.size(), true, false));
 						if (path.size() == 0) {
 							textfile->name = "untitled";
 						}
