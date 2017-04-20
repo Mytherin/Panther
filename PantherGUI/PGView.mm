@@ -28,6 +28,7 @@
 struct PGPopupMenu {
 	PGWindowHandle window;
 	std::map<int, PGControlCallback> callbacks;
+	std::vector<PGPopupInformation> info;
 	Control* control;
 	NSMenu* menu;
 };
@@ -452,9 +453,12 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 -(void)popupMenuPress:(NSMenuItem*)sender {
 	NSArray* array = (NSArray*)[sender representedObject];
-	PGControlCallback callback = (PGControlCallback)[(NSValue*)array[0] pointerValue];
-	Control* control = (Control*)[(NSValue*)array[1] pointerValue];
-	callback(control);
+	PGPopupCallback callback = (PGPopupCallback)[(NSValue*)array[0] pointerValue];
+	PGPopupMenuHandle popup = (PGPopupMenuHandle)[(NSValue*)array[1] pointerValue];
+	Control* control = popup->control;
+	lng entry = [(NSNumber*)array[2] longLongValue];
+	PGPopupInformation info = popup->info[entry];
+	callback(control, &info);
 }
 
 
@@ -687,11 +691,14 @@ void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submen
 	//assert(0);
 }
 
-void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation info, PGPopupCallback callback, PGPopupMenuFlags flags) {
-	NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:info.text.c_str()] action:@selector(popupMenuPress:) keyEquivalent:@""];
+void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation information, PGPopupCallback callback, PGPopupMenuFlags flags) {
+	NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:information.text.c_str()] action:@selector(popupMenuPress:) keyEquivalent:@""];
 	NSValue* _callback = [NSValue valueWithPointer:(void*)callback];
-	NSValue* _handle = [NSValue valueWithPointer:(void*)handle->control];
-	NSArray* array = @[_callback, _handle];
+	NSValue* _handle = [NSValue valueWithPointer:(void*)handle];
+	NSNumber* _info = [NSNumber numberWithLongLong:(lng)handle->info.size()];
+	handle->info.push_back(information);
+
+	NSArray* array = @[_callback, _handle, _info];
 	[item setRepresentedObject:array];
 	[handle->menu addItem:item];
 }

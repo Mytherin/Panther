@@ -443,6 +443,7 @@ struct PGPopupInformation {
 	PGPopupType type;
 	PGBitmapHandle image = nullptr;
 
+	PGPopupInformation() : handle(nullptr) {}
 	PGPopupInformation(PGPopupMenuHandle handle) : handle(handle), type(PGPopupTypeEntry), pdata(nullptr), image(nullptr), menu_handle(nullptr) { }
 	PGPopupInformation(PGPopupMenuHandle handle, std::string data) : handle(handle), type(PGPopupTypeEntry), data(data), image(nullptr), menu_handle(nullptr) {}
 	PGPopupInformation(PGPopupMenuHandle handle, double data) : handle(handle), type(PGPopupTypeEntry), ddata(data), image(nullptr), menu_handle(nullptr) {}
