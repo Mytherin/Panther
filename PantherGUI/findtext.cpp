@@ -710,7 +710,10 @@ void PGFindText::ShiftTextfieldFocus(PGDirection direction) {
 	}
 	assert(fields[0]);
 	while (fields[selected_field] == nullptr) {
-		selected_field--;
+		selected_field += direction == PGDirectionRight ? 1 : -1;
+		if (selected_field > 2) {
+			selected_field = 0;
+		}
 	}
 	new_focus = fields[selected_field];
 	if (new_focus) {
