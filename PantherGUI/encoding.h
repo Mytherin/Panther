@@ -5,6 +5,7 @@
 #include <string>
 
 typedef enum {
+	PGEncodingUnknown,
 	PGEncodingBinary,
 	PGEncodingUTF8,
 	PGEncodingUTF8BOM,
@@ -49,8 +50,12 @@ typedef enum {
 	PGEncodingVietnameseWindows1258
 } PGFileEncoding;
 
+void PGInitializeEncodings();
+
 //! Convert PGFileEncoding to a human-readable string
 std::string PGEncodingToString(PGFileEncoding);
+//! Convert a string to a PGEncoding
+PGFileEncoding PGEncodingFromString(std::string);
 
 struct PGEncoder;
 typedef PGEncoder* PGEncoderHandle;

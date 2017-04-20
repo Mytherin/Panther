@@ -10,6 +10,13 @@
 #include <unicode/ucnv.h>
 #include <unicode/ucsdet.h>
 
+#include <map>
+
+std::map<PGFileEncoding, std::string> readable_name_map;
+std::map<std::string, PGFileEncoding> readable_name_map_inverse;
+std::map<PGFileEncoding, std::string> icuname_map;
+std::map<std::string, PGFileEncoding> icuname_map_inverse;
+
 struct PGEncoder {
 	PGFileEncoding source_encoding;
 	PGFileEncoding target_encoding;
@@ -17,113 +24,66 @@ struct PGEncoder {
 	UConverter* target = nullptr;
 };
 
-std::string PGEncodingToString(PGFileEncoding encoding) {
-	switch (encoding) {
-		case PGEncodingUTF8:
-			return "UTF-8";
-		case PGEncodingUTF8BOM:
-			return "UTF-8 with BOM";
-		case PGEncodingUTF16:
-			return "UTF-16";
-		case PGEncodingUTF16Platform:
-			return "UTF-16 Platform";
-		case PGEncodingUTF32:
-			return "UTF-32";
-		case PGEncodingUTF16BE:
-			return "UTF-16 BE";
-		case PGEncodingUTF16BEBOM:
-			return "UTF-16 BE with BOM";
-		case PGEncodingUTF16LE:
-			return "UTF-16 LE";
-		case PGEncodingUTF16LEBOM:
-			return "UTF-16 LE with BOM";
-		case PGEncodingUTF32BE:
-			return "UTF-32 BE";
-		case PGEncodingUTF32BEBOM:
-			return "UTF-32 BE with BOM";
-		case PGEncodingUTF32LE:
-			return "UTF-32 LE";
-		case PGEncodingUTF32LEBOM:
-			return "UTF-32 LE with BOM";
-		case PGEncodingWesternISO8859_1:
-			return "ISO-8859-1";
-		case PGEncodingWesternWindows1252:
-			return "Windows-1252";
-		default:
-			return "Unknown";
-	}
-	return "";
+
+static void AddEncoding(PGFileEncoding encoding, std::string readable_name, std::string icuname) {
+	readable_name_map[encoding] = readable_name;
+	readable_name_map_inverse[readable_name] = encoding;
+	icuname_map[encoding] = icuname;
+	icuname_map_inverse[icuname] = encoding;
 }
 
-static const char* GetEncodingName(PGFileEncoding encoding) {
-	switch (encoding) {
-		case PGEncodingUTF8:
-		case PGEncodingUTF8BOM:
-			return "UTF-8";
-		case PGEncodingUTF16:
-			return "UTF-16";
-		case PGEncodingUTF16Platform:
-			return "UTF16_PlatformEndian";
-		case PGEncodingUTF32:
-			return "UTF-32";
-		case PGEncodingUTF16BE:
-		case PGEncodingUTF16BEBOM:
-			return "UTF-16BE";
-		case PGEncodingUTF16LE:
-		case PGEncodingUTF16LEBOM:
-			return "UTF-16LE";
-		case PGEncodingUTF32BE:
-		case PGEncodingUTF32BEBOM:
-			return "UTF-16BE";
-		case PGEncodingUTF32LE:
-		case PGEncodingUTF32LEBOM:
-			return "UTF-32LE";
-		case PGEncodingWesternISO8859_1:
-			return "ISO-8859-1";
-		case PGEncodingNordicISO8859_10:
-			return "iso-8859_10-1998";
-		case PGEncodingCelticISO8859_14:
-			return "iso-8859_14-1998";
-		case PGEncodingWesternWindows1252:
-			return "windows-1252";
-		case PGEncodingBinary:
-			return "Binary";
-		default:
-			assert(0);
+void PGInitializeEncodings() {
+	AddEncoding(PGEncodingUTF8, "UTF-8", "UTF-8");
+	AddEncoding(PGEncodingUTF8BOM, "UTF-8 with BOM", "UTF-8");
+	AddEncoding(PGEncodingUTF16, "UTF-16", "UTF-16");
+	AddEncoding(PGEncodingUTF16Platform, "UTF-16 Platform", "UTF16_PlatformEndian");
+	AddEncoding(PGEncodingUTF32, "UTF-32", "UTF-32");
+	AddEncoding(PGEncodingUTF16BE, "UTF-16 BE", "UTF-16BE");
+	AddEncoding(PGEncodingUTF16BEBOM, "UTF-16 BE with BOM", "UTF-16BE");
+	AddEncoding(PGEncodingUTF16LE, "UTF-16 LE", "UTF-16LE");
+	AddEncoding(PGEncodingUTF16LEBOM, "UTF-16 LE with BOM", "UTF-16LE");
+	AddEncoding(PGEncodingUTF32BE, "UTF-32 BE", "UTF-32BE");
+	AddEncoding(PGEncodingUTF32BEBOM, "UTF-32 BE with BOM", "UTF-32BE");
+	AddEncoding(PGEncodingUTF32LE, "UTF-32 LE", "UTF-32LE");
+	AddEncoding(PGEncodingUTF32LEBOM, "UTF-32 LE with BOM", "UTF-32LE");
+	AddEncoding(PGEncodingWesternISO8859_1, "ISO-8859-1", "ISO-8859-1");
+	AddEncoding(PGEncodingNordicISO8859_10, "ISO-8859-10", "iso-8859_10-1998");
+	AddEncoding(PGEncodingCelticISO8859_14, "ISO-8859-14", "iso-8859_14-1998");
+	AddEncoding(PGEncodingWesternWindows1252, "Windows-1252", "windows-1252");
+	AddEncoding(PGEncodingBinary, "Binary", "Binary");
+	AddEncoding(PGEncodingUnknown, "Unknown", "Unknown");
+}
+
+std::string PGEncodingToString(PGFileEncoding encoding) {
+	auto entry = readable_name_map.find(encoding);
+	if (entry != readable_name_map.end()) {
+		return entry->second;
 	}
-	return nullptr;
+	return "Unknown";
+}
+
+PGFileEncoding PGEncodingFromString(std::string encoding) {
+	auto entry = readable_name_map_inverse.find(encoding);
+	if (entry != readable_name_map_inverse.end()) {
+		return entry->second;
+	}
+	return PGEncodingUnknown;
+}
+
+static std::string GetEncodingName(PGFileEncoding encoding) {
+	auto entry = icuname_map.find(encoding);
+	if (entry != icuname_map.end()) {
+		return entry->second;
+	}
+	return "Unknown";
 }
 
 static PGFileEncoding GetEncodingFromName(std::string encoding) {
-	if (encoding == "UTF-8") {
-		return PGEncodingUTF8;
-	} else if (encoding == "UTF-16") {
-		return PGEncodingUTF16;
-	} else if (encoding == "UTF16_PlatformEndian") {
-		return PGEncodingUTF16Platform;
-	} else if (encoding == "UTF-32") {
-		return PGEncodingUTF32;
-	} else if (encoding == "UTF-16BE") {
-		return PGEncodingUTF16BE;
-	} else if (encoding == "UTF-16LE") {
-		return PGEncodingUTF16LE;
-	} else if (encoding == "UTF-32BE") {
-		return PGEncodingUTF32BE;
-	} else if (encoding == "UTF-32LE") {
-		return PGEncodingUTF32LE;
-	} else if (encoding == "ISO-8859-1") {
-		return PGEncodingWesternISO8859_1;
-	} else if (encoding == "iso-8859_10-1998") {
-		return PGEncodingNordicISO8859_10;
-	} else if (encoding == "iso-8859_14-1998") {
-		return PGEncodingCelticISO8859_14;
-	} else if (encoding == "windows-1252") {
-		return PGEncodingWesternWindows1252;
-	} else if (encoding == "Binary") {
-		return PGEncodingBinary;
+	auto entry = icuname_map_inverse.find(encoding);
+	if (entry != icuname_map_inverse.end()) {
+		return entry->second;
 	}
-	//assert(0);
-	return PGEncodingBinary;
+	return PGEncodingUnknown;
 }
 
 void LogAvailableEncodings() {
@@ -137,10 +97,14 @@ void LogAvailableEncodings() {
 }
 
 PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding target_encoding) {
+	assert(source_encoding != PGEncodingUnknown && target_encoding != PGEncodingUnknown);
 	UErrorCode error = U_ZERO_ERROR;
 
 	// assure that both encodings are implemented
-	assert(GetEncodingName(source_encoding) && GetEncodingName(target_encoding));
+	std::string source = GetEncodingName(source_encoding);
+	std::string target = GetEncodingName(target_encoding);
+
+	assert(source != "Unknown" && target != "Unknown");
 
 	PGEncoderHandle handle = new PGEncoder();
 	handle->source_encoding = source_encoding;
@@ -150,13 +114,13 @@ PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding t
 		// create the converters
 		// binary encoding is handled by us, not by ICU
 		// so we don't create an ICU converter for that encoding
-		handle->source = ucnv_open(GetEncodingName(source_encoding), &error);
+		handle->source = ucnv_open(source.c_str(), &error);
 		if (U_FAILURE(error)) {
 			// failed to create a converter
 			delete handle;
 			return nullptr;
 		}
-		handle->target = ucnv_open(GetEncodingName(target_encoding), &error);
+		handle->target = ucnv_open(target.c_str(), &error);
 		if (U_FAILURE(error)) {
 			// failed to create a converter
 			ucnv_close(handle->source);

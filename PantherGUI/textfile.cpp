@@ -3158,6 +3158,9 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 			this->InvalidateParsing();
 		}
 	}
+	if (settings.encoding != PGEncodingUnknown) {
+		this->encoding = settings.encoding;
+	}
 }
 
 void TextFile::AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {

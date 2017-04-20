@@ -110,6 +110,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGLanguageManager::AddLanguage(new XMLLanguage());
 	PGLanguageManager::AddLanguage(new FindResultsLanguage());
 
+	PGInitializeEncodings();
+
 	PGSettingsManager::Initialize();
 	PGKeyBindingsManager::Initialize();
 	PGGlobalSettings::Initialize("globalsettings.json");

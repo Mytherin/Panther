@@ -413,6 +413,10 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 							settings.line_ending = PGLineEndingMacOS;
 						}
 					}
+					if (it->count("encoding") > 0) {
+						std::string encoding_name = (*it)["encoding"];
+						settings.encoding = PGEncodingFromString(encoding_name);
+					}
 					if (it->count("language") > 0) {
 						std::string language_name = (*it)["language"];
 						settings.language = PGLanguageManager::GetLanguageFromName(language_name);
@@ -525,6 +529,7 @@ void TabControl::WriteWorkspace(nlohmann::json& j) {
 			cur["language"] = file->language->GetName();
 		}
 		cur["lineending"] = endings;
+		cur["encoding"] = PGEncodingToString(file->encoding);
 		if (file->wordwrap) {
 			cur["yoffset"] = { file->yoffset.linenumber, file->yoffset.inner_line };
 		} else {
