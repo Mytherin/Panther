@@ -2,6 +2,7 @@
 
 #include "button.h"
 #include "container.h"
+#include "label.h"
 #include "simpletextfield.h"
 #include "togglebutton.h"
 
@@ -13,8 +14,6 @@ public:
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	
 	void Draw(PGRendererHandle renderer);
-
-	void OnResize(PGSize old_size, PGSize new_size);
 
 	bool HighlightMatches() { return type != PGFindReplaceManyFiles && toggle_highlight && toggle_highlight->IsToggled(); }
 	
@@ -50,6 +49,7 @@ private:
 	ToggleButton* toggle_wholeword;
 	ToggleButton* toggle_wrap;
 	ToggleButton* toggle_highlight;
+	Label* find_label = nullptr;
 
 	nlohmann::json& GetFindHistory();
 
@@ -58,10 +58,12 @@ private:
 	Button* replace_all_button = nullptr;
 	Button* replace_in_selection_button = nullptr;
 	Button* replace_expand = nullptr;
+	Label* replace_label = nullptr;
 
 	SimpleTextField* files_to_include_field = nullptr;
 	ToggleButton* source_files_only = nullptr;
 	ToggleButton* respect_gitignore = nullptr;
+	Label* filter_label = nullptr;
 	
 
 

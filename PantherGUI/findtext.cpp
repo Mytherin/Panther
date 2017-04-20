@@ -27,9 +27,10 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 
 	field = new SimpleTextField(window);
-	field->width = this->width - 400;
-	field->x = 150;
-	field->y = VPADDING;
+	field->percentage_width = 1;
+	field->fixed_height = field->height;
+	field->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop);
+	field->margin.top = VPADDING;
 	field->OnPrevEntry([](Control* c, void* data) {
 		PGFindText* f = (PGFindText*)data;
 		nlohmann::json& find_history = f->GetFindHistory();
@@ -63,7 +64,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 
 	this->percentage_width = 1;
 	this->fixed_height = field->height + VPADDING * 2;
-	this->height = fixed_height;
+	this->height = this->fixed_height;
 
 	PGScalar button_width = MeasureTextWidth(font, "Find Prev") + 2 * HPADDING;
 	PGScalar button_height = field->height;
@@ -72,13 +73,20 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	Button* buttons[2];
 	for (int i = 0; i < 2; i++) {
 		buttons[i] = new Button(window, this);
-		buttons[i]->SetSize(PGSize(button_width, button_height));
-		buttons[i]->y = VPADDING;
+		buttons[i]->fixed_width = button_width;
+		buttons[i]->fixed_height = button_height;
+		buttons[i]->right_anchor = i > 0 ? buttons[i - 1] : nullptr;
+		buttons[i]->SetAnchor(PGAnchorRight | PGAnchorTop);
+		buttons[i]->margin.top = VPADDING;
+		buttons[i]->margin.left = HPADDING;
 		this->AddControl(buttons[i]);
 	}
-	find_button = buttons[0];
-	find_expand = buttons[1];
-	find_expand->SetSize(PGSize(button_height, button_height));
+	find_expand = buttons[0];
+	find_button = buttons[1];
+
+	find_expand->margin.left = HPADDING;
+	find_expand->margin.right = HPADDING_SMALL;
+	find_expand->fixed_width = button_height;
 
 	auto workspace = PGGetWorkspace(window);
 	assert(workspace);
@@ -114,8 +122,12 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	ToggleButton* toggles[5];
 	for (int i = 0; i < 5; i++) {
 		toggles[i] = new ToggleButton(window, this, initial_values[i]);
-		toggles[i]->SetSize(PGSize(button_height, button_height));
-		toggles[i]->y = VPADDING;
+		toggles[i]->SetAnchor(PGAnchorLeft | PGAnchorTop);
+		toggles[i]->fixed_height = button_height;
+		toggles[i]->fixed_width = button_height;
+		toggles[i]->left_anchor = i > 0 ? toggles[i - 1] : nullptr;
+		toggles[i]->margin.left = 1;
+		toggles[i]->margin.top = VPADDING;
 		this->AddControl(toggles[i]);
 	}
 	toggle_regex = toggles[0];
@@ -124,8 +136,26 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	toggle_wrap = toggles[3];
 	toggle_highlight = toggles[4];
 
+	toggle_regex->margin.left = HPADDING_SMALL;
+	toggle_wrap->margin.left = HPADDING_SMALL;
+
+	find_label = new Label(window, this);
+	find_label->SetAnchor(PGAnchorTop | PGAnchorLeft);
+	find_label->SetText("Find:", font);
+	find_label->fixed_height = field->height;
+	find_label->fixed_width = MeasureTextWidth(font, "Replace:");
+	find_label->margin.left = HPADDING_SMALL;
+	find_label->margin.right = HPADDING_SMALL;
+	find_label->margin.top = VPADDING;
+	find_label->left_anchor = toggle_highlight;
+	this->AddControl(find_label);
+
+	field->left_anchor = find_label;
+	field->right_anchor = find_button;
+
 	find_button->SetText(std::string("Find"), font);
 	find_expand->SetText(std::string("v"), font);
+
 	toggle_regex->SetText(std::string(".*"), font);
 	toggle_matchcase->SetText(std::string("Aa"), font);
 	toggle_wholeword->SetText(std::string("\"\""), font);
@@ -176,6 +206,8 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	this->replace_expand = nullptr;
 	this->find_prev = nullptr;
 	this->find_all = nullptr;
+	this->replace_label = nullptr;
+	this->filter_label = nullptr;
 
 	this->SetType(type);
 }
@@ -192,7 +224,8 @@ void PGFindText::SetType(PGFindTextType type) {
 
 	// clear current controls
 	std::vector<Control*> controls{ replace_field, replace_button, replace_all_button, replace_in_selection_button,
-		files_to_include_field, source_files_only, respect_gitignore, replace_expand, find_prev, find_all };
+		files_to_include_field, source_files_only, respect_gitignore, replace_expand, find_prev, find_all, 
+		replace_label, filter_label };
 
 
 	for (auto it = controls.begin(); it != controls.end(); it++) {
@@ -210,17 +243,26 @@ void PGFindText::SetType(PGFindTextType type) {
 	this->replace_expand = nullptr;
 	this->find_prev = nullptr;
 	this->find_all = nullptr;
+	this->replace_label = nullptr;
+	this->filter_label = nullptr;
 
 	if (type != PGFindReplaceManyFiles) {
 		Button* buttons[2];
 		for (int i = 0; i < 2; i++) {
 			buttons[i] = new Button(window, this);
-			buttons[i]->SetSize(PGSize(find_button->width, find_button->height));
-			buttons[i]->y = find_button->y;
+			buttons[i]->fixed_width = find_button->fixed_width;
+			buttons[i]->fixed_height = find_button->fixed_height;
+			buttons[i]->margin.top = find_button->margin.top;
+			buttons[i]->margin.left = HPADDING;
+			buttons[i]->SetAnchor(PGAnchorTop | PGAnchorRight);
+			buttons[i]->right_anchor = i > 0 ? buttons[i - 1] : nullptr;
 			this->AddControl(buttons[i]);
 		}
-		find_prev = buttons[0];
-		find_all = buttons[1];
+		find_all = buttons[0];
+		find_prev = buttons[1];
+
+		find_button->right_anchor = find_prev;
+		find_all->right_anchor = find_expand;
 
 		find_prev->SetText(std::string("Find Prev"), font);
 		find_all->SetText(std::string("Find All"), font);
@@ -249,7 +291,6 @@ void PGFindText::SetType(PGFindTextType type) {
 		{
 			this->fixed_height = field->height + VPADDING * 2;
 
-			find_expand->y = VPADDING;
 			find_expand->SetText(std::string("v"), font);
 			find_expand->OnPressed([](Button* b, void* data) {
 				PGFindText* tf = ((PGFindText*)data);
@@ -259,18 +300,26 @@ void PGFindText::SetType(PGFindTextType type) {
 		}
 		case PGFindReplaceManyFiles:
 		{
-			PGScalar base_y = 2 * (field->height + VPADDING) + VPADDING;
 			this->fixed_height = 3 * (field->height + VPADDING) + VPADDING;
 
+			filter_label = new Label(window, this);
+			filter_label->SetText("Filter:", font);
+			filter_label->SetAnchor(PGAnchorTop | PGAnchorLeft);
+			filter_label->left_anchor = toggle_highlight;
+			filter_label->fixed_width = find_label->fixed_width;
+			filter_label->fixed_height = find_label->fixed_height;
+			filter_label->margin = find_label->margin;
+			this->AddControl(filter_label);
+
 			files_to_include_field = new SimpleTextField(window);
-			files_to_include_field->width = this->width - 400;
-			files_to_include_field->x = 150;
-			files_to_include_field->y = base_y;
+			files_to_include_field->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop);
+			files_to_include_field->left_anchor = filter_label;
+			files_to_include_field->right_anchor = find_button;
+			files_to_include_field->percentage_width = 1;
+			files_to_include_field->fixed_height = field->fixed_height;
+			files_to_include_field->margin.top = VPADDING;
 			this->AddControl(files_to_include_field);
-
-			PGScalar button_width = field->height;
-			PGScalar button_height = field->height;
-
+			
 			auto workspace = PGGetWorkspace(window);
 			assert(workspace);
 			if (workspace->settings.count("find_text") == 0 || !workspace->settings["find_text"].is_object()) {
@@ -289,17 +338,19 @@ void PGFindText::SetType(PGFindTextType type) {
 			ToggleButton* toggles[2];
 			for (int i = 0; i < 2; i++) {
 				toggles[i] = new ToggleButton(window, this, initial_values[i]);
-				toggles[i]->SetSize(PGSize(button_width, button_height));
-				toggles[i]->y = base_y;
+				toggles[i]->SetAnchor(PGAnchorLeft | PGAnchorTop);
+				toggles[i]->fixed_width = toggles[i]->fixed_height = toggle_wrap->fixed_width;
+				toggles[i]->left_anchor = i > 0 ? toggles[i - 1] : nullptr;
+				toggles[i]->margin.top = VPADDING;
+				toggles[i]->margin.left = 1;
 				this->AddControl(toggles[i]);
 			}
 			source_files_only = toggles[0];
 			respect_gitignore = toggles[1];
-			source_files_only->y = field->height + VPADDING * 2;
-			respect_gitignore->y = base_y;
 
-			source_files_only->SetText(std::string("Source Only"), font);
-			respect_gitignore->SetText(std::string(".gitignore"), font);
+			source_files_only->margin.left = HPADDING_SMALL;
+			source_files_only->SetText(std::string("So"), font);
+			respect_gitignore->SetText(std::string(".g"), font);
 
 			auto update_find_text = [](Button* b, bool toggled, void* setting_name) {
 				PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
@@ -310,32 +361,62 @@ void PGFindText::SetType(PGFindTextType type) {
 		}
 		case PGFindReplaceSingleFile:
 		{
-			PGScalar base_y = field->height + VPADDING * 2;
 			if (type == PGFindReplaceSingleFile) {
 				this->fixed_height = 2 * (field->height + VPADDING * 2);
 			}
 
+			replace_label = new Label(window, this);
+			replace_label->SetText("Replace:", font);
+			replace_label->SetAnchor(PGAnchorTop | PGAnchorLeft);
+			replace_label->top_anchor = field;
+			replace_label->left_anchor = toggle_highlight;
+			replace_label->fixed_width = find_label->fixed_width;
+			replace_label->fixed_height = find_label->fixed_height;
+			replace_label->margin = find_label->margin;
+			this->AddControl(replace_label);
+
 			replace_field = new SimpleTextField(window);
-			replace_field->width = this->width - 400;
-			replace_field->x = 150;
-			replace_field->y = base_y;
+			replace_field->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop);
+			replace_field->top_anchor = field;
+			replace_field->left_anchor = replace_label;
+			replace_field->right_anchor = find_button;
+			replace_field->percentage_width = 1;
+			replace_field->fixed_height = field->fixed_height;
+			replace_field->margin.top = VPADDING;
 			this->AddControl(replace_field);
+
+			if (type == PGFindReplaceManyFiles) {
+				respect_gitignore->top_anchor = replace_field;
+				source_files_only->top_anchor = replace_field;
+				files_to_include_field->top_anchor = replace_field;
+				filter_label->top_anchor = replace_field;
+			}
 
 			Button* buttons[3];
 			int button_count = type == PGFindReplaceSingleFile ? 3 : 1;
 			for (int i = 0; i < button_count; i++) {
 				buttons[i] = new Button(window, this);
-				buttons[i]->SetSize(PGSize(find_button->width, find_button->height));
-				buttons[i]->y = base_y;
+				buttons[i]->fixed_width = find_button->fixed_width;
+				buttons[i]->fixed_height = find_button->fixed_height;
+				buttons[i]->margin.top = find_button->margin.top;
+				buttons[i]->margin.left = HPADDING;
+				buttons[i]->top_anchor = field;
+				buttons[i]->SetAnchor(PGAnchorTop | PGAnchorRight);
+				buttons[i]->right_anchor = i > 0 ? buttons[i - 1] : nullptr;
 				this->AddControl(buttons[i]);
 			}
 
 			replace_button = buttons[0];
+			replace_button->right_anchor = find_expand;
 			replace_button->SetText(std::string("Replace"), font);
 
 			if (type == PGFindReplaceSingleFile) {
 				replace_all_button = buttons[1];
 				replace_in_selection_button = buttons[2];
+
+				replace_in_selection_button->right_anchor = find_expand;
+				replace_all_button->right_anchor = replace_in_selection_button;
+				replace_button->right_anchor = replace_all_button;
 
 				replace_all_button->SetText(std::string("Replace All"), font);
 				replace_in_selection_button->SetText(std::string("In Selection"), font);
@@ -352,8 +433,10 @@ void PGFindText::SetType(PGFindTextType type) {
 
 
 				replace_expand = new Button(window, this);
-				replace_expand->SetSize(PGSize(field->height, field->height));
-				replace_expand->y = base_y;
+				replace_expand->SetAnchor(PGAnchorBottom | PGAnchorRight);
+				replace_expand->margin.right = HPADDING_SMALL;
+				replace_expand->margin.bottom = VPADDING;
+				replace_expand->fixed_width = replace_expand->fixed_height = find_expand->fixed_width;
 				this->AddControl(replace_expand);
 				replace_expand->SetText(std::string("v"), font);
 				replace_expand->OnPressed([](Button* b, void* data) {
@@ -372,7 +455,6 @@ void PGFindText::SetType(PGFindTextType type) {
 
 			}
 
-			find_expand->y = VPADDING;
 			find_expand->SetText(std::string("^"), font);
 			if (type == PGFindReplaceSingleFile) {
 				find_expand->OnPressed([](Button* b, void* data) {
@@ -400,63 +482,8 @@ void PGFindText::Draw(PGRendererHandle renderer) {
 
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorScrollbarBackground), PGDrawStyleFill);
 
-	PGScalar field_offset = MeasureTextWidth(font, "Replace:") + HPADDING_SMALL * 2;
-	x += HPADDING_SMALL;
-	RenderString(renderer, font, "Find:", x + field->x - field_offset, y + field->y + (field->height - GetTextHeight(font)) / 2 - 1);
-	if (replace_field) {
-		RenderString(renderer, font, "Replace:", x + replace_field->x - field_offset, y + replace_field->y + (replace_field->height - GetTextHeight(font)) / 2 - 1);
-	}
-	if (files_to_include_field) {
-		RenderString(renderer, font, "Filter:", x + files_to_include_field->x - field_offset, y + files_to_include_field->y + (files_to_include_field->height - GetTextHeight(font)) / 2 - 1);
-	}
-
+	this->everything_dirty = true;
 	PGContainer::Draw(renderer);
-}
-
-void PGFindText::OnResize(PGSize old_size, PGSize new_size) {
-	toggle_regex->SetPosition(PGPoint(HPADDING_SMALL, toggle_regex->y));
-	toggle_matchcase->SetPosition(PGPoint(toggle_regex->x + toggle_regex->width, toggle_matchcase->y));
-	toggle_wholeword->SetPosition(PGPoint(toggle_matchcase->x + toggle_matchcase->width, toggle_wholeword->y));
-	toggle_wrap->SetPosition(PGPoint(toggle_wholeword->x + toggle_wholeword->width + HPADDING_SMALL, toggle_wrap->y));
-	toggle_highlight->SetPosition(PGPoint(toggle_wrap->x + toggle_wrap->width, toggle_highlight->y));
-	if (source_files_only) {
-		source_files_only->SetPosition(PGPoint(toggle_regex->x, source_files_only->y));
-		respect_gitignore->SetPosition(PGPoint(toggle_regex->x, respect_gitignore->y));
-		source_files_only->SetSize(PGSize(toggle_highlight->x + toggle_highlight->width - toggle_regex->x, source_files_only->height));
-		respect_gitignore->SetSize(PGSize(source_files_only->width, respect_gitignore->height));
-	}
-
-	PGScalar field_offset = MeasureTextWidth(font, "In Files:") + HPADDING_SMALL * 2;;
-	field->x = toggle_highlight->x + toggle_highlight->width + HPADDING_SMALL + field_offset;
-	field->width = new_size.width - (type == PGFindReplaceManyFiles ? (find_button->width + HPADDING_SMALL) : hoffset) - field->x - field_offset;
-	if (replace_field) {
-		replace_field->x = field->x;
-		replace_field->width = field->width;
-	}
-	if (files_to_include_field) {
-		files_to_include_field->x = field->x;
-		files_to_include_field->width = field->width;
-	}
-	find_button->SetPosition(PGPoint(field->x + field->width + HPADDING, find_button->y));
-	if (replace_button) {
-		replace_button->SetPosition(PGPoint(find_button->x, replace_button->y));
-	}
-	PGScalar find_expand_position = find_button->x + find_button->width + HPADDING;
-	if (find_prev) {
-		find_prev->SetPosition(PGPoint(find_button->x + find_button->width + HPADDING, find_prev->y));
-		if (replace_all_button) {
-			replace_all_button->SetPosition(PGPoint(find_prev->x, replace_all_button->y));
-		}
-		find_all->SetPosition(PGPoint(find_prev->x + find_prev->width + HPADDING, find_all->y));
-		if (replace_in_selection_button) {
-			replace_in_selection_button->SetPosition(PGPoint(find_all->x, replace_in_selection_button->y));
-		}
-		find_expand_position = find_all->x + find_all->width + HPADDING;
-	}
-	find_expand->SetPosition(PGPoint(find_expand_position, find_expand->y));
-	if (replace_expand) {
-		replace_expand->SetPosition(PGPoint(find_expand->x, replace_expand->y));
-	}
 }
 
 nlohmann::json& PGFindText::GetFindHistory() {
