@@ -7,6 +7,7 @@
 #include "findresults.h"
 #include "scheduler.h"
 
+#include "encoding.h"
 #include "settings.h"
 #include "keybindings.h"
 #include "workspace.h"
@@ -25,6 +26,8 @@ int main(int argc, const char *argv[])
     PGLanguageManager::AddLanguage(new CLanguage());
     PGLanguageManager::AddLanguage(new XMLLanguage());
     PGLanguageManager::AddLanguage(new FindResultsLanguage());
+
+    PGInitializeEncodings();
 
     PGSettingsManager::Initialize();
     PGKeyBindingsManager::Initialize();

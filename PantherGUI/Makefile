@@ -56,6 +56,7 @@ COBJECTS=$(OBJDIR)/basictextfield.o \
 		 $(OBJDIR)/goto.o \
 		 $(OBJDIR)/keybindings.o \
 		 $(OBJDIR)/keywords.o \
+		 $(OBJDIR)/label.o \
 		 $(OBJDIR)/language.o \
 		 $(OBJDIR)/logger.o \
 		 $(OBJDIR)/notification.o \

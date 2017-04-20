@@ -815,11 +815,16 @@ std::string GetOSName() {
 }
 
 
-PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message) {
+PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationBoxType type) {
 	NSAlert *alert = [[NSAlert alloc] init];
-	[alert addButtonWithTitle:@"Save"];
-	[alert addButtonWithTitle:@"Cancel"];
-	[alert addButtonWithTitle:@"Don't Save"];
+	if (type == PGConfirmationBoxYesNoCancel) {
+		[alert addButtonWithTitle:@"Save"];
+		[alert addButtonWithTitle:@"Cancel"];
+		[alert addButtonWithTitle:@"Don't Save"];
+	} else if (type == PGConfirmationBoxYesNo) {
+		[alert addButtonWithTitle:@"Yes"];
+		[alert addButtonWithTitle:@"No"];
+	}
 	[alert setMessageText:[NSString stringWithUTF8String:title.c_str()]];
 	[alert setInformativeText:[NSString stringWithUTF8String:message.c_str()]];
 	[alert setAlertStyle:NSWarningAlertStyle];
@@ -835,8 +840,8 @@ PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::stri
 	return response;
 }
 
-void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data) {
-	PGResponse response = PGConfirmationBox(window, title, message);
+void PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationCallback callback, Control* control, void* data, PGConfirmationBoxType type) {
+	PGResponse response = PGConfirmationBox(window, title, message, type);
 	callback(window, control, data, response);
 }
 
