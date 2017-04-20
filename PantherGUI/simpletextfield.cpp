@@ -9,7 +9,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(SimpleTextField);
 SimpleTextField::SimpleTextField(PGWindowHandle window) :
 	BasicTextField(window, std::shared_ptr<TextFile>(new TextFile(nullptr))), valid_input(true),
 	on_user_cancel(), on_user_confirm(), on_prev_entry(), on_next_entry(), render_background(true) {
-	this->height = GetTextHeight(textfield_font) + 6;
+	this->height = std::ceil(GetTextHeight(textfield_font)) + 6;
 }
 
 SimpleTextField::~SimpleTextField() {

@@ -1142,8 +1142,8 @@ void TextField::OnResize(PGSize old_size, PGSize new_size) {
 		minimap_region.height = 0;
 	}
 	scrollbar->SetPosition(PGPoint(this->width - scrollbar->width, 0));
-	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, this->height - (display_horizontal_scrollbar ? SCROLLBAR_SIZE : 0)));
-	horizontal_scrollbar->SetPosition(PGPoint(0, this->height - horizontal_scrollbar->height));
+	scrollbar->SetSize(PGSize(SCROLLBAR_SIZE, this->height));
+	horizontal_scrollbar->SetPosition(PGPoint(0, this->height - SCROLLBAR_SIZE));
 	horizontal_scrollbar->SetSize(PGSize(this->width - SCROLLBAR_SIZE, SCROLLBAR_SIZE));
 }
 
