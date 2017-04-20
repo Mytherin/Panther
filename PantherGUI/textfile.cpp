@@ -3034,15 +3034,27 @@ bool TextFile::FindMatch(PGRegexHandle handle, PGDirection direction, bool wrap,
 	return false;
 }
 
-void TextFile::SelectMatches(bool in_selection) {
-	assert(matches.size() > 0);
+bool TextFile::SelectMatches(bool in_selection) {
+	if (matches.size() == 0) return false;
+
 	if (in_selection) {
-		PGTextRange selection = cursors[0].GetCursorSelection();
+		std::vector<Cursor> backup = cursors;
+		std::vector<PGTextRange> selections;
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			selections.push_back(it->GetCursorSelection());
+		}
 		ClearCursors();
 		for (auto it = matches.begin(); it != matches.end(); it++) {
-			if (!(*it < selection || *it > selection)) {
-				cursors.push_back(Cursor(this, *it));
+			for (auto it2 = selections.begin(); it2 != selections.end(); it2++) {
+				if (!(*it < *it2 || *it > *it2)) {
+					cursors.push_back(Cursor(this, *it));
+					break;
+				}
 			}
+		}
+		if (cursors.size() == 0) {
+			cursors = backup;
+			return false;
 		}
 	} else {
 		ClearCursors();
@@ -3053,6 +3065,7 @@ void TextFile::SelectMatches(bool in_selection) {
 	active_cursor = 0;
 	VerifyTextfile();
 	if (textfield) textfield->SelectionChanged();
+	return true;
 }
 
 

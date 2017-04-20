@@ -603,10 +603,10 @@ void PGFindText::FindInFiles() {
 	textfile->FindAllMatchesAsync(files, regex, 2);
 }
 
-void PGFindText::SelectAllMatches(bool in_selection) {
+bool PGFindText::SelectAllMatches(bool in_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
-	if (!tf.IsLoaded()) return;
+	if (!tf.IsLoaded()) return false;
 
 	if (HighlightMatches()) {
 		// toggle-highlight is turned on
@@ -620,7 +620,7 @@ void PGFindText::SelectAllMatches(bool in_selection) {
 		this->FindAll(false);
 	}
 	assert(tf.FinishedSearch());
-	tf.SelectMatches(in_selection);
+	return tf.SelectMatches(in_selection);
 }
 void PGFindText::FindAll(bool select_first_match) {
 	ControlManager* manager = GetControlManager(this);
@@ -671,14 +671,14 @@ void PGFindText::ReplaceAll(bool in_selection) {
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	if (!tf.IsLoaded()) return;
 
-	this->SelectAllMatches(in_selection);
-	if (tf.GetCursors().size() > 0) {
-		// check if there are any matches
-		PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);
-		tf.RegexReplace(regex, replacement);
-		if (HighlightMatches()) {
-			this->FindAll(false);
-		}
+	if (!this->SelectAllMatches(in_selection)) {
+		// no matches were found
+		return;
+	}
+	PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);
+	tf.RegexReplace(regex, replacement);
+	if (HighlightMatches()) {
+		this->FindAll(false);
 	}
 }
 

@@ -152,7 +152,7 @@ public:
 
 	void IndentText(PGDirection direction);
 
-	void SelectMatches(bool in_selection);
+	bool SelectMatches(bool in_selection);
 	bool FinishedSearch() { return finished_search; }
 
 	bool FindMatch(PGRegexHandle regex_handle, PGDirection direction, bool wrap, bool include_selection);
