@@ -41,6 +41,43 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	//RenderImage(renderer, bitmap, x, y);
 	//DeleteImage(bitmap);
 
+	undo_button = new Button(window, this);
+	undo_button->SetImage(PGStyleManager::GetImage("data/icons/undo.png"));
+	undo_button->padding = PGPadding(4, 4, 4, 4);
+	undo_button->fixed_width = TOOLBAR_HEIGHT - undo_button->padding.left - undo_button->padding.right;
+	undo_button->fixed_height = TOOLBAR_HEIGHT - undo_button->padding.top - undo_button->padding.bottom;
+	undo_button->SetAnchor(PGAnchorLeft | PGAnchorTop);
+	undo_button->margin.left = 2;
+	undo_button->margin.right = 2;
+	undo_button->background_color = PGColor(0, 0, 0, 0);
+	undo_button->background_stroke_color = PGColor(0, 0, 0, 0);
+	undo_button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
+	undo_button->SetTooltip("Undo");
+	undo_button->OnPressed([](Button* b, void* data) {
+		ProjectExplorer* p = (ProjectExplorer*)data;
+		p->Undo();
+	}, this);
+	this->AddControl(undo_button);
+
+	redo_button = new Button(window, this);
+	redo_button->SetImage(PGStyleManager::GetImage("data/icons/redo.png"));
+	redo_button->padding = PGPadding(4, 4, 4, 4);
+	redo_button->fixed_width = TOOLBAR_HEIGHT - redo_button->padding.left - redo_button->padding.right;
+	redo_button->fixed_height = TOOLBAR_HEIGHT - redo_button->padding.top - redo_button->padding.bottom;
+	redo_button->SetAnchor(PGAnchorLeft | PGAnchorTop);
+	redo_button->margin.left = 2;
+	redo_button->margin.right = 2;
+	redo_button->left_anchor = undo_button;
+	redo_button->background_color = PGColor(0, 0, 0, 0);
+	redo_button->background_stroke_color = PGColor(0, 0, 0, 0);
+	redo_button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
+	redo_button->SetTooltip("Undo");
+	redo_button->OnPressed([](Button* b, void* data) {
+		ProjectExplorer* p = (ProjectExplorer*)data;
+		p->Redo();
+	}, this);
+	this->AddControl(redo_button);
+
 	ToggleButton* button = new ToggleButton(window, this, show_all_files);
 	button->SetImage(PGStyleManager::GetImage("data/icons/showallfiles.png"));
 	button->padding = PGPadding(4, 4, 4, 4);
@@ -49,6 +86,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	button->SetAnchor(PGAnchorLeft | PGAnchorTop);
 	button->margin.left = 2;
 	button->margin.right = 2;
+	button->left_anchor = redo_button;
 	button->background_color = PGColor(0, 0, 0, 0);
 	button->background_stroke_color = PGColor(0, 0, 0, 0);
 	button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
@@ -184,29 +222,82 @@ void ProjectExplorer::ScrollToFile(lng file_number) {
 	SetScrollbarOffset(scrollbar_offset);
 }
 
+void ProjectExplorer::Undo() {
+	if (undos.size() == 0) return;
+
+	FileOperationDelta* delta = this->undos.back().get();
+	Undo(delta);
+	this->redos.push_back(std::move(this->undos.back()));
+	this->undos.pop_back();
+}
+
+void ProjectExplorer::Redo() {
+	if (redos.size() == 0) return;
+
+	FileOperationDelta* delta = this->redos.back().get();
+	Redo(delta);
+	this->undos.push_back(std::move(this->redos.back()));
+	this->redos.pop_back();
+}
+
+void ProjectExplorer::Undo(FileOperationDelta* operation) {
+	switch (operation->GetType()) {
+		case PGFileOperationRename:
+		{
+			FileOperationRename* op = (FileOperationRename*)operation;
+			ActuallyPerformRename(op->new_name, op->old_name, true);
+			break;
+		}
+		default:
+			assert(0);
+	}
+}
+
+void ProjectExplorer::Redo(FileOperationDelta* operation) {
+	switch (operation->GetType()) {
+		case PGFileOperationRename:
+		{
+			FileOperationRename* op = (FileOperationRename*)operation;
+			ActuallyPerformRename(op->old_name, op->new_name, true);
+			break;
+		}
+		default:
+			assert(0);
+	}
+}
+
+void ProjectExplorer::ActuallyPerformRename(std::string old_name, std::string new_name, bool update_selection) {
+	if (rename(old_name.c_str(), new_name.c_str()) != 0) {
+		// FIXME: do something with the error
+		errno = 0;
+		return;
+	}
+	auto file = FileManager::FindFile(old_name);
+	if (file) {
+		file->SetFilePath(new_name);
+		file->UpdateModificationTime();
+		GetControlManager(this)->Invalidate();
+	}
+	directories[0]->Update(!this->show_all_files);
+	if (update_selection) {
+		PGDirectory* directory; PGFile file;
+		lng filenr = this->FindFile(new_name, &directory, &file);
+		if (filenr >= 0) {
+			this->SelectFile(filenr, PGSelectSingleFile, false, false);
+			ScrollToFile(filenr);
+		}
+	}
+	this->Invalidate();
+}
+
 void ProjectExplorer::FinishRename(bool success, bool update_selection) {
 	if (renaming_file < 0) return;
 	renaming_file = -1;
 	if (success) {
 		std::string new_name = textfield->GetTextFile().GetText();
 		std::string full_name = PGPathJoin(PGFile(renaming_path).Directory(), new_name);
-		rename(renaming_path.c_str(), full_name.c_str());
-		auto file = FileManager::FindFile(renaming_path);
-		if (file) {
-			file->SetFilePath(full_name);
-			file->UpdateModificationTime();
-			GetControlManager(this)->Invalidate();
-		}
-		directories[0]->Update(!this->show_all_files);
-		if (update_selection) {
-			PGDirectory* directory; PGFile file;
-			lng filenr = this->FindFile(full_name, &directory, &file);
-			if (filenr >= 0) {
-				this->SelectFile(filenr, PGSelectSingleFile, false, false);
-				ScrollToFile(filenr);
-			}
-		}
-		this->Invalidate();
+		ActuallyPerformRename(renaming_path, full_name, update_selection);
+		this->undos.push_back(std::unique_ptr<FileOperationDelta>(new FileOperationRename(renaming_path, full_name)));
 	}
 	this->RemoveControl(textfield);
 	textfield = nullptr;

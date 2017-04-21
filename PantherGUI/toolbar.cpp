@@ -13,6 +13,8 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 
 
 	std::vector<std::string> image_paths;
+	image_paths.push_back("data/icons/undo.png");
+	image_paths.push_back("data/icons/redo.png");
 	image_paths.push_back("data/icons/back.png");
 	image_paths.push_back("data/icons/next.png");
 	image_paths.push_back("data/icons/reload.png");

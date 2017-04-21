@@ -9,6 +9,28 @@
 #include "togglebutton.h"
 #include "scrollbar.h"
 
+typedef enum {
+	PGFileOperationRename
+} PGFileOperation;
+
+class FileOperationDelta {
+public:
+	FileOperationDelta(PGFileOperation type) : type(type) {}
+
+	PGFileOperation GetType() { return type; }
+private:
+	PGFileOperation type;	
+};
+
+class FileOperationRename : public FileOperationDelta {
+public:
+	std::string old_name;
+	std::string new_name;
+
+	FileOperationRename(std::string old_name, std::string new_name) :
+		FileOperationDelta(PGFileOperationRename), old_name(old_name), new_name(new_name) { }
+};
+
 class ProjectExplorer : public PGContainer {
 public:
 	ProjectExplorer(PGWindowHandle window);
@@ -38,11 +60,19 @@ public:
 
 	PG_CONTROL_KEYBINDINGS;
 
+	void Undo();
+	void Redo();
 	void CollapseAll();
 	void SetShowAllFiles(bool show_all_files);
 
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
 private:
+	void Undo(FileOperationDelta*);
+	void Redo(FileOperationDelta*);
+
+	std::vector<std::unique_ptr<FileOperationDelta>> undos;
+	std::vector<std::unique_ptr<FileOperationDelta>> redos;
+
 	PGScalar file_render_height = 0;
 
 	PGFontHandle font;
@@ -58,6 +88,7 @@ private:
 	void ActuallyDeleteSelectedFiles();
 	void RenameFile();
 	void FinishRename(bool success, bool update_selection);
+	void ActuallyPerformRename(std::string old_name, std::string new_name, bool update_selection);
 
 	std::vector<PGDirectory*> directories;
 
@@ -65,6 +96,8 @@ private:
 	double scrollbar_offset = 0;
 
 	Scrollbar* scrollbar;
+
+	Button *undo_button, *redo_button;
 
 	std::vector<lng> selected_files;
 	

@@ -243,10 +243,12 @@ void BasicTextField::ClearDragging() {
 void BasicTextField::InitializeKeybindings() {
 	std::map<std::string, PGBitmapHandle>& images = BasicTextField::keybindings_images;
 	std::map<std::string, PGKeyFunction>& noargs = BasicTextField::keybindings_noargs;
+	images["undo"] = PGStyleManager::GetImage("data/icons/undo.png");
 	noargs["undo"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
 		t->textfile->Undo();
 	};
+	images["redo"] = PGStyleManager::GetImage("data/icons/redo.png");
 	noargs["redo"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
 		t->textfile->Redo();
