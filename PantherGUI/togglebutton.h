@@ -15,6 +15,9 @@ public:
 	bool IsToggled() { return toggled; }
 	// sets toggled property without triggering the OnToggle events
 	void SetToggled(bool toggled) { this->toggled = toggled; this->Invalidate(); }
+
+	static ToggleButton* CreateFromCommand(Control* parent, std::string command_name, std::string tooltip_text,
+		std::map<std::string, PGKeyFunction>& functions, std::map<std::string, PGBitmapHandle>& images, bool initial_toggle);
 private:
 	PGColor untoggled_color;
 	PGColor toggled_color;

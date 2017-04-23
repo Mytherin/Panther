@@ -8,6 +8,7 @@
 #include "findtext.h"
 #include "goto.h"
 #include "searchbox.h"
+#include "projectexplorer.h"
 
 #include "json.h"
 
@@ -23,6 +24,7 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	PGFindText::InitializeKeybindings();
 	PGGotoAnything::InitializeKeybindings();
 	SearchBox::InitializeKeybindings();
+	ProjectExplorer::InitializeKeybindings();
 
 #ifdef WIN32
 	LoadSettings("default-keybindings." + GetOSName() + ".json");
@@ -238,6 +240,8 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 				INITIALIZE_CONTROL(PGGotoAnything);
 			} else if (control == "searchbox") {
 				INITIALIZE_CONTROL(SearchBox);
+			} else if (control == "projectexplorer") {
+				INITIALIZE_CONTROL(ProjectExplorer);
 			}
 
 			if (functions && keybindings_noargs && keybindings_varargs) {

@@ -41,79 +41,35 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	//RenderImage(renderer, bitmap, x, y);
 	//DeleteImage(bitmap);
 
-	undo_button = new Button(window, this);
-	undo_button->SetImage(PGStyleManager::GetImage("data/icons/undo.png"));
-	undo_button->padding = PGPadding(4, 4, 4, 4);
-	undo_button->fixed_width = TOOLBAR_HEIGHT - undo_button->padding.left - undo_button->padding.right;
-	undo_button->fixed_height = TOOLBAR_HEIGHT - undo_button->padding.top - undo_button->padding.bottom;
+	undo_button = Button::CreateFromCommand(this, "undo", "Undo", 
+		ProjectExplorer::keybindings_noargs, ProjectExplorer::keybindings_images);
 	undo_button->SetAnchor(PGAnchorLeft | PGAnchorTop);
 	undo_button->margin.left = 2;
 	undo_button->margin.right = 2;
-	undo_button->background_color = PGColor(0, 0, 0, 0);
-	undo_button->background_stroke_color = PGColor(0, 0, 0, 0);
-	undo_button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
-	undo_button->SetTooltip("Undo");
-	undo_button->OnPressed([](Button* b, void* data) {
-		ProjectExplorer* p = (ProjectExplorer*)data;
-		p->Undo();
-	}, this);
 	this->AddControl(undo_button);
 
-	redo_button = new Button(window, this);
-	redo_button->SetImage(PGStyleManager::GetImage("data/icons/redo.png"));
-	redo_button->padding = PGPadding(4, 4, 4, 4);
-	redo_button->fixed_width = TOOLBAR_HEIGHT - redo_button->padding.left - redo_button->padding.right;
-	redo_button->fixed_height = TOOLBAR_HEIGHT - redo_button->padding.top - redo_button->padding.bottom;
+	redo_button = Button::CreateFromCommand(this, "redo", "Redo",
+		ProjectExplorer::keybindings_noargs, ProjectExplorer::keybindings_images);
 	redo_button->SetAnchor(PGAnchorLeft | PGAnchorTop);
 	redo_button->margin.left = 2;
 	redo_button->margin.right = 2;
 	redo_button->left_anchor = undo_button;
-	redo_button->background_color = PGColor(0, 0, 0, 0);
-	redo_button->background_stroke_color = PGColor(0, 0, 0, 0);
-	redo_button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
-	redo_button->SetTooltip("Undo");
-	redo_button->OnPressed([](Button* b, void* data) {
-		ProjectExplorer* p = (ProjectExplorer*)data;
-		p->Redo();
-	}, this);
 	this->AddControl(redo_button);
 
-	ToggleButton* button = new ToggleButton(window, this, show_all_files);
-	button->SetImage(PGStyleManager::GetImage("data/icons/showallfiles.png"));
-	button->padding = PGPadding(4, 4, 4, 4);
-	button->fixed_width = TOOLBAR_HEIGHT - button->padding.left - button->padding.right;
-	button->fixed_height = TOOLBAR_HEIGHT - button->padding.top - button->padding.bottom;
-	button->SetAnchor(PGAnchorLeft | PGAnchorTop);
-	button->margin.left = 2;
-	button->margin.right = 2;
-	button->left_anchor = redo_button;
-	button->background_color = PGColor(0, 0, 0, 0);
-	button->background_stroke_color = PGColor(0, 0, 0, 0);
-	button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
-	button->SetTooltip("Show All Files");
-	button->OnToggle([](Button* button, bool toggled, void* data) {
-		ProjectExplorer* p = (ProjectExplorer*)data;
-		p->SetShowAllFiles(toggled);
-	}, this);
-	this->AddControl(button);
+	show_all_files_toggle = ToggleButton::CreateFromCommand(this, "toggle_show_all_files", "Show All Files",
+		ProjectExplorer::keybindings_noargs, ProjectExplorer::keybindings_images, this->show_all_files);
+	show_all_files_toggle->SetAnchor(PGAnchorLeft | PGAnchorTop);
+	show_all_files_toggle->margin.left = 2;
+	show_all_files_toggle->margin.right = 2;
+	show_all_files_toggle->left_anchor = redo_button;
+	this->AddControl(show_all_files_toggle);
 
-	Button* b = new Button(window, this);
-	b->SetImage(PGStyleManager::GetImage("data/icons/collapseall.png"));
-	b->padding = PGPadding(4, 4, 4, 4);
-	b->fixed_width = TOOLBAR_HEIGHT - b->padding.left - b->padding.right;
-	b->fixed_height = TOOLBAR_HEIGHT - b->padding.top - b->padding.bottom;
+	Button* b = Button::CreateFromCommand(this, "collapse_all", "Collapse All",
+		ProjectExplorer::keybindings_noargs, ProjectExplorer::keybindings_images);
 	b->SetAnchor(PGAnchorLeft | PGAnchorTop);
 	b->margin.left = 2;
 	b->margin.right = 2;
-	b->left_anchor = button;
-	b->background_color = PGColor(0, 0, 0, 0);
-	b->background_stroke_color = PGColor(0, 0, 0, 0);
-	b->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
-	b->SetTooltip("Collapse All");
-	b->OnPressed([](Button* b, void* data) {
-		ProjectExplorer* p = (ProjectExplorer*)data;
-		p->CollapseAll();
-	}, this);
+	b->left_anchor = show_all_files_toggle;
 	this->AddControl(b);
 }
 
@@ -142,6 +98,9 @@ void ProjectExplorer::SetShowAllFiles(bool show_all_files) {
 	this->show_all_files = show_all_files;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		(*it)->Update(!this->show_all_files);
+	}
+	if (show_all_files_toggle) {
+		show_all_files_toggle->SetToggled(show_all_files);
 	}
 	this->Invalidate();
 }
@@ -728,5 +687,34 @@ lng ProjectExplorer::RenderedFiles() {
 
 void ProjectExplorer::LosesFocus(void) {
 	FinishRename(false, false);
+}
+
+void ProjectExplorer::InitializeKeybindings() {
+	std::map<std::string, PGBitmapHandle>& images = ProjectExplorer::keybindings_images;
+	std::map<std::string, PGKeyFunction>& noargs = ProjectExplorer::keybindings_noargs;
+	images["undo"] = PGStyleManager::GetImage("data/icons/undo.png");
+	noargs["undo"] = [](Control* c) {
+		ProjectExplorer* p = (ProjectExplorer*)c;
+		p->Undo();
+	};
+	images["redo"] = PGStyleManager::GetImage("data/icons/redo.png");
+	noargs["redo"] = [](Control* c) {
+		ProjectExplorer* p = (ProjectExplorer*)c;
+		p->Redo();
+	};
+	images["toggle_show_all_files"] = PGStyleManager::GetImage("data/icons/showallfiles.png");
+	noargs["toggle_show_all_files"] = [](Control* c) {
+		ProjectExplorer* p = (ProjectExplorer*)c;
+		p->ToggleShowAllFiles();
+	};
+	images["collapse_all"] = PGStyleManager::GetImage("data/icons/collapseall.png");
+	noargs["collapse_all"] = [](Control* c) {
+		ProjectExplorer* p = (ProjectExplorer*)c;
+		p->CollapseAll();
+	};
+}
+
+void ProjectExplorer::ToggleShowAllFiles() {
+	SetShowAllFiles(!this->show_all_files);
 }
 

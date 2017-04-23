@@ -44,6 +44,9 @@ public:
 	PGColor text_color;
 
 	bool fixed_size = true;
+
+	static Button* CreateFromCommand(Control* parent, std::string command_name, std::string tooltip_text,
+		std::map<std::string, PGKeyFunction>& functions, std::map<std::string, PGBitmapHandle>& images);
 private:
 	PGBitmapHandle image = nullptr;
 	std::string text;

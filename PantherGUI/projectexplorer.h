@@ -63,6 +63,7 @@ public:
 	void Undo();
 	void Redo();
 	void CollapseAll();
+	void ToggleShowAllFiles();
 	void SetShowAllFiles(bool show_all_files);
 
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
@@ -98,6 +99,7 @@ private:
 	Scrollbar* scrollbar;
 
 	Button *undo_button, *redo_button;
+	ToggleButton* show_all_files_toggle;
 
 	std::vector<lng> selected_files;
 	
