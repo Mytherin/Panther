@@ -48,6 +48,9 @@ public:
 
 	void LosesFocus(void);
 
+	void LoadWorkspace(nlohmann::json& j);
+	void WriteWorkspace(nlohmann::json& j);
+
 	bool RevealFile(std::string file, bool search_only_expanded);
 	
 	PGCursorType GetCursor(PGPoint mouse) { return PGCursorStandard; }
@@ -56,6 +59,8 @@ public:
 	void Draw(PGRendererHandle renderer);
 
 	void AddDirectory(std::string directory);
+	void RemoveDirectory(lng index);
+	void RemoveDirectory(PGDirectory* directory);
 
 	std::vector<PGFile> GetFiles();
 	std::vector<PGDirectory*>& GetDirectories() { return directories; }

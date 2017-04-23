@@ -45,6 +45,7 @@ public:
 
 	void RegisterGenericMouseRegion(PGMouseRegion* region);
 
+	void ShowProjectExplorer(bool visible);
 
 	void DropFile(std::string filename);
 
@@ -54,6 +55,8 @@ public:
 	PGToolbar* toolbar;
 	StatusBar* statusbar;
 	Control* splitter;
+
+	PGScalar projectexplorer_width = 200;
 
 	bool CloseControlManager();
 	bool IsDragging() { return is_dragging; }

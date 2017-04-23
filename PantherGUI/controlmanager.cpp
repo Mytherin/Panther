@@ -11,7 +11,9 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
 ControlManager::ControlManager(PGWindowHandle window) :
-	PGContainer(window), active_projectexplorer(nullptr), active_findtext(nullptr), is_focused(true), columns(0), rows(0) {
+	PGContainer(window), active_projectexplorer(nullptr), active_findtext(nullptr), 
+	is_focused(true), columns(0), rows(0), projectexplorer_width(200)
+{
 #ifdef PANTHER_DEBUG
 	entrance_count = 0;
 #endif
@@ -80,6 +82,18 @@ bool ControlManager::KeyboardCharacter(char character, PGModifier modifier) {
 void ControlManager::RefreshWindow(bool redraw_now) {
 	this->invalidated = true;
 	if (redraw_now) RedrawWindow(window);
+}
+
+void ControlManager::ShowProjectExplorer(bool visible) {
+	if (visible) {
+		active_projectexplorer->fixed_width = projectexplorer_width;
+		splitter->fixed_width = 4;
+	} else {
+		projectexplorer_width = active_projectexplorer->width;
+		splitter->fixed_width = 0;
+		active_projectexplorer->fixed_width = 0;
+	}
+	this->TriggerResize();
 }
 
 void ControlManager::RefreshWindow(PGIRect rectangle, bool redraw_now) {

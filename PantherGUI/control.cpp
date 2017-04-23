@@ -159,7 +159,7 @@ void Control::ResolveSize(PGSize new_size) {
 	if (size_resolved) return;
 	PGSize current_size = PGSize(this->width, this->height);
 	if (fixed_height >= 0 || percentage_height >= 0) {
-		if (fixed_height > 0) {
+		if (fixed_height >= 0) {
 			this->height = fixed_height + padding.top + padding.bottom;
 		}
 		if (top_anchor != nullptr && anchor & PGAnchorTop) {
@@ -209,7 +209,7 @@ void Control::ResolveSize(PGSize new_size) {
 		}
 	}
 	if (fixed_width >= 0 || percentage_width >= 0) {
-		if (fixed_width > 0) {
+		if (fixed_width >= 0) {
 			this->width = fixed_width + padding.left + padding.right;
 		}
 		if (left_anchor != nullptr && anchor & PGAnchorLeft) {

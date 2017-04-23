@@ -14,12 +14,6 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(ProjectExplorer);
 
 ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	PGContainer(window), dragging_scrollbar(false), renaming_file(-1), scrollbar_offset(0), file_render_height(0), show_all_files(true) {
-#ifdef WIN32
-	this->directories.push_back(new PGDirectory("C:\\Users\\wieis\\Documents\\Visual Studio 2015\\Projects\\Panther\\PantherGUI", !show_all_files));
-#else
-	this->directories.push_back(new PGDirectory("/Users/myth/Programs/re2", !show_all_files));
-#endif
-	this->directories.back()->expanded = true;
 	font = PGCreateFont("segoe ui", false, true);
 	SetTextFontSize(font, 12);
 
@@ -38,7 +32,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 
 	file_render_height = std::max(GetTextHeight(font) + 2.0f, 16.0f);
 
-	//RenderImage(renderer, bitmap, x, y);
+	//RenderImage(renderer, bitmap, x, y);    
 	//DeleteImage(bitmap);
 
 	undo_button = Button::CreateFromCommand(this, "undo", "Undo", 
@@ -468,12 +462,19 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			PGPopupMenuInsertEntry(menu, info, [](Control* control, PGPopupInformation* info) {
 				OpenFolderInExplorer(info->data);
 			});
-			info = PGPopupInformation(menu, directory);
-			info.data = directory ? directory->path : file.path;
 			info.text = directory ? "Open Folder in Terminal" : "Open File in Terminal";
 			PGPopupMenuInsertEntry(menu, info, [](Control* control, PGPopupInformation* info) {
 				OpenFolderInTerminal(info->data);
 			});
+			if (directory && std::find(directories.begin(), directories.end(), directory) != directories.end()) {
+				PGPopupMenuInsertSeparator(menu);
+				info.text = "Remove Folder From Project";
+				info.pdata = directory;
+				PGPopupMenuInsertEntry(menu, info, [](Control* control, PGPopupInformation* info) {
+					auto explorer = dynamic_cast<ProjectExplorer*>(control);
+					explorer->RemoveDirectory((PGDirectory*)info->pdata);
+				});
+			}
 			PGPopupMenuInsertSeparator(menu);
 			PGPopupMenuInsertEntry(menu, "Delete", [](Control* control, PGPopupInformation* info) {
 				auto explorer = dynamic_cast<ProjectExplorer*>(control);
@@ -590,7 +591,26 @@ void ProjectExplorer::AddDirectory(std::string directory) {
 		lng displayed_files = this->TotalFiles();
 		this->directories.push_back(dir);
 		this->ScrollToFile(displayed_files + RenderedFiles() - 1);
+		if (directories.size() == 1) {
+			// show the project explorer again
+			GetControlManager(this)->ShowProjectExplorer(true);
+		}
 	}
+}
+
+void ProjectExplorer::RemoveDirectory(lng index) {
+	assert(index >= 0 && index < directories.size());
+	directories.erase(directories.begin() + index);
+	if (directories.size() == 0) {
+		// hide project explorer
+		GetControlManager(this)->ShowProjectExplorer(false);
+	}
+	this->Invalidate();
+}
+
+void ProjectExplorer::RemoveDirectory(PGDirectory* directory) {
+	assert(std::find(directories.begin(), directories.end(), directory) != directories.end());
+	RemoveDirectory(std::find(directories.begin(), directories.end(), directory) - directories.begin());
 }
 
 std::vector<PGFile> ProjectExplorer::GetFiles() {
@@ -698,6 +718,16 @@ lng ProjectExplorer::RenderedFiles() {
 
 void ProjectExplorer::LosesFocus(void) {
 	FinishRename(false, false);
+}
+
+void ProjectExplorer::LoadWorkspace(nlohmann::json& j) {
+	if (directories.size() == 0) {
+		GetControlManager(this)->ShowProjectExplorer(false);
+	}
+}
+
+void ProjectExplorer::WriteWorkspace(nlohmann::json& j) {
+
 }
 
 void ProjectExplorer::InitializeKeybindings() {
