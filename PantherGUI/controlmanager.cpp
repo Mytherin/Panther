@@ -158,7 +158,12 @@ void ControlManager::RegisterGenericMouseRegion(PGMouseRegion* region) {
 
 
 void ControlManager::DropFile(std::string filename) {
-	active_textfield->GetTabControl()->OpenFile(filename);
+	auto flags = PGGetFileFlags(filename);
+	if (flags.is_directory) {
+		active_projectexplorer->AddDirectory(filename);
+	} else {
+		active_textfield->GetTabControl()->OpenFile(filename);
+	}
 }
 
 ControlManager* GetControlManager(Control* c) {

@@ -94,6 +94,7 @@ void ProjectExplorer::PeriodicRender(void) {
 	}
 }
 
+
 void ProjectExplorer::SetShowAllFiles(bool show_all_files) {
 	this->show_all_files = show_all_files;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
@@ -579,6 +580,16 @@ void ProjectExplorer::FindFile(lng file_number, PGDirectory** directory, PGFile*
 			return;
 		}
 		file_count += files;
+	}
+}
+
+void ProjectExplorer::AddDirectory(std::string directory) {
+	PGDirectory* dir = new PGDirectory(directory, !show_all_files);
+	if (dir) {
+		dir->expanded = true;
+		lng displayed_files = this->TotalFiles();
+		this->directories.push_back(dir);
+		this->ScrollToFile(displayed_files + RenderedFiles() - 1);
 	}
 }
 

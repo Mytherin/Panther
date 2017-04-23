@@ -55,6 +55,8 @@ public:
 
 	void Draw(PGRendererHandle renderer);
 
+	void AddDirectory(std::string directory);
+
 	std::vector<PGFile> GetFiles();
 	std::vector<PGDirectory*>& GetDirectories() { return directories; }
 

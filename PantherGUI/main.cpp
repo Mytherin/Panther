@@ -1493,10 +1493,19 @@ PGFileInformation PGGetFileFlags(std::string path) {
 	} else {
 		info.flags = PGFileFlagsEmpty;
 	}
+	DWORD attributes = GetFileAttributesW((LPCWSTR)ucs2_path.c_str());
+	if (attributes == INVALID_FILE_ATTRIBUTES) {
+		info.flags = PGFileFlagsErrorOpeningFile;
+		return info;
+	}
+	info.is_directory = attributes & FILE_ATTRIBUTE_DIRECTORY;
+
 	FILETIME creation_time;
 	FILETIME last_write_time;
-	GetFileTime(handle, &creation_time, NULL, &last_write_time);
-
+	if (!GetFileTime(handle, &creation_time, NULL, &last_write_time)) {
+		info.flags = PGFileFlagsErrorOpeningFile;
+		return info;
+	}
 	info.creation_time = filetime_to_lng(creation_time);
 	info.modification_time = filetime_to_lng(last_write_time);
 

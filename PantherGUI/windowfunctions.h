@@ -544,6 +544,7 @@ struct PGFileInformation {
 	lng creation_time;
 	lng modification_time;
 	lng file_size;
+	bool is_directory;
 };
 
 PGFileInformation PGGetFileFlags(std::string path);
