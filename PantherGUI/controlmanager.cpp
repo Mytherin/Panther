@@ -166,6 +166,29 @@ void ControlManager::UnregisterMouseRegionContainer(MouseRegionSet* r) {
 	assert(0);
 }
 
+void ControlManager::LoadWorkspace(nlohmann::json& j) {
+	if (j.count("controlmanager") > 0) {
+		nlohmann::json& p = j["controlmanager"];
+		if (p.count("projectexplorer_width") > 0 && p["projectexplorer_width"].is_number()) {
+			PGScalar pwidth = p["projectexplorer_width"];
+			if (pwidth >= active_projectexplorer->minimum_width && pwidth <= this->width) {
+				projectexplorer_width = pwidth;
+				active_projectexplorer->width = active_projectexplorer->fixed_width = projectexplorer_width;
+			}
+		}
+	}
+	PGContainer::LoadWorkspace(j);
+}
+
+void ControlManager::WriteWorkspace(nlohmann::json& j) {
+	j["controlmanager"] = nlohmann::json::object();
+	j["controlmanager"]["projectexplorer_width"] = 
+		std::find(controls.begin(), controls.end(), active_projectexplorer) == controls.end() ? 
+		projectexplorer_width :
+		active_projectexplorer->width;
+	PGContainer::WriteWorkspace(j);
+}
+
 void ControlManager::RegisterGenericMouseRegion(PGMouseRegion* region) {
 	regions.push_back(std::unique_ptr<PGMouseRegion>(region));
 }

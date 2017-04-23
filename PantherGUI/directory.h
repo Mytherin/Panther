@@ -17,6 +17,9 @@ struct PGDirectory {
 	PGDirectory(std::string path, bool respect_gitignore);
 	~PGDirectory();
 
+	void WriteWorkspace(nlohmann::json& j);
+	void LoadWorkspace(nlohmann::json& j);
+
 	void ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist);
 	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
 

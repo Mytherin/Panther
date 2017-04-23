@@ -889,9 +889,14 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 }
 
 void DestroyWindow(PGWindowHandle window) {
-	window->workspace->RemoveWindow(window);
 	auto windows = window->workspace->GetWindows();
-	if (windows.size() == 0) {
+	bool destroy_workspace = windows.size() == 1;
+	if (destroy_workspace) {
+		assert(windows[0] == window);
+		window->workspace->WriteWorkspace();
+	}
+	window->workspace->RemoveWindow(window);
+	if (destroy_workspace) {
 		open_workspaces.erase(std::find(open_workspaces.begin(), open_workspaces.end(), window->workspace));
 		delete window->workspace;
 	} else {

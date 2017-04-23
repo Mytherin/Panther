@@ -175,3 +175,24 @@ void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet whiteli
 		result_files.push_back(PGFile(*it));
 	}
 }
+
+void PGDirectory::WriteWorkspace(nlohmann::json& j) {
+	if (expanded) {
+		std::string filename = PGFile(this->path).Filename();
+		j[filename] = nlohmann::json::object();
+		for (auto it = directories.begin(); it != directories.end(); it++) {
+			(*it)->WriteWorkspace(j[filename]);
+		}
+	}
+}
+
+void PGDirectory::LoadWorkspace(nlohmann::json& j) {
+	assert(j.is_object());
+	std::string filename = PGFile(this->path).Filename();
+	if (j.count(filename) > 0 && j[filename].is_object()) {
+		this->expanded = true;
+		for (auto it = directories.begin(); it != directories.end(); it++) {
+			(*it)->LoadWorkspace(j[filename]);
+		}
+	}
+}

@@ -721,13 +721,39 @@ void ProjectExplorer::LosesFocus(void) {
 }
 
 void ProjectExplorer::LoadWorkspace(nlohmann::json& j) {
+	if (j.count("projectexplorer") > 0 && j["projectexplorer"].is_object()) {
+		nlohmann::json& p = j["projectexplorer"];
+		if (p.count("directories") > 0 && p["directories"].is_array()) {
+			nlohmann::json& dirs = p["directories"];
+			for (auto it = dirs.begin(); it != dirs.end(); it++) {
+				nlohmann::json& dir = *it;
+				if (dir.is_object() && dir.count("directory") > 0) {
+					std::string path = dir["directory"];
+					PGDirectory* directory = new PGDirectory(path, this->show_all_files);
+					if (dir.count("expansions") > 0 && dir["expansions"].is_object()) {
+						directory->LoadWorkspace(dir["expansions"]);
+					}
+					directories.push_back(directory);
+				}
+			}
+		}
+	}
 	if (directories.size() == 0) {
 		GetControlManager(this)->ShowProjectExplorer(false);
 	}
 }
 
 void ProjectExplorer::WriteWorkspace(nlohmann::json& j) {
-
+	j["projectexplorer"] = nlohmann::json::object();
+	j["projectexplorer"]["directories"] = nlohmann::json::array();
+	nlohmann::json& arr = j["projectexplorer"]["directories"];
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		arr.push_back(nlohmann::json::object());
+		nlohmann::json& obj = arr.back();
+		obj["directory"] = (*it)->path;
+		obj["expansions"] = nlohmann::json::object();
+		(*it)->WriteWorkspace(obj["expansions"]);
+	}
 }
 
 void ProjectExplorer::InitializeKeybindings() {

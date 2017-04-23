@@ -45,6 +45,9 @@ public:
 
 	void RegisterGenericMouseRegion(PGMouseRegion* region);
 
+	void LoadWorkspace(nlohmann::json& j);
+	void WriteWorkspace(nlohmann::json& j);
+
 	void ShowProjectExplorer(bool visible);
 
 	void DropFile(std::string filename);
