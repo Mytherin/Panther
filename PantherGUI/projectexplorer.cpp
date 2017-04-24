@@ -585,6 +585,20 @@ void ProjectExplorer::FindFile(lng file_number, PGDirectory** directory, PGFile*
 }
 
 void ProjectExplorer::AddDirectory(std::string directory) {
+	lng entries = 0;
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		PGFile f;
+		PGDirectory* d;
+		lng entry = (*it)->FindFile(directory, &d, &f, false);
+		if (entry >= 0) {
+			// this directory is already opened or part of an already opened directory
+			this->ScrollToFile(entries + entry);
+			this->Invalidate();
+			return;
+		}
+		entries += (*it)->DisplayedFiles();
+	}
+
 	PGDirectory* dir = new PGDirectory(directory, !show_all_files);
 	if (dir) {
 		dir->expanded = true;

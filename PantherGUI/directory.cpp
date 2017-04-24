@@ -40,14 +40,24 @@ lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile
 	if (search_only_expanded && !expanded) {
 		return -1;
 	}
-	if (full_name.substr(0, this->path.size()) != this->path) {
+	if (full_name.size() < this->path.size() || 
+		full_name.substr(0, this->path.size()) != this->path) {
 		return -1;
 	}
-	std::string remainder = full_name.substr(this->path.size() + 1);
+	std::string remainder = full_name.size() == this->path.size() ? "" : full_name.substr(this->path.size() + 1);
 	if (std::find(remainder.begin(), remainder.end(), GetSystemPathSeparator()) == remainder.end()) {
 		// this is the final directory
+		if (remainder.size() == 0) {
+			this->expanded = true;
+			return 0;
+		}
 		lng entry = 1;
 		for (auto it = directories.begin(); it != directories.end(); it++) {
+			if ((*it)->path == full_name) {
+				this->expanded = true;
+				(*it)->expanded = true;
+				return entry;
+			}
 			entry += (*it)->DisplayedFiles();
 		}
 		for (auto it = files.begin(); it != files.end(); it++) {
