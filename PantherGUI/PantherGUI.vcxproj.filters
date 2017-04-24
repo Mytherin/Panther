@@ -549,5 +549,8 @@
     <None Include="rust\src\lib.rs">
       <Filter>Source Files\rust</Filter>
     </None>
+    <None Include="rust\src\gitignore.rs">
+      <Filter>Source Files\rust</Filter>
+    </None>
   </ItemGroup>
 </Project>

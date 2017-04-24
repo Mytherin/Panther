@@ -367,6 +367,7 @@
     <Image Include="logo.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="rust\src\gitignore.rs" />
     <None Include="rust\src\globs.rs" />
     <None Include="rust\src\lib.rs" />
   </ItemGroup>

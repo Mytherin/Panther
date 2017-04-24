@@ -110,10 +110,16 @@ void PGDirectory::Update(bool respect_gitignore) {
 	std::vector<PGFile> dirs;
 	if (respect_gitignore) {
 		std::vector<std::pair<bool, std::string>> _files;
-		PGListFiles(this->path.c_str(), [](void* data, const char* path, bool is_directory) {
+		int retval = PGListFiles(this->path.c_str(), [](void* data, const char* path, bool is_directory) {
 			auto files = (std::vector<std::pair<bool, std::string>>*)data;
 			files->push_back(std::pair<bool, std::string>(is_directory, path));
 		}, &_files, true);
+
+		if (retval < 0) {
+			// failed to open directory for reading
+			loaded_files = false;
+			return;
+		}
 
 		for (auto it = _files.begin(); it != _files.end(); it++) {
 			if (it->first) {
@@ -139,14 +145,24 @@ void PGDirectory::Update(bool respect_gitignore) {
 			if ((*it2)->path == path) {
 				// if the directory is already known here, update it
 				(*it2)->Update(respect_gitignore);
-				current_directores.erase(it2);
+				if ((*it2)->loaded_files) {
+					// if we failed to load files for this directory, leave it in the "current_directores"
+					// it will count as "not found" and be removed from the 
+					current_directores.erase(it2);
+				}
 				found = true;
 				break;
 			}
 		}
 		if (!found) {
 			// if the directory is not known add it and scan it
-			directories.push_back(new PGDirectory(path, respect_gitignore));
+			PGDirectory* directory = new PGDirectory(path, respect_gitignore);
+			if (!directory->loaded_files) {
+				// failed to load files from directory
+				delete directory;
+			} else {
+				directories.push_back(directory);
+			}
 		}
 	}
 	// remove any directories we did not find (because they have been deleted or removed)

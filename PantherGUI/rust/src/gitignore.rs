@@ -61,7 +61,9 @@ fn list_files(directory: *const c_char, callback: extern fn(*mut c_char, *const 
 					CString::from_raw(raw_data);
 				}
 			},
-			Err(_) => {}
+			Err(_) => {
+                return -1;
+            }
 		}
 	}
 	return 0;

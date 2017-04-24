@@ -744,10 +744,15 @@ void ProjectExplorer::LoadWorkspace(nlohmann::json& j) {
 				if (dir.is_object() && dir.count("directory") > 0) {
 					std::string path = dir["directory"];
 					PGDirectory* directory = new PGDirectory(path, this->show_all_files);
-					if (dir.count("expansions") > 0 && dir["expansions"].is_object()) {
-						directory->LoadWorkspace(dir["expansions"]);
+					if (!directory->loaded_files) {
+						// failed to load files from directory
+						delete directory;
+					} else {
+						if (dir.count("expansions") > 0 && dir["expansions"].is_object()) {
+							directory->LoadWorkspace(dir["expansions"]);
+						}
+						directories.push_back(directory);
 					}
-					directories.push_back(directory);
 				}
 			}
 		}
