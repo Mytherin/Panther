@@ -248,6 +248,14 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 		return true;
 	}
 
+	if (input_size == 0) {
+		// empty file, use UTF8
+		*result_encoding = PGEncodingUTF8;
+		*output_text = input_text;
+		*output_size = input_size;
+		return true;
+	}
+
 	*output_text = nullptr;
 	*output_size = 0;
 
