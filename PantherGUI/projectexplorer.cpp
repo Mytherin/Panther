@@ -601,6 +601,10 @@ void ProjectExplorer::AddDirectory(std::string directory) {
 
 	PGDirectory* dir = new PGDirectory(directory, !show_all_files);
 	if (dir) {
+		if (!dir->loaded_files) {
+			delete dir;
+			return;
+		}
 		dir->expanded = true;
 		lng displayed_files = this->TotalFiles();
 		this->directories.push_back(dir);
