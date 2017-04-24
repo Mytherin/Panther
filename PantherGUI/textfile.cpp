@@ -27,7 +27,7 @@ void TextFile::OpenFileAsync(std::shared_ptr<Task> task, void* inp) {
 TextFile::TextFile(BasicTextField* textfield) :
 	textfield(textfield), highlighter(nullptr), wordwrap(false), default_font(nullptr),
 	bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
-	last_modified_deletion(false), saved_undo_count(0), read_only(false) {
+	last_modified_deletion(false), saved_undo_count(0), read_only(false), reload_on_changed(true) {
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
@@ -52,7 +52,7 @@ TextFile::TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::stri
 	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr),
 	bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0, 0), last_modified_time(-1),
 	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false), 
-	encoding(encoding) {
+	encoding(encoding), reload_on_changed(true) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');

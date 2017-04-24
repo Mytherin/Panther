@@ -309,6 +309,7 @@ private:
 	void InvalidateBuffers();
 	void InvalidateParsing();
 
+	bool reload_on_changed = true;
 	bool is_loaded;
 	lng bytes = 0;
 	lng total_bytes = 1;
@@ -325,7 +326,7 @@ private:
 	PGLineIndentation indentation;
 	PGFileEncoding encoding;
 	int tabwidth = 0;
-
+	
 	PGFontHandle default_font = nullptr;
 
 	PGLanguage* language = nullptr;

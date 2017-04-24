@@ -1092,7 +1092,8 @@ void TextField::SelectionChanged() {
 
 				if (textfile->last_modified_notification < 0) {
 					textfile->last_modified_notification = stats.modification_time;
-				} else if (textfile->last_modified_notification < stats.modification_time) {
+				} else if (textfile->last_modified_notification < stats.modification_time && 
+						   textfile->reload_on_changed) {
 					// however, it has been modified by an external program since we last touched it
 					// notify the user and prompt to reload the file
 					lng threshold = 0;
@@ -1111,6 +1112,12 @@ void TextField::SelectionChanged() {
 						textfile->last_modified_notification = stats.modification_time;
 						CreateNotification(PGNotificationTypeWarning, std::string("File \"") + PGFile(textfile->path).Filename() + std::string("\" has been modified."));
 						assert(notification);
+						notification->AddButton([](Control* control, void* data) {
+							TextField* tf = (TextField*)control;
+							auto textfile = tf->GetTextfilePointer();
+							textfile->reload_on_changed = false;
+							((TextField*)control)->ClearNotification();
+						}, this, notification, "Never For This File");
 						notification->AddButton([](Control* control, void* data) {
 							((TextField*)control)->ClearNotification();
 						}, this, notification, "Cancel");
