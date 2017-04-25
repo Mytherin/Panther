@@ -28,6 +28,9 @@ public:
 
 	void SetType(PGFindTextType type);
 
+
+	void ResolveSize(PGSize new_size);
+
 	void Close();
 
 	PG_CONTROL_KEYBINDINGS;
@@ -65,7 +68,8 @@ private:
 	ToggleButton* respect_gitignore = nullptr;
 	Label* filter_label = nullptr;
 	
+	void UpdateFieldHeight();
 
-
+	lng field_lines = 0;
 	lng history_entry = 0;
 };

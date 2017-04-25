@@ -8,7 +8,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(BasicTextField);
 
 BasicTextField::BasicTextField(PGWindowHandle window, std::shared_ptr<TextFile> textfile) :
-	Control(window), textfile(textfile), prev_loaded(false) {
+	Control(window), textfile(textfile), prev_loaded(false), support_multiple_lines(false) {
 	if (textfile) {
 		textfile->SetTextField(this);
 	}
@@ -364,6 +364,39 @@ void BasicTextField::InitializeKeybindings() {
 				tf->textfile->OffsetSelectionCharacter(direction);
 			} else {
 				tf->textfile->OffsetCharacter(direction);
+			}
+		}
+	};
+	args["scroll_lines"] = [](Control* c, std::map<std::string, std::string> args) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (!tf->support_multiple_lines) return;
+		if (args.count("amount") == 0) {
+			return;
+		}
+		double offset = atof(args["amount"].c_str());
+		if (offset != 0.0) {
+			tf->GetTextFile().OffsetLineOffset(offset);
+			tf->Invalidate();
+		}
+	};
+	args["offset_line"] = [](Control* c, std::map<std::string, std::string> args) {
+		BasicTextField* tf = (BasicTextField*)c;
+		if (!tf->support_multiple_lines) return;
+		if (args.count("amount") == 0) {
+			return;
+		}
+		bool selection = args.count("selection") != 0;
+		int offset = atol(args["amount"].c_str());
+		if (args.count("unit")) {
+			if (args["unit"] == "page") {
+				offset = offset * tf->GetLineHeight();
+			}
+		}
+		if (offset != 0.0) {
+			if (selection) {
+				tf->GetTextFile().OffsetSelectionLine((int)offset);
+			} else {
+				tf->GetTextFile().OffsetLine((int)offset);
 			}
 		}
 	};

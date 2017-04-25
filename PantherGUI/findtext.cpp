@@ -21,12 +21,12 @@ static void UpdateHighlight(Control* c, PGFindText* f) {
 }
 
 PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
-	PGContainer(window), history_entry(0) {
+	PGContainer(window), history_entry(0), field_lines(1) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 
-	field = new SimpleTextField(window);
+	field = new SimpleTextField(window, true);
 	field->percentage_width = 1;
 	field->fixed_height = field->height;
 	field->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop);
@@ -56,6 +56,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	field->OnTextChanged([](Control* c, void* data) {
 		// if HighlightMatches is turned on, we search as soon as text is entered
 		PGFindText* f = (PGFindText*)data;
+		f->UpdateFieldHeight();
 		if (f->HighlightMatches()) {
 			f->FindAll(true);
 		}
@@ -102,8 +103,10 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	nlohmann::json& find_history = find_text["find_history"];
 	assert(find_history.is_array());
 	if (find_history.size() > 0) {
-		field->SetText(find_history[0]);
-		field->Invalidate();
+		if (find_history[0].is_string()) {
+			field->SetText(find_history[0]);
+			field->Invalidate();
+		}
 	}
 
 	static char* toggle_regex_text = "toggle_regex";
@@ -311,7 +314,7 @@ void PGFindText::SetType(PGFindTextType type) {
 			filter_label->margin = find_label->margin;
 			this->AddControl(filter_label);
 
-			files_to_include_field = new SimpleTextField(window);
+			files_to_include_field = new SimpleTextField(window, true);
 			files_to_include_field->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop);
 			files_to_include_field->left_anchor = filter_label;
 			files_to_include_field->right_anchor = find_button;
@@ -319,7 +322,12 @@ void PGFindText::SetType(PGFindTextType type) {
 			files_to_include_field->fixed_height = field->fixed_height;
 			files_to_include_field->margin.top = VPADDING;
 			this->AddControl(files_to_include_field);
-			
+
+			files_to_include_field->OnTextChanged([](Control* c, void* data) {
+				PGFindText* f = (PGFindText*)data;
+				f->UpdateFieldHeight();
+			}, (void*) this);
+
 			auto workspace = PGGetWorkspace(window);
 			assert(workspace);
 			if (workspace->settings.count("find_text") == 0 || !workspace->settings["find_text"].is_object()) {
@@ -375,7 +383,7 @@ void PGFindText::SetType(PGFindTextType type) {
 			replace_label->margin = find_label->margin;
 			this->AddControl(replace_label);
 
-			replace_field = new SimpleTextField(window);
+			replace_field = new SimpleTextField(window, true);
 			replace_field->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop);
 			replace_field->top_anchor = field;
 			replace_field->left_anchor = replace_label;
@@ -385,6 +393,11 @@ void PGFindText::SetType(PGFindTextType type) {
 			replace_field->margin.top = VPADDING;
 			this->AddControl(replace_field);
 
+			replace_field->OnTextChanged([](Control* c, void* data) {
+				PGFindText* f = (PGFindText*)data;
+				f->UpdateFieldHeight();
+			}, (void*) this);
+			
 			if (type == PGFindReplaceManyFiles) {
 				respect_gitignore->top_anchor = replace_field;
 				source_files_only->top_anchor = replace_field;
@@ -484,6 +497,25 @@ void PGFindText::Draw(PGRendererHandle renderer) {
 
 	this->everything_dirty = true;
 	PGContainer::Draw(renderer);
+}
+
+void PGFindText::UpdateFieldHeight() {
+	lng current_lines = std::max(1LL, field->GetTextFile().GetLineCount());
+	if (replace_field) {
+		current_lines = std::max(current_lines, replace_field->GetTextFile().GetLineCount());
+	}
+	if (files_to_include_field) {
+		current_lines = std::max(current_lines, files_to_include_field->GetTextFile().GetLineCount());
+	}
+	if (current_lines != field_lines) {
+		PGScalar height = current_lines * std::ceil(GetTextHeight(field->GetTextfieldFont())) + 6;
+		field->fixed_height = height;
+		if (replace_field) replace_field->fixed_height = height;
+		if (files_to_include_field) files_to_include_field->fixed_height = height;
+
+		field_lines = current_lines;
+		GetControlManager(this)->TriggerResize();
+	}
 }
 
 nlohmann::json& PGFindText::GetFindHistory() {
@@ -740,4 +772,19 @@ void PGFindText::InitializeKeybindings() {
 	noargs["shift_focus_backward"] = [](Control* c) {
 		((PGFindText*)c)->ShiftTextfieldFocus(PGDirectionLeft);
 	};
+}
+
+void PGFindText::ResolveSize(PGSize new_size) {
+	switch (this->type) {
+		case PGFindSingleFile:
+			this->fixed_height = field->fixed_height + VPADDING * 2;
+			break;
+		case PGFindReplaceManyFiles:
+			this->fixed_height = 3 * field->fixed_height + VPADDING * 2;
+			break;
+		case PGFindReplaceSingleFile:
+			this->fixed_height = 2 * field->fixed_height + VPADDING * 2;
+			break;
+	}
+	PGContainer::ResolveSize(new_size);
 }

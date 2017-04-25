@@ -90,6 +90,8 @@ protected:
 	bool prev_loaded = false;
 	bool current_focus = true;
 
+	bool support_multiple_lines = false;
+
 	PGScalar text_offset = 0;
 
 	std::map<lng, PGTextRange> minimal_selections;

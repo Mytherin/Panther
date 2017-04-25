@@ -38,6 +38,8 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 		textfile->SetTextField(this);
 	}
 
+	this->support_multiple_lines = true;
+
 	ControlManager* manager = GetControlManager(this);
 	manager->RegisterMouseRegion(&minimap_region, this, [](Control* tf, bool mouse_enter, void* data) {
 		return ((TextField*)tf)->MinimapMouseEvent(mouse_enter);
@@ -1328,37 +1330,6 @@ void TextField::InitializeKeybindings() {
 			return;
 		}
 		tf->GetTextFile().PasteText(args["characters"]);
-	};
-	args["scroll_lines"] = [](Control* c, std::map<std::string, std::string> args) {
-		TextField* tf = (TextField*)c;
-		if (args.count("amount") == 0) {
-			return;
-		}
-		double offset = atof(args["amount"].c_str());
-		if (offset != 0.0) {
-			tf->GetTextFile().OffsetLineOffset(offset);
-			tf->Invalidate();
-		}
-	};
-	args["offset_line"] = [](Control* c, std::map<std::string, std::string> args) {
-		TextField* tf = (TextField*)c;
-		if (args.count("amount") == 0) {
-			return;
-		}
-		bool selection = args.count("selection") != 0;
-		int offset = atol(args["amount"].c_str());
-		if (args.count("unit")) {
-			if (args["unit"] == "page") {
-				offset = offset * tf->GetLineHeight();
-			}
-		}
-		if (offset != 0.0) {
-			if (selection) {
-				tf->textfile->OffsetSelectionLine((int)offset);
-			} else {
-				tf->textfile->OffsetLine((int)offset);
-			}
-		}
 	};
 	args["show_goto"] = [](Control* c, std::map<std::string, std::string> args) {
 		TextField* tf = (TextField*)c;

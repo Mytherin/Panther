@@ -14,7 +14,7 @@
 
 class SimpleTextField : public BasicTextField {
 public:
-	SimpleTextField(PGWindowHandle);
+	SimpleTextField(PGWindowHandle, bool multiline = false);
 	~SimpleTextField();
 
 	void Draw(PGRendererHandle);
@@ -30,6 +30,8 @@ public:
 	void OnSelectionChanged(PGControlDataCallback callback, void* data) { on_selection_changed.function = callback; on_selection_changed.data = data; }
 	void OnTextChanged(PGControlDataCallback callback, void* data) { on_text_changed.function = callback; on_text_changed.data = data; }
 
+	void OnResize(PGSize old_size, PGSize new_size);
+
 	virtual void SelectionChanged();
 	virtual void TextChanged();
 
@@ -41,11 +43,12 @@ public:
 
 	PG_CONTROL_KEYBINDINGS;
 
+
 	virtual PGControlType GetControlType() { return PGControlTypeSimpleTextField; }
 protected:
 	bool valid_input = true;
 	bool render_background = true;
-
+	
 	PGFunctionData on_user_cancel;
 	PGFunctionData on_user_confirm;
 	PGFunctionData on_prev_entry;

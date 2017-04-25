@@ -67,6 +67,19 @@
 		{ "key": "ctrl+end", "command": "offset_end_of_file"},
 		{ "key": "ctrl+shift+end", "command": "select_end_of_file"},
 
+		{ "key": "ctrl+up", "command": "scroll_lines", "args": {"amount": -1.0 } },
+		{ "key": "ctrl+down", "command": "scroll_lines", "args": {"amount": 1.0 } },
+		{ "key": "up", "command": "offset_line", "args": {"amount": -1.0 } },
+		{ "key": "shift+up", "command": "offset_line", "args": {"amount": -1.0, "selection": true } },
+		{ "key": "down", "command": "offset_line", "args": {"amount": 1.0 } },
+		{ "key": "shift+down", "command": "offset_line", "args": {"amount": 1.0, "selection": true } },
+
+		{ "key": "pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page" } },
+		{ "key": "shift+pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page", "selection": true } },
+		{ "key": "pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page" } },
+		{ "key": "shift+pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page", "selection": true } },
+
+
 		{ "mouse": "ctrl+left", "command": "select_word" },
 		{ "mouse": "shift+left", "command": "set_cursor_selection" },
 		{ "mouse": "left", "clicks": 1, "command": "set_cursor_location" },
@@ -75,6 +88,7 @@
 			
 	],
 	"simpletextfield": [
+		{ "key": "ctrl+enter", "command": "insert", "args": { "characters": "\n" } },
 		{ "key": "up", "command": "prev_entry"},
 		{ "key": "down", "command": "next_entry"}
 	],
@@ -101,21 +115,9 @@
 		{ "key": "ctrl+equals", "command": "increase_font_size" },
 		{ "key": "ctrl+shift+equals", "command": "decrease_font_size" },
 		{ "key": "ctrl+shift+keypad_plus", "command": "decrease_font_size" },
-		{ "key": "ctrl+up", "command": "scroll_lines", "args": {"amount": -1.0 } },
-		{ "key": "ctrl+down", "command": "scroll_lines", "args": {"amount": 1.0 } },
 
-		{ "key": "up", "command": "offset_line", "args": {"amount": -1.0 } },
-		{ "key": "shift+up", "command": "offset_line", "args": {"amount": -1.0, "selection": true } },
-		{ "key": "down", "command": "offset_line", "args": {"amount": 1.0 } },
-		{ "key": "shift+down", "command": "offset_line", "args": {"amount": 1.0, "selection": true } },
-
-		{ "key": "pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page" } },
-		{ "key": "shift+pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page", "selection": true } },
-		{ "key": "pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page" } },
-		{ "key": "shift+pagedown", "command": "offset_line", "args": {"amount": 1.0, "unit": "page", "selection": true } },
-
-		{"key": "tab", "command": "increase_indent"},
-		{"key": "shift+tab", "command": "decrease_indent"},
+		{ "key": "tab", "command": "increase_indent"},
+		{ "key": "shift+tab", "command": "decrease_indent"},
 
 		{ "mouse": "middle", "command": "drag_region" }
 	],
