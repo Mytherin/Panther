@@ -33,12 +33,10 @@ void SimpleTextField::Draw(PGRendererHandle renderer) {
 	PGScalar max_x = x + this->width;
 	PGScalar xoffset = textfile->GetXOffset();
 
+	PGRect textfield_region = PGRect(x, y, this->width, this->height);
+
 	bool has_focus = this->ControlHasFocus();
-	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
-	RenderRectangle(renderer, PGRect(x, y, this->width, this->height),
-		valid_input ? 
-		(has_focus ? PGStyleManager::GetColor(PGColorTabControlSelected) : PGStyleManager::GetColor(PGColorTextFieldCaret)) : PGStyleManager::GetColor(PGColorTextFieldError),
-		PGDrawStyleStroke);
+	RenderRectangle(renderer, textfield_region, PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
 	x += 4;
 	y += 2;
@@ -51,7 +49,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer) {
 
 	auto line_iterator = textfile->GetLineIterator(this, textfile->GetLineOffset().linenumber);
 	TextLine textline;
-
+	SetRenderBounds(renderer, textfield_region);
 	while ((textline = line_iterator->GetLine()).IsValid()) {
 		if (y > initial_position_y + this->height) break;
 
@@ -148,6 +146,11 @@ void SimpleTextField::Draw(PGRendererHandle renderer) {
 		(*line_iterator)++;
 		y += line_height;
 	}
+	ClearRenderBounds(renderer);
+	RenderRectangle(renderer, textfield_region,
+		valid_input ?
+		(has_focus ? PGStyleManager::GetColor(PGColorTabControlSelected) : PGStyleManager::GetColor(PGColorTextFieldCaret)) : PGStyleManager::GetColor(PGColorTextFieldError),
+		PGDrawStyleStroke);
 	Control::Draw(renderer);
 }
 

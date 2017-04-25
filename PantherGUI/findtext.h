@@ -68,7 +68,7 @@ private:
 	ToggleButton* respect_gitignore = nullptr;
 	Label* filter_label = nullptr;
 	
-	void UpdateFieldHeight();
+	void UpdateFieldHeight(bool force_update = false);
 
 	lng field_lines = 0;
 	lng history_entry = 0;

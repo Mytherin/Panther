@@ -485,6 +485,7 @@ void PGFindText::SetType(PGFindTextType type) {
 		default:
 			break;
 	}
+	this->UpdateFieldHeight(true);
 	GetControlManager(this)->TriggerResize();
 	this->TriggerResize();
 }
@@ -499,16 +500,20 @@ void PGFindText::Draw(PGRendererHandle renderer) {
 	PGContainer::Draw(renderer);
 }
 
-void PGFindText::UpdateFieldHeight() {
+void PGFindText::UpdateFieldHeight(bool force_update) {
 	lng current_lines = std::max(1LL, field->GetTextFile().GetLineCount());
+	lng textfield_count = 1;
 	if (replace_field) {
 		current_lines = std::max(current_lines, replace_field->GetTextFile().GetLineCount());
+		textfield_count++;
 	}
 	if (files_to_include_field) {
 		current_lines = std::max(current_lines, files_to_include_field->GetTextFile().GetLineCount());
+		textfield_count++;
 	}
-	if (current_lines != field_lines) {
-		PGScalar height = current_lines * std::ceil(GetTextHeight(field->GetTextfieldFont())) + 6;
+	if (current_lines != field_lines || force_update) {
+		PGScalar max_height = (GetControlManager(this)->height / 2.0f) / textfield_count;
+		PGScalar height = std::min(current_lines * std::ceil(GetTextHeight(field->GetTextfieldFont())) + 6, max_height);
 		field->fixed_height = height;
 		if (replace_field) replace_field->fixed_height = height;
 		if (files_to_include_field) files_to_include_field->fixed_height = height;
