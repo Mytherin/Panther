@@ -8,16 +8,15 @@
 
 class PGGlobalSettings {
 public:
-	static PGGlobalSettings* GetInstance(std::string path) {
+	static PGGlobalSettings* GetInstance(std::string path = "") {
 		static PGGlobalSettings settingsmanager = PGGlobalSettings(path);
 		return &settingsmanager;
 	}
 
 	static void Initialize(std::string path) { (void)GetInstance(path); }
 
-	static nlohmann::json& GetSettings() { return GetInstance("")->settings; }
-	static void WriteSettings() { return GetInstance("")->_WriteSettings(); }
-
+	static nlohmann::json& GetSettings() { return GetInstance()->settings; }
+	static void WriteSettings() { return GetInstance()->_WriteSettings(); }
 private:
 	PGGlobalSettings(std::string path);
 

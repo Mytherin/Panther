@@ -5,12 +5,11 @@
 #include "workspace.h"
 
 #include "findresults.h"
+#include "globalsettings.h"
 
 #define HPADDING 10
 #define HPADDING_SMALL 5
 #define VPADDING 4
-
-#define MAXIMUM_FIND_HISTORY 5
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(PGFindText);
 
@@ -33,7 +32,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	field->margin.top = VPADDING;
 	field->OnPrevEntry([](Control* c, void* data) {
 		PGFindText* f = (PGFindText*)data;
-		nlohmann::json& find_history = f->GetFindHistory();
+		std::vector<std::string>& find_history = f->GetFindTextManager().find_history;
 		if (find_history.size() > f->history_entry + 1) {
 			f->history_entry++;
 			((SimpleTextField*)c)->SetText(find_history[f->history_entry]);
@@ -41,7 +40,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	}, this);
 	field->OnNextEntry([](Control* c, void* data) {
 		PGFindText* f = (PGFindText*)data;
-		nlohmann::json& find_history = f->GetFindHistory();
+		std::vector<std::string>& find_history = f->GetFindTextManager().find_history;
 		if (f->history_entry > 0) {
 			f->history_entry--;
 			((SimpleTextField*)c)->SetText(find_history[f->history_entry]);
@@ -88,39 +87,15 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	find_expand->margin.left = HPADDING;
 	find_expand->margin.right = HPADDING_SMALL;
 	find_expand->fixed_width = button_height;
-
-	auto workspace = PGGetWorkspace(window);
-	assert(workspace);
-	if (workspace->settings.count("find_text") == 0 || !workspace->settings["find_text"].is_object()) {
-		workspace->settings["find_text"] = nlohmann::json::object();
-	}
-	nlohmann::json& find_text = workspace->settings["find_text"];
-
-	assert(find_text.is_object());
-	if (find_text.count("find_history") == 0 || !find_text["find_history"].is_array()) {
-		find_text["find_history"] = nlohmann::json::array();
-	}
-	nlohmann::json& find_history = find_text["find_history"];
-	assert(find_history.is_array());
-	if (find_history.size() > 0) {
-		if (find_history[0].is_string()) {
-			field->SetText(find_history[0]);
-			field->Invalidate();
-		}
-	}
-
-	static char* toggle_regex_text = "toggle_regex";
-	static char* toggle_matchcase_text = "toggle_matchcase";
-	static char* toggle_wholeword_text = "toggle_wholeword";
-	static char* toggle_wrap_text = "toggle_wrap";
-	static char* toggle_highlight_text = "toggle_highlight";
+	
+	FindTextManager& manager = GetFindTextManager();
 
 	bool initial_values[5];
-	initial_values[0] = find_text.get_if_exists(toggle_regex_text, false);
-	initial_values[1] = find_text.get_if_exists(toggle_matchcase_text, false);
-	initial_values[2] = find_text.get_if_exists(toggle_wholeword_text, false);
-	initial_values[3] = find_text.get_if_exists(toggle_wrap_text, true);
-	initial_values[4] = find_text.get_if_exists(toggle_highlight_text, true);
+	initial_values[0] = manager.regex;
+	initial_values[1] = manager.matchcase;
+	initial_values[2] = manager.wholeword;
+	initial_values[3] = manager.wrap;
+	initial_values[4] = manager.highlight;
 
 	ToggleButton* toggles[5];
 	for (int i = 0; i < 5; i++) {
@@ -172,8 +147,8 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	toggle_highlight->SetTooltip("Highlight search matches (Ctrl+H)");
 
 	toggle_highlight->OnToggle([](Button* b, bool toggled, void* setting_name) {
-		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
 		PGFindText* f = dynamic_cast<PGFindText*>(b->parent);
+		f->GetFindTextManager().highlight = toggled;
 		if (toggled) {
 			f->FindAll(true);
 		} else {
@@ -182,22 +157,21 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 			tf.ClearMatches();
 			tf.SetSelectedMatch(-1);
 		}
-	}, toggle_highlight_text);
+	});
 	auto update_highlight = [](Button* b, bool toggled, void* setting_name) {
-		PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
 		PGFindText* f = dynamic_cast<PGFindText*>(b->parent);
 		if (f->HighlightMatches()) {
 			f->FindAll(true);
 		}};
 
-	toggle_regex->OnToggle(update_highlight, toggle_regex_text);
-	toggle_matchcase->OnToggle(update_highlight, toggle_matchcase_text);
-	toggle_wholeword->OnToggle(update_highlight, toggle_wholeword_text);
-	toggle_wrap->OnToggle(update_highlight, toggle_wrap_text);
+	toggle_regex->OnToggle(update_highlight, nullptr);
+	toggle_matchcase->OnToggle(update_highlight, nullptr);
+	toggle_wholeword->OnToggle(update_highlight, nullptr);
+	toggle_wrap->OnToggle(update_highlight, nullptr);
 
-	ControlManager* manager = GetControlManager(this);
-	manager->OnTextChanged((PGControlDataCallback)UpdateHighlight, this);
-	manager->OnActiveTextFieldChanged((PGControlDataCallback)UpdateHighlight, this);
+	ControlManager* cmanager = GetControlManager(this);
+	cmanager->OnTextChanged((PGControlDataCallback)UpdateHighlight, this);
+	cmanager->OnActiveTextFieldChanged((PGControlDataCallback)UpdateHighlight, this);
 
 	this->replace_field = nullptr;
 	this->replace_button = nullptr;
@@ -328,20 +302,11 @@ void PGFindText::SetType(PGFindTextType type) {
 				f->UpdateFieldHeight();
 			}, (void*) this);
 
-			auto workspace = PGGetWorkspace(window);
-			assert(workspace);
-			if (workspace->settings.count("find_text") == 0 || !workspace->settings["find_text"].is_object()) {
-				workspace->settings["find_text"] = nlohmann::json::object();
-			}
-			nlohmann::json& find_text = workspace->settings["find_text"];
-			assert(find_text.is_object());
+			FindTextManager& manager = GetFindTextManager();
 
-			static char* toggle_source_files_only = "toggle_source_only";
-			static char* toggle_respect_gitignore = "toggle_respect_gitignore";
-
-			bool initial_values[5];
-			initial_values[0] = find_text.get_if_exists(toggle_source_files_only, true);
-			initial_values[1] = find_text.get_if_exists(toggle_respect_gitignore, true);
+			bool initial_values[2];
+			initial_values[0] = manager.source_only;
+			initial_values[1] = manager.respect_gitignore;
 
 			ToggleButton* toggles[2];
 			for (int i = 0; i < 2; i++) {
@@ -360,12 +325,13 @@ void PGFindText::SetType(PGFindTextType type) {
 			source_files_only->SetText(std::string("So"), font);
 			respect_gitignore->SetText(std::string(".g"), font);
 
+			/*
 			auto update_find_text = [](Button* b, bool toggled, void* setting_name) {
 				PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
 			};
 
-			source_files_only->OnToggle(update_find_text, toggle_source_files_only);
-			respect_gitignore->OnToggle(update_find_text, toggle_respect_gitignore);
+			source_files_only->OnToggle(update_find_text, nullptr);
+			respect_gitignore->OnToggle(update_find_text, toggle_respect_gitignore);*/
 		}
 		case PGFindReplaceSingleFile:
 		{
@@ -523,15 +489,6 @@ void PGFindText::UpdateFieldHeight(bool force_update) {
 	}
 }
 
-nlohmann::json& PGFindText::GetFindHistory() {
-	auto workspace = PGGetWorkspace(window);
-	nlohmann::json& find_text = workspace->settings["find_text"];
-	nlohmann::json& find_history = find_text["find_history"];
-	assert(find_history.is_array());
-	assert(history_entry >= 0 && (history_entry < find_history.size() || find_history.size() == 0));
-	return find_history;
-}
-
 bool PGFindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
@@ -550,20 +507,26 @@ bool PGFindText::Find(PGDirection direction, bool include_selection) {
 		toggle_wrap->IsToggled(),
 		include_selection);
 
-	nlohmann::json& find_history = GetFindHistory();
-	/*
-	if (find_history.size() == 0 || find_history[0] != search_text) {
+	std::vector<std::string>& find_history = GetFindTextManager().find_history;
+	if (find_history.size() == 0) {
+		find_history.push_back(pattern);
+	} else if (find_history[0] != pattern) {
+		auto current_entry = std::find(find_history.begin(), find_history.end(), pattern);
+		if (current_entry != find_history.end()) {
+			find_history.erase(current_entry);
+		}
+
 		std::string first_entry = find_history[0];
 		if (first_entry.size() == 0) {
-			find_history[0] = search_text;
+			find_history[0] = pattern;
 		} else {
-			find_history.insert(find_history.begin(), search_text);
+			find_history.insert(find_history.begin(), pattern);
 			if (find_history.size() > MAXIMUM_FIND_HISTORY) {
 				find_history.erase(find_history.begin() + find_history.size() - 1);
 			}
 		}
 		history_entry = 0;
-	}*/
+	}
 
 	if (!error_message) {
 		// successful search
@@ -792,4 +755,8 @@ void PGFindText::ResolveSize(PGSize new_size) {
 			break;
 	}
 	PGContainer::ResolveSize(new_size);
+}
+
+FindTextManager& PGFindText::GetFindTextManager() {
+	return PGGetWorkspace(this->window)->GetFindTextManager();
 }

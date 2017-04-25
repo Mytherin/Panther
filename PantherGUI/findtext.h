@@ -5,6 +5,7 @@
 #include "label.h"
 #include "simpletextfield.h"
 #include "togglebutton.h"
+#include "findtextmanager.h"
 
 class PGFindText : public PGContainer {
 public:
@@ -28,7 +29,6 @@ public:
 
 	void SetType(PGFindTextType type);
 
-
 	void ResolveSize(PGSize new_size);
 
 	void Close();
@@ -36,6 +36,7 @@ public:
 	PG_CONTROL_KEYBINDINGS;
 
 	virtual PGControlType GetControlType() { return PGControlTypeFindText; }
+
 private:
 	PGFindTextType type;
 
@@ -53,9 +54,7 @@ private:
 	ToggleButton* toggle_wrap;
 	ToggleButton* toggle_highlight;
 	Label* find_label = nullptr;
-
-	nlohmann::json& GetFindHistory();
-
+	
 	SimpleTextField* replace_field = nullptr;
 	Button* replace_button = nullptr;
 	Button* replace_all_button = nullptr;
@@ -67,7 +66,9 @@ private:
 	ToggleButton* source_files_only = nullptr;
 	ToggleButton* respect_gitignore = nullptr;
 	Label* filter_label = nullptr;
-	
+
+	FindTextManager& GetFindTextManager();
+
 	void UpdateFieldHeight(bool force_update = false);
 
 	lng field_lines = 0;
