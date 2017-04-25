@@ -17,6 +17,8 @@ public:
 	void SetToggled(bool toggled) { this->toggled = toggled; this->Invalidate(); }
 
 	static ToggleButton* CreateFromCommand(Control* parent, std::string command_name, std::string tooltip_text,
+		std::map<std::string, PGKeyFunction>& functions, PGFontHandle font, std::string text, bool initial_toggle);
+	static ToggleButton* CreateFromCommand(Control* parent, std::string command_name, std::string tooltip_text,
 		std::map<std::string, PGKeyFunction>& functions, std::map<std::string, PGBitmapHandle>& images, bool initial_toggle);
 private:
 	PGColor untoggled_color;

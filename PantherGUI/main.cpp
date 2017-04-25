@@ -1653,7 +1653,7 @@ void PGUpdateTooltipRegion(PGTooltipHandle handle, PGRect rect) {
 	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
 
 	// Associate the tooltip with the "tool" window.
-	SendMessage(handle->tooltip, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&ti);
+	SendMessage(handle->tooltip, TTM_NEWTOOLRECT, 0, (LPARAM)(LPTOOLINFO)&ti);
 }
 
 void PGDestroyTooltip(PGTooltipHandle handle) {

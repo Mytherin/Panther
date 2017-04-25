@@ -63,8 +63,6 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	this->AddControl(field);
 
 	this->percentage_width = 1;
-	this->fixed_height = field->height + VPADDING * 2;
-	this->height = this->fixed_height;
 
 	PGScalar button_width = MeasureTextWidth(font, "Find Prev") + 2 * HPADDING;
 	PGScalar button_height = field->height;
@@ -87,32 +85,35 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	find_expand->margin.left = HPADDING;
 	find_expand->margin.right = HPADDING_SMALL;
 	find_expand->fixed_width = button_height;
-	
+
 	FindTextManager& manager = GetFindTextManager();
+	this->regex = manager.regex;
+	this->matchcase = manager.matchcase;
+	this->wholeword = manager.wholeword;
+	this->wrap = manager.wrap;
+	this->highlight = manager.highlight;
+	this->source_only = manager.source_only;
+	this->respect_gitignore = manager.respect_gitignore;
 
-	bool initial_values[5];
-	initial_values[0] = manager.regex;
-	initial_values[1] = manager.matchcase;
-	initial_values[2] = manager.wholeword;
-	initial_values[3] = manager.wrap;
-	initial_values[4] = manager.highlight;
+	toggle_regex = ToggleButton::CreateFromCommand(this, "toggle_regex", "Toggle regular expressions",
+		PGFindText::keybindings_noargs, font, ".*", this->regex);
+	toggle_matchcase = ToggleButton::CreateFromCommand(this, "toggle_matchcase", "Toggle case sensitive search",
+		PGFindText::keybindings_noargs, font, "Aa", this->matchcase);
+	toggle_wholeword = ToggleButton::CreateFromCommand(this, "toggle_wholeword", "Toggle whole word search",
+		PGFindText::keybindings_noargs, PGFindText::keybindings_images, this->wholeword);
+	toggle_wrap = ToggleButton::CreateFromCommand(this, "toggle_wrap", "Toggle search wrap",
+		PGFindText::keybindings_noargs, PGFindText::keybindings_images, this->wrap);
+	toggle_highlight = ToggleButton::CreateFromCommand(this, "toggle_highlight", "Automatically search while typing",
+		PGFindText::keybindings_noargs, PGFindText::keybindings_images, this->highlight);
 
-	ToggleButton* toggles[5];
+	ToggleButton* toggles[] = { toggle_regex, toggle_matchcase, toggle_wholeword, toggle_wrap, toggle_highlight };
 	for (int i = 0; i < 5; i++) {
-		toggles[i] = new ToggleButton(window, this, initial_values[i]);
 		toggles[i]->SetAnchor(PGAnchorLeft | PGAnchorTop);
-		toggles[i]->fixed_height = button_height;
-		toggles[i]->fixed_width = button_height;
 		toggles[i]->left_anchor = i > 0 ? toggles[i - 1] : nullptr;
 		toggles[i]->margin.left = 1;
 		toggles[i]->margin.top = VPADDING;
 		this->AddControl(toggles[i]);
 	}
-	toggle_regex = toggles[0];
-	toggle_matchcase = toggles[1];
-	toggle_wholeword = toggles[2];
-	toggle_wrap = toggles[3];
-	toggle_highlight = toggles[4];
 
 	toggle_regex->margin.left = HPADDING_SMALL;
 	toggle_wrap->margin.left = HPADDING_SMALL;
@@ -134,41 +135,6 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	find_button->SetText(std::string("Find"), font);
 	find_expand->SetText(std::string("v"), font);
 
-	toggle_regex->SetText(std::string(".*"), font);
-	toggle_matchcase->SetText(std::string("Aa"), font);
-	toggle_wholeword->SetText(std::string("\"\""), font);
-	toggle_wrap->SetText(std::string("W"), font);
-	toggle_highlight->SetText(std::string("H"), font);
-
-	toggle_regex->SetTooltip("Toggle regular expressions (Ctrl+R)");
-	toggle_matchcase->SetTooltip("Toggle case sensitive search (Ctrl+C)");
-	toggle_wholeword->SetTooltip("Toggle whole word search (Ctrl+W)");
-	toggle_wrap->SetTooltip("Toggle search wrap (Ctrl+Z)");
-	toggle_highlight->SetTooltip("Highlight search matches (Ctrl+H)");
-
-	toggle_highlight->OnToggle([](Button* b, bool toggled, void* setting_name) {
-		PGFindText* f = dynamic_cast<PGFindText*>(b->parent);
-		f->GetFindTextManager().highlight = toggled;
-		if (toggled) {
-			f->FindAll(true);
-		} else {
-			ControlManager* manager = GetControlManager(f);
-			TextFile& tf = manager->active_textfield->GetTextFile();
-			tf.ClearMatches();
-			tf.SetSelectedMatch(-1);
-		}
-	});
-	auto update_highlight = [](Button* b, bool toggled, void* setting_name) {
-		PGFindText* f = dynamic_cast<PGFindText*>(b->parent);
-		if (f->HighlightMatches()) {
-			f->FindAll(true);
-		}};
-
-	toggle_regex->OnToggle(update_highlight, nullptr);
-	toggle_matchcase->OnToggle(update_highlight, nullptr);
-	toggle_wholeword->OnToggle(update_highlight, nullptr);
-	toggle_wrap->OnToggle(update_highlight, nullptr);
-
 	ControlManager* cmanager = GetControlManager(this);
 	cmanager->OnTextChanged((PGControlDataCallback)UpdateHighlight, this);
 	cmanager->OnActiveTextFieldChanged((PGControlDataCallback)UpdateHighlight, this);
@@ -179,7 +145,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	this->replace_in_selection_button = nullptr;
 	this->files_to_include_field = nullptr;
 	this->source_files_only = nullptr;
-	this->respect_gitignore = nullptr;
+	this->toggle_respect_gitignore = nullptr;
 	this->replace_expand = nullptr;
 	this->find_prev = nullptr;
 	this->find_all = nullptr;
@@ -201,9 +167,8 @@ void PGFindText::SetType(PGFindTextType type) {
 
 	// clear current controls
 	std::vector<Control*> controls{ replace_field, replace_button, replace_all_button, replace_in_selection_button,
-		files_to_include_field, source_files_only, respect_gitignore, replace_expand, find_prev, find_all, 
+		files_to_include_field, source_files_only, toggle_respect_gitignore, replace_expand, find_prev, find_all,
 		replace_label, filter_label };
-
 
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)) {
@@ -216,7 +181,7 @@ void PGFindText::SetType(PGFindTextType type) {
 	this->replace_in_selection_button = nullptr;
 	this->files_to_include_field = nullptr;
 	this->source_files_only = nullptr;
-	this->respect_gitignore = nullptr;
+	this->toggle_respect_gitignore = nullptr;
 	this->replace_expand = nullptr;
 	this->find_prev = nullptr;
 	this->find_all = nullptr;
@@ -266,8 +231,6 @@ void PGFindText::SetType(PGFindTextType type) {
 	switch (type) {
 		case PGFindSingleFile:
 		{
-			this->fixed_height = field->height + VPADDING * 2;
-
 			find_expand->SetText(std::string("v"), font);
 			find_expand->OnPressed([](Button* b, void* data) {
 				PGFindText* tf = ((PGFindText*)data);
@@ -277,8 +240,6 @@ void PGFindText::SetType(PGFindTextType type) {
 		}
 		case PGFindReplaceManyFiles:
 		{
-			this->fixed_height = 3 * (field->height + VPADDING) + VPADDING;
-
 			filter_label = new Label(window, this);
 			filter_label->SetText("Filter:", font);
 			filter_label->SetAnchor(PGAnchorTop | PGAnchorLeft);
@@ -302,43 +263,24 @@ void PGFindText::SetType(PGFindTextType type) {
 				f->UpdateFieldHeight();
 			}, (void*) this);
 
-			FindTextManager& manager = GetFindTextManager();
 
-			bool initial_values[2];
-			initial_values[0] = manager.source_only;
-			initial_values[1] = manager.respect_gitignore;
+			source_files_only = ToggleButton::CreateFromCommand(this, "toggle_sourceonly", "Only search source files",
+				PGFindText::keybindings_noargs, font, "So", this->source_only);
+			toggle_respect_gitignore = ToggleButton::CreateFromCommand(this, "toggle_gitignore", "Respect gitignore files",
+				PGFindText::keybindings_noargs, font, ".g", this->respect_gitignore);
 
-			ToggleButton* toggles[2];
+			ToggleButton* toggles[] = { source_files_only, toggle_respect_gitignore };
 			for (int i = 0; i < 2; i++) {
-				toggles[i] = new ToggleButton(window, this, initial_values[i]);
 				toggles[i]->SetAnchor(PGAnchorLeft | PGAnchorTop);
-				toggles[i]->fixed_width = toggles[i]->fixed_height = toggle_wrap->fixed_width;
 				toggles[i]->left_anchor = i > 0 ? toggles[i - 1] : nullptr;
 				toggles[i]->margin.top = VPADDING;
 				toggles[i]->margin.left = 1;
 				this->AddControl(toggles[i]);
 			}
-			source_files_only = toggles[0];
-			respect_gitignore = toggles[1];
-
 			source_files_only->margin.left = HPADDING_SMALL;
-			source_files_only->SetText(std::string("So"), font);
-			respect_gitignore->SetText(std::string(".g"), font);
-
-			/*
-			auto update_find_text = [](Button* b, bool toggled, void* setting_name) {
-				PGGetWorkspace(b->window)->settings["find_text"][((char*)setting_name)] = toggled;
-			};
-
-			source_files_only->OnToggle(update_find_text, nullptr);
-			respect_gitignore->OnToggle(update_find_text, toggle_respect_gitignore);*/
 		}
 		case PGFindReplaceSingleFile:
 		{
-			if (type == PGFindReplaceSingleFile) {
-				this->fixed_height = 2 * (field->height + VPADDING * 2);
-			}
-
 			replace_label = new Label(window, this);
 			replace_label->SetText("Replace:", font);
 			replace_label->SetAnchor(PGAnchorTop | PGAnchorLeft);
@@ -363,9 +305,9 @@ void PGFindText::SetType(PGFindTextType type) {
 				PGFindText* f = (PGFindText*)data;
 				f->UpdateFieldHeight();
 			}, (void*) this);
-			
+
 			if (type == PGFindReplaceManyFiles) {
-				respect_gitignore->top_anchor = replace_field;
+				toggle_respect_gitignore->top_anchor = replace_field;
 				source_files_only->top_anchor = replace_field;
 				files_to_include_field->top_anchor = replace_field;
 				filter_label->top_anchor = replace_field;
@@ -724,6 +666,7 @@ void PGFindText::ShiftTextfieldFocus(PGDirection direction) {
 }
 
 void PGFindText::InitializeKeybindings() {
+	std::map<std::string, PGBitmapHandle>& images = PGFindText::keybindings_images;
 	std::map<std::string, PGKeyFunction>& noargs = PGFindText::keybindings_noargs;
 	noargs["find_next"] = [](Control* c) {
 		((PGFindText*)c)->Find(PGDirectionRight);
@@ -740,6 +683,32 @@ void PGFindText::InitializeKeybindings() {
 	noargs["shift_focus_backward"] = [](Control* c) {
 		((PGFindText*)c)->ShiftTextfieldFocus(PGDirectionLeft);
 	};
+	images["toggle_regex"] = PGStyleManager::GetImage("data/icons/regex.png");
+	noargs["toggle_regex"] = [](Control* c) {
+		((PGFindText*)c)->Toggle(PGFindTextToggleRegex);
+	};
+	images["toggle_matchcase"] = PGStyleManager::GetImage("data/icons/matchcase.png");
+	noargs["toggle_matchcase"] = [](Control* c) {
+		((PGFindText*)c)->Toggle(PGFindTextToggleMatchcase);
+	};
+	images["toggle_wholeword"] = PGStyleManager::GetImage("data/icons/wholeword.png");
+	noargs["toggle_wholeword"] = [](Control* c) {
+		((PGFindText*)c)->Toggle(PGFindTextToggleWholeword);
+	};
+	images["toggle_wrap"] = PGStyleManager::GetImage("data/icons/wrap.png");
+	noargs["toggle_wrap"] = [](Control* c) {
+		((PGFindText*)c)->Toggle(PGFindTextToggleWrap);
+	};
+	images["toggle_highlight"] = PGStyleManager::GetImage("data/icons/instantsearch.png");
+	noargs["toggle_highlight"] = [](Control* c) {
+		((PGFindText*)c)->Toggle(PGFindTextToggleHighlight);
+	};
+	noargs["toggle_sourceonly"] = [](Control* c) {
+		((PGFindText*)c)->Toggle(PGFindTextToggleSourceOnly);
+	};
+	noargs["toggle_gitignore"] = [](Control* c) {
+		((PGFindText*)c)->Toggle(PGFindTextToggleGitIgnore);
+	};
 }
 
 void PGFindText::ResolveSize(PGSize new_size) {
@@ -748,10 +717,10 @@ void PGFindText::ResolveSize(PGSize new_size) {
 			this->fixed_height = field->fixed_height + VPADDING * 2;
 			break;
 		case PGFindReplaceManyFiles:
-			this->fixed_height = 3 * field->fixed_height + VPADDING * 2;
+			this->fixed_height = 3 * (field->fixed_height + VPADDING * 2);
 			break;
 		case PGFindReplaceSingleFile:
-			this->fixed_height = 2 * field->fixed_height + VPADDING * 2;
+			this->fixed_height = 2 * (field->fixed_height + VPADDING * 2);
 			break;
 	}
 	PGContainer::ResolveSize(new_size);
@@ -759,4 +728,77 @@ void PGFindText::ResolveSize(PGSize new_size) {
 
 FindTextManager& PGFindText::GetFindTextManager() {
 	return PGGetWorkspace(this->window)->GetFindTextManager();
+}
+
+void PGFindText::Toggle(PGFindTextToggles type) {
+	FindTextManager& manager = GetFindTextManager();
+	switch (type) {
+		case PGFindTextToggleRegex:
+			regex = !regex;
+			manager.regex = regex;
+			if (toggle_regex) {
+				toggle_regex->SetToggled(regex);
+			}
+			break;
+		case PGFindTextToggleMatchcase:
+			matchcase = !matchcase;
+			manager.matchcase = matchcase;
+			if (toggle_matchcase) {
+				toggle_matchcase->SetToggled(matchcase);
+			}
+			break;
+		case PGFindTextToggleWholeword:
+			wholeword = !wholeword;
+			manager.wholeword = wholeword;
+			if (toggle_wholeword) {
+				toggle_wholeword->SetToggled(wholeword);
+			}
+			break;
+		case PGFindTextToggleWrap:
+			wrap = !wrap;
+			manager.wrap = wrap;
+			if (toggle_wrap) {
+				toggle_wrap->SetToggled(wrap);
+			}
+			break;
+		case PGFindTextToggleHighlight:
+			highlight = !highlight;
+			manager.highlight = highlight;
+			if (toggle_highlight) {
+				toggle_highlight->SetToggled(highlight);
+			}
+			if (!highlight) {
+				ControlManager* manager = GetControlManager(this);
+				TextFile& tf = manager->active_textfield->GetTextFile();
+				tf.ClearMatches();
+				tf.SetSelectedMatch(-1);
+			}
+			break;
+		case PGFindTextToggleSourceOnly:
+			source_only = !source_only;
+			manager.source_only = source_only;
+			if (source_files_only) {
+				source_files_only->SetToggled(source_only);
+			}
+			break;
+		case PGFindTextToggleGitIgnore:
+			respect_gitignore = !respect_gitignore;
+			manager.respect_gitignore = respect_gitignore;
+			if (toggle_respect_gitignore) {
+				toggle_respect_gitignore->SetToggled(respect_gitignore);
+			}
+			break;
+	}
+	switch (type) {
+		case PGFindTextToggleRegex:
+		case PGFindTextToggleMatchcase:
+		case PGFindTextToggleWholeword:
+		case PGFindTextToggleWrap:
+		case PGFindTextToggleHighlight:
+			if (HighlightMatches()) {
+				FindAll(true);
+			}
+		default:
+			break;
+	}
 }

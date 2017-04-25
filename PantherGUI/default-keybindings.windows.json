@@ -138,6 +138,14 @@
 		{"key": "shift+enter", "command": "find_prev"},
 		{"key": "tab", "command": "shift_focus_forward"},
 		{"key": "shift+tab", "command": "shift_focus_backward"},
+
+
+		{"key": "ctrl+r", "command": "toggle_regex"},
+		{"key": "ctrl+c", "command": "toggle_matchcase"},
+		{"key": "ctrl+w", "command": "toggle_wholeword"},
+		{"key": "ctrl+z", "command": "toggle_wrap"},
+		{"key": "ctrl+h", "command": "toggle_highlight"},
+
 		{"key": "escape", "command": "close"}
 	],
 	"goto": [

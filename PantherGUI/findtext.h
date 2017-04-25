@@ -38,6 +38,25 @@ public:
 	virtual PGControlType GetControlType() { return PGControlTypeFindText; }
 
 private:
+	enum PGFindTextToggles {
+		PGFindTextToggleRegex,
+		PGFindTextToggleMatchcase,
+		PGFindTextToggleWholeword,
+		PGFindTextToggleWrap,
+		PGFindTextToggleHighlight,
+		PGFindTextToggleSourceOnly,
+		PGFindTextToggleGitIgnore
+	};
+	void Toggle(PGFindTextToggles type);
+
+	bool regex = false;
+	bool matchcase = false;
+	bool wholeword = false;
+	bool wrap = true;
+	bool highlight = true;
+	bool source_only = false;
+	bool respect_gitignore = false;
+
 	PGFindTextType type;
 
 	PGScalar hoffset = 0;
@@ -64,7 +83,7 @@ private:
 
 	SimpleTextField* files_to_include_field = nullptr;
 	ToggleButton* source_files_only = nullptr;
-	ToggleButton* respect_gitignore = nullptr;
+	ToggleButton* toggle_respect_gitignore = nullptr;
 	Label* filter_label = nullptr;
 
 	FindTextManager& GetFindTextManager();
