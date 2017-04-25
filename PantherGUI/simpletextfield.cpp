@@ -26,6 +26,20 @@ void SimpleTextField::GainsFocus(void) {
 	BasicTextField::GainsFocus();
 }
 
+void SimpleTextField::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
+	if (modifier == PGModifierNone) {
+		if (distance != 0) {
+			textfile->OffsetLineOffset(-distance / GetTextHeight(textfield_font));
+			this->ClampScroll();
+			this->Invalidate();
+		}
+	}
+	if (hdistance != 0) {
+		textfile->SetXOffset(textfile->GetXOffset() - hdistance);
+		this->Invalidate();
+	}
+}
+
 void SimpleTextField::Draw(PGRendererHandle renderer) {
 	PGScalar x = X();
 	PGScalar y = Y();
@@ -217,13 +231,17 @@ void SimpleTextField::InitializeKeybindings() {
 	};
 }
 
-void SimpleTextField::OnResize(PGSize old_size, PGSize new_size) {
+void SimpleTextField::ClampScroll() {
 	PGVerticalScroll scroll = textfile->GetLineOffset();
-	lng rendered_lines = std::max(1LL, (lng)std::floor(new_size.height / GetTextHeight(textfield_font)));
+	lng rendered_lines = std::max(1LL, (lng)std::floor(this->height / GetTextHeight(textfield_font)));
 	lng max_scroll = std::max(0LL, textfile->GetLineCount() - rendered_lines);
 	if (scroll.linenumber > max_scroll) {
 		textfile->SetLineOffset(PGVerticalScroll(max_scroll, 0));
 	}
+}
+
+void SimpleTextField::OnResize(PGSize old_size, PGSize new_size) {
+	ClampScroll();
 	BasicTextField::OnResize(old_size, new_size);
 }
 

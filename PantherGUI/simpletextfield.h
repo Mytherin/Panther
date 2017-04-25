@@ -20,6 +20,8 @@ public:
 	void Draw(PGRendererHandle);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 
+	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
+
 	void SetValidInput(bool valid);
 	void SetRenderBackground(bool render) { render_background = render; }
 
@@ -55,4 +57,6 @@ protected:
 	PGFunctionData on_next_entry;
 	PGFunctionData on_text_changed;
 	PGFunctionData on_selection_changed;
+private:
+	void ClampScroll();
 };
