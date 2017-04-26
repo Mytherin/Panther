@@ -229,6 +229,7 @@
     <ClCompile Include="simpletextfield.cpp" />
     <ClCompile Include="splitter.cpp" />
     <ClCompile Include="statusbar.cpp" />
+    <ClCompile Include="statusnotification.cpp" />
     <ClCompile Include="style.cpp" />
     <ClCompile Include="syntaxhighlighter.cpp" />
     <ClCompile Include="container.cpp" />
@@ -318,6 +319,7 @@
     <ClInclude Include="simpletextfield.h" />
     <ClInclude Include="splitter.h" />
     <ClInclude Include="statusbar.h" />
+    <ClInclude Include="statusnotification.h" />
     <ClInclude Include="style.h" />
     <ClInclude Include="syntax.h" />
     <ClInclude Include="syntaxhighlighter.h" />

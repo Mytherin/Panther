@@ -5,6 +5,8 @@
 #include "container.h"
 #include "textfield.h"
 
+#include "statusnotification.h"
+
 #define STATUSBAR_HEIGHT 20
 
 class StatusBar : public PGContainer {
@@ -23,6 +25,9 @@ public:
 		RefreshWindow(this->window, rect);
 	}
 
+	PGStatusNotification* AddNotification(PGStatusType type, std::string text, std::string tooltip, bool progress_bar);
+	void RemoveNotification(PGStatusNotification* notification);
+
 	TextField* GetActiveTextField();
 
 	virtual PGControlType GetControlType() { return PGControlTypeStatusBar; }
@@ -33,6 +38,8 @@ private:
 	Button* language_button;
 	Button* lineending_button;
 	Button* tabwidth_button;
+
+	PGStatusNotification* notifications = nullptr;
 
 	PGFontHandle font;
 };

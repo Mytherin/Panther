@@ -7,6 +7,9 @@
 #include "findresults.h"
 #include "globalsettings.h"
 
+#include "statusbar.h"
+#include "statusnotification.h"
+
 #define HPADDING 10
 #define HPADDING_SMALL 5
 #define VPADDING 4
@@ -20,7 +23,7 @@ static void UpdateHighlight(Control* c, PGFindText* f) {
 }
 
 PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
-	PGContainer(window), history_entry(0), field_lines(1) {
+	PGContainer(window), history_entry(0), field_lines(1), notification(nullptr) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -160,6 +163,10 @@ PGFindText::~PGFindText() {
 	manager->active_findtext = nullptr;
 	manager->UnregisterOnTextChanged((PGControlDataCallback)UpdateHighlight, this);
 	manager->UnregisterOnActiveTextFieldChanged((PGControlDataCallback)UpdateHighlight, this);
+	if (notification) {
+		manager->statusbar->RemoveNotification(notification);
+		notification = nullptr;
+	}
 }
 
 void PGFindText::SetType(PGFindTextType type) {
@@ -567,28 +574,49 @@ bool PGFindText::SelectAllMatches(bool in_selection) {
 void PGFindText::FindAll(bool select_first_match) {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
+
 	if (!tf.IsLoaded()) return;
-	char* error_message = nullptr;
+
+	PGStatusType type;
+	std::string text;
+
 	tf.SetSelectedMatch(0);
 	auto begin_pos = tf.GetActiveCursor().BeginPosition();
 	auto end_pos = tf.GetActiveCursor().EndPosition();
-	std::string text = field->GetText();
-	PGRegexHandle regex_handle = PGCompileRegex(text, toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexFlagsNone : PGRegexCaseInsensitive);
-	if (!regex_handle) {
-		// FIXME: throw an error, regex was not compiled properly
-		error_message = panther::strdup("Error");
+	std::string pattern = field->GetText();
+
+	if (pattern.size() == 0) {
+		tf.ClearMatches();
+		if (notification) {
+			GetControlManager(this)->statusbar->RemoveNotification(notification);
+			notification = nullptr;
+		}
 		return;
+	}
+
+	PGRegexHandle regex_handle = PGCompileRegex(pattern, regex, matchcase ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	if (!regex_handle || PGRegexHasErrors(regex_handle)) {
+		type = PGStatusError;
+		text = "Failed to compile regex: " + PGGetRegexError(regex_handle);
+		this->field->SetValidInput(false);
+		goto set_notification;
 	}
 	tf.FindAllMatches(regex_handle, select_first_match,
 		begin_pos.line, begin_pos.position,
 		end_pos.line, end_pos.position,
 		toggle_wrap->IsToggled());
-	if (!error_message) {
-		this->field->SetValidInput(true);
-		this->Invalidate();
+	
+	size_t match_count = tf.GetFindMatches().size();
+	type = match_count == 0 ? PGStatusWarning : PGStatusInProgress;
+	text = "Found " + std::to_string(match_count) + " matches";
+	this->field->SetValidInput(true);
+
+set_notification:
+	if (!notification) {
+		notification = GetControlManager(this)->statusbar->AddNotification(type, text, "", false);
 	} else {
-		this->field->SetValidInput(false);
-		this->Invalidate();
+		notification->SetType(type);
+		notification->SetText(text);
 	}
 }
 

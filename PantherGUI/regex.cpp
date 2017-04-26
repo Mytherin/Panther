@@ -251,3 +251,12 @@ PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection
 	}
 }
 
+bool PGRegexHasErrors(PGRegexHandle handle) {
+	if (!handle->is_regex) return false;
+	return handle->regex->error().size() != 0;
+}
+
+std::string PGGetRegexError(PGRegexHandle handle) {
+	if (!handle->is_regex) return "";
+	return handle->regex->error();
+}

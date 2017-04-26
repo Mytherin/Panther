@@ -21,7 +21,7 @@ PGNotification::PGNotification(PGWindowHandle window, PGNotificationType type, P
 	switch (type) {
 		case PGNotificationTypeError:
 			warning_label->SetText("Error", font);
-			warning_label->background_color= PGStyleManager::GetColor(PGColorNotificationError);
+			warning_label->background_color = PGStyleManager::GetColor(PGColorNotificationError);
 			break;
 		case PGNotificationTypeWarning:
 			warning_label->SetText("Warning", font);

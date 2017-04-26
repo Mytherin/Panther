@@ -25,6 +25,7 @@ enum PGControlType {
 	PGControlTypeSimpleTextField,
 	PGControlTypeSplitter,
 	PGControlTypeStatusBar,
+	PGControlTypeStatusNotification,
 	PGControlTypeTabControl,
 	PGControlTypeTextField,
 	PGControlTypeTextFieldContainer,

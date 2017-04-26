@@ -7,6 +7,8 @@
 #include "togglebutton.h"
 #include "findtextmanager.h"
 
+class PGStatusNotification;
+
 class PGFindText : public PGContainer {
 public:
 	PGFindText(PGWindowHandle window, PGFindTextType type);
@@ -87,6 +89,8 @@ private:
 	Label* filter_label = nullptr;
 
 	FindTextManager& GetFindTextManager();
+
+	PGStatusNotification* notification = nullptr;
 
 	void UpdateFieldHeight(bool force_update = false);
 

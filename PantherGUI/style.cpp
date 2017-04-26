@@ -22,6 +22,7 @@ PGStyleManager::PGStyleManager() {
 	vs.SetColor(PGColorNotificationBackground, PGColor(51, 51, 51));
 	vs.SetColor(PGColorNotificationText, PGColor(238, 238, 238));
 	vs.SetColor(PGColorNotificationError, PGColor(190, 17, 0));
+	vs.SetColor(PGColorNotificationInProgress, PGColor(65, 105, 225));
 	vs.SetColor(PGColorNotificationWarning, PGColor(255, 140, 0));
 	vs.SetColor(PGColorNotificationButton, PGColor(14, 99, 156));
 	vs.SetColor(PGColorProjectExplorerText, PGColor(222, 222, 222));
@@ -71,6 +72,7 @@ PGStyleManager::PGStyleManager() {
 	bp.SetColor(PGColorNotificationBackground, PGColor(51, 51, 51));
 	bp.SetColor(PGColorNotificationText, PGColor(238, 238, 238));
 	bp.SetColor(PGColorNotificationError, PGColor(190, 17, 0));
+	bp.SetColor(PGColorNotificationInProgress, PGColor(65, 105, 225));
 	bp.SetColor(PGColorNotificationWarning, PGColor(255, 140, 0));
 	bp.SetColor(PGColorNotificationButton, PGColor(14, 99, 156));
 	bp.SetColor(PGColorProjectExplorerText, PGColor(222, 222, 222));

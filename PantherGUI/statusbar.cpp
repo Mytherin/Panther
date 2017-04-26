@@ -6,7 +6,7 @@
 #include "searchbox.h"
 
 StatusBar::StatusBar(PGWindowHandle window) :
-	PGContainer(window) {
+	PGContainer(window), notifications(nullptr) {
 	font = PGCreateFont("myriad", false, false);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
@@ -232,79 +232,6 @@ void StatusBar::Draw(PGRendererHandle renderer) {
 			this->TriggerResize();
 
 			PGContainer::Draw(renderer);
-
-			/*
-			{
-				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
-				unicode_button->x = this->width - 2 * padding - text_width - right_position;
-				unicode_button->width = 2 * padding + text_width;
-				unicode_button->Draw(renderer);
-				right_position += padding;
-				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
-				right_position += padding;
-				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
-			}
-
-			PGLanguage* language = file.GetLanguage();
-			str = language ? language->GetName() : "Plain Text";
-			{
-				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
-				language_button->x = this->width - 2 * padding - text_width - right_position;
-				language_button->width = 2 * padding + text_width;
-				language_button->Draw(renderer);
-				right_position += padding;
-				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
-				right_position += padding;
-				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
-			}
-
-			PGLineEnding ending = file.GetLineEnding();
-			switch (ending) {
-			case PGLineEndingWindows:
-				str = "CRLF";
-				break;
-			case PGLineEndingUnix:
-				str = "LF";
-				break;
-			case PGLineEndingMacOS:
-				str = "CR";
-				break;
-			default:
-				str = "Mixed";
-			}
-			{
-				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
-				lineending_button->x = this->width - 2 * padding - text_width - right_position;
-				lineending_button->width = 2 * padding + text_width;
-				lineending_button->Draw(renderer);
-				right_position += padding;
-				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
-				right_position += padding;
-				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
-			}
-
-			PGLineIndentation indentation = file.GetLineIndentation();
-			switch (indentation) {
-			case PGIndentionSpaces:
-				str = "Spaces: ";
-				break;
-			case PGIndentionTabs:
-				str = "Tab-Width: ";
-				break;
-			default:
-				str = "Mixed: ";
-			}
-			str += to_string(file.GetTabWidth());
-			{
-				PGScalar text_width = MeasureTextWidth(font, str.c_str(), str.size());
-				tabwidth_button->x = this->width - 2 * padding - text_width - right_position;
-				tabwidth_button->width = 2 * padding + text_width;
-				tabwidth_button->Draw(renderer);
-				right_position += padding;
-				right_position += RenderText(renderer, font, str.c_str(), str.size(), x + this->width - right_position, y, PGTextAlignRight);
-				right_position += padding;
-				RenderLine(renderer, PGLine(x + this->width - right_position, y, x + this->width - right_position, y + this->height), line_color);
-			}*/
 		}
 	}
 	Control::Draw(renderer);
@@ -312,4 +239,42 @@ void StatusBar::Draw(PGRendererHandle renderer) {
 
 TextField* StatusBar::GetActiveTextField() {
 	return GetControlManager(this)->active_textfield;
+}
+
+PGStatusNotification* StatusBar::AddNotification(PGStatusType type, std::string text, std::string tooltip, bool progress_bar) {
+	PGStatusNotification* notification = new PGStatusNotification(window, font, type, text, tooltip, progress_bar);
+
+	notification->SetAnchor(PGAnchorTop | PGAnchorRight);
+	notification->margin.top = 1;
+	notification->margin.bottom = 1;
+	notification->padding.left = 4;
+	notification->padding.right = 4;
+	notification->percentage_height = 1;
+	notification->right_anchor = notifications ? (Control*)notifications : (Control*)tabwidth_button;
+	notifications = notification;
+	this->AddControl(notification);
+	this->TriggerResize();
+	return notification;
+}
+
+void StatusBar::RemoveNotification(PGStatusNotification* notification) {
+	PGStatusNotification* n = notifications;
+	PGStatusNotification* prev = nullptr;
+	while (n && n->GetControlType() == PGControlTypeStatusNotification) {
+		if (n == notification) {
+			if (prev) {
+				prev->right_anchor = n->right_anchor;
+			}
+			if (notification == notifications) {
+				notifications = n->right_anchor->GetControlType() == PGControlTypeStatusNotification ?
+					(PGStatusNotification*) n->right_anchor : nullptr;
+			}
+			this->RemoveControl(notification);
+			return;
+		}
+		prev = n;
+		n = (PGStatusNotification*)n->right_anchor;
+	}
+	assert(0);
+
 }

@@ -8,6 +8,7 @@ enum PGColorType {
 	PGColorToggleButtonToggled,
 	PGColorNotificationBackground,
 	PGColorNotificationError,
+	PGColorNotificationInProgress,
 	PGColorNotificationWarning,
 	PGColorNotificationButton,
 	PGColorNotificationText,
