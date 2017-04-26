@@ -62,10 +62,10 @@ bool PGContainer::KeyboardUnicode(PGUTF8Character character, PGModifier modifier
 	return false;
 }
 
-void PGContainer::PeriodicRender(void) {
+void PGContainer::Update(void) {
 	FlushRemoves();
 	for (lng i = 0; i < controls.size(); i++) {
-		controls[i]->PeriodicRender();
+		controls[i]->Update();
 	}
 }
 

@@ -84,7 +84,7 @@ static bool MovePositionTowards(PGScalar& current, PGScalar target, PGScalar spe
 	return panther::abs(original_position - current) > 0.1;
 }
 
-void TabControl::PeriodicRender() {
+void TabControl::Update() {
 	bool invalidate = false;
 	int index = 0;
 	for (auto it = tabs.begin(); it != tabs.end(); it++) {

@@ -31,7 +31,7 @@ void Control::Draw(PGRendererHandle handle) {
 	this->dirty = false;
 }
 
-void Control::PeriodicRender(void) {
+void Control::Update(void) {
 }
 
 void Control::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {

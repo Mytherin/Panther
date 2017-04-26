@@ -18,7 +18,7 @@ public:
 	ControlManager(PGWindowHandle window);
 	~ControlManager() { is_destroyed = true; }
 
-	void PeriodicRender(void);
+	void Update(void);
 
 	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);

@@ -34,7 +34,7 @@ public:
 	BasicTextField(PGWindowHandle, std::shared_ptr<TextFile> textfile);
 	~BasicTextField();
 
-	virtual void PeriodicRender(void);
+	virtual void Update(void);
 	virtual bool KeyboardButton(PGButton button, PGModifier modifier);
 	virtual bool KeyboardCharacter(char character, PGModifier modifier);
 	virtual bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);

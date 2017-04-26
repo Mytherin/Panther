@@ -44,7 +44,7 @@ public:
 	TextField(PGWindowHandle, std::shared_ptr<TextFile> file);
 	~TextField();
 
-	void PeriodicRender(void);
+	void Update(void);
 	void Draw(PGRendererHandle);
 	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);

@@ -80,7 +80,7 @@ TextField::~TextField() {
 	manager->UnregisterMouseRegion(&minimap_region);
 }
 
-void TextField::PeriodicRender() {
+void TextField::Update() {
 	if (textfile && !textfile->IsLoaded() && textfile->bytes < 0) {
 		// error loading file
 		if (!notification) {
@@ -107,7 +107,7 @@ void TextField::PeriodicRender() {
 		textfile->OffsetLineOffset(offset);
 		this->Invalidate();
 	}
-	BasicTextField::PeriodicRender();
+	BasicTextField::Update();
 }
 
 void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool minimap, PGScalar position_x, PGScalar position_x_text, PGScalar position_y, PGScalar width, bool render_overlay) {

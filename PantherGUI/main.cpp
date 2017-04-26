@@ -144,13 +144,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGWorkspace* workspace = new PGWorkspace();
 	workspace->LoadWorkspace(workspace_path);
 	open_workspaces.push_back(workspace);
-	/*
-	auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
-	std::vector<std::shared_ptr<TextFile>> files;
-	files.push_back(textfile);
 
-	PGWindowHandle handle = PGCreateWindow(files);
-	handle->workspace.LoadWorkspace("workspace.json");*/
 	auto windows = workspace->GetWindows();
 	for (auto it = windows.begin(); it != windows.end(); it++) {
 		ShowWindow((*it)->hwnd, cmdshow);
@@ -609,7 +603,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case WM_COMMAND:
 		{
 			if (wParam == 0 && lParam == 0) {
-				handle->manager->PeriodicRender();
+				handle->manager->Update();
 				if (handle->pending_destroy) {
 					SendMessage(handle->hwnd, WM_CLOSE, 0, 0);
 					break;

@@ -36,7 +36,7 @@ public:
 	ProjectExplorer(PGWindowHandle window);
 	~ProjectExplorer();
 
-	void PeriodicRender(void);
+	void Update(void);
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	bool KeyboardCharacter(char character, PGModifier modifier);

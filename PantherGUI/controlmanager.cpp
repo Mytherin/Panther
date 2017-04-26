@@ -19,7 +19,7 @@ ControlManager::ControlManager(PGWindowHandle window) :
 #endif
 }
 
-void ControlManager::PeriodicRender(void) {
+void ControlManager::Update(void) {
 	EnterManager();
 	PGPoint mouse = GetMousePosition(window);
 	PGMouseButton buttons = GetMouseState(window);
@@ -41,7 +41,7 @@ void ControlManager::PeriodicRender(void) {
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		// trigger the periodic render of the child controls
 		// this is mostly used for animations
-		(*it)->PeriodicRender();
+		(*it)->Update();
 	}
 	PGCursorType cursor = PGCursorStandard;
 	if (!is_dragging) {

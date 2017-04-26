@@ -22,7 +22,7 @@ BasicTextField::BasicTextField(PGWindowHandle window, std::shared_ptr<TextFile> 
 BasicTextField::~BasicTextField() {
 }
 
-void BasicTextField::PeriodicRender(void) {
+void BasicTextField::Update(void) {
 	bool loaded = textfile->IsLoaded();
 	if (loaded != prev_loaded || !loaded) {
 		this->Invalidate();

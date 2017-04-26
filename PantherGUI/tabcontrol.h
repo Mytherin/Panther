@@ -59,7 +59,7 @@ public:
 	TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files);
 	~TabControl();
 
-	void PeriodicRender(void);
+	void Update(void);
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	bool KeyboardCharacter(char character, PGModifier modifier);

@@ -73,7 +73,7 @@ ProjectExplorer::~ProjectExplorer() {
 	}
 }
 
-void ProjectExplorer::PeriodicRender(void) {
+void ProjectExplorer::Update(void) {
 	bool invalidated = false;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		auto flags = PGGetFileFlags((*it)->path);
