@@ -193,6 +193,8 @@ TextDelta* PGRegexReplace::CreateRegexReplace(std::string replacement_text, PGRe
 PGRegexReplace::PGRegexReplace(std::string replacement_text, PGRegexHandle regex) :
 	TextDelta(PGDeltaRegexReplace), regex(regex) {
 	// parse replacement_text
+	if (replacement_text.size() == 0) return;
+
 	lng prev = 0;
 	lng i;
 	int capturing_groups = PGRegexNumberOfCapturingGroups(regex);
