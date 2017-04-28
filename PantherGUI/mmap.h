@@ -6,8 +6,8 @@
 struct PGMemoryMappedFile;
 typedef struct PGMemoryMappedFile* PGMemoryMappedFileHandle;
 
-struct PGFile;
-typedef struct PGFile* PGFileHandle;
+struct PGRegularFile;
+typedef struct PGRegularFile* PGFileHandle;
 
 typedef enum {
 	PGFileReadOnly,
@@ -36,6 +36,7 @@ namespace panther {
 	void CloseFile(PGFileHandle handle);
 	void WriteToFile(PGFileHandle handle, const char* text, lng length);
 	void Flush(PGFileHandle handle);
+	void* ReadFile(PGFileHandle, lng& result_size, PGFileError& error);
 	void* ReadFile(std::string filename, lng& result_size, PGFileError& error);
 	void* ReadPreview(std::string filename, lng max_size, lng& result_size, PGFileError& error);
 	void DestroyFileContents(void* address);

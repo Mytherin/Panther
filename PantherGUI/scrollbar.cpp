@@ -136,7 +136,7 @@ void Scrollbar::MouseMove(int x, int y, PGMouseButton buttons) {
 				this->Invalidate();
 			}
 		} else if (drag_type != PGScrollbarDragNone) {
-			time_t time = GetTime();
+			time_t time = PGGetTime();
 			if (time - drag_start >= DOUBLE_CLICK_TIME) {
 				lng current_offset = current_value;
 				if (drag_type == PGScrollbarDragFirstArrow) {
@@ -177,7 +177,7 @@ void Scrollbar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 	if (button == PGLeftMouseButton) {
 		if (arrows) {
 			if (PGRectangleContains(arrow_regions[0], mouse)) {
-				drag_start = GetTime();
+				drag_start = PGGetTime();
 				drag_type = PGScrollbarDragFirstArrow;
 				if (current_value > min_value) {
 					current_value = std::max(min_value, current_value - 1);
@@ -185,7 +185,7 @@ void Scrollbar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 				}
 				return;
 			} else if (PGRectangleContains(arrow_regions[1], mouse)) {
-				drag_start = GetTime();
+				drag_start = PGGetTime();
 				drag_type = PGScrollbarDragSecondArrow;
 				if (current_value < max_value) {
 					current_value = std::min(max_value, current_value + 1);
@@ -213,7 +213,7 @@ void Scrollbar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			} else if (horizontal ? mouse.x < scrollbar_area.x : mouse.y < scrollbar_area.y) {
 				// mouse click above/left of scrollbar
 				if (current_value > min_value) {
-					drag_start = GetTime();
+					drag_start = PGGetTime();
 					drag_type = PGScrollbarDragAboveScrollbar;
 					current_value = std::max(min_value, current_value - value_size);
 					UpdateScrollValue();
@@ -221,7 +221,7 @@ void Scrollbar::MouseDown(int x, int y, PGMouseButton button, PGModifier modifie
 			} else {
 				// mouse click to the right/below scrollbar
 				if (current_value < max_value) {
-					drag_start = GetTime();
+					drag_start = PGGetTime();
 					drag_type = PGScrollbarDragBelowScrollbar;
 					current_value = std::min(max_value, current_value + value_size);
 					UpdateScrollValue();

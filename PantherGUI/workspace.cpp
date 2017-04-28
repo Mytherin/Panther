@@ -1,4 +1,6 @@
 
+#include "mmap.h"
+#include "replaymanager.h"
 #include "workspace.h"
 
 #include <fstream>
@@ -10,14 +12,19 @@ PGWorkspace::PGWorkspace() {
 
 void PGWorkspace::LoadWorkspace(std::string filename) {
 	this->filename = filename;
-	std::ifstream i(filename);
+	lng result_size;
+	PGFileError error;
 	json j;
-	if (!i) {
+	char* ptr = (char*)panther::ReadFile(filename, result_size, error);
+	if (!ptr) {
 		goto default_workspace;
 	}
-	if (!(i >> j)) {
+	try {
+		j = json::parse(ptr);
+	} catch (...) {
 		goto default_workspace;
 	}
+
 	this->settings = j;
 	if (j.count("workspace_name") > 0) {
 		this->workspace_name = j["workspace_name"].get<std::string>();
@@ -26,6 +33,9 @@ void PGWorkspace::LoadWorkspace(std::string filename) {
 	if (j.count("windows") > 0 && j["windows"].is_array() && j["windows"].size() > 0) {
 		for (int index = 0; index < j["windows"].size(); index++) {
 			auto window = PGCreateWindow(this, std::vector<std::shared_ptr<TextFile>>());
+			if (!window) {
+				goto default_workspace;
+			}
 			PGLoadWorkspace(window, j["windows"][index]);
 		}
 		return;
@@ -37,6 +47,8 @@ default_workspace:
 }
 
 void PGWorkspace::WriteWorkspace() {
+	if (PGGlobalReplayManager::running_replay) return;
+
 	std::string errmsg;
 	if (filename.size() == 0) return;
 

@@ -1,5 +1,13 @@
 #pragma once
 
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
 #include <cstdio>
 #include <string>
 #include "assert.h"
@@ -34,6 +42,14 @@ namespace panther {
 	T clamp(T t1, T min, T max) {
 		if (min > max) return clamp(t1, max, min);
 		return t1 < min ? min : (t1 > max ? max : t1);
+	}
+	template<class T>
+	T min(T a, T b) {
+		return a < b ? a : b;
+	}
+	template<class T>
+	T max(T a, T b) {
+		return a > b ? a : b;
 	}
 
 	char* strdup(const char* source);

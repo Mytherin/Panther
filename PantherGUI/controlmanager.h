@@ -18,20 +18,20 @@ public:
 	ControlManager(PGWindowHandle window);
 	~ControlManager() { is_destroyed = true; }
 
-	void Update(void);
+	virtual void Update(void);
 
-	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
-	bool KeyboardButton(PGButton button, PGModifier modifier);
-	bool KeyboardCharacter(char character, PGModifier modifier);
-	bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
-	void Draw(PGRendererHandle);
+	virtual bool KeyboardButton(PGButton button, PGModifier modifier);
+	virtual bool KeyboardCharacter(char character, PGModifier modifier);
+	virtual bool KeyboardUnicode(PGUTF8Character character, PGModifier modifier);
+	virtual void Draw(PGRendererHandle);
 
-	void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
-	void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
-	void MouseMove(int x, int y, PGMouseButton buttons);
+	virtual void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
+	virtual void MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count);
+	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
+	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 
-	void RefreshWindow(bool redraw_now = false);
-	void RefreshWindow(PGIRect rectangle, bool redraw_now = false);
+	virtual void RefreshWindow(bool redraw_now = false);
+	virtual void RefreshWindow(PGIRect rectangle, bool redraw_now = false);
 
 	Control* GetActiveControl() { return focused_control; }
 	void RegisterControlForMouseEvents(Control* control);
@@ -50,7 +50,7 @@ public:
 
 	void ShowProjectExplorer(bool visible);
 
-	void DropFile(std::string filename);
+	virtual void DropFile(std::string filename);
 
 	TextField* active_textfield;
 	ProjectExplorer* active_projectexplorer;
@@ -61,14 +61,14 @@ public:
 
 	PGScalar projectexplorer_width = 200;
 
-	bool CloseControlManager();
+	virtual bool CloseControlManager();
 	bool IsDragging() { return is_dragging; }
 
 	void ShowFindReplace(PGFindTextType type);
 	void CreateNewWindow();
 
-	void LosesFocus(void);
-	void GainsFocus(void);
+	virtual void LosesFocus(void);
+	virtual void GainsFocus(void);
 
 	bool ControlHasFocus() { return is_focused; }
 

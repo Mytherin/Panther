@@ -19,10 +19,6 @@
 #include "projectexplorer.h"
 #include "toolbar.h"
 
-#include "c.h"
-#include "findresults.h"
-#include "xml.h"
-
 #include <malloc.h>
 
 #include <shobjidl.h>
@@ -33,13 +29,10 @@
 #include "renderer.h"
 #include "windows_structs.h"
 
-#include "keybindings.h"
-#include "settings.h"
-#include "globalsettings.h"
-
 #include "dirent.h"
 
-#include "splitter.h"
+#include "replaymanager.h"
+
 
 void DestroyWindow(PGWindowHandle window);
 
@@ -62,7 +55,7 @@ static TCHAR szTitle[] = _T("Panther");
 
 #define MAX_REFRESH_FREQUENCY 1000/30
 
-#ifndef PANTHER_TESTS
+#ifndef PANTHER_REPLAY
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	OleInitialize(nullptr);
 	cmdshow = nCmdShow;
@@ -106,45 +99,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	cursor_horizontal_resize = LoadCursor(nullptr, IDC_SIZEWE);
 	cursor_vertical_resize = LoadCursor(nullptr, IDC_SIZENS);
 
-	PGLanguageManager::AddLanguage(new CLanguage());
-	PGLanguageManager::AddLanguage(new XMLLanguage());
-	PGLanguageManager::AddLanguage(new FindResultsLanguage());
+	// record a replay
+	PGGlobalReplayManager::Initialize("test.replay", PGReplayRecord);
 
-	PGInitializeEncodings();
+	PGInitialize();
 
-	PGSettingsManager::Initialize();
-	PGKeyBindingsManager::Initialize();
-	PGGlobalSettings::Initialize("globalsettings.json");
-
-	Scheduler::Initialize();
-	Scheduler::SetThreadCount(2);
-
-	// load a workspace
-	nlohmann::json& settings = PGGlobalSettings::GetSettings();
-	if (settings.count("workspaces") == 0 || !settings["workspaces"].is_array()) {
-		// no known workspaces in the settings, initialize the settings
-		settings["workspaces"] = nlohmann::json::array();
-	}
-	lng active_workspace = 0;
-	if (settings.count("active_workspace") != 0 && settings["active_workspace"].is_number()) {
-		active_workspace = min(max(0LL, settings["active_workspace"].get<lng>()), settings["workspaces"].array().size() - 1);
-	} else {
-		settings["active_workspace"] = 0;
-		active_workspace = 0;
-	}
-	if (settings["workspaces"].array().size() == 0) {
-		// no known workspaces, add one
-		settings["workspaces"][0] = "workspace.json";
-		settings["active_workspace"] = 0;
-		active_workspace = 0;
-	}
-
-	std::string workspace_path = settings["workspaces"][active_workspace];
-	// load the active workspace
-	PGWorkspace* workspace = new PGWorkspace();
-	workspace->LoadWorkspace(workspace_path);
-	open_workspaces.push_back(workspace);
-
+	PGWorkspace* workspace = open_workspaces.back();
 	auto windows = workspace->GetWindows();
 	for (auto it = windows.begin(); it != windows.end(); it++) {
 		ShowWindow((*it)->hwnd, cmdshow);
@@ -160,6 +120,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	return (int)msg.wParam;
 }
 #endif
+
+void PGInitialize() {
+	PGWorkspace* workspace = PGInitializeFirstWorkspace();
+	open_workspaces.push_back(workspace);
+}
 
 static void LogLastError() {
 	DWORD dw = GetLastError();
@@ -696,190 +661,56 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_pt
 }
 
 PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextFile>> initial_files) {
-	HINSTANCE hInstance = GetModuleHandle(nullptr);
-	// The parameters to CreateWindow explained:
-	// szWindowClass: the name of the application
-	// szTitle: the text that appears in the title bar
-	// WS_OVERLAPPEDWINDOW: the type of window to create
-	// CW_USEDEFAULT, CW_USEDEFAULT: initial position (x, y)
-	// 500, 100: initial size (width, length)
-	// NULL: the parent of this window
-	// NULL: this application does not have a menu bar
-	// hInstance: the first parameter from WinMain
-	// NULL: not used in this application
-	HWND hWnd = CreateWindow(
-		szWindowClass,
-		szTitle,
-		(WS_OVERLAPPEDWINDOW),
-		position.x, position.y,
-		1016, 738,
-		nullptr,
-		nullptr,
-		hInstance,
-		nullptr
-	);
-
-	if (!hWnd) {
+	PGWindowHandle handle = new PGWindow(workspace);
+	if (!handle) {
 		return nullptr;
 	}
+	workspace->AddWindow(handle);
+	if (!PGGlobalReplayManager::running_replay) {
+		HINSTANCE hInstance = GetModuleHandle(nullptr);
+		// The parameters to CreateWindow explained:
+		// szWindowClass: the name of the application
+		// szTitle: the text that appears in the title bar
+		// WS_OVERLAPPEDWINDOW: the type of window to create
+		// CW_USEDEFAULT, CW_USEDEFAULT: initial position (x, y)
+		// 500, 100: initial size (width, length)
+		// NULL: the parent of this window
+		// NULL: this application does not have a menu bar
+		// hInstance: the first parameter from WinMain
+		// NULL: not used in this application
+		HWND hWnd = CreateWindow(
+			szWindowClass,
+			szTitle,
+			(WS_OVERLAPPEDWINDOW),
+			position.x, position.y,
+			1016, 738,
+			nullptr,
+			nullptr,
+			hInstance,
+			nullptr
+		);
 
-	SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_COMPOSITED);
+		if (!hWnd) {
+			return nullptr;
+		}
 
-	PGWindowHandle res = new PGWindow(workspace);
-	if (!res) {
-		return nullptr;
+		SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_COMPOSITED);
+		handle->hwnd = hWnd;
+		handle->cursor = cursor_standard;
+		handle->renderer = InitializeRenderer();
+		SetHWNDHandle(hWnd, handle);
+
+		RegisterDropWindow(handle, &handle->drop_target);
+
+		handle->timer = CreateTimer(handle, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
+			SendMessage(res->hwnd, WM_COMMAND, 0, 0);
+		}, PGTimerFlagsNone);
 	}
-	workspace->AddWindow(res);
-	res->hwnd = hWnd;
-	res->cursor = cursor_standard;
-	res->renderer = InitializeRenderer();
-	SetHWNDHandle(hWnd, res);
-
-	RegisterDropWindow(res, &res->drop_target);
-
-	ControlManager* manager = new ControlManager(res);
-	manager->SetPosition(PGPoint(0, 0));
-	manager->SetSize(PGSize(1000, 700));
-	manager->percentage_height = 1;
-	manager->percentage_width = 1;
-	res->manager = manager;
-
-	res->timer = CreateTimer(res, MAX_REFRESH_FREQUENCY, [](PGWindowHandle res) {
-		SendMessage(res->hwnd, WM_COMMAND, 0, 0);
-	}, PGTimerFlagsNone);
-	
-	ProjectExplorer* explorer = new ProjectExplorer(res);
-	explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-	explorer->fixed_width = 200;
-	explorer->percentage_height = 1;
-	explorer->minimum_width = 50;
-
-	PGToolbar* toolbar = new PGToolbar(res);
-	toolbar->SetAnchor(PGAnchorLeft | PGAnchorTop);
-	toolbar->percentage_width = 1;
-	toolbar->fixed_height = TOOLBAR_HEIGHT;
-
-	StatusBar* bar = new StatusBar(res);
-	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
-	bar->percentage_width = 1;
-	bar->fixed_height = STATUSBAR_HEIGHT;
-	explorer->bottom_anchor = bar;
-	explorer->top_anchor = toolbar;
-
-	Splitter *splitter = new Splitter(res, true);
-	splitter->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-	splitter->left_anchor = explorer;
-	splitter->bottom_anchor = bar;
-	splitter->top_anchor = toolbar;
-	splitter->fixed_width = 4;
-	splitter->percentage_height = 1;
-
-	manager->AddControl(bar);
-	manager->AddControl(explorer);
-	manager->AddControl(splitter);
-	manager->AddControl(toolbar);
-
-	manager->toolbar = toolbar;
-	manager->statusbar = bar;
-	manager->active_projectexplorer = explorer;
-	manager->splitter = splitter;
-
-	manager->SetTextFieldLayout(1, 1, initial_files);
-
-	auto handle = PGCreateMenu(res, manager);
-	auto file = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertCommand(file, "New File", "new_tab", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images, PGPopupMenuFlagsNone,
-	[](Control* c, PGPopupInformation* info) {
-		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield->GetTabControl());
-	}, handle);
-	PGPopupMenuInsertCommand(file, "Open File", "open_file", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images, PGPopupMenuFlagsNone,
-		[](Control* c, PGPopupInformation* info) {
-		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield->GetTabControl());
-	}, handle);
-	PGPopupMenuInsertEntry(file, PGPopupInformation(file, "Open Folder", "Ctrl+Shift+O"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertEntry(file, "Open Recent", [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertEntry(file, "Reopen with Encoding", [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertEntry(file, "New View into File", [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSeparator(file);
-	PGPopupMenuInsertCommand(file, "Save", "save", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, PGPopupMenuFlagsNone,
-		[](Control* c, PGPopupInformation* info) {
-		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield);
-	}, handle);
-	PGPopupMenuInsertCommand(file, "Save As", "save_as", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images, PGPopupMenuFlagsNone,
-		[](Control* c, PGPopupInformation* info) {
-		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield);
-	}, handle);
-	PGPopupMenuInsertSeparator(file);
-	PGPopupMenuInsertCommand(file, "New Window", "new_window", ControlManager::keybindings_noargs, ControlManager::keybindings, ControlManager::keybindings_images, PGPopupMenuFlagsNone, nullptr, handle);
-	PGPopupMenuInsertCommand(file, "Close Window", "close_window", ControlManager::keybindings_noargs, ControlManager::keybindings, ControlManager::keybindings_images, PGPopupMenuFlagsNone, nullptr, handle);
-	PGPopupMenuInsertSeparator(file);
-	PGPopupMenuInsertCommand(file, "Close File", "close_tab", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images, PGPopupMenuFlagsNone,
-		[](Control* c, PGPopupInformation* info) {
-		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield->GetTabControl());
-	}, handle);
-	PGPopupMenuInsertEntry(file, "Close All Files", [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSeparator(file);
-	PGPopupMenuInsertEntry(file, "Exit", [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSubmenu(handle, file, "File");
-
-	auto edit = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertEntry(edit, PGPopupInformation(edit, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSubmenu(handle, edit, "Edit");
-
-	auto view = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertEntry(view, PGPopupInformation(view, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSubmenu(handle, view, "View");
-
-	auto project = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertEntry(project, PGPopupInformation(project, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSubmenu(handle, project, "Project");
-
-	auto build = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertEntry(build, PGPopupInformation(build, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSubmenu(handle, build, "Build");
-
-	auto tools = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertEntry(tools, PGPopupInformation(tools, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSubmenu(handle, tools, "Tools");
-
-	auto preferences = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertEntry(preferences, PGPopupInformation(preferences, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSubmenu(handle, preferences, "Preferences");
-
-	auto help = PGCreatePopupMenu(res, manager);
-	PGPopupMenuInsertEntry(help, PGPopupInformation(help, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
-		assert(0);
-	});
-	PGPopupMenuInsertSubmenu(handle, help, "Help");
-
-	PGSetWindowMenu(res, handle);
 
 
-	return res;
+	ControlManager* manager = PGCreateControlManager(handle, initial_files);
+	handle->manager = manager;
+	return handle;
 }
 
 void DestroyWindow(PGWindowHandle window) {
@@ -963,7 +794,7 @@ void RegisterControl(PGWindowHandle window, Control *control) {
 		window->manager->AddControl(control);
 }
 
-PGTime GetTime() {
+PGTime PGGetTimeOS() {
 	return (PGTime)GetTickCount();
 }
 
@@ -993,7 +824,7 @@ void SetClipboardTextOS(PGWindowHandle window, std::string text) {
 	}
 }
 
-std::string GetClipboardText(PGWindowHandle window) {
+std::string GetClipboardTextOS(PGWindowHandle window) {
 	if (OpenClipboard(window->hwnd)) {
 		char* result = nullptr;
 
@@ -1096,8 +927,12 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 	window->cursor = cursor;
 }
 
-void* GetWindowManager(PGWindowHandle window) {
+ControlManager* GetWindowManager(PGWindowHandle window) {
 	return window->manager;
+}
+
+void SetWindowManager(PGWindowHandle window, ControlManager* manager) {
+	window->manager = manager;
 }
 
 PGRendererHandle GetRendererHandle(PGWindowHandle window) {

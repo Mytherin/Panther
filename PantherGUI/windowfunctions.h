@@ -226,7 +226,8 @@ std::string PGButtonToString(PGButton);
 
 typedef long long PGTime;
 
-PGTime GetTime();
+PGTime PGGetTime();
+PGTime PGGetTimeOS();
 
 class MouseClickInstance {
 public:
@@ -390,16 +391,22 @@ void SetWindowTitle(PGWindowHandle window, std::string title);
 void RegisterControl(PGWindowHandle window, Control *control);
 
 class PGWorkspace;
+void PGInitialize();
+PGWorkspace* PGInitializeFirstWorkspace();
 PGWorkspace* PGGetWorkspace(PGWindowHandle window);
 void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j);
 void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j);
 
+class ControlManager;
+ControlManager* PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextFile>> initial_files);
+ControlManager* GetWindowManager(PGWindowHandle window);
+void SetWindowManager(PGWindowHandle window, ControlManager*);
 
-void* GetWindowManager(PGWindowHandle window);
 
 void SetClipboardTextOS(PGWindowHandle window, std::string);
 void SetClipboardText(PGWindowHandle window, std::string);
 std::string GetClipboardText(PGWindowHandle window);
+std::string GetClipboardTextOS(PGWindowHandle window);
 std::vector<std::string> GetClipboardTextHistory();
 
 

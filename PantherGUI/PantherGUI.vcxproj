@@ -157,7 +157,7 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;PANTHER_TESTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;PANTHER_REPLAY;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgrust.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -222,6 +222,8 @@
     <ClCompile Include="projectexplorer.cpp" />
     <ClCompile Include="regex.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="replaymain.cpp" />
+    <ClCompile Include="replaymanager.cpp" />
     <ClCompile Include="scheduler.cpp" />
     <ClCompile Include="scrollbar.cpp" />
     <ClCompile Include="searchbox.cpp" />
@@ -310,6 +312,7 @@
     <ClInclude Include="projectexplorer.h" />
     <ClInclude Include="regex.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="replaymanager.h" />
     <ClInclude Include="rust\include\rust\gitignore.h" />
     <ClInclude Include="rust\include\rust\globset.h" />
     <ClInclude Include="scheduler.h" />

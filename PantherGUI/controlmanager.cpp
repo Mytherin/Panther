@@ -7,6 +7,7 @@
 #include "textfield.h"
 #include "workspace.h"
 #include "toolbar.h"
+#include "replaymanager.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
@@ -204,7 +205,7 @@ void ControlManager::DropFile(std::string filename) {
 }
 
 ControlManager* GetControlManager(Control* c) {
-	return (ControlManager*)GetWindowManager(c->window);
+	return GetWindowManager(c->window);
 }
 
 void ControlManager::ShowFindReplace(PGFindTextType type) {
@@ -456,7 +457,7 @@ void ControlManager::Draw(PGRendererHandle renderer) {
 void ControlManager::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	EnterManager();
 	PGPoint mouse(x - this->x, y - this->y);
-	time_t time = GetTime();
+	time_t time = PGGetTime();
 	if (time - last_click.time < DOUBLE_CLICK_TIME &&
 		panther::abs(mouse.x - last_click.x) < 2 &&
 		panther::abs(mouse.y - last_click.y) < 2) {

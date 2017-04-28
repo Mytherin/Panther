@@ -282,6 +282,12 @@
     <ClCompile Include="statusnotification.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="replaymanager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="replaymain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -546,6 +552,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="statusnotification.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="replaymanager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

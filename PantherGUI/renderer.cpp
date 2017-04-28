@@ -4,6 +4,8 @@
 #include "renderer.h"
 #include "unicode.h"
 
+#include "replaymanager.h"
+
 #include <SkColorFilter.h>
 #include <SkGradientShader.h>
 #include <SkDashPathEffect.h>
@@ -153,6 +155,7 @@ void RenderControlsToBitmap(PGRendererHandle renderer, SkBitmap& bitmap, PGIRect
 
 
 void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PGColor color, PGDrawStyle drawStyle) {
+	if (PGGlobalReplayManager::running_replay) return;
 	SkPath path;
 	SkPoint points[] = { {a.x, a.y}, {b.x, b.y}, {c.x, c.y} }; // triangle
 	path.addPoly(points, 3, true);
@@ -162,6 +165,7 @@ void RenderTriangle(PGRendererHandle handle, PGPoint a, PGPoint b, PGPoint c, PG
 }
 
 void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, PGDrawStyle drawStyle, PGScalar width) {
+	if (PGGlobalReplayManager::running_replay) return;
 	SkRect rect = CreateSkRect(rectangle);
 	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
 	handle->paint->setColor(CreateSkColor(color));
@@ -170,6 +174,7 @@ void RenderRectangle(PGRendererHandle handle, PGRect rectangle, PGColor color, P
 }
 
 void RenderPolygon(PGRendererHandle handle, PGPolygon polygon, PGColor color, double stroke_width) {
+	if (PGGlobalReplayManager::running_replay) return;
 	if (polygon.points.size() == 0) return;
 	SkPath path;
 	path.moveTo(CreateSkPoint(polygon.points[0]));
@@ -190,6 +195,7 @@ void RenderPolygon(PGRendererHandle handle, PGPolygon polygon, PGColor color, do
 }
 
 void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGColor right) {
+	if (PGGlobalReplayManager::running_replay) return;
 	SkRect rect;
 	rect.fLeft = rectangle.x;
 	rect.fTop = rectangle.y;
@@ -213,6 +219,7 @@ void RenderGradient(PGRendererHandle handle, PGRect rectangle, PGColor left, PGC
 
 
 void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDrawStyle drawStyle) {
+	if (PGGlobalReplayManager::running_replay) return;
 	handle->paint->setAntiAlias(true);
 	handle->paint->setStyle(PGDrawStyleConvert(drawStyle));
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
@@ -220,12 +227,14 @@ void RenderCircle(PGRendererHandle handle, PGCircle circle, PGColor color, PGDra
 }
 
 void RenderLine(PGRendererHandle handle, PGLine line, PGColor color, int width) {
+	if (PGGlobalReplayManager::running_replay) return;
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	handle->paint->setStrokeWidth(width);
 	handle->canvas->drawLine(line.start.x, line.start.y, line.end.x, line.end.y, *handle->paint);
 }
 
 void RenderDashedLine(PGRendererHandle handle, PGLine line, PGColor color, PGScalar line_width, PGScalar spacing_width, int width) {
+	if (PGGlobalReplayManager::running_replay) return;
 	handle->paint->setColor(SkColorSetARGB(color.a, color.r, color.g, color.b));
 	handle->paint->setStrokeWidth(width);
 
@@ -236,6 +245,7 @@ void RenderDashedLine(PGRendererHandle handle, PGLine line, PGColor color, PGSca
 }
 
 void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, size_t len, PGScalar x, PGScalar y, PGScalar max_position) {
+	if (PGGlobalReplayManager::running_replay) return;
 	PGScalar x_offset = 0;
 	size_t position = 0;
 	size_t i = 0;
@@ -315,10 +325,12 @@ void RenderString(PGRendererHandle renderer, PGFontHandle font, const std::strin
 }
 
 void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y) {
+	if (PGGlobalReplayManager::running_replay) return;
 	renderer->canvas->drawBitmap(*image->bitmap, x, y, renderer->paint);
 }
 
 void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, PGRect rect) {
+	if (PGGlobalReplayManager::running_replay) return;
 	renderer->paint->setColor(CreateSkColor(PGColor(255, 255, 255, 255)));
 	renderer->canvas->drawBitmapRect(*image->bitmap, CreateSkRect(rect), renderer->paint);
 }
@@ -357,6 +369,7 @@ void DeleteRenderer(PGRendererHandle renderer) {
 }
 
 void RenderSquiggles(PGRendererHandle renderer, PGScalar width, PGScalar x, PGScalar y, PGColor color) {
+	if (PGGlobalReplayManager::running_replay) return;
 	SkPath path;
 	PGScalar offset = 3; // FIXME: depend on text height
 	PGScalar end = x + width;
@@ -597,6 +610,7 @@ PGScalar GetTextHeight(PGFontHandle font) {
 }
 
 void RenderCaret(PGRendererHandle renderer, PGFontHandle font, PGScalar selection_offset, PGScalar x, PGScalar y, PGColor color) {
+	if (PGGlobalReplayManager::running_replay) return;
 	PGScalar line_height = GetTextHeight(font);
 	RenderLine(renderer, PGLine(x + selection_offset, y, x + selection_offset, y + line_height), color);
 }
@@ -605,6 +619,7 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 	PGScalar x, PGScalar y, lng start, lng end,
 	lng render_start, lng render_end, std::vector<PGScalar>& character_widths,
 	PGColor selection_color) {
+	if (PGGlobalReplayManager::running_replay) return;
 	// if the entire line is selected and the selection continues no the next line
 	// we render one extra character to indicate the selected newline
 	bool padding = end == len + 1;
@@ -648,7 +663,6 @@ void RenderSelection(PGRendererHandle renderer, PGFontHandle font, const char *t
 
 
 }
-
 
 void SetTextColor(PGFontHandle font, PGColor color) {
 	if (font->normaltext) {
@@ -704,6 +718,7 @@ PGScalar GetTextFontSize(PGFontHandle font) {
 void RenderFileIcon(PGRendererHandle renderer, PGFontHandle font, const char *text,
 	PGScalar x, PGScalar y, PGScalar width, PGScalar height,
 	PGColor text_color, PGColor page_color, PGColor edge_color) {
+	if (PGGlobalReplayManager::running_replay) return;
 
 	PGPolygon polygon;
 	polygon.closed = true;
@@ -768,11 +783,13 @@ void SetTextStyle(PGFontHandle font, PGTextStyle style) {
 }
 
 void SetRenderBounds(PGRendererHandle handle, PGRect rectangle) {
+	if (PGGlobalReplayManager::running_replay) return;
 	handle->canvas->save();
 	handle->canvas->clipRect(CreateSkRect(rectangle));
 }
 
 void ClearRenderBounds(PGRendererHandle handle) {
+	if (PGGlobalReplayManager::running_replay) return;
 	handle->canvas->restore();
 }
 
@@ -794,7 +811,7 @@ PGSize PGMeasurePopupItem(PGFontHandle font, PGPopupInformation* information, PG
 #include "style.h"
 
 void PGRenderPopupItem(PGRendererHandle renderer, PGPoint point, PGFontHandle font, PGPopupInformation* info, PGSize size, PGPopupMenuFlags flags, PGScalar text_width, PGScalar hotkey_width, PGPopupType type) {
-
+	if (PGGlobalReplayManager::running_replay) return;
 	PGColor background_color;
 	PGColor text_color;
 
