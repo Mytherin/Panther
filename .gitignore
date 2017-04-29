@@ -197,3 +197,9 @@ FakesAssemblies/
 # Visual Studio 6 workspace options file
 *.opt
 
+# Rust files
+rust/Cargo.lock
+rust/target/
+
+# OSX
+.DS_Store
