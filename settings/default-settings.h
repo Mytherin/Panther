@@ -1,0 +1,15 @@
+#pragma once
+
+char* PANTHER_DEFAULT_SETTINGS = R"DEFAULTSETTINGS(
+{
+	"font_size": 15,
+	"display_line_numbers" : true,
+	"display_minimap" : true,
+	"margin" : 4,
+	"always_show_minimap_viewport" : false,
+	"word_wrap" : "auto",
+	"hot_exit" : true,
+	"automatic_reload_threshold" : 1000,
+	"default_terminal" : "C:\\Program Files\\Git\\git-bash.exe"
+}
+)DEFAULTSETTINGS";
