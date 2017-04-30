@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <malloc.h>
 
+#include "main.h"
+
 struct PGMemoryMappedFile {
 	HANDLE file;
 	HANDLE mmap;
@@ -14,7 +16,7 @@ struct PGMemoryMappedFile {
 
 namespace panther {
 	PGMemoryMappedFileHandle MemoryMapFile(std::string filename) {
-		HANDLE file = CreateFile(filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		HANDLE file = CreateFileW((LPCWSTR)UTF8toUCS2(filename).c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		if (!file) {
 			// FIXME: check error
 			return nullptr;

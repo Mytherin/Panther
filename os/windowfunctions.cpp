@@ -135,8 +135,6 @@ PGWorkspace* PGInitializeFirstWorkspace() {
 	PGLanguageManager::AddLanguage(new XMLLanguage());
 	PGLanguageManager::AddLanguage(new FindResultsLanguage());
 
-	PGInitializeEncodings();
-
 	PGSettingsManager::Initialize();
 	PGKeyBindingsManager::Initialize();
 	PGGlobalSettings::Initialize("globalsettings.json");

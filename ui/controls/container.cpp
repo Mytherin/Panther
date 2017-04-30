@@ -91,7 +91,7 @@ void PGContainer::Draw(PGRendererHandle renderer) {
 void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
 	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			c->MouseDown(mouse.x, mouse.y, button, modifier, click_count);
@@ -106,7 +106,7 @@ void PGContainer::MouseDown(int x, int y, PGMouseButton button, PGModifier modif
 void PGContainer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
 	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			c->MouseUp(mouse.x, mouse.y, button, modifier);
@@ -121,7 +121,7 @@ void PGContainer::MouseUp(int x, int y, PGMouseButton button, PGModifier modifie
 void PGContainer::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			c->MouseWheel(x, y, hdistance, distance, modifier);
@@ -133,7 +133,7 @@ void PGContainer::MouseWheel(int x, int y, double hdistance, double distance, PG
 void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 	FlushRemoves();
 	PGPoint mouse(x - this->x, y - this->y);
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (c->IsDragging()) {
 			c->MouseMove(mouse.x, mouse.y, buttons);
@@ -154,21 +154,21 @@ void PGContainer::SetFocus(void) {
 }
 
 void PGContainer::LosesFocus(void) {
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		c->LosesFocus();
 	}
 }
 
 void PGContainer::GainsFocus(void) {
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		c->GainsFocus();
 	}
 }
 
 bool PGContainer::AcceptsDragDrop(PGDragDropType type) {
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		if (controls[i]->AcceptsDragDrop(type)) {
 			return true;
 		}
@@ -178,7 +178,7 @@ bool PGContainer::AcceptsDragDrop(PGDragDropType type) {
 
 void PGContainer::DragDrop(PGDragDropType type, int x, int y, void* data) {
 	PGPoint mouse(x - this->x, y - this->y);
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (c->AcceptsDragDrop(type)) {
 			c->DragDrop(type, mouse.x, mouse.y, data);
@@ -188,7 +188,7 @@ void PGContainer::DragDrop(PGDragDropType type, int x, int y, void* data) {
 
 void PGContainer::PerformDragDrop(PGDragDropType type, int x, int y, void* data) {
 	PGPoint mouse(x - this->x, y - this->y);
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (c->AcceptsDragDrop(type)) {
 			c->PerformDragDrop(type, mouse.x, mouse.y, data);
@@ -197,7 +197,7 @@ void PGContainer::PerformDragDrop(PGDragDropType type, int x, int y, void* data)
 }
 
 void PGContainer::ClearDragDrop(PGDragDropType type) {
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (c->AcceptsDragDrop(type)) {
 			c->ClearDragDrop(type);
@@ -232,7 +232,7 @@ PGCursorType PGContainer::GetCursor(PGPoint mouse) {
 	FlushRemoves();
 	mouse.x -= this->x;
 	mouse.y -= this->y;
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (PGRectangleContains(c->GetRectangle(), mouse)) {
 			return c->GetCursor(mouse);
@@ -243,7 +243,7 @@ PGCursorType PGContainer::GetCursor(PGPoint mouse) {
 
 PGCursorType PGContainer::GetDraggingCursor() {
 	FlushRemoves();
-	for (lng i = controls.size() - 1; i >= 0; i--) {
+	for (lng i = controls.size() - 1LL; i >= 0; i--) {
 		Control* c = controls[i];
 		if (c->IsDragging()) {
 			return c->GetDraggingCursor();

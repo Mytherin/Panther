@@ -14,14 +14,14 @@ public:
 	~PGDropTarget();
 
 	// IDropTarget implementation
-	HRESULT DragEnter(IDataObject * pDataObject, DWORD grfKeyState, POINTL pt, DWORD * pdwEffect);
-	HRESULT DragOver(DWORD grfKeyState, POINTL pt, DWORD * pdwEffect);
-	HRESULT DragLeave(void);
-	HRESULT Drop(IDataObject * pDataObject, DWORD grfKeyState, POINTL pt, DWORD * pdwEffect);
+	HRESULT STDMETHODCALLTYPE DragEnter(IDataObject * pDataObject, DWORD grfKeyState, POINTL pt, DWORD * pdwEffect);
+	HRESULT STDMETHODCALLTYPE DragOver(DWORD grfKeyState, POINTL pt, DWORD * pdwEffect);
+	HRESULT STDMETHODCALLTYPE DragLeave(void);
+	HRESULT STDMETHODCALLTYPE Drop(IDataObject * pDataObject, DWORD grfKeyState, POINTL pt, DWORD * pdwEffect);
 
-	HRESULT QueryInterface(REFIID iid, void ** ppvObject);
-	ULONG AddRef(void);
-	ULONG Release(void);
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject);
+	ULONG STDMETHODCALLTYPE AddRef(void);
+	ULONG STDMETHODCALLTYPE Release(void);
 private:
 	PGWindowHandle handle;
 	// internal helper function
@@ -44,12 +44,12 @@ class PGDropSource : public IDropSource {
 public:
 	PGDropSource(PGDropCallback callback, void* data) : callback(callback), data(data), drop_cancelled(false), m_lRefCount(1){}
 
-	HRESULT GiveFeedback(DWORD dwEffect);
-	HRESULT QueryContinueDrag(BOOL  fEscapePressed, DWORD grfKeyState);
+	HRESULT STDMETHODCALLTYPE GiveFeedback(DWORD dwEffect);
+	HRESULT STDMETHODCALLTYPE QueryContinueDrag(BOOL  fEscapePressed, DWORD grfKeyState);
 
-	HRESULT QueryInterface(REFIID iid, void ** ppvObject);
-	ULONG AddRef(void);
-	ULONG Release(void);
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject);
+	ULONG STDMETHODCALLTYPE AddRef(void);
+	ULONG STDMETHODCALLTYPE Release(void);
 
 	void CancelDrop() { drop_cancelled = true; }
 private:
@@ -65,25 +65,25 @@ public:
 	PGDataObject(PGWindowHandle handle, PGDropCallback callback, void* data);
 	~PGDataObject();
 
-	HRESULT QueryGetData(FORMATETC *pformatetc);
-	HRESULT GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium);
+	HRESULT STDMETHODCALLTYPE QueryGetData(FORMATETC *pformatetc);
+	HRESULT STDMETHODCALLTYPE GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium);
 
-	HRESULT QueryInterface(REFIID iid, void ** ppvObject);
-	ULONG AddRef(void);
-	ULONG Release(void);
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject);
+	ULONG STDMETHODCALLTYPE AddRef(void);
+	ULONG STDMETHODCALLTYPE Release(void);
 
-	HRESULT DAdvise(FORMATETC *pformatetc, DWORD advf, IAdviseSink *pAdvSink, DWORD *pdwConnection) { return E_NOTIMPL; }
-	HRESULT DUnadvise(DWORD dwConnection) { return OLE_E_ADVISENOTSUPPORTED; }
-	HRESULT EnumDAdvise(IEnumSTATDATA **ppenumAdvise) { return OLE_E_ADVISENOTSUPPORTED; }
-	HRESULT EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc) { return E_NOTIMPL; }
-	HRESULT GetCanonicalFormatEtc(FORMATETC *pformatectIn, FORMATETC *pformatetcOut) {
+	HRESULT STDMETHODCALLTYPE DAdvise(FORMATETC *pformatetc, DWORD advf, IAdviseSink *pAdvSink, DWORD *pdwConnection) { return E_NOTIMPL; }
+	HRESULT STDMETHODCALLTYPE DUnadvise(DWORD dwConnection) { return OLE_E_ADVISENOTSUPPORTED; }
+	HRESULT STDMETHODCALLTYPE EnumDAdvise(IEnumSTATDATA **ppenumAdvise) { return OLE_E_ADVISENOTSUPPORTED; }
+	HRESULT STDMETHODCALLTYPE EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc) { return E_NOTIMPL; }
+	HRESULT STDMETHODCALLTYPE GetCanonicalFormatEtc(FORMATETC *pformatectIn, FORMATETC *pformatetcOut) {
 		pformatetcOut->ptd = NULL;
 		return E_NOTIMPL;
 	}
-	HRESULT GetDataHere(FORMATETC *pformatetc, STGMEDIUM *pmedium) {
+	HRESULT STDMETHODCALLTYPE GetDataHere(FORMATETC *pformatetc, STGMEDIUM *pmedium) {
 		return DATA_E_FORMATETC;;
 	}
-	HRESULT SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, BOOL fRelease) {
+	HRESULT STDMETHODCALLTYPE SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, BOOL fRelease) {
 		return E_NOTIMPL;
 	}
 

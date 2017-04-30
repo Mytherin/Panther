@@ -250,23 +250,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\icu\$(PlatformName)\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\core;$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\files;$(MSBuildProjectDirectory)\os;$(MSBuildProjectDirectory)\os\windows;$(MSBuildProjectDirectory)\settings;$(MSBuildProjectDirectory)\syntax;$(MSBuildProjectDirectory)\syntax\languages;$(MSBuildProjectDirectory)\testing;$(MSBuildProjectDirectory)\text;$(MSBuildProjectDirectory)\third_party\concurrent_queue;$(MSBuildProjectDirectory)\third_party\json;$(MSBuildProjectDirectory)\third_party\re2;$(MSBuildProjectDirectory)\ui;$(MSBuildProjectDirectory)\ui\controls;$(MSBuildProjectDirectory)\ui\controls\basic;$(MSBuildProjectDirectory)\ui\controls\main;$(MSBuildProjectDirectory)\ui\controls\textfield;$(MSBuildProjectDirectory)\utils;$(IncludePath)</IncludePath>
-    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-x86-Release-png;D:\icu\x86\lib;$(LibraryPath);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>D:\icu\$(PlatformTarget)\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\core;$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\files;$(MSBuildProjectDirectory)\os;$(MSBuildProjectDirectory)\os\windows;$(MSBuildProjectDirectory)\settings;$(MSBuildProjectDirectory)\syntax;$(MSBuildProjectDirectory)\syntax\languages;$(MSBuildProjectDirectory)\testing;$(MSBuildProjectDirectory)\text;$(MSBuildProjectDirectory)\third_party\concurrent_queue;$(MSBuildProjectDirectory)\third_party\json;$(MSBuildProjectDirectory)\third_party\re2;$(MSBuildProjectDirectory)\ui;$(MSBuildProjectDirectory)\ui\controls;$(MSBuildProjectDirectory)\ui\controls\basic;$(MSBuildProjectDirectory)\ui\controls\main;$(MSBuildProjectDirectory)\ui\controls\textfield;$(MSBuildProjectDirectory)\utils;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\i686-pc-windows-msvc\release;D:\Skia\src\skia\out\Skia-$(PlatformTarget)-Release-png;D:\icu\$(PlatformTarget)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\icu\$(PlatformName)\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\core;$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\files;$(MSBuildProjectDirectory)\os;$(MSBuildProjectDirectory)\os\windows;$(MSBuildProjectDirectory)\settings;$(MSBuildProjectDirectory)\syntax;$(MSBuildProjectDirectory)\syntax\languages;$(MSBuildProjectDirectory)\testing;$(MSBuildProjectDirectory)\text;$(MSBuildProjectDirectory)\third_party\concurrent_queue;$(MSBuildProjectDirectory)\third_party\json;$(MSBuildProjectDirectory)\third_party\re2;$(MSBuildProjectDirectory)\ui;$(MSBuildProjectDirectory)\ui\controls;$(MSBuildProjectDirectory)\ui\controls\basic;$(MSBuildProjectDirectory)\ui\controls\main;$(MSBuildProjectDirectory)\ui\controls\textfield;$(MSBuildProjectDirectory)\utils;$(IncludePath)</IncludePath>
-    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-x64-Release-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\icu\$(PlatformTarget)\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\core;$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\files;$(MSBuildProjectDirectory)\os;$(MSBuildProjectDirectory)\os\windows;$(MSBuildProjectDirectory)\settings;$(MSBuildProjectDirectory)\syntax;$(MSBuildProjectDirectory)\syntax\languages;$(MSBuildProjectDirectory)\testing;$(MSBuildProjectDirectory)\text;$(MSBuildProjectDirectory)\third_party\concurrent_queue;$(MSBuildProjectDirectory)\third_party\json;$(MSBuildProjectDirectory)\third_party\re2;$(MSBuildProjectDirectory)\ui;$(MSBuildProjectDirectory)\ui\controls;$(MSBuildProjectDirectory)\ui\controls\basic;$(MSBuildProjectDirectory)\ui\controls\main;$(MSBuildProjectDirectory)\ui\controls\textfield;$(MSBuildProjectDirectory)\utils;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-$(PlatformTarget)-Release-png;D:\icu\$(PlatformTarget)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\icu\$(PlatformName)\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\core;$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\files;$(MSBuildProjectDirectory)\os;$(MSBuildProjectDirectory)\os\windows;$(MSBuildProjectDirectory)\settings;$(MSBuildProjectDirectory)\syntax;$(MSBuildProjectDirectory)\syntax\languages;$(MSBuildProjectDirectory)\testing;$(MSBuildProjectDirectory)\text;$(MSBuildProjectDirectory)\third_party\concurrent_queue;$(MSBuildProjectDirectory)\third_party\json;$(MSBuildProjectDirectory)\third_party\re2;$(MSBuildProjectDirectory)\ui;$(MSBuildProjectDirectory)\ui\controls;$(MSBuildProjectDirectory)\ui\controls\basic;$(MSBuildProjectDirectory)\ui\controls\main;$(MSBuildProjectDirectory)\ui\controls\textfield;$(MSBuildProjectDirectory)\utils;$(IncludePath)</IncludePath>
-    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-x86-Release-png;D:\icu\x86\lib;$(LibraryPath);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <IncludePath>D:\icu\$(PlatformTarget)\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\core;$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\files;$(MSBuildProjectDirectory)\os;$(MSBuildProjectDirectory)\os\windows;$(MSBuildProjectDirectory)\settings;$(MSBuildProjectDirectory)\syntax;$(MSBuildProjectDirectory)\syntax\languages;$(MSBuildProjectDirectory)\testing;$(MSBuildProjectDirectory)\text;$(MSBuildProjectDirectory)\third_party\concurrent_queue;$(MSBuildProjectDirectory)\third_party\json;$(MSBuildProjectDirectory)\third_party\re2;$(MSBuildProjectDirectory)\ui;$(MSBuildProjectDirectory)\ui\controls;$(MSBuildProjectDirectory)\ui\controls\basic;$(MSBuildProjectDirectory)\ui\controls\main;$(MSBuildProjectDirectory)\ui\controls\textfield;$(MSBuildProjectDirectory)\utils;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\i686-pc-windows-msvc\release;D:\Skia\src\skia\out\Skia-$(PlatformTarget)-Release-png;D:\icu\$(PlatformTarget)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\icu\$(PlatformName)\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\core;$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\files;$(MSBuildProjectDirectory)\os;$(MSBuildProjectDirectory)\os\windows;$(MSBuildProjectDirectory)\settings;$(MSBuildProjectDirectory)\syntax;$(MSBuildProjectDirectory)\syntax\languages;$(MSBuildProjectDirectory)\testing;$(MSBuildProjectDirectory)\text;$(MSBuildProjectDirectory)\third_party\concurrent_queue;$(MSBuildProjectDirectory)\third_party\json;$(MSBuildProjectDirectory)\third_party\re2;$(MSBuildProjectDirectory)\ui;$(MSBuildProjectDirectory)\ui\controls;$(MSBuildProjectDirectory)\ui\controls\basic;$(MSBuildProjectDirectory)\ui\controls\main;$(MSBuildProjectDirectory)\ui\controls\textfield;$(MSBuildProjectDirectory)\utils;$(IncludePath)</IncludePath>
-    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-x64-Release-png;D:\icu\x64\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\icu\$(PlatformTarget)\include;D:\Skia\src\skia\include\effects;D:\Skia\src\skia\include\config;D:\Skia\src\skia\include\codec;D:\Skia\src\skia\include\core;$(MSBuildProjectDirectory)\rust\include;$(MSBuildProjectDirectory)\files;$(MSBuildProjectDirectory)\os;$(MSBuildProjectDirectory)\os\windows;$(MSBuildProjectDirectory)\settings;$(MSBuildProjectDirectory)\syntax;$(MSBuildProjectDirectory)\syntax\languages;$(MSBuildProjectDirectory)\testing;$(MSBuildProjectDirectory)\text;$(MSBuildProjectDirectory)\third_party\concurrent_queue;$(MSBuildProjectDirectory)\third_party\json;$(MSBuildProjectDirectory)\third_party\re2;$(MSBuildProjectDirectory)\ui;$(MSBuildProjectDirectory)\ui\controls;$(MSBuildProjectDirectory)\ui\controls\basic;$(MSBuildProjectDirectory)\ui\controls\main;$(MSBuildProjectDirectory)\ui\controls\textfield;$(MSBuildProjectDirectory)\utils;$(IncludePath)</IncludePath>
+    <LibraryPath>$(MSBuildProjectDirectory)\rust\target\release;D:\Skia\src\skia\out\Skia-$(PlatformTarget)-Release-png;D:\icu\$(PlatformTarget)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -274,13 +274,13 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;PANTHER_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
       <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgrust.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -309,14 +309,15 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>skia.lib;sicudt.lib;sicuin.lib;sicuio.lib;sicule.lib;siculx.lib;sicutu.lib;sicuuc.lib;ws2_32.lib;userenv.lib;pgrust.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

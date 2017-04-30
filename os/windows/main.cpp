@@ -56,6 +56,7 @@ static TCHAR szTitle[] = _T("Panther");
 
 #ifndef PANTHER_REPLAY
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+	PGInitializeEncodings();
 	OleInitialize(nullptr);
 	cmdshow = nCmdShow;
 
@@ -65,9 +66,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
-	wcex.hIcon = (HICON)LoadImage( // returns a HANDLE so we have to cast to HICON
+	wcex.hIcon = (HICON)LoadImageW( // returns a HANDLE so we have to cast to HICON
 		nullptr,             // hInstance must be NULL when loading from a file
-		"logo.ico",       // the icon file name
+		(LPCWSTR)UTF8toUCS2("data/icons/logo.ico").c_str(),       // the icon file name
 		IMAGE_ICON,       // specifies that the file is an icon
 		0,                // width of the image (we'll specify default later on)
 		0,                // height of the image
@@ -598,7 +599,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				while (handle->pending_confirmation_box) {
 					handle->pending_confirmation_box = false;
 					PGResponse response = PGResponseCancel;
-					int retval = MessageBox(handle->hwnd, handle->confirmation_box_data.message.c_str(), handle->confirmation_box_data.title.c_str(), (handle->confirmation_box_data.type == PGConfirmationBoxYesNoCancel ? MB_YESNOCANCEL : MB_YESNO) | MB_ICONWARNING);
+					int retval = MessageBoxW(handle->hwnd, 
+						(LPCWSTR)UTF8toUCS2(handle->confirmation_box_data.message).c_str(), 
+						(LPCWSTR)UTF8toUCS2(handle->confirmation_box_data.title).c_str(),
+						(handle->confirmation_box_data.type == PGConfirmationBoxYesNoCancel ? 
+							MB_YESNOCANCEL : MB_YESNO) | MB_ICONWARNING);
 					if (retval == IDNO) {
 						response = PGResponseNo;
 					} else if (retval == IDYES) {
@@ -798,7 +803,7 @@ PGTime PGGetTimeOS() {
 }
 
 void SetWindowTitle(PGWindowHandle window, std::string title) {
-	SetWindowText(window->hwnd, title.c_str());
+	SetWindowTextW(window->hwnd, (LPCWSTR)UTF8toUCS2(title).c_str());
 }
 
 void SetClipboardTextOS(PGWindowHandle window, std::string text) {
@@ -985,7 +990,7 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation informa
 
 	info->type = PGPopupTypeEntry;
 	int index = info->menu_handle->index;
-	AppendMenu(handle->menu, append_flags, index, (LPCSTR)info);
+	AppendMenuW(handle->menu, append_flags, index, (LPCWSTR)info);
 	info->menu_handle->data.push_back(info);
 	info->menu_handle->callbacks[index] = callback;
 	info->menu_handle->index++;
@@ -995,7 +1000,7 @@ void PGPopupMenuInsertSeparator(PGPopupMenuHandle handle) {
 	PGPopupInformation* info = new PGPopupInformation(handle);
 	info->type = PGPopupTypeSeparator;
 	info->text = "";
-	AppendMenu(handle->menu, MF_SEPARATOR | MF_OWNERDRAW, 0, (LPCSTR)info);
+	AppendMenuW(handle->menu, MF_SEPARATOR | MF_OWNERDRAW, 0, (LPCWSTR)info);
 	handle->data.push_back(info);
 	handle->index++;
 }
@@ -1004,7 +1009,7 @@ void PGPopupMenuInsertSubmenu(PGPopupMenuHandle handle, PGPopupMenuHandle submen
 	PGPopupInformation* info = new PGPopupInformation(handle);
 	info->type = !handle->is_popupmenu ? PGPopupTypeMenu : PGPopupTypeSubmenu;
 	info->text = name;
-	AppendMenu(handle->menu, MF_POPUP | MF_OWNERDRAW, (UINT_PTR)submenu->menu, (LPCSTR)info);
+	AppendMenuW(handle->menu, MF_POPUP | MF_OWNERDRAW, (UINT_PTR)submenu->menu, (LPCWSTR)info);
 	handle->data.push_back(info);
 	handle->index++;
 }
@@ -1046,14 +1051,14 @@ void PGSetWindowMenu(PGWindowHandle window, PGPopupMenuHandle menu) {
 void OpenFolderInExplorer(std::string path) {
 	// FIXME: if path is directory don't just select but go into the path
 	std::string parameter = "explorer.exe /select,\"" + path + "\"";
-	STARTUPINFO si;
+	STARTUPINFOW si;
 	PROCESS_INFORMATION pi;
 
 	ZeroMemory(&si, sizeof(si));
 	si.cb = sizeof(si);
 	ZeroMemory(&pi, sizeof(pi));
 
-	if (CreateProcess(NULL, (LPSTR)parameter.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+	if (CreateProcessW(NULL, (LPWSTR)UTF8toUCS2(parameter).c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
 		WaitForSingleObject(pi.hProcess, INFINITE);
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
@@ -1082,7 +1087,7 @@ void OpenFolderInTerminal(std::string path) {
 	if (!PGSettingsManager::GetSetting("default_terminal", parameter)) {
 		parameter = "cmd.exe";
 	}
-	STARTUPINFO si;
+	STARTUPINFOW si;
 	PROCESS_INFORMATION pi;
 
 	ZeroMemory(&si, sizeof(si));
@@ -1090,7 +1095,7 @@ void OpenFolderInTerminal(std::string path) {
 	ZeroMemory(&pi, sizeof(pi));
 
 	std::string directory = PGFile(path).Directory();
-	if (CreateProcess(NULL, (LPSTR)parameter.c_str(), NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, directory.c_str(), &si, &pi)) {
+	if (CreateProcessW(NULL, (LPWSTR)UTF8toUCS2(parameter).c_str(), NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, (LPCWSTR)UTF8toUCS2(directory).c_str(), &si, &pi)) {
 		WaitForSingleObject(pi.hProcess, INFINITE);
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
@@ -1241,11 +1246,11 @@ void SetHWNDHandle(HWND hwnd, PGWindowHandle window) {
 }
 
 void PGMessageBox(PGWindowHandle window, std::string title, std::string message) {
-	MessageBox(window->hwnd, message.c_str(), title.c_str(), MB_OK);
+	MessageBoxW(window->hwnd, (LPCWSTR)UTF8toUCS2(message).c_str(), (LPCWSTR)UTF8toUCS2(title).c_str(), MB_OK);
 }
 
 PGResponse PGConfirmationBox(PGWindowHandle window, std::string title, std::string message, PGConfirmationBoxType type) {
-	int retval = MessageBox(window->hwnd, message.c_str(), title.c_str(), (type == PGConfirmationBoxYesNoCancel ? MB_YESNOCANCEL : MB_YESNO) | MB_ICONWARNING);
+	int retval = MessageBoxW(window->hwnd, (LPCWSTR)UTF8toUCS2(message).c_str(), (LPCWSTR)UTF8toUCS2(title).c_str(), (type == PGConfirmationBoxYesNoCancel ? MB_YESNOCANCEL : MB_YESNO) | MB_ICONWARNING);
 	if (retval == IDNO) {
 		return PGResponseNo;
 	} else if (retval == IDYES) {
@@ -1385,14 +1390,14 @@ PGIOError PGRemoveFile(std::string source) {
 
 PGIOError PGTrashFile(std::string source) {
 	std::string actual_source = source + "\0"; // SHFileOperation requires double null-terminated strings
-	SHFILEOPSTRUCT op;
+	SHFILEOPSTRUCTW op;
 	op.hwnd = NULL;
 	op.wFunc = FO_DELETE;
-	op.pFrom = actual_source.c_str();
+	op.pFrom = (LPCWSTR)UTF8toUCS2(actual_source).c_str();
 	op.pTo = NULL;
 	op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI;
 	op.hNameMappings = NULL;
-	int res = SHFileOperation(&op);
+	int res = SHFileOperationW(&op);
 	return res == 0 ? PGIOSuccess : PGIOErrorOther;
 }
 
@@ -1455,12 +1460,12 @@ PGTooltipHandle PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string 
 		SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
 	// set up tooltip information 
-	TOOLINFO ti = { 0 };
+	TOOLINFOW ti = { 0 };
 	ti.cbSize = sizeof(TOOLINFO);
 	ti.uFlags = TTF_SUBCLASS;
 	ti.hwnd = window->hwnd;
 	ti.hinst = wcex.hInstance;
-	ti.lpszText = (LPSTR)handle->tooltip_text.c_str();
+	ti.lpszText = (LPWSTR)UTF8toUCS2(handle->tooltip_text).c_str();
 	ti.rect.left = rect.x; ti.rect.right = rect.x + rect.width;
 	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
 
@@ -1470,12 +1475,12 @@ PGTooltipHandle PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string 
 }
 
 void PGUpdateTooltipRegion(PGTooltipHandle handle, PGRect rect) {
-	TOOLINFO ti = { 0 };
+	TOOLINFOW ti = { 0 };
 	ti.cbSize = sizeof(TOOLINFO);
 	ti.uFlags = TTF_SUBCLASS;
 	ti.hwnd = handle->window->hwnd;
 	ti.hinst = wcex.hInstance;
-	ti.lpszText = (LPSTR)handle->tooltip_text.c_str();
+	ti.lpszText = (LPWSTR)UTF8toUCS2(handle->tooltip_text).c_str();
 	ti.rect.left = rect.x; ti.rect.right = rect.x + rect.width;
 	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
 
