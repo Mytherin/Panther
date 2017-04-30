@@ -100,7 +100,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	cursor_vertical_resize = LoadCursor(nullptr, IDC_SIZENS);
 
 	// record a replay
-	//PGGlobalReplayManager::Initialize("test.replay", PGReplayRecord);
+	PGGlobalReplayManager::Initialize("test.replay", PGReplayRecord);
 
 	PGInitialize();
 
@@ -1401,7 +1401,7 @@ PGIOError PGTrashFile(std::string source) {
 	return res == 0 ? PGIOSuccess : PGIOErrorOther;
 }
 
-PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files) {
+PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, void* glob) {
 	DIR *dp;
 	struct dirent *ep;
 	dp = opendir(directory.c_str());
@@ -1412,6 +1412,9 @@ PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>&
 	while (ep = readdir(dp)) {
 		std::string filename = ep->d_name;
 		if (filename[0] == '.') continue;
+
+		if (PGFileIsIgnored(glob, filename.c_str(), ep->d_type == DT_DIR))
+			continue;
 
 		if (ep->d_type == DT_DIR) {
 			directories.push_back(PGFile(filename));

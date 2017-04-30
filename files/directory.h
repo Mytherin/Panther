@@ -5,6 +5,9 @@
 #include "windowfunctions.h"
 
 #include <rust/globset.h>
+#include <rust/gitignore.h>
+
+typedef void(*PGDirectoryIterCallback)(PGFile f);
 
 struct PGDirectory {
 	std::string path;
@@ -14,13 +17,13 @@ struct PGDirectory {
 	bool loaded_files;
 	bool expanded;
 
-	PGDirectory(std::string path, bool respect_gitignore);
+	PGDirectory(std::string path, bool show_all_files);
+	PGDirectory(std::string path, PGIgnoreGlob glob = nullptr);
 	~PGDirectory();
 
 	void WriteWorkspace(nlohmann::json& j);
 	void LoadWorkspace(nlohmann::json& j);
 
-	void ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist);
 	void FindFile(lng file_number, PGDirectory** directory, PGFile* file);
 
 	lng FindFile(std::string full_name, PGDirectory** directory, PGFile* file, bool search_only_expanded = false);
@@ -29,6 +32,8 @@ struct PGDirectory {
 
 	// Returns the number of files displayed by this directory
 	lng DisplayedFiles();
-	void Update(bool respect_gitignore);
+	void Update(PGIgnoreGlob glob);
 	void GetFiles(std::vector<PGFile>& files);
+	void ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist);
+	void IterateOverFiles(PGDirectoryIterCallback callback);
 };

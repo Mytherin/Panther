@@ -85,9 +85,16 @@ lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile
 }
 
 
-PGDirectory::PGDirectory(std::string path, bool respect_gitignore) :
+PGDirectory::PGDirectory(std::string path, bool show_all_files) :
 	path(path), last_modified_time(-1), loaded_files(false), expanded(false) {
-	this->Update(respect_gitignore);
+	PGIgnoreGlob glob = show_all_files ? nullptr : PGCreateGlobForDirectory(path.c_str());
+	this->Update(glob);
+	PGDestroyIgnoreGlob(glob);
+}
+
+PGDirectory::PGDirectory(std::string path, PGIgnoreGlob glob) :
+	path(path), last_modified_time(-1), loaded_files(false), expanded(false) {
+	this->Update(glob);
 }
 
 PGDirectory::~PGDirectory() {
@@ -104,35 +111,17 @@ void PGDirectory::CollapseAll() {
 	this->expanded = false;
 }
 
-void PGDirectory::Update(bool respect_gitignore) {
+void PGDirectory::Update(PGIgnoreGlob glob) {
+	if (PGFileIsIgnored(glob, this->path.c_str(), true)) {
+		// file is ignored by the .gitignore glob, skip this path
+		return;
+	}
 	files.clear();
 
 	std::vector<PGFile> dirs;
-	if (respect_gitignore) {
-		std::vector<std::pair<bool, std::string>> _files;
-		int retval = PGListFiles(this->path.c_str(), [](void* data, const char* path, bool is_directory) {
-			auto files = (std::vector<std::pair<bool, std::string>>*)data;
-			files->push_back(std::pair<bool, std::string>(is_directory, path));
-		}, &_files, true);
-
-		if (retval < 0) {
-			// failed to open directory for reading
-			loaded_files = false;
-			return;
-		}
-
-		for (auto it = _files.begin(); it != _files.end(); it++) {
-			if (it->first) {
-				dirs.push_back(PGFile(it->second));
-			} else {
-				files.push_back(PGFile(it->second));
-			}
-		}
-	} else {
-		if (PGGetDirectoryFiles(path, dirs, files) != PGDirectorySuccess) {
-			loaded_files = false;
-			return;
-		}
+	if (PGGetDirectoryFiles(path, dirs, files, glob) != PGDirectorySuccess) {
+		loaded_files = false;
+		return;
 	}
 
 	// for each directory, check if it is already present
@@ -144,7 +133,7 @@ void PGDirectory::Update(bool respect_gitignore) {
 		for (auto it2 = current_directores.begin(); it2 != current_directores.end(); it2++) {
 			if ((*it2)->path == path) {
 				// if the directory is already known here, update it
-				(*it2)->Update(respect_gitignore);
+				(*it2)->Update(glob);
 				if ((*it2)->loaded_files) {
 					// if we failed to load files for this directory, leave it in the "current_directores"
 					// it will count as "not found" and be removed from the 
@@ -156,7 +145,7 @@ void PGDirectory::Update(bool respect_gitignore) {
 		}
 		if (!found) {
 			// if the directory is not known add it and scan it
-			PGDirectory* directory = new PGDirectory(path, respect_gitignore);
+			PGDirectory* directory = new PGDirectory(path, glob);
 			if (!directory->loaded_files) {
 				// failed to load files from directory
 				delete directory;
@@ -186,19 +175,17 @@ lng PGDirectory::DisplayedFiles() {
 	}
 }
 
-void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist) {
-	std::vector<std::string> files;
-	PGListAllFiles(this->path.c_str(), [](void* data, const char* path, bool is_directory) {
-		auto files = (std::vector<std::string>*)data;
-		files->push_back(path);
-	}, &files, false);
 
+void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist) {
 	for (auto it = files.begin(); it != files.end(); it++) {
-		if (whitelist && !PGGlobSetMatches(whitelist, it->c_str())) {
+		if (whitelist && !PGGlobSetMatches(whitelist, it->path.c_str())) {
 			// file does not match whitelist, ignore it
 			continue;
 		}
 		result_files.push_back(PGFile(*it));
+	}
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->ListFiles(result_files, whitelist);
 	}
 }
 
@@ -220,5 +207,14 @@ void PGDirectory::LoadWorkspace(nlohmann::json& j) {
 		for (auto it = directories.begin(); it != directories.end(); it++) {
 			(*it)->LoadWorkspace(j[filename]);
 		}
+	}
+}
+
+void PGDirectory::IterateOverFiles(PGDirectoryIterCallback callback) {
+	for (auto it = files.begin(); it != files.end(); it++) {
+		callback(*it);
+	}
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		(*it)->IterateOverFiles(callback);
 	}
 }

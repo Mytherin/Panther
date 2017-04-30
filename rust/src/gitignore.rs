@@ -1,85 +1,73 @@
 
-use ignore::WalkBuilder;
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
 
+use std::path::Path;
+use std::ptr;
 use std::os::raw::c_char;
-use std::ffi::CString;
 use std::ffi::CStr;
-// FIXME: use catch_unwind to unwind panics on FFI boundaries
-//use std::panic::catch_unwind;
 
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "C" fn PGCreateGlobForDirectory(directory: *const c_char) -> *mut Gitignore {
+    let cstr = unsafe { CStr::from_ptr(directory) };
+	let mut path = match cstr.to_str() {
+		Ok(path) => Path::new(path),
+		Err(_) => {
+			return ptr::null_mut();
+		}
+	};
+    let mut builder = GitignoreBuilder::new(path);
+    loop {
+    	builder.add(path.join(".gitignore"));
+	    path = match path.parent() {
+	    	Some(p) => p,
+	    	None => break
+	    };
+    }
 
-fn list_files(directory: *const c_char, callback: extern fn(*mut c_char, *const c_char, bool), data: *mut c_char, relative_paths: bool, list_all_files: bool) -> i32 {
-	// first convert the input data to a normal rust string
-	let cstr = unsafe { CStr::from_ptr(directory) };
+    let git_ignore = match builder.build() {
+		Ok(ig) => ig,
+		Err(_) => {
+			return ptr::null_mut();
+		}
+    };
+	let mut ig = Box::new(git_ignore);
+	let ptr: *mut _ = &mut *ig;
+	// forget the object we have created so rust does not clean it up
+	::std::mem::forget(ig);
+	return ptr;
+}
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "C" fn PGFileIsIgnored(ptr: *mut Gitignore, glob_text: *const c_char, is_dir: bool) -> bool {
+    if ptr.is_null() {
+        return false;
+    }
+    let cstr = unsafe { CStr::from_ptr(glob_text) };
 	let path = match cstr.to_str() {
 		Ok(path) => path,
 		Err(_) => {
-			return -1;
+			return false;
 		}
 	};
-
-	let mut walkbuilder = WalkBuilder::new(path);
-	if !list_all_files {
-		walkbuilder.max_depth(Some(1));
-	}
-
-	for result in walkbuilder.build() {
-		// walk over the path
-		match result {
-			Ok(entry) => {
-				if entry.depth() == 0 {
-					continue;
-				}
-				// we found a file, we now call the "callback" function with the path
-				// first do some conversions into C strings
-				let is_directory = match entry.file_type() {
-					Some(tpe) => tpe.is_dir(),
-					None => false
-				};
-				let string_path;
-				if relative_paths {
-					string_path = match entry.file_name().to_str() {
-						Some(result) => result,
-						None => continue
-					};
-				} else {
-					string_path = match entry.path().to_str() {
-						Some(result) => result,
-						None => continue
-					};	
-				}
-				let cstr = match CString::new(string_path) {
-					Ok(result) => result,
-					Err(_) => continue
-				};
-
-				// leave ownership of the cstr
-				let raw_data = cstr.into_raw();
-				callback(data, raw_data, is_directory);
-				// take ownership back
-				unsafe {
-					CString::from_raw(raw_data);
-				}
-			},
-			Err(_) => {
-                return -1;
-            }
-		}
-	}
-	return 0;
-}
-
-
-#[allow(non_snake_case)]
-#[no_mangle]
-pub extern "C" fn PGListAllFiles(directory: *const c_char, callback: extern fn(*mut c_char, *const c_char, bool), data: *mut c_char, relative_paths: bool) -> i32 {
-	return list_files(directory, callback, data, relative_paths, true);
+	let ig: Box<Gitignore> = unsafe { ::std::mem::transmute(ptr) };
+    let m = ig.matched(path, is_dir).is_ignore();
+	::std::mem::forget(ig);
+	return m;
 }
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub extern "C" fn PGListFiles(directory: *const c_char, callback: extern fn(*mut c_char, *const c_char, bool), data: *mut c_char, relative_paths: bool) -> i32 {
-	return list_files(directory, callback, data, relative_paths, false);
+pub extern "C" fn PGDestroyIgnoreGlob(ptr: *mut Gitignore) {
+	if ptr.is_null() {
+		return;
+	}
+
+	// Now, we know the pointer is non-null, we can continue.
+	let obj: Box<Gitignore> = unsafe { ::std::mem::transmute(ptr) };
+
+	// We don't *have* to do anything else; once obj goes out of scope, it will
+	// be dropped.  I'm going to drop it explicitly, however, for clarity.
+	::std::mem::drop(obj);
 }
-
-

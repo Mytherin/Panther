@@ -78,8 +78,10 @@ void ProjectExplorer::Update(void) {
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		auto flags = PGGetFileFlags((*it)->path);
 		if (flags.modification_time != (*it)->last_modified_time) {
+			PGIgnoreGlob glob = this->show_all_files ? nullptr : PGCreateGlobForDirectory((*it)->path.c_str());
 			(*it)->last_modified_time = flags.modification_time;
-			(*it)->Update(!this->show_all_files);
+			(*it)->Update(glob);
+			PGDestroyIgnoreGlob(glob);
 			invalidated = true;
 		}
 	}
@@ -92,7 +94,9 @@ void ProjectExplorer::Update(void) {
 void ProjectExplorer::SetShowAllFiles(bool show_all_files) {
 	this->show_all_files = show_all_files;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		(*it)->Update(!this->show_all_files);
+		PGIgnoreGlob glob = this->show_all_files ? nullptr : PGCreateGlobForDirectory((*it)->path.c_str());
+		(*it)->Update(glob);
+		PGDestroyIgnoreGlob(glob);
 	}
 	if (show_all_files_toggle) {
 		show_all_files_toggle->SetToggled(show_all_files);
@@ -232,7 +236,6 @@ void ProjectExplorer::ActuallyPerformRename(std::string old_name, std::string ne
 		file->UpdateModificationTime();
 		GetControlManager(this)->Invalidate();
 	}
-	directories[0]->Update(!this->show_all_files);
 	if (update_selection) {
 		PGDirectory* directory; PGFile file;
 		lng filenr = this->FindFile(new_name, &directory, &file);
@@ -525,7 +528,6 @@ void ProjectExplorer::ActuallyDeleteSelectedFiles() {
 			PGRemoveFile(file.path);
 		}
 	}
-	directories[0]->Update(!this->show_all_files);
 	this->Invalidate();
 }
 
@@ -599,7 +601,7 @@ void ProjectExplorer::AddDirectory(std::string directory) {
 		entries += (*it)->DisplayedFiles();
 	}
 
-	PGDirectory* dir = new PGDirectory(directory, !show_all_files);
+	PGDirectory* dir = new PGDirectory(directory, show_all_files);
 	if (dir) {
 		if (!dir->loaded_files) {
 			delete dir;

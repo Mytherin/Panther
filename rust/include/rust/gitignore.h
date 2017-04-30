@@ -2,8 +2,12 @@
 #pragma once
 
 extern "C" {
-	typedef void (*PGDirectoryCallback)(void* data, const char* path, bool is_directory);
+	typedef void* PGIgnoreGlob;
 
-	int PGListAllFiles(const char* directory, PGDirectoryCallback callback, void* data, bool relative_paths);
-	int PGListFiles(const char* directory, PGDirectoryCallback callback, void* data, bool relative_paths);
+	// create a gitignore-globset for a given directory
+	extern PGIgnoreGlob PGCreateGlobForDirectory(const char* path);
+	// returns whether or not a given path is ignored/should be skipped
+	extern bool PGFileIsIgnored(PGIgnoreGlob, const char* path, bool is_directory);
+	// destroys the given ignore glob
+	extern void PGDestroyIgnoreGlob(PGIgnoreGlob);
 }
