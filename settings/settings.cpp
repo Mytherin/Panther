@@ -5,7 +5,9 @@
 #include "utils.h"
 
 #include <algorithm>
-#include <string> 
+#include <string>
+
+#include "default-settings.h"
 
 using namespace nlohmann;
 
@@ -14,13 +16,17 @@ void PGSettings::LoadSettings(std::string filename) {
 	PGFileError error;
 	char* ptr = (char*) panther::ReadFile(filename, result_size, error);
 	if (!ptr) {
-		assert(0);
 		return;
 	}
+	LoadSettingsFromData(ptr);
+	panther::DestroyFileContents(ptr);
+}
+
+void PGSettings::LoadSettingsFromData(char* data) {
 	json j;
 	try {
-		j = json::parse(ptr);
-	} catch(...) {
+		j = json::parse(data);
+	} catch (...) {
 		return;
 	}
 	j.flatten();
@@ -28,8 +34,6 @@ void PGSettings::LoadSettings(std::string filename) {
 	for (json::iterator it = j.begin(); it != j.end(); ++it) {
 		settings[StripQuotes(it.key())] = StripQuotes(it.value().dump());
 	}
-
-	panther::DestroyFileContents(ptr);
 }
 
 bool PGSettings::GetSetting(std::string name, std::string& value) {
@@ -118,11 +122,7 @@ bool PGSettingsManager::GetSetting(std::string name, double& value, PGSettings* 
 }
 
 PGSettingsManager::PGSettingsManager() {
-#ifdef WIN32
-	default_settings.LoadSettings("default-settings.json");
-#else
-	default_settings.LoadSettings("/Users/myth/Programs/Panther/PantherGUI/default-settings.json");
-#endif
+	default_settings.LoadSettingsFromData(PANTHER_DEFAULT_SETTINGS);
 }
 
 bool PGSettingsManager::_GetSetting(std::string name, std::string& value, PGSettings* extra_setting) {

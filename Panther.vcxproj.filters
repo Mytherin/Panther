@@ -396,6 +396,9 @@
     <ClInclude Include="os\windows\windows_structs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="os\windows\default-keybindings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="files\directory.cpp">

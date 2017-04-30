@@ -12,6 +12,8 @@
 
 #include "json.h"
 
+#include "default-keybindings.h"
+
 using namespace nlohmann;
 
 PGKeyBindingsManager::PGKeyBindingsManager() {
@@ -26,11 +28,7 @@ PGKeyBindingsManager::PGKeyBindingsManager() {
 	SearchBox::InitializeKeybindings();
 	ProjectExplorer::InitializeKeybindings();
 
-#ifdef WIN32
-	LoadSettings("default-keybindings." + GetOSName() + ".json");
-#else
-	LoadSettings("/Users/myth/Programs/Panther/PantherGUI/default-keybindings." + GetOSName() + ".json");
-#endif
+	LoadSettingsFromData(PANTHER_DEFAULT_KEYBINDINGS);
 }
 
 
@@ -198,20 +196,12 @@ std::string ParseEscapeCharacters(std::string str) {
 	return result;
 }
 
-void PGKeyBindingsManager::LoadSettings(std::string filename) {
-	lng result_size;
-	PGFileError error;
-	char* ptr = (char*)panther::ReadFile(filename, result_size, error);
-	if (!ptr) {
-		// FIXME:
-		assert(0);
-		return;
-	}
+void PGKeyBindingsManager::LoadSettingsFromData(char* data) {
 	json j;
 	//try {
-	j = json::parse(ptr);
+	j = json::parse(data);
 	/*} catch(...) {
-		return;
+	return;
 	}*/
 
 	for (auto it = j.begin(); it != j.end(); it++) {
@@ -328,6 +318,18 @@ void PGKeyBindingsManager::LoadSettings(std::string filename) {
 			}
 		}
 	}
+}
+
+void PGKeyBindingsManager::LoadSettings(std::string filename) {
+	lng result_size;
+	PGFileError error;
+	char* ptr = (char*)panther::ReadFile(filename, result_size, error);
+	if (!ptr) {
+		assert(0);
+		return;
+	}
+	LoadSettingsFromData(ptr);
+	panther::DestroyFileContents(ptr);
 }
 
 std::string PGButtonToString(PGButton button) {

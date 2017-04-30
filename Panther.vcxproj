@@ -23,6 +23,7 @@
     <ClInclude Include="files\filemanager.h" />
     <ClInclude Include="files\mmap.h" />
     <ClInclude Include="os\windowfunctions.h" />
+    <ClInclude Include="os\windows\default-keybindings.h" />
     <ClInclude Include="os\windows\dirent.h" />
     <ClInclude Include="os\windows\droptarget.h" />
     <ClInclude Include="os\windows\main.h" />
