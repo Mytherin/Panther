@@ -810,21 +810,18 @@ void SetClipboardTextOS(PGWindowHandle window, std::string text) {
 	if (text.size() == 0) return;
 	panther::replace(text, "\n", "\r\n");
 	if (OpenClipboard(window->hwnd)) {
-		char* result = nullptr;
-		size_t length = PGConvertText(text, &result, PGEncodingUTF8, PGEncodingUTF16Platform);
-		assert(length > 0);
+		text = UTF8toUCS2(text);
 		HGLOBAL clipbuffer;
 		char * buffer;
 		EmptyClipboard();
-		clipbuffer = GlobalAlloc(GMEM_DDESHARE, length + 2);
+		clipbuffer = GlobalAlloc(GMEM_DDESHARE, text.size());
 		buffer = (char*)GlobalLock(clipbuffer);
-		memcpy(buffer, result, length * sizeof(char));
-		buffer[length] = '\0';
-		buffer[length + 1] = '\0';
+		memcpy(buffer, text.c_str(), text.size() * sizeof(char));
+		buffer[text.size()] = '\0';
+		buffer[text.size() + 1] = '\0';
 		GlobalUnlock(clipbuffer);
 		SetClipboardData(CF_UNICODETEXT, clipbuffer);
 		CloseClipboard();
-		free(result);
 	}
 }
 
@@ -836,16 +833,11 @@ std::string GetClipboardTextOS(PGWindowHandle window) {
 		HANDLE data = GetClipboardData(CF_UNICODETEXT);
 		std::string text = "";
 		if (data) {
-			text = std::string(((char*)data), UCS2Length((char*)data));
+			// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
+			text = UCS2toUTF8((PWSTR)data);
 		}
 		CloseClipboard();
 		if (text.size() == 0) return nullptr;
-		// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
-		size_t length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
-		assert(length > 0);
-		text = std::string(result, length);
-		free(result);
-		assert(utf8_strlen(text) >= 0);
 		panther::replace(text, "\r\n", "\n");
 		return text;
 	}
