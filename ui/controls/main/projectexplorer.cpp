@@ -810,3 +810,15 @@ void ProjectExplorer::ToggleShowAllFiles() {
 	SetShowAllFiles(!this->show_all_files);
 }
 
+struct UpdateInformation {
+	ProjectExplorer* explorer;
+};
+
+void ProjectExplorer::UpdateAsync(std::shared_ptr<Task> task, void* data) {
+	UpdateInformation* info = (UpdateInformation*)data;
+	// FIXME: update all directories
+	// FIXME: keep track of progress, and 
+	// FIXME: stop updating if current task changes
+	// FIXME: keep lock on directories structure here as well
+	delete info;
+}

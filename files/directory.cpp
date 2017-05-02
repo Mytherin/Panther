@@ -4,7 +4,31 @@
 
 #include <rust/gitignore.h>
 
+PGDirectory::PGDirectory(std::string path, bool show_all_files) :
+	path(path), last_modified_time(-1), loaded_files(false), expanded(false) {
+	this->lock = std::unique_ptr<PGMutex>(CreateMutex());
+
+	PGIgnoreGlob glob = show_all_files ? nullptr : PGCreateGlobForDirectory(path.c_str());
+	this->Update(glob);
+	PGDestroyIgnoreGlob(glob);
+}
+
+PGDirectory::PGDirectory(std::string path, PGIgnoreGlob glob) :
+	path(path), last_modified_time(-1), loaded_files(false), expanded(false) {
+	this->lock = std::unique_ptr<PGMutex>(CreateMutex());
+
+	this->Update(glob);
+}
+
+PGDirectory::~PGDirectory() {
+	LockMutex(lock.get());
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		delete *it;
+	}
+}
+
 void PGDirectory::GetFiles(std::vector<PGFile>& result) {
+	LockMutex(lock.get());
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		(*it)->GetFiles(result);
 	}
@@ -13,6 +37,7 @@ void PGDirectory::GetFiles(std::vector<PGFile>& result) {
 		file.path = PGPathJoin(this->path, file.path);
 		result.push_back(file);
 	}
+	UnlockMutex(lock.get());
 }
 
 void PGDirectory::FindFile(lng file_number, PGDirectory** directory, PGFile* file) {
@@ -21,14 +46,17 @@ void PGDirectory::FindFile(lng file_number, PGDirectory** directory, PGFile* fil
 		return;
 	}
 	lng file_count = 1;
+	LockMutex(lock.get());
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		lng files = (*it)->DisplayedFiles();
 		if (file_number >= file_count && file_number < file_count + files) {
 			(*it)->FindFile(file_number - file_count, directory, file);
+			UnlockMutex(lock.get());
 			return;
 		}
 		file_count += files;
 	}
+	UnlockMutex(lock.get());
 	assert(this->expanded);
 	lng entry = file_number - file_count;
 	assert(entry >= 0 && entry < files.size());
@@ -52,10 +80,12 @@ lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile
 			return 0;
 		}
 		lng entry = 1;
+		LockMutex(lock.get());
 		for (auto it = directories.begin(); it != directories.end(); it++) {
 			if ((*it)->path == full_name) {
 				this->expanded = true;
 				(*it)->expanded = true;
+				UnlockMutex(lock.get());
 				return entry;
 			}
 			entry += (*it)->DisplayedFiles();
@@ -65,50 +95,38 @@ lng PGDirectory::FindFile(std::string full_name, PGDirectory** directory, PGFile
 				*directory = this;
 				*file = *it;
 				this->expanded = true;
+				UnlockMutex(lock.get());
 				return entry;
 			}
 			entry++;
 		}
+		UnlockMutex(lock.get());
 	} else {
 		lng entry = 1;
+		LockMutex(lock.get());
 		// this is not the final directory; search recursively in the other directories
 		for (auto it = directories.begin(); it != directories.end(); it++) {
 			lng directory_entry = (*it)->FindFile(full_name, directory, file, search_only_expanded);
 			if (directory_entry >= 0) {
 				this->expanded = true;
+				UnlockMutex(lock.get());
 				return entry + directory_entry;
 			}
 			entry += (*it)->DisplayedFiles();
 		}
+		UnlockMutex(lock.get());
 	}
 	return -1;
 }
 
 
-PGDirectory::PGDirectory(std::string path, bool show_all_files) :
-	path(path), last_modified_time(-1), loaded_files(false), expanded(false) {
-	PGIgnoreGlob glob = show_all_files ? nullptr : PGCreateGlobForDirectory(path.c_str());
-	this->Update(glob);
-	PGDestroyIgnoreGlob(glob);
-}
-
-PGDirectory::PGDirectory(std::string path, PGIgnoreGlob glob) :
-	path(path), last_modified_time(-1), loaded_files(false), expanded(false) {
-	this->Update(glob);
-}
-
-PGDirectory::~PGDirectory() {
-	for (auto it = directories.begin(); it != directories.end(); it++) {
-		delete *it;
-	}
-	directories.clear();
-}
-
 void PGDirectory::CollapseAll() {
+	LockMutex(lock.get());
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		(*it)->CollapseAll();
 	}
 	this->expanded = false;
+	UnlockMutex(lock.get());
 }
 
 void PGDirectory::Update(PGIgnoreGlob glob) {
@@ -126,6 +144,7 @@ void PGDirectory::Update(PGIgnoreGlob glob) {
 
 	// for each directory, check if it is already present
 	// if it is not we add it
+	LockMutex(lock.get());
 	std::vector<PGDirectory*> current_directores = std::vector<PGDirectory*>(directories.begin(), directories.end());
 	for (auto it = dirs.begin(); it != dirs.end(); it++) {
 		std::string path = PGPathJoin(this->path, it->path);
@@ -159,6 +178,7 @@ void PGDirectory::Update(PGIgnoreGlob glob) {
 		directories.erase(std::find(directories.begin(), directories.end(), *it2));
 		delete *it2;
 	}
+	UnlockMutex(lock.get());
 	loaded_files = true;
 	return;
 }
@@ -191,11 +211,13 @@ void PGDirectory::ListFiles(std::vector<PGFile>& result_files, PGGlobSet whiteli
 
 void PGDirectory::WriteWorkspace(nlohmann::json& j) {
 	if (expanded) {
+		LockMutex(lock.get());
 		std::string filename = PGFile(this->path).Filename();
 		j[filename] = nlohmann::json::object();
 		for (auto it = directories.begin(); it != directories.end(); it++) {
 			(*it)->WriteWorkspace(j[filename]);
 		}
+		UnlockMutex(lock.get());
 	}
 }
 
@@ -204,17 +226,21 @@ void PGDirectory::LoadWorkspace(nlohmann::json& j) {
 	std::string filename = PGFile(this->path).Filename();
 	if (j.count(filename) > 0 && j[filename].is_object()) {
 		this->expanded = true;
+		LockMutex(lock.get());
 		for (auto it = directories.begin(); it != directories.end(); it++) {
 			(*it)->LoadWorkspace(j[filename]);
 		}
+		UnlockMutex(lock.get());
 	}
 }
 
-void PGDirectory::IterateOverFiles(PGDirectoryIterCallback callback) {
+void PGDirectory::IterateOverFiles(PGDirectoryIterCallback callback, void* data) {
+	LockMutex(lock.get());
 	for (auto it = files.begin(); it != files.end(); it++) {
-		callback(*it);
+		callback(*it, data);
 	}
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		(*it)->IterateOverFiles(callback);
+		(*it)->IterateOverFiles(callback, data);
 	}
+	UnlockMutex(lock.get());
 }

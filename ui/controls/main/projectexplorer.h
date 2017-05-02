@@ -75,6 +75,8 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
 private:
+	static void UpdateAsync(std::shared_ptr<Task> task, void* data);
+
 	void Undo(FileOperationDelta*);
 	void Redo(FileOperationDelta*);
 
