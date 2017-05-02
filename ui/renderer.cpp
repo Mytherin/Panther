@@ -60,8 +60,9 @@ static void CreateFallbackFonts(PGFontHandle font) {
 #ifdef WIN32
 	auto fallback_font = SkTypeface::MakeFromFile("NotoSansHans-Regular.otf");
 #else
-	auto fallback_font = SkTypeface::MakeFromFile("/Users/myth/Programs/Panther/PantherGUI/NotoSansHans-Regular.otf");
+	auto fallback_font = SkTypeface::MakeFromFile("/Users/myth/Programs/Panther/data/fonts/NotoSansHans-Regular.otf");
 #endif
+	assert(fallback_font);
 	fallback_paint->setTypeface(fallback_font);
 	font->fallback_paints.push_back(fallback_paint);
 }
@@ -71,7 +72,7 @@ PGFontHandle PGCreateFont() {
 	return PGCreateFont("Consolas", true, true);
 #else
 	return PGCreateFont("menlo", true, true);
-	return PGCreateFont("/Users/myth/Programs/Panther/PantherGUI/fonts/SourceCodePro-Semibold.ttf");
+	return PGCreateFont("/Users/myth/Programs/Panther/data/fonts/SourceCodePro-Semibold.ttf");
 #endif
 }
 
@@ -263,6 +264,7 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 				// then we switch to a fallback font to render this character
 				bool found_fallback = false;
 				for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
+					assert((*it)->getTypeface());
 					if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
 						renderer->canvas->drawText(text + i, offset, x, y + font->text_offset, **it);
 						x += (*it)->measureText(text + i, offset);
@@ -509,6 +511,7 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 					// if the main font does not support the current glyph, look into the fallback fonts
 					bool found_fallback = false;
 					for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
+						assert((*it)->getTypeface());
 						if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
 							text_size += (*it)->measureText(text + i, offset);
 							found_fallback = true;
@@ -540,6 +543,7 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 					// if the main font does not support the current glyph, look into the fallback fonts
 					bool found_fallback = false;
 					for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
+						assert((*it)->getTypeface());
 						if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
 							text_size += (*it)->measureText(text + i, offset);
 							found_fallback = true;
