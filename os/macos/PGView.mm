@@ -116,6 +116,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		if (!handle) {
 			return self;
 		}
+
 		workspace->AddWindow(handle);
 		handle->window = window;
 		handle->workspace = workspace;
@@ -124,50 +125,8 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 		timer = CreateTimer(handle, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
-		ControlManager* manager = new ControlManager(handle);
-		manager->SetPosition(PGPoint(0, 0));
-		manager->SetSize(PGSize(rect.size.width, rect.size.height));
-		manager->percentage_height = 1;
-		manager->percentage_width = 1;
+		ControlManager* manager = PGCreateControlManager(handle, textfiles);
 		handle->manager = manager;
-		
-		ProjectExplorer* explorer = new ProjectExplorer(handle);
-		explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-		explorer->fixed_width = 200;
-		explorer->percentage_height = 1;
-		explorer->minimum_width = 50;
-
-		PGToolbar* toolbar = new PGToolbar(handle);
-		toolbar->SetAnchor(PGAnchorLeft | PGAnchorTop);
-		toolbar->percentage_width = 1;
-		toolbar->fixed_height = TOOLBAR_HEIGHT;
-
-		StatusBar* bar = new StatusBar(handle);
-		bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
-		bar->percentage_width = 1;
-		bar->fixed_height = STATUSBAR_HEIGHT;
-		explorer->bottom_anchor = bar;
-		explorer->top_anchor = toolbar;
-
-		Splitter *splitter = new Splitter(handle, true);
-		splitter->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-		splitter->left_anchor = explorer;
-		splitter->bottom_anchor = bar;
-		splitter->top_anchor = toolbar;
-		splitter->fixed_width = 4;
-		splitter->percentage_height = 1;
-
-		manager->AddControl(bar);
-		manager->AddControl(explorer);
-		manager->AddControl(splitter);
-		manager->AddControl(toolbar);
-
-		manager->toolbar = toolbar;
-		manager->statusbar = bar;
-		manager->active_projectexplorer = explorer;
-		manager->splitter = splitter;
-
-		manager->SetTextFieldLayout(1, 1, textfiles);
 	}
 	return self;
 }
