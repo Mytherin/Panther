@@ -872,6 +872,7 @@ PGFileInformation PGGetFileFlags(std::string path) {
 	}
 	info.file_size = (lng) stat_info.st_size;
 	info.modification_time = (lng) stat_info.st_mtime;
+	info.is_directory = S_ISDIR(stat_info.st_mode);
 
 	return info;
 }
