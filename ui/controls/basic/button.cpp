@@ -113,6 +113,6 @@ Button* Button::CreateFromCommand(Control* parent, std::string command_name, std
 	button->SetTooltip(tooltip_text);
 	button->OnPressed([](Button* b, void* data) {
 		((PGKeyFunction)data)(b->parent);
-	}, functions[command_name]);
+	}, (void*) functions[command_name]);
 	return button;
 }

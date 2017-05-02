@@ -43,7 +43,7 @@ static ToggleButton* CreateToggleButtonFromCommand(Control* parent, std::string 
 	button->SetTooltip(tooltip_text);
 	button->OnToggle([](Button* b, bool toggled, void* data) {
 		((PGKeyFunction)data)(b->parent);
-	}, functions[command_name]);
+	}, (void*) functions[command_name]);
 	return button;
 }
 

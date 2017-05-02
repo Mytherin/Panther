@@ -21,6 +21,8 @@
 #import "PGWindow.h"
 #import "PGDrawBitmap.h"
 
+#include "rust/gitignore.h"
+
 #define RETINA_API_AVAILABLE (defined(MAC_OS_X_VERSION_10_7) && \
 							  MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
 // clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm c.cpp control.cpp cursor.cpp keywords.cpp logger.cpp scheduler.cpp text.cpp syntaxhighlighter.cpp textfield.cpp textfile.cpp textline.cpp thread.cpp windowfunctions.cpp xml.cpp file.cpp tabcontrol.cpp tabbedtextfield.cpp renderer.cpp filemanager.cpp controlmanager.cpp utils.cpp  -o main
@@ -92,7 +94,7 @@ struct PGTimer {
 NSDraggingSession* active_session = nullptr;
 
 void PeriodicWindowRedraw(PGWindowHandle handle) {
-	handle->manager->PeriodicRender();
+	handle->manager->Update();
 	if (handle->pending_destroy) {
 		handle->workspace->RemoveWindow(handle);
 		[handle->window performClose:handle->window];
@@ -582,7 +584,7 @@ void RegisterControl(PGWindowHandle window, Control *control) {
 		window->manager->AddControl(control);
 }
 
-PGTime GetTime() {
+PGTime PGGetTimeOS() {
 	timeval time;
 	gettimeofday(&time, NULL);
 	long millis = (time.tv_sec * 1000) + (time.tv_usec / 1000);
@@ -600,7 +602,7 @@ void SetClipboardTextOS(PGWindowHandle window, std::string text) {
 	[pasteboard writeObjects:copiedObjects];
 }
 
-std::string GetClipboardText(PGWindowHandle window) {
+std::string GetClipboardTextOS(PGWindowHandle window) {
 	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
 	NSArray *classArray = [NSArray arrayWithObject:[NSString class]];
 	NSDictionary *options = [NSDictionary dictionary];
@@ -673,7 +675,7 @@ void DeleteTimer(PGTimerHandle handle) {
 	delete handle;
 }
 
-void* GetWindowManager(PGWindowHandle window) {
+ControlManager* GetWindowManager(PGWindowHandle window) {
 	return window->manager;
 }
 
@@ -984,9 +986,22 @@ void PGDestroyTooltip(PGTooltipHandle handle) {
 	delete handle;
 }
 
+void SetWindowManager(PGWindowHandle window, ControlManager* manager) {
+	window->manager = manager;
+}
+
+PGPopupMenuHandle PGCreateMenu(PGWindowHandle window, Control* control) {
+	return nullptr;
+}
+
+void PGSetWindowMenu(PGWindowHandle window, PGPopupMenuHandle menu) {
+
+}
+
 #include <dirent.h>
 
-PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files) {
+PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories,
+	std::vector<PGFile>& files, void* glob) {
 	DIR *dp;
 	struct dirent *ep;
 	dp = opendir(directory.c_str());
@@ -997,6 +1012,9 @@ PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>&
 	while ((ep = readdir(dp))) {
 		std::string filename = ep->d_name;
 		if (filename[0] == '.') continue;
+
+		if (PGFileIsIgnored(glob, filename.c_str(), ep->d_type == DT_DIR))
+			continue;
 
 		if (ep->d_type == DT_DIR) {
 			directories.push_back(PGFile(filename));

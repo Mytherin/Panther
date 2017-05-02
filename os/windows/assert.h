@@ -1,5 +1,4 @@
 
-#ifdef WIN32
 // on Windows, the standard assert does not immediately break into code
 // instead it shows an annoying dialog box and does NOT pause execution
 // this can result in many difficulties when dealing with multiple threads
@@ -8,7 +7,3 @@
 #undef assert
 #endif
 #define assert(expression) if (!(expression)) { __debugbreak(); }
-#else
-#pragma once
-#include <cassert>
-#endif

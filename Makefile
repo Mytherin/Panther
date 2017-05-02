@@ -14,6 +14,10 @@ endif
 
 DEPSDIR=$(OBJDIR)/deps
 
+PANTHER_INCLUDE_FLAGS=-Ifiles -Ios -Ios/macos -Irust/include -Isettings -Isyntax -Isyntax/languages \
+			  -Itesting -Itext -Ithird_party/concurrent_queue -Ithird_party/json \
+			  -Ithird_party/re2 -Iui -Iui/controls \
+			  -Iui/controls/basic -Iui/controls/main -Iui/controls/textfield -Iutils
 SKIA_INCLUDE_FLAGS=-I/Users/myth/Sources/skia/skia/include/core \
 				   -I/Users/myth/Sources/skia/skia/include/config \
 				   -I/Users/myth/Sources/skia/skia/include/codec \
@@ -35,98 +39,104 @@ else
 endif
 
 LDFLAGS=-framework AppKit -lobjc -L/opt/local/lib $(ICU_LDFLAGS) $(SKIA_LDFLAGS) $(RUST_LDFLAGS)
-INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) -Irust/include -Ithird_party/re2
+INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) $(PANTHER_INCLUDE_FLAGS)
 
 
-COBJECTS=$(OBJDIR)/basictextfield.o \
-		 $(OBJDIR)/button.o \
-		 $(OBJDIR)/c.o \
-		 $(OBJDIR)/container.o \
-		 $(OBJDIR)/control.o \
-		 $(OBJDIR)/controlmanager.o \
-		 $(OBJDIR)/cursor.o \
-		 $(OBJDIR)/decoratedscrollbar.o \
-		 $(OBJDIR)/directory.o \
-		 $(OBJDIR)/encoding.o \
-		 $(OBJDIR)/findresults.o \
-		 $(OBJDIR)/file.o \
-		 $(OBJDIR)/filemanager.o \
-		 $(OBJDIR)/findtext.o \
-		 $(OBJDIR)/globalsettings.o \
-		 $(OBJDIR)/goto.o \
-		 $(OBJDIR)/keybindings.o \
-		 $(OBJDIR)/keywords.o \
-		 $(OBJDIR)/label.o \
-		 $(OBJDIR)/language.o \
-		 $(OBJDIR)/logger.o \
-		 $(OBJDIR)/notification.o \
-		 $(OBJDIR)/projectexplorer.o \
-		 $(OBJDIR)/regex.o \
-		 $(OBJDIR)/renderer.o \
-		 $(OBJDIR)/scheduler.o \
-		 $(OBJDIR)/scrollbar.o \
-		 $(OBJDIR)/searchbox.o \
-		 $(OBJDIR)/settings.o \
-		 $(OBJDIR)/simpletextfield.o \
-		 $(OBJDIR)/splitter.o \
-		 $(OBJDIR)/statusbar.o \
-		 $(OBJDIR)/style.o \
-		 $(OBJDIR)/syntaxhighlighter.o \
-		 $(OBJDIR)/tabcontrol.o \
-		 $(OBJDIR)/text.o \
-		 $(OBJDIR)/textbuffer.o \
-		 $(OBJDIR)/textdelta.o \
-		 $(OBJDIR)/textfield.o \
-		 $(OBJDIR)/textfieldcontainer.o \
-		 $(OBJDIR)/textfile.o \
-		 $(OBJDIR)/textiterator.o \
-		 $(OBJDIR)/textline.o \
-		 $(OBJDIR)/textposition.o \
-		 $(OBJDIR)/thread.o \
-		 $(OBJDIR)/togglebutton.o \
-		 $(OBJDIR)/toolbar.o \
-		 $(OBJDIR)/unicode.o \
-		 $(OBJDIR)/utils.o \
-		 $(OBJDIR)/windowfunctions.o \
-		 $(OBJDIR)/workspace.o \
-		 $(OBJDIR)/wrappedtextiterator.o \
-		 $(OBJDIR)/xml.o 
+COBJECTS=$(OBJDIR)/files/directory.o \
+		$(OBJDIR)/files/file.o \
+		$(OBJDIR)/files/filemanager.o \
+		$(OBJDIR)/os/windowfunctions.o \
+		$(OBJDIR)/settings/globalsettings.o \
+		$(OBJDIR)/settings/keybindings.o \
+		$(OBJDIR)/settings/settings.o \
+		$(OBJDIR)/settings/style.o \
+		$(OBJDIR)/settings/workspace.o \
+		$(OBJDIR)/syntax/language.o \
+		$(OBJDIR)/syntax/languages/c.o \
+		$(OBJDIR)/syntax/languages/findresults.o \
+		$(OBJDIR)/syntax/languages/keywords.o \
+		$(OBJDIR)/syntax/languages/xml.o \
+		$(OBJDIR)/syntax/syntaxhighlighter.o \
+		$(OBJDIR)/testing/replaymanager.o \
+		$(OBJDIR)/text/cursor.o \
+		$(OBJDIR)/text/encoding.o \
+		$(OBJDIR)/text/findtextmanager.o \
+		$(OBJDIR)/text/regex.o \
+		$(OBJDIR)/text/text.o \
+		$(OBJDIR)/text/textbuffer.o \
+		$(OBJDIR)/text/textdelta.o \
+		$(OBJDIR)/text/textfile.o \
+		$(OBJDIR)/text/textiterator.o \
+		$(OBJDIR)/text/textline.o \
+		$(OBJDIR)/text/textposition.o \
+		$(OBJDIR)/text/unicode.o \
+		$(OBJDIR)/text/wrappedtextiterator.o \
+		$(OBJDIR)/ui/controls/basic/button.o \
+		$(OBJDIR)/ui/controls/basic/decoratedscrollbar.o \
+		$(OBJDIR)/ui/controls/basic/label.o \
+		$(OBJDIR)/ui/controls/basic/scrollbar.o \
+		$(OBJDIR)/ui/controls/basic/splitter.o \
+		$(OBJDIR)/ui/controls/basic/togglebutton.o \
+		$(OBJDIR)/ui/controls/container.o \
+		$(OBJDIR)/ui/controls/control.o \
+		$(OBJDIR)/ui/controls/controlmanager.o \
+		$(OBJDIR)/ui/controls/main/findtext.o \
+		$(OBJDIR)/ui/controls/main/goto.o \
+		$(OBJDIR)/ui/controls/main/projectexplorer.o \
+		$(OBJDIR)/ui/controls/main/searchbox.o \
+		$(OBJDIR)/ui/controls/main/statusbar.o \
+		$(OBJDIR)/ui/controls/main/statusnotification.o \
+		$(OBJDIR)/ui/controls/main/toolbar.o \
+		$(OBJDIR)/ui/controls/notification.o \
+		$(OBJDIR)/ui/controls/textfield/basictextfield.o \
+		$(OBJDIR)/ui/controls/textfield/simpletextfield.o \
+		$(OBJDIR)/ui/controls/textfield/tabcontrol.o \
+		$(OBJDIR)/ui/controls/textfield/textfield.o \
+		$(OBJDIR)/ui/controls/textfield/textfieldcontainer.o \
+		$(OBJDIR)/ui/renderer.o \
+		$(OBJDIR)/utils/logger.o \
+		$(OBJDIR)/utils/scheduler.o \
+		$(OBJDIR)/utils/thread.o \
+		$(OBJDIR)/utils/utils.o
 
-OBJCOBJECTS=$(OBJDIR)/AppDelegate.o \
-			$(OBJDIR)/PGView.o \
-			$(OBJDIR)/PGWindow.o
+OBJCOBJECTS=$(OBJDIR)/os/macos/AppDelegate.o \
+			$(OBJDIR)/os/macos/main.o \
+			$(OBJDIR)/os/macos/PGView.o \
+			$(OBJDIR)/os/macos/PGWindow.o
 
-RE2OBJECTS=$(OBJDIR)/bitstate.o \
-		   $(OBJDIR)/compile.o \
-		   $(OBJDIR)/dfa.o \
-		   $(OBJDIR)/filtered_re2.o \
-		   $(OBJDIR)/mimics_pcre.o \
-		   $(OBJDIR)/nfa.o \
-		   $(OBJDIR)/onepass.o \
-		   $(OBJDIR)/parse.o \
-		   $(OBJDIR)/perl_groups.o \
-		   $(OBJDIR)/prefilter.o \
-		   $(OBJDIR)/prefilter_tree.o \
-		   $(OBJDIR)/prog.o \
-		   $(OBJDIR)/re2.o \
-		   $(OBJDIR)/regexp.o \
-		   $(OBJDIR)/rune.o \
-		   $(OBJDIR)/set.o \
-		   $(OBJDIR)/simplify.o \
-		   $(OBJDIR)/stringpiece.o \
-		   $(OBJDIR)/strutil.o \
-		   $(OBJDIR)/tostring.o \
-		   $(OBJDIR)/unicode_casefold.o \
-		   $(OBJDIR)/unicode_groups.o
+RE2OBJECTS=$(OBJDIR)/third_party/re2/re2/bitstate.o \
+		$(OBJDIR)/third_party/re2/re2/compile.o \
+		$(OBJDIR)/third_party/re2/re2/dfa.o \
+		$(OBJDIR)/third_party/re2/re2/filtered_re2.o \
+		$(OBJDIR)/third_party/re2/re2/mimics_pcre.o \
+		$(OBJDIR)/third_party/re2/re2/nfa.o \
+		$(OBJDIR)/third_party/re2/re2/onepass.o \
+		$(OBJDIR)/third_party/re2/re2/parse.o \
+		$(OBJDIR)/third_party/re2/re2/perl_groups.o \
+		$(OBJDIR)/third_party/re2/re2/prefilter.o \
+		$(OBJDIR)/third_party/re2/re2/prefilter_tree.o \
+		$(OBJDIR)/third_party/re2/re2/prog.o \
+		$(OBJDIR)/third_party/re2/re2/re2.o \
+		$(OBJDIR)/third_party/re2/re2/regexp.o \
+		$(OBJDIR)/third_party/re2/re2/set.o \
+		$(OBJDIR)/third_party/re2/re2/simplify.o \
+		$(OBJDIR)/third_party/re2/re2/stringpiece.o \
+		$(OBJDIR)/third_party/re2/re2/tostring.o \
+		$(OBJDIR)/third_party/re2/re2/unicode_casefold.o \
+		$(OBJDIR)/third_party/re2/re2/unicode_groups.o \
+		$(OBJDIR)/third_party/re2/util/rune.o \
+		$(OBJDIR)/third_party/re2/util/strutil.o
 
-MAINOBJECTS=$(OBJDIR)/main.o
+#MAINOBJECTS=$(OBJDIR)/main.o
 
-TESTOBJECTS=$(OBJDIR)/testmain.o \
+#TESTOBJECTS=$(OBJDIR)/testmain.o \
 			$(OBJDIR)/tester.o
+
+.PHONY: all clean test create_build_directory rust.app panther.app
 
 all: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(MAINOBJECTS) rust.app panther.app
 
-test: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(TESTOBJECTS) rust.app test_output
+#test: create_build_directory $(RE2OBJECTS) $(COBJECTS) $(OBJCOBJECTS) $(TESTOBJECTS) rust.app test_output
 
 
 clean:
@@ -145,16 +155,19 @@ DEPS = $(shell find $(DEPSDIR) -name "*.d")
 rust.app:
 	cd rust && cargo build $(CARGO_FLAGS) && cd ..
 
-$(OBJDIR)/%.o: third_party/re2/re2/%.cc
-	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),re2,$(subst .o,.cc,$@)) -o $@
-
-$(OBJDIR)/%.o: third_party/re2/util/%.cc
-	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c third_party/re2/$(subst $(OBJDIR),util,$(subst .o,.cc,$@)) -o $@
+$(OBJDIR)/%.o: %.cc
+	mkdir -p $(shell dirname $@)
+	mkdir -p $(subst $(OBJDIR),$(DEPSDIR),$(shell dirname $@))
+	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.cc,$@)) -o $@
 
 $(OBJDIR)/%.o: %.mm
+	mkdir -p $(shell dirname $@)
+	mkdir -p $(subst $(OBJDIR),$(DEPSDIR),$(shell dirname $@))
 	$(CCPP) $(OBJCFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(CPPFLAGS) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.mm,$@)) -o $@
 
 $(OBJDIR)/%.o: %.cpp
+	mkdir -p $(shell dirname $@)
+	mkdir -p $(subst $(OBJDIR),$(DEPSDIR),$(shell dirname $@))
 	$(CCPP) $(CPPFLAGS) -MMD -MF $(subst $(OBJDIR),$(DEPSDIR),$(subst .o,.d,$@)) $(INCLUDE_FLAGS) $(OPTFLAGS) -c $(subst $(OBJDIR)/,,$(subst .o,.cpp,$@)) -o $@
 
 test_output:

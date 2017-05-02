@@ -606,10 +606,12 @@ void PGFindText::FindAll(bool select_first_match) {
 		end_pos.line, end_pos.position,
 		toggle_wrap->IsToggled());
 	
-	size_t match_count = tf.GetFindMatches().size();
-	type = match_count == 0 ? PGStatusWarning : PGStatusInProgress;
-	text = "Found " + std::to_string(match_count) + " matches";
-	this->field->SetValidInput(true);
+	{
+		size_t match_count = tf.GetFindMatches().size();
+		type = match_count == 0 ? PGStatusWarning : PGStatusInProgress;
+		text = "Found " + std::to_string(match_count) + " matches";
+		this->field->SetValidInput(true);
+	}
 
 set_notification:
 	if (!notification) {
