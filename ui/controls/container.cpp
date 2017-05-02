@@ -217,12 +217,14 @@ void PGContainer::OnResize(PGSize old_size, PGSize new_size) {
 }
 
 void PGContainer::LoadWorkspace(nlohmann::json& j) {
+	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		(*it)->LoadWorkspace(j);
 	}
 }
 
 void PGContainer::WriteWorkspace(nlohmann::json& j) {
+	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		(*it)->WriteWorkspace(j);
 	}
