@@ -1058,6 +1058,7 @@ void TextField::InvalidateMinimap() {
 }
 
 void TextField::SetTextFile(std::shared_ptr<TextFile> textfile) {
+	this->prev_loaded = false;
 	vscroll_left = 0;
 	vscroll_speed = 0;
 	if (this->textfile != textfile && this->textfile) {

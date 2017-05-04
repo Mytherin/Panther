@@ -28,6 +28,7 @@ void BasicTextField::Update(void) {
 		this->Invalidate();
 		prev_loaded = loaded;
 	}
+	prev_loaded = loaded;
 	if (!WindowHasFocus(window) || !ControlHasFocus()) {
 		display_carets = false;
 		display_carets_count = 0;
