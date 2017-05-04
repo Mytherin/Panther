@@ -67,7 +67,10 @@ TextFile::TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::stri
 		highlighter = std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter());
 	}
 	unsaved_changes = false;
-	// FIXME: switch to immediate_load for small files
+	if (size < 1048576) {
+		// always immediately load files under 1MB
+		immediate_load = true;
+	}
 	if (!immediate_load) {
 		OpenFileInformation* info = new OpenFileInformation(this, base, size, delete_file);
 		this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)OpenFileAsync, info));
