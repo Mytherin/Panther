@@ -47,8 +47,11 @@ void PGInitializeEncodings() {
 	AddEncoding(PGEncodingUTF32LE, "UTF-32 LE", "UTF-32LE");
 	AddEncoding(PGEncodingUTF32LEBOM, "UTF-32 LE with BOM", "UTF-32LE");
 	AddEncoding(PGEncodingWesternISO8859_1, "ISO-8859-1", "ISO-8859-1");
+	AddEncoding(PGEncodingWesternISO8859_2, "ISO-8859-2", "ISO-8859-2");
+	AddEncoding(PGEncodingWesternISO8859_9, "ISO-8859-9", "ISO-8859-9");
 	AddEncoding(PGEncodingNordicISO8859_10, "ISO-8859-10", "iso-8859_10-1998");
 	AddEncoding(PGEncodingCelticISO8859_14, "ISO-8859-14", "iso-8859_14-1998");
+	AddEncoding(PGEncodingWesternWindows1250, "Windows-1250", "windows-1250");
 	AddEncoding(PGEncodingWesternWindows1252, "Windows-1252", "windows-1252");
 	AddEncoding(PGEncodingBinary, "Binary", "Binary");
 	AddEncoding(PGEncodingUnknown, "Unknown", "Unknown");
@@ -280,6 +283,9 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	ucsdet_close(csd);
 	// convert the predicted encoding
 	PGFileEncoding source_encoding = GetEncodingFromName(encoding);
+	if (source_encoding == PGEncodingUnknown) {
+		source_encoding = PGEncodingBinary;
+	}
 	auto encoder = PGCreateEncoder(source_encoding, PGEncodingUTF8);
 	if (!encoder) {
 		return false;
@@ -314,7 +320,13 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	char* intermediate_buffer = nullptr;
 	lng intermediate_size = 0;
 	if (PGConvertText(encoder, input_text, input_size, output_text, output_size, &intermediate_buffer, &intermediate_size) > 0) {
+		if (intermediate_buffer) {
+			free(intermediate_buffer);
+		}
 		return true;
+	}
+	if (intermediate_buffer) {
+		free(intermediate_buffer);
 	}
 	return false;
 }

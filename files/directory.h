@@ -6,24 +6,23 @@
 
 #include "thread.h"
 
+#include <queue>
+
 #include <rust/globset.h>
 #include <rust/gitignore.h>
 
-typedef void(*PGDirectoryIterCallback)(PGFile f, void* data);
+typedef bool(*PGDirectoryIterCallback)(PGFile f, void* data);
 
 struct PGDirectory {
+	friend class ProjectExplorer;
+
 	std::string path;
-	std::vector<PGDirectory*> directories;
-	std::vector<PGFile> files;
 	lng last_modified_time;
 	bool loaded_files;
 	bool expanded;
+	bool root = false;
 
-	std::unique_ptr<PGMutex> lock;
-
-	PGDirectory(std::string path, bool show_all_files);
-	PGDirectory(std::string path, PGIgnoreGlob glob = nullptr);
-	~PGDirectory();
+	PGDirectory(std::string path);
 
 	void WriteWorkspace(nlohmann::json& j);
 	void LoadWorkspace(nlohmann::json& j);
@@ -36,10 +35,13 @@ struct PGDirectory {
 
 	// Returns the number of files displayed by this directory
 	lng DisplayedFiles();
-	void Update(PGIgnoreGlob glob);
-	void GetFiles(std::vector<PGFile>& files);
-	void ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist);
-	void IterateOverFiles(PGDirectoryIterCallback callback, void* data);
+
+	bool IterateOverFiles(PGDirectoryIterCallback callback, void* data);
+
+	void Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories);
 private:
-	void ActualUpdate(PGIgnoreGlob glob);
+	std::unique_ptr<PGMutex> lock;
+
+	std::vector<std::shared_ptr<PGDirectory>> directories;
+	std::vector<PGFile> files;
 };
