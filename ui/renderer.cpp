@@ -55,16 +55,81 @@ SkPaint* CreateTextPaint() {
 	return textpaint;
 }
 
+std::map<std::string, sk_sp<SkTypeface>> loaded_fonts;
+static sk_sp<SkTypeface> CreateFontFromFile(std::string path) {
+	if (loaded_fonts.count(path) == 0) {
+		loaded_fonts[path] = SkTypeface::MakeFromFile(path.c_str());
+	}
+	return loaded_fonts[path];
+}
+
+struct StyledFont {
+	sk_sp<SkTypeface> normal = nullptr;
+	sk_sp<SkTypeface> bold = nullptr;
+	sk_sp<SkTypeface> italic = nullptr;
+
+	StyledFont() : normal(nullptr), bold(nullptr), italic(nullptr) { }
+};
+
+enum SkiaFontFace {
+	SkiaNormal,
+	SkiaItalic,
+	SkiaBold
+};
+
+std::map<std::string, StyledFont> named_fonts;
+static sk_sp<SkTypeface> CreateFontFromName(std::string name, SkiaFontFace fontface) {
+	if (named_fonts.count(name) == 0) {
+		named_fonts[name] = StyledFont();
+	}
+	StyledFont& font = named_fonts[name];
+	switch (fontface) {
+		case SkiaNormal:
+			if (!font.normal) {
+				auto style = SkFontStyle(SkFontStyle::kLight_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
+				font.normal = SkTypeface::MakeFromName(name.c_str(), style);
+			}
+			return font.normal;
+		case SkiaItalic:
+			if (!font.italic) {
+				auto style = SkFontStyle(SkFontStyle::kLight_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kItalic_Slant);
+				font.italic = SkTypeface::MakeFromName(name.c_str(), style);
+			}
+			return font.italic;
+		case SkiaBold:
+			if (!font.bold) {
+				auto style = SkFontStyle(SkFontStyle::kBold_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
+				font.bold = SkTypeface::MakeFromName(name.c_str(), style);
+			}
+			return font.bold;
+	}
+	assert(0);
+	return nullptr;
+}
+
 static void CreateFallbackFonts(PGFontHandle font) {
 	SkPaint* fallback_paint = CreateTextPaint();
 #ifdef WIN32
-	auto fallback_font = SkTypeface::MakeFromFile("data/fonts/NotoSansHans-Regular.otf");
+	auto fallback_font = CreateFontFromFile("data/fonts/NotoSansHans-Regular.otf");
 #else
-	auto fallback_font = SkTypeface::MakeFromFile("/Users/myth/Programs/Panther/data/fonts/NotoSansHans-Regular.otf");
+	auto fallback_font = CreateFontFromFile("/Users/myth/Programs/Panther/data/fonts/NotoSansHans-Regular.otf");
 #endif
 	assert(fallback_font);
 	fallback_paint->setTypeface(fallback_font);
 	font->fallback_paints.push_back(fallback_paint);
+}
+
+
+PGFontHandle PGCreateFont(PGFontType type) {
+	switch (type) {
+		case PGFontTypeTextField:
+			return PGCreateFont();
+		case PGFontTypeUI:
+			return PGCreateFont("myriad", true, true);
+		case PGFontTypePopup:
+			return PGCreateFont("segoe ui", true, true);
+	}
+	return nullptr;
 }
 
 PGFontHandle PGCreateFont() {
@@ -79,21 +144,17 @@ PGFontHandle PGCreateFont() {
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
 	PGFontHandle font = new PGFont();
 
-	SkFontStyle style(SkFontStyle::kLight_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
-
 	font->normaltext = CreateTextPaint();
-	auto main_font = SkTypeface::MakeFromName(fontname, style);
+	auto main_font = CreateFontFromName(fontname, SkiaNormal);
 	font->normaltext->setTypeface(main_font);
 	if (bold) {
-		style = SkFontStyle(SkFontStyle::kBold_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kUpright_Slant);
 		font->boldtext = CreateTextPaint();
-		main_font = SkTypeface::MakeFromName(fontname, style);
+		main_font = CreateFontFromName(fontname, SkiaBold);
 		font->boldtext->setTypeface(main_font);
 	}
 	if (italic) {
-		style = SkFontStyle(SkFontStyle::kLight_Weight, SkFontStyle::kNormal_Width, SkFontStyle::kItalic_Slant);
 		font->italictext = CreateTextPaint();
-		main_font = SkTypeface::MakeFromName(fontname, style);
+		main_font = CreateFontFromName(fontname, SkiaItalic);
 		font->italictext->setTypeface(main_font);
 	}
 	font->textpaint = font->normaltext;

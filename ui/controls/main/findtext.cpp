@@ -24,7 +24,7 @@ static void UpdateHighlight(Control* c, PGFindText* f) {
 
 PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	PGContainer(window), history_entry(0), field_lines(1), notification(nullptr) {
-	font = PGCreateFont("myriad", false, false);
+	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 

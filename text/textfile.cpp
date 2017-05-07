@@ -9,6 +9,8 @@
 #include "regex.h"
 #include "wrappedtextiterator.h"
 
+#include "style.h"
+
 struct OpenFileInformation {
 	TextFile* textfile;
 	char* base;
@@ -34,8 +36,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 	this->indentation = PGIndentionTabs;
 	this->tabwidth = 4;
 	this->encoding = PGEncodingUTF8;
-	default_font = PGCreateFont();
-	SetTextFontSize(default_font, 10);
+	default_font = PGStyleManager::GetFont(PGFontTypeTextField);
 	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
 	buffers.back()->line_count = 1;
 	buffers.back()->line_lengths.push_back(0);
@@ -59,8 +60,7 @@ TextFile::TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::stri
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
 	this->current_task = nullptr;
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
-	default_font = PGCreateFont();
-	SetTextFontSize(default_font, 10);
+	default_font = PGStyleManager::GetFont(PGFontTypeTextField);
 
 	this->language = PGLanguageManager::GetLanguage(ext);
 	if (this->language) {
@@ -189,9 +189,6 @@ TextFile::~TextFile() {
 	}
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		delete *it;
-	}
-	if (default_font) {
-		PGDestroyFont(default_font);
 	}
 }
 

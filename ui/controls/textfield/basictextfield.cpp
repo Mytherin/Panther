@@ -15,7 +15,7 @@ BasicTextField::BasicTextField(PGWindowHandle window, std::shared_ptr<TextFile> 
 
 	drag_type = PGDragNone;
 
-	textfield_font = PGCreateFont();
+	textfield_font = PGCreateFont(PGFontTypeTextField);
 	SetTextFontSize(textfield_font, 15);
 }
 

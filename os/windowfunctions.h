@@ -368,6 +368,13 @@ enum PGTextStyle {
 	PGTextStyleItalic
 };
 
+enum PGFontType {
+	PGFontTypeTextField,
+	PGFontTypeUI,
+	PGFontTypePopup
+};
+
+PGFontHandle PGCreateFont(PGFontType);
 PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold);
 PGFontHandle PGCreateFont(char* filename);
 PGFontHandle PGCreateFont();

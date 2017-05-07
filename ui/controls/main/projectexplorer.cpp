@@ -14,7 +14,7 @@ PG_CONTROL_INITIALIZE_KEYBINDINGS(ProjectExplorer);
 
 ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	PGContainer(window), dragging_scrollbar(false), renaming_file(-1), scrollbar_offset(0), file_render_height(0), show_all_files(true) {
-	font = PGCreateFont("segoe ui", false, true);
+	font = PGCreateFont(PGFontTypePopup);
 	SetTextFontSize(font, 12);
 
 	lock = std::unique_ptr<PGMutex>(CreateMutex());

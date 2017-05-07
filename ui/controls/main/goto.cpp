@@ -23,8 +23,7 @@ struct ScrollData {
 PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGotoType type) :
 	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), 
 	preview(nullptr), scroll_data(nullptr) {
-	font = PGCreateFont("myriad", false, false);
-	SetTextFontSize(font, 13);
+	font = PGCreateFont(PGFontTypeUI);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 
 	PGScalar button_width = MeasureTextWidth(font, "Definition") + 2 * HPADDING;

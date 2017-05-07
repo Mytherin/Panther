@@ -7,6 +7,7 @@
 #include "textiterator.h"
 
 #include <algorithm>
+#include <style.h>
 
 void Cursor::StoreCursors(nlohmann::json& j, std::vector<PGCursorRange>& cursors) {
 	j["cursors"] = nlohmann::json::array();
@@ -109,7 +110,7 @@ void Cursor::OffsetLine(lng offset) {
 void Cursor::OffsetSelectionLine(lng offset) {
 	PGFontHandle textfield_font;
 	if (!file->textfield) {
-		textfield_font = PGCreateFont();
+		textfield_font = PGStyleManager::GetFont(PGFontTypeTextField);
 		SetTextFontSize(textfield_font, 15);
 	} else {
 		textfield_font = file->textfield->GetTextfieldFont();

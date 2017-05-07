@@ -7,7 +7,7 @@
 
 PGToolbar::PGToolbar(PGWindowHandle window) : 
 	PGContainer(window) {
-	font = PGCreateFont("myriad", false, false);
+	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 
