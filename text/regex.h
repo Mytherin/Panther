@@ -23,7 +23,7 @@ enum PGRegexFlags {
 
 bool PGRegexHasErrors(PGRegexHandle handle);
 std::string PGGetRegexError(PGRegexHandle handle);
-
+std::string PGGetRegexPattern(PGRegexHandle handle);
 PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexFlags);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context, PGDirection direction);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, const char* data, lng size, PGDirection direction);

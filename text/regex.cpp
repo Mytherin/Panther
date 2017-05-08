@@ -9,6 +9,7 @@ using namespace re2;
 
 struct PGRegex {
 	bool is_regex;
+	std::string original_pattern;
 	std::unique_ptr<RE2> regex;
 	std::vector<lng> table;
 	std::vector<lng> reverse_table;
@@ -21,6 +22,7 @@ static PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDi
 
 PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexFlags flags) {
 	PGRegexHandle handle = new PGRegex();
+	handle->original_pattern = pattern;
 	handle->is_regex = is_regex;
 	handle->flags = flags;
 	if (is_regex) {
@@ -58,6 +60,10 @@ PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexF
 		handle->reverse_table = PGPreprocessTextSearch(reverse_needle);
 	}
 	return handle;
+}
+
+std::string PGGetRegexPattern(PGRegexHandle handle) {
+	return handle->original_pattern;
 }
 
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context, PGDirection direction) {

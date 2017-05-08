@@ -46,11 +46,11 @@ void PGStatusNotification::Draw(PGRendererHandle renderer) {
 	}
 	edge_color = PGColor(fill_color.r * 0.8, fill_color.g * 0.8, fill_color.b * 0.8);
 	PGRect rect = PGRect(X(), Y(), this->width, this->height);
+	RenderRectangle(renderer, rect, fill_color, PGDrawStyleFill);
 	if (completion_percentage > 0) {
 		PGRect fill_rect = PGRect(rect.x, rect.y, rect.width * completion_percentage, rect.height);
 		RenderRectangle(renderer, fill_rect, edge_color, PGDrawStyleFill);
 	}
-	RenderRectangle(renderer, rect, fill_color, PGDrawStyleFill);
 	RenderRectangle(renderer, rect, edge_color, PGDrawStyleStroke);
 
 	SetTextColor(font, PGStyleManager::GetColor(PGColorTextFieldText));

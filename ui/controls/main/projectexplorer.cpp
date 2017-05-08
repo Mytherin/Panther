@@ -108,6 +108,9 @@ void ProjectExplorer::UpdateDirectories(bool force) {
 					open_directories.pop();
 					subdir->Update(glob, open_directories);
 				}
+#ifdef PANTHER_DEBUG
+				info->explorer->VerifyDirectories();
+#endif
 				PGDestroyIgnoreGlob(glob);
 			}
 			UnlockMutex(info->explorer->lock.get());
@@ -318,17 +321,17 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 		if (selected) selection++;
 		SetTextStyle(font, PGTextStyleBold);
 
-		if (directory.expanded) {
+		if (directory.IsExpanded()) {
 			RenderTriangle(renderer, PGPoint(x - 8, y + 3 + file_render_height / 2.0f), PGPoint(x - 2, y + 3 + file_render_height / 2.0f), PGPoint(x - 2, y - 3 + file_render_height / 2.0f), PGColor(255, 255, 255), PGDrawStyleFill);
 		} else {
 			RenderTriangle(renderer, PGPoint(x - 8, y - 4 + file_render_height / 2.0f), PGPoint(x - 8, y + 4 + file_render_height / 2.0f), PGPoint(x - 2, y + file_render_height / 2.0f), PGColor(255, 255, 255), PGDrawStyleFill);
 		}
-		PGBitmapHandle image = directory.expanded ? PGStyleManager::GetImage("folder_open.png") : PGStyleManager::GetImage("folder_closed.png");
+		PGBitmapHandle image = directory.IsExpanded() ? PGStyleManager::GetImage("folder_open.png") : PGStyleManager::GetImage("folder_closed.png");
 		DrawFile(renderer, image, PGFile(directory.path).Filename(), x, y, selected, highlighted_entry == current_offset);
 		SetTextStyle(font, PGTextStyleNormal);
 	}
 	current_offset++;
-	if (directory.loaded_files && directory.expanded) {
+	if (directory.loaded_files && directory.IsExpanded()) {
 		PGScalar start_x = x + FOLDER_IDENT / 2.0f;
 		PGScalar start_y = y;
 		x += FOLDER_IDENT;
@@ -497,7 +500,7 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 			PGPopupMenuInsertEntry(menu, info, [](Control* control, PGPopupInformation* info) {
 				OpenFolderInTerminal(info->data);
 			});
-			if (directory && directory->root) {
+			if (directory && !directory->parent) {
 				PGPopupMenuInsertSeparator(menu);
 				info.text = "Remove Folder From Project";
 				info.pdata = directory;
@@ -592,7 +595,7 @@ bool ProjectExplorer::RevealFile(std::string full_name, bool search_only_expande
 			this->selected_files.clear();
 			this->selected_files.push_back(index + entry);
 			ScrollToFile(index + entry);
-			(*it)->expanded = true;
+			(*it)->SetExpanded(true);
 			this->Invalidate();
 			return true;
 		}
@@ -629,11 +632,12 @@ void ProjectExplorer::AddDirectory(std::string directory) {
 		entries += (*it)->DisplayedFiles();
 	}
 
-	auto dir = std::shared_ptr<PGDirectory>(new PGDirectory(directory));
-	//dir->Update(nullptr, 3);
+	auto dir = std::shared_ptr<PGDirectory>(new PGDirectory(directory, nullptr));
 	if (dir) {
-		dir->expanded = true;
-		dir->root = true;
+		dir->SetExpanded(true);
+#ifdef PANTHER_DEBUG
+		VerifyDirectories();
+#endif
 		lng displayed_files = this->TotalFiles();
 		this->update_task = nullptr;
 		LockMutex(lock.get());
@@ -683,7 +687,10 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 		if (directory && click) {
 			// (un)expand the selected directory
 			lng current_count = directory->DisplayedFiles();
-			directory->expanded = !directory->expanded;
+			directory->SetExpanded(!directory->IsExpanded());
+#ifdef PANTHER_DEBUG
+			VerifyDirectories();
+#endif
 			lng new_count = directory->DisplayedFiles();
 			// update any subsequent selections because they now point to a different location
 			for (lng i = 0; i < selected_files.size(); i++) {
@@ -779,7 +786,7 @@ void ProjectExplorer::LoadWorkspace(nlohmann::json& j) {
 				nlohmann::json& dir = *it;
 				if (dir.is_object() && dir.count("directory") > 0) {
 					std::string path = dir["directory"];
-					auto directory = std::shared_ptr<PGDirectory>(new PGDirectory(path));
+					auto directory = std::shared_ptr<PGDirectory>(new PGDirectory(path, nullptr));
 					if (directory) {
 						if (dir.count("expansions") > 0 && dir["expansions"].is_object()) {
 							directory->LoadWorkspace(dir["expansions"]);
@@ -843,9 +850,40 @@ void ProjectExplorer::IterateOverFiles(PGDirectoryIterCallback callback, void* d
 	LockMutex(lock.get());
 	std::vector<std::shared_ptr<PGDirectory>> dirs = this->directories;
 	UnlockMutex(lock.get());
+	lng filenumber = 0;
+	lng total_files = 0;
 	for (auto it = dirs.begin(); it != dirs.end(); it++) {
-		if (!((*it)->IterateOverFiles(callback, data))) {
+		total_files += (*it)->total_files;
+	}
+	for (auto it = dirs.begin(); it != dirs.end(); it++) {
+		if (!((*it)->IterateOverFiles(callback, data, filenumber, total_files))) {
 			return;
 		}
 	}
 }
+
+#ifdef PANTHER_DEBUG
+void ProjectExplorer::VerifyDirectory(PGDirectory* dir, lng& files, lng& displayed_files) {
+	files = 0;
+	displayed_files = 0;
+	for (auto it = dir->directories.begin(); it != dir->directories.end(); it++) {
+		lng _total_files = 0, _displayed_files = 0;
+		VerifyDirectory(it->get(), _total_files, _displayed_files);
+		assert((*it)->displayed_files == _displayed_files);
+		assert((*it)->total_files == _total_files);
+		files += _total_files;
+		displayed_files += (*it)->expanded ? _displayed_files : 0;
+	}
+	files += dir->files.size();
+	displayed_files += dir->files.size() + dir->directories.size();
+}
+
+void ProjectExplorer::VerifyDirectories() {
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		lng total_files = 0, displayed_files = 0;
+		VerifyDirectory(it->get(), total_files, displayed_files);
+		assert((*it)->displayed_files == displayed_files);
+		assert((*it)->total_files == total_files);
+	}
+}
+#endif

@@ -3218,9 +3218,12 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 }
 
 #include "projectexplorer.h"
+#include "controlmanager.h"
+#include "statusbar.h"
 
 struct FindAllInformation {
 	ProjectExplorer* explorer;
+	PGStatusNotification* notification;
 	TextFile* textfile;
 	PGRegexHandle regex_handle;
 	PGGlobSet whitelist;
@@ -3236,14 +3239,19 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 	info->context_lines = context_lines;
 	info->whitelist = whitelist;
 	info->explorer = explorer;
+	info->notification = GetControlManager(explorer)->statusbar->AddNotification(
+		PGStatusInProgress, 
+		"Finding \"" + PGGetRegexPattern(regex_handle) + "\" In Files", "Finding in file...", true);
+
 
 	this->find_task = std::shared_ptr<Task>(new Task([](std::shared_ptr<Task> task, void* data) {
 		FindAllInformation* info = (FindAllInformation*)data;
-		info->explorer->IterateOverFiles([](PGFile f, void* data) -> bool {
+		info->explorer->IterateOverFiles([](PGFile f, void* data, lng filenr, lng total_files) -> bool {
 			FindAllInformation* info = (FindAllInformation*)data;
 			if (info->whitelist && !PGGlobSetMatches(info->whitelist, f.path.c_str())) {
 				return true;
 			}
+			info->notification->SetProgress((double)filenr / (double) total_files);
 
 			lng size;
 			PGFileError error = PGFileSuccess;
@@ -3270,6 +3278,9 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 		}
 		if (info->whitelist) {
 			PGDestroyGlobSet(info->whitelist);
+		}
+		if (info->notification) {
+			GetControlManager(info->explorer)->statusbar->RemoveNotification(info->notification);
 		}
 		delete info;
 	}, info));

@@ -4,8 +4,9 @@
 
 #include <rust/gitignore.h>
 
-PGDirectory::PGDirectory(std::string path) :
-	path(path), last_modified_time(-1), loaded_files(false), expanded(false), root(false) {
+PGDirectory::PGDirectory(std::string path, PGDirectory* parent) :
+	path(path), last_modified_time(-1), loaded_files(false), expanded(false),
+	displayed_files(0), total_files(0), parent(parent) {
 	this->lock = std::unique_ptr<PGMutex>(CreateMutex());
 }
 
@@ -93,20 +94,16 @@ void PGDirectory::CollapseAll() {
 		(*it)->CollapseAll();
 	}
 	UnlockMutex(lock.get());
-	this->expanded = false;
+	this->SetExpanded(false);
 }
 
-lng PGDirectory::DisplayedFiles() {
-	if (expanded) {
-		lng recursive_files = 1;
-		LockMutex(lock.get());
-		for (auto it = directories.begin(); it != directories.end(); it++) {
-			recursive_files += (*it)->DisplayedFiles();
+void PGDirectory::SetExpanded(bool expand) {
+	if (this->expanded != expand) {
+		this->expanded = expand;
+		if (parent) {
+			lng file_diff = expand ? displayed_files : -displayed_files;
+			parent->AddDisplayedFiles(file_diff);
 		}
-		UnlockMutex(lock.get());
-		return recursive_files + files.size();
-	} else {
-		return 1;
 	}
 }
 
@@ -135,18 +132,19 @@ void PGDirectory::LoadWorkspace(nlohmann::json& j) {
 	}
 }
 
-bool PGDirectory::IterateOverFiles(PGDirectoryIterCallback callback, void* data) {
+bool PGDirectory::IterateOverFiles(PGDirectoryIterCallback callback, void* data, lng& filenr, lng total_files) {
 	LockMutex(lock.get());
 	auto files = std::vector<PGFile>(this->files.begin(), this->files.end());
 	auto directories = std::vector<std::shared_ptr<PGDirectory>>(this->directories.begin(), this->directories.end());
 	UnlockMutex(lock.get());
 	for (auto it = files.begin(); it != files.end(); it++) {
-		if (!callback(PGFile(PGPathJoin(this->path, it->path)), data)) {
+		filenr++;
+		if (!callback(PGFile(PGPathJoin(this->path, it->path)), data, filenr, total_files)) {
 			return false;
 		}
 	}
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		if (!(*it)->IterateOverFiles(callback, data)) {
+		if (!(*it)->IterateOverFiles(callback, data, filenr, total_files)) {
 			return false;
 		}
 	}
@@ -162,15 +160,19 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 
 	LockMutex(lock.get());
 
+	lng previous_filecount = files.size();
 	files.clear();
 	std::vector<PGFile> dirs;
 	std::vector<std::shared_ptr<PGDirectory>> current_directories;
 	if (PGGetDirectoryFiles(path, dirs, files, glob) != PGDirectorySuccess) {
 		goto unlock;
 	}
+	lng difference = files.size() - previous_filecount;
+	this->AddFiles(difference);
 
 	// for each directory, check if it is already present
 	// if it is not we add it
+	lng previous_dircount = directories.size();
 	current_directories = std::vector<std::shared_ptr<PGDirectory>>(directories.begin(), directories.end());
 	for (auto it = dirs.begin(); it != dirs.end(); it++) {
 		std::string path = PGPathJoin(this->path, it->path);
@@ -185,7 +187,7 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 		}
 		if (!found) {
 			// if the directory is not known add it and scan it
-			auto new_directory = std::shared_ptr<PGDirectory>(new PGDirectory(path));
+			auto new_directory = std::shared_ptr<PGDirectory>(new PGDirectory(path, this));
 			directories.push_back(new_directory);
 			open_directories.push(new_directory);
 		}
@@ -194,7 +196,27 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 	for (auto it2 = current_directories.begin(); it2 != current_directories.end(); it2++) {
 		directories.erase(std::find(directories.begin(), directories.end(), *it2));
 	}
+	lng directory_difference = directories.size() - previous_dircount;
+	this->AddDisplayedFiles(difference + directory_difference);
 	loaded_files = true;
 unlock:
 	UnlockMutex(lock.get());
+}
+
+void PGDirectory::AddFiles(lng files) {
+	if (files == 0) return;
+
+	this->total_files += files;
+	if (parent) {
+		parent->AddFiles(files);
+	}
+}
+
+void PGDirectory::AddDisplayedFiles(lng files) {
+	if (files == 0) return;
+
+	this->displayed_files += files;
+	if (this->expanded && parent) {
+		parent->displayed_files += files;
+	}
 }

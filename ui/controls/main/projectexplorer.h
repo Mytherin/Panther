@@ -74,6 +74,12 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
 private:
+#ifdef PANTHER_DEBUG
+	static void VerifyDirectory(PGDirectory* dir, lng& files, lng& displayed_files);
+	// verify that the counters (total_files, displayed_files) for all directories are correct
+	void VerifyDirectories();
+#endif
+
 	void UpdateDirectories(bool force);
 
 	std::shared_ptr<Task> update_task;
