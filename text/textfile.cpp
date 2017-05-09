@@ -77,7 +77,6 @@ TextFile::TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::stri
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
 		OpenFile(base, size, delete_file);
-		is_loaded = true;
 	}
 }
 
@@ -371,7 +370,6 @@ void TextFile::Unlock(PGLockType type) {
 	}
 }
 
-
 void TextFile::_InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
 	char* line_start = ptr + prev;
 	lng line_size = (lng)((bytes - prev) - offset);
@@ -436,7 +434,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		bytes = 3;
 	}
 
-	while (ptr[bytes]) {
+	while (bytes < size) {
 		int character_offset = utf8_character_length(ptr[bytes]);
 		if (character_offset <= 0) {
 			if (delete_file) {

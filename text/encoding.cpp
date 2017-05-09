@@ -139,6 +139,45 @@ lng PGConvertText(PGEncoderHandle encoder, std::string input, char** output, lng
 	return PGConvertText(encoder, input.c_str(), input.size(), output, output_size, intermediate_buffer, intermediate_size);
 }
 
+static inline bool is_hex(char value) {
+	return (value > '0' && value < '9') ||
+		(value > 'A' && value < 'F') ||
+		(value > 'a' && value < 'f');
+}
+
+static inline char hex2byte(char value) {
+	if (value > '0' && value < '9') {
+		return value - '0';
+	}
+	if (value > 'A' && value < 'F') {
+		return value - 'A' + 10;
+	}
+	if (value > 'a' && value < 'f') {
+		return value - 'a' + 10;
+	}
+	assert(0);
+	return '\0';
+}
+
+static bool hex2byte(size_t& input_position, const char* input, size_t input_size, char* output_buffer) {
+	// first skip all non-hex bytes
+	while (input_position < input_size && !is_hex(input[input_position])) input_position++;
+	// now read all the hex bytes
+	lng start = input_position;
+	while (input_position < input_size && is_hex(input[input_position])) input_position++;
+	if (input_position >= input_size) return false;
+	assert(input_position > start);
+	size_t multiplier = 1;
+	size_t value = 0;
+	for (lng i = input_position - 1; i >= start; i--) {
+		value += hex2byte(input[i]) * multiplier;
+		multiplier *= 16;
+	}
+	if (value > 255) value = 0;
+	*output_buffer = value;
+	return true;
+}
+
 lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_size, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
 	if (encoder->source_encoding == PGEncodingBinary || encoder->target_encoding == PGEncodingBinary) {
 		if (encoder->source_encoding == PGEncodingBinary) {
@@ -150,7 +189,7 @@ lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_
 			for (lng i = 0; i < input_size; i++) {
 				output_buffer[++pos] = hex[(input_text[i] >> 4) & 0xF];
 				output_buffer[++pos] = hex[input_text[i] & 0xF];
-				output_buffer[++pos] = ' ';
+				output_buffer[++pos] = (i + 1) % 16 == 0 ? '\n' : ' ';
 			}
 			output_buffer[pos] = '\0';
 			assert(pos < output_buffer_size);
@@ -159,7 +198,17 @@ lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_
 			return output_buffer_size;
 		} else if (encoder->target_encoding == PGEncodingBinary) {
 			assert(encoder->source_encoding == PGEncodingUTF8);
-			assert(0);
+			lng output_buffer_size = input_size / 2;
+			char* output_buffer = (char*)malloc(output_buffer_size);
+			size_t input_position = 0, output_position = 0;
+			while (hex2byte(input_position, input_text, input_size, output_buffer + output_position)) {
+				output_position++;
+				assert(output_position < output_buffer_size);
+			}
+			output_buffer_size = output_position;
+			*output = output_buffer;
+			*output_size = output_buffer_size;
+			return output_buffer_size;
 		}
 	}
 
@@ -310,8 +359,7 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	// look for common file-headers, and check for null-bytes
 	PGFileEncoding source_encoding = GuessEncoding(input_text, sample_size);
 	if (source_encoding == PGEncodingUTF8 ||
-		source_encoding == PGEncodingUTF8BOM ||
-		source_encoding == PGEncodingBinary) {
+		source_encoding == PGEncodingUTF8BOM) {
 		// for UTF-8 or Binary files we do not perform any conversion
 		*result_encoding = source_encoding;
 		*output_text = input_text;
@@ -364,8 +412,7 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	}
 	*result_encoding = source_encoding;
 	if (source_encoding == PGEncodingUTF8 ||
-		source_encoding == PGEncodingUTF8BOM ||
-		source_encoding == PGEncodingBinary) {
+		source_encoding == PGEncodingUTF8BOM) {
 		// source encoding is UTF8: just directly return the input text
 		*output_text = input_text;
 		*output_size = input_size;
