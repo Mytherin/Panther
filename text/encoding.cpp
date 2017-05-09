@@ -236,60 +236,110 @@ lng PGConvertText(std::string input, char** output, PGFileEncoding source_encodi
 
 #define MAXIMUM_TEXT_SAMPLE 1024
 
+PGFileEncoding GuessEncoding(char* input_text, size_t input_size) {
+	if (input_size == 0) {
+		// default encoding is UTF-8
+		return PGEncodingUTF8BOM;
+	}
+
+	// check for common known bit patterns
+
+	// application/postscript
+	if (input_size > 10 && !memcmp(input_text, "%!PS-Adobe-", 11))
+		return PGEncodingUnknown;
+
+	// image/png
+	if (input_size > 7 && !memcmp(input_text, "\x89PNG\x0D\x0A\x1A\x0A", 8))
+		return PGEncodingBinary;
+
+	// image/gif
+	if (input_size > 5) {
+		if (!memcmp(input_text, "GIF87a", 6))
+			return PGEncodingBinary;
+		if (!memcmp(input_text, "GIF89a", 6))
+			return PGEncodingBinary;
+	}
+
+	// image/jpeg
+	if (input_size > 2 && !memcmp(input_text, "\xFF\xD8\xFF", 3))
+		return PGEncodingBinary;
+
+	if (input_size > 4 && !memcmp(input_text, "%PDF-", 5))
+		return PGEncodingBinary;
+
+	if (input_size > 2 && !memcmp(input_text, "\xef\xbb\xbf", 3)) {
+		// UTF-8 with BOM
+		return PGEncodingUTF8BOM;
+	}
+	if (input_size > 1) {
+		// UTF-16BE
+		if (!memcmp(input_text, "\xfe\xff", 2))
+			return PGEncodingUTF16BE;
+		// UTF-16LE
+		if (!memcmp(input_text, "\xff\xfe", 2))
+			return PGEncodingUTF16LE;
+	}
+
+	if (input_size > 3) {
+		// UTF-32BE
+		if (!memcmp(input_text, "\0\0\xfe\xff", 4))
+			return PGEncodingUTF32BE;
+
+		// UTF-32LE
+		if (!memcmp(input_text, "\xff\xfe\0\0", 4))
+			return PGEncodingUTF32LE;
+	}
+
+	// if no common headers are found, check for NULL bytes in the data
+	// if a NULL byte is present we assume the text is binary
+	// otherwise we guess the encoding using ICU
+	return !!memchr(input_text, 0, input_size) ? PGEncodingBinary : PGEncodingUnknown;
+}
+
 bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text, lng* output_size, PGFileEncoding* result_encoding) {
 	UCharsetDetector* csd = nullptr;
 	const UCharsetMatch *ucm = nullptr;
 	UErrorCode status = U_ZERO_ERROR;
-
-	if (((unsigned char*)input_text)[0] == 0xEF &&
-		((unsigned char*)input_text)[1] == 0xBB &&
-		((unsigned char*)input_text)[2] == 0xBF) {
-		// UTF8 BOM, use UTF8
-		*result_encoding = PGEncodingUTF8;
-		*output_text = input_text;
-		*output_size = input_size;
-		return true;
-	}
-
-	if (input_size == 0) {
-		// empty file, use UTF8
-		*result_encoding = PGEncodingUTF8;
-		*output_text = input_text;
-		*output_size = input_size;
-		return true;
-	}
 
 	*output_text = nullptr;
 	*output_size = 0;
 
 	// try to determine the encoding from a sample of the text
 	lng sample_size = std::min((size_t)MAXIMUM_TEXT_SAMPLE, input_size);
-	csd = ucsdet_open(&status);
-	if (U_FAILURE(status)) {
-		return false;
+	// first use our own heuristics
+	// look for common file-headers, and check for null-bytes
+	PGFileEncoding source_encoding = GuessEncoding(input_text, sample_size);
+	if (source_encoding == PGEncodingUTF8 ||
+		source_encoding == PGEncodingUTF8BOM ||
+		source_encoding == PGEncodingBinary) {
+		// for UTF-8 or Binary files we do not perform any conversion
+		*result_encoding = source_encoding;
+		*output_text = input_text;
+		*output_size = input_size;
+		return true;
+	} else if (source_encoding == PGEncodingUnknown) {
+		// if we still have no idea, use ICU to guess
+		csd = ucsdet_open(&status);
+		if (U_FAILURE(status)) {
+			return false;
+		}
+		ucsdet_setText(csd, input_text, sample_size, &status);
+		if (U_FAILURE(status)) {
+			return false;
+		}
+		ucm = ucsdet_detect(csd, &status);
+		if (U_FAILURE(status)) {
+			return false;
+		}
+		const char* encoding = ucsdet_getName(ucm, &status);
+		if (U_FAILURE(status) || encoding == nullptr) {
+			return false;
+		}
+		ucsdet_close(csd);
+		// convert the predicted encoding
+		source_encoding = GetEncodingFromName(encoding);
 	}
-	ucsdet_setText(csd, input_text, sample_size, &status);
-	if (U_FAILURE(status)) {
-		return false;
-	}
-	ucm = ucsdet_detect(csd, &status);
-	if (U_FAILURE(status)) {
-		return false;
-	}
-	const char* encoding = ucsdet_getName(ucm, &status);
-	if (U_FAILURE(status) || encoding == nullptr) {
-		return false;
-	}
-	ucsdet_close(csd);
-	// convert the predicted encoding
-	PGFileEncoding source_encoding = GetEncodingFromName(encoding);
-	if (source_encoding == PGEncodingUnknown) {
-		source_encoding = PGEncodingBinary;
-	}
-	auto encoder = PGCreateEncoder(source_encoding, PGEncodingUTF8);
-	if (!encoder) {
-		return false;
-	}
+
 	if (source_encoding == PGEncodingWesternISO8859_1) {
 		// ICU likes to assign ascii text to ISO-8859-1
 		// we prefer UTF-8 for ASCII encoding
@@ -308,15 +358,25 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 			source_encoding = PGEncodingUTF8;
 		}
 	}
-
+	if (source_encoding == PGEncodingUnknown) {
+		// if we don't recognize ICU's encoding, we just use Binary Encoding
+		source_encoding = PGEncodingBinary;
+	}
 	*result_encoding = source_encoding;
-	if (source_encoding == PGEncodingUTF8) {
+	if (source_encoding == PGEncodingUTF8 ||
+		source_encoding == PGEncodingUTF8BOM ||
+		source_encoding == PGEncodingBinary) {
 		// source encoding is UTF8: just directly return the input text
 		*output_text = input_text;
 		*output_size = input_size;
 		return true;
 	}
+
 	// if we do not have UTF8 we first convert from the (predicted) source encoding to UTF8
+	auto encoder = PGCreateEncoder(source_encoding, PGEncodingUTF8);
+	if (!encoder) {
+		return false;
+	}
 	char* intermediate_buffer = nullptr;
 	lng intermediate_size = 0;
 	if (PGConvertText(encoder, input_text, input_size, output_text, output_size, &intermediate_buffer, &intermediate_size) > 0) {
