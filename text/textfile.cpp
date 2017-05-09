@@ -437,12 +437,14 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	while (bytes < size) {
 		int character_offset = utf8_character_length(ptr[bytes]);
 		if (character_offset <= 0) {
+			character_offset = 1;
+			/*
 			if (delete_file) {
 				panther::DestroyFileContents(base);
 			}
 			bytes = -1;
 			UnlockMutex(text_lock.get());
-			return;
+			return;*/
 		}
 		if (ptr[bytes] == '\n') {
 			// Unix line ending: \n

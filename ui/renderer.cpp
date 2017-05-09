@@ -313,7 +313,7 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 	size_t i = 0;
 	for (; i < len; ) {
 		int offset = utf8_character_length(text[i]);
-		if (offset > 1) {
+		if (offset != 1) {
 			// for special unicode characters, we check if the main font can render the character
 			if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
 				// if not, we first render the previous characters using the main font
@@ -321,20 +321,28 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 					renderer->canvas->drawText(text + position, i - position, x, y + font->text_offset, *font->textpaint);
 					x += font->textpaint->measureText(text + position, i - position);
 				}
+				bool skip_search = false;
+				if (offset < 0) {
+					offset = 1;
+					skip_search = true;
+				}
 				position = i + offset;
-				// then we switch to a fallback font to render this character
 				bool found_fallback = false;
-				for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
-					assert((*it)->getTypeface());
-					if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
-						renderer->canvas->drawText(text + i, offset, x, y + font->text_offset, **it);
-						x += (*it)->measureText(text + i, offset);
-						found_fallback = true;
-						break;
+				if (skip_search) {
+					// we try to switch to a fallback font to render this character
+					for (auto it = font->fallback_paints.begin(); it != font->fallback_paints.end(); it++) {
+						assert((*it)->getTypeface());
+						if ((*it)->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) != 0) {
+							renderer->canvas->drawText(text + i, offset, x, y + font->text_offset, **it);
+							x += (*it)->measureText(text + i, offset);
+							found_fallback = true;
+							break;
+						}
 					}
 				}
 				if (!found_fallback) {
-					renderer->canvas->drawText("?", 1, x, y + font->text_offset, *font->textpaint);
+					// if we don't have a fallback font we render the ? character
+					renderer->canvas->drawText("\xef\xbf\xbd", 3, x, y + font->text_offset, *font->textpaint);
 					x += font->character_width;
 				}
 				x_offset = 0;
@@ -358,7 +366,6 @@ void RenderText(PGRendererHandle renderer, PGFontHandle font, const char *text, 
 				x_offset += font->character_width;
 			}
 		}
-		assert(offset > 0); // invalid UTF8 
 		i += offset;
 		if (x + x_offset >= max_position)
 			break;
@@ -475,7 +482,7 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 				} else {
 					text_size += font->character_width;
 				}
-			} else {
+			} else if (offset > 0) {
 				if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
 					// if the main font does not support the current glyph, look into the fallback fonts
 					bool found_fallback = false;
@@ -491,6 +498,9 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 				} else {
 					text_size += font->character_width;
 				}
+			} else {
+				text_size += font->textpaint->measureText("\xef\xbf\xbd", 1);
+				offset = 1;
 			}
 			if (text_size >= xoffset) {
 				if (!found_initial_character) {
@@ -501,7 +511,6 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 					cumulative_widths.push_back(current_width - xoffset);
 				}
 			}
-			assert(offset > 0);
 			i += offset;
 		}
 	} else {
@@ -530,7 +539,7 @@ std::vector<PGScalar> CumulativeCharacterWidths(PGFontHandle font, const char* t
 						}
 					}
 					if (!found_fallback)
-						text_size += font->textpaint->measureText("?", 1);
+						text_size += font->textpaint->measureText("\xef\xbf\xbd", 3);
 				} else {
 					text_size += font->textpaint->measureText(text + i, offset);
 				}
@@ -567,7 +576,7 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 				} else {
 					regular_elements++;
 				}
-			} else {
+			} else if (offset > 0) {
 				if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
 					// if the main font does not support the current glyph, look into the fallback fonts
 					bool found_fallback = false;
@@ -584,8 +593,10 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 				} else {
 					regular_elements++;
 				}
+			} else {
+				text_size += font->textpaint->measureText("\xef\xbf\xbd", 1);
+				offset = 1;
 			}
-			assert(offset > 0);
 			i += offset;
 		}
 		text_size += regular_elements * font->character_width;
@@ -599,7 +610,7 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 				} else {
 					text_size += font->textpaint->measureText(text + i, 1);
 				}
-			} else {
+			} else if (offset > 0) {
 				if (font->textpaint->getTypeface()->charsToGlyphs(text + i, SkTypeface::kUTF8_Encoding, nullptr, 1) == 0) {
 					// if the main font does not support the current glyph, look into the fallback fonts
 					bool found_fallback = false;
@@ -612,12 +623,14 @@ PGScalar MeasureTextWidth(PGFontHandle font, const char* text, size_t length) {
 						}
 					}
 					if (!found_fallback)
-						text_size += font->textpaint->measureText("?", 1);
+						text_size += font->textpaint->measureText("\xef\xbf\xbd", 3);
 				} else {
 					text_size += font->textpaint->measureText(text + i, offset);
 				}
+			} else {
+				text_size += font->textpaint->measureText("\xef\xbf\xbd", 1);
+				offset = 1;
 			}
-			assert(offset > 0);
 			i += offset;
 		}
 	}

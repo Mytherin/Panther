@@ -11,7 +11,6 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 
-
 	std::vector<std::string> image_paths;
 	image_paths.push_back("data/icons/undo.png");
 	image_paths.push_back("data/icons/redo.png");
