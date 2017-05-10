@@ -23,8 +23,6 @@ public:
 
 	void Draw(PGRendererHandle);
 private:
-	Control* parent;
-
 	PGFontHandle font;
 	std::string text;
 	std::string tooltip;

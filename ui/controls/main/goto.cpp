@@ -23,8 +23,7 @@ struct ScrollData {
 PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGotoType type) :
 	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), 
 	preview(nullptr), scroll_data(nullptr) {
-	font = PGCreateFont("myriad", false, false);
-	SetTextFontSize(font, 13);
+	font = PGCreateFont(PGFontTypeUI);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 
 	PGScalar button_width = MeasureTextWidth(font, "Definition") + 2 * HPADDING;
@@ -200,6 +199,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			}
 			ControlManager* cm = GetControlManager(this);
 			ProjectExplorer* explorer = cm->active_projectexplorer;
+			/*
 			if (explorer) {
 				// add files from currently open directories
 				auto directories = explorer->GetDirectories();
@@ -243,7 +243,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 					}
 				}
 			}
-
+			*/
 			this->box = new SearchBox(this->window, entries);
 			box->SetSize(PGSize(this->width, this->height - (goto_command->y + goto_command->height)));
 			box->SetPosition(PGPoint(0, goto_command->y + goto_command->height));

@@ -62,9 +62,6 @@ public:
 	void RemoveDirectory(lng index);
 	void RemoveDirectory(PGDirectory* directory);
 
-	std::vector<PGFile> GetFiles();
-	std::vector<PGDirectory*>& GetDirectories() { return directories; }
-
 	PG_CONTROL_KEYBINDINGS;
 
 	void Undo();
@@ -73,9 +70,19 @@ public:
 	void ToggleShowAllFiles();
 	void SetShowAllFiles(bool show_all_files);
 
+	void IterateOverFiles(PGDirectoryIterCallback callback, void* data);
+
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
 private:
-	static void UpdateAsync(std::shared_ptr<Task> task, void* data);
+#ifdef PANTHER_DEBUG
+	static void VerifyDirectory(PGDirectory* dir, lng& files, lng& displayed_files);
+	// verify that the counters (total_files, displayed_files) for all directories are correct
+	void VerifyDirectories();
+#endif
+
+	void UpdateDirectories(bool force);
+
+	std::shared_ptr<Task> update_task;
 
 	void Undo(FileOperationDelta*);
 	void Redo(FileOperationDelta*);
@@ -100,7 +107,7 @@ private:
 	void FinishRename(bool success, bool update_selection);
 	void ActuallyPerformRename(std::string old_name, std::string new_name, bool update_selection);
 
-	std::vector<PGDirectory*> directories;
+	std::vector<std::shared_ptr<PGDirectory>> directories;
 
 	bool dragging_scrollbar;
 	double scrollbar_offset = 0;
@@ -111,6 +118,8 @@ private:
 	ToggleButton* show_all_files_toggle;
 
 	std::vector<lng> selected_files;
+
+	std::unique_ptr<PGMutex> lock;
 	
 	enum PGSelectFileType {
 		PGSelectSingleFile,

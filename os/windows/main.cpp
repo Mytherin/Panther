@@ -940,7 +940,7 @@ static PGPopupMenuHandle _create_menu(PGWindowHandle window, Control* control, H
 	handle->menu = hmenu;
 	handle->window = window;
 	handle->control = control;
-	handle->font = PGCreateFont("segoe ui", false, false);
+	handle->font = PGCreateFont(PGFontTypePopup);
 	handle->text_size = 0;
 	handle->hotkey_size = 0;
 	handle->is_popupmenu = is_popupmenu;

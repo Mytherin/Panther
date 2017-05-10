@@ -71,8 +71,13 @@ public:
 
 	static PGBitmapHandle GetImage(std::string path) { return GetInstance()->_GetImage(path); }
 	static PGColor GetColor(PGColorType type, PGStyle* extra_style = nullptr) { return GetInstance()->_GetColor(type, extra_style); }
+	static PGFontHandle GetFont(PGFontType);
 private:
 	PGStyleManager();
+
+	PGFontHandle textfield_font;
+	PGFontHandle menu_font;
+	PGFontHandle popup_font;
 
 	PGBitmapHandle _GetImage(std::string path);
 	PGColor _GetColor(PGColorType type, PGStyle* extra_style);

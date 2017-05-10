@@ -11,7 +11,7 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bo
 	PGContainer(window), selected_entry(-1), entries(entries),
 	scrollbar(nullptr), scroll_position(0), render_subtitles(render_subtitles),
 	close_function(nullptr), close_data(nullptr) {
-	font = PGCreateFont("myriad", false, true);
+	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 

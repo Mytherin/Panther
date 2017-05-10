@@ -9,6 +9,8 @@
 #include "regex.h"
 #include "wrappedtextiterator.h"
 
+#include "style.h"
+
 struct OpenFileInformation {
 	TextFile* textfile;
 	char* base;
@@ -34,8 +36,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 	this->indentation = PGIndentionTabs;
 	this->tabwidth = 4;
 	this->encoding = PGEncodingUTF8;
-	default_font = PGCreateFont();
-	SetTextFontSize(default_font, 10);
+	default_font = PGStyleManager::GetFont(PGFontTypeTextField);
 	this->buffers.push_back(new PGTextBuffer("\n", 1, 0));
 	buffers.back()->line_count = 1;
 	buffers.back()->line_lengths.push_back(0);
@@ -51,7 +52,7 @@ TextFile::TextFile(BasicTextField* textfield) :
 TextFile::TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
 	textfield(textfield), highlighter(nullptr), path(path), wordwrap(false), default_font(nullptr),
 	bytes(0), total_bytes(1), is_loaded(false), xoffset(0), yoffset(0, 0), last_modified_time(-1),
-	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false), 
+	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false),
 	encoding(encoding), reload_on_changed(true) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
@@ -59,8 +60,7 @@ TextFile::TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::stri
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
 	this->current_task = nullptr;
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
-	default_font = PGCreateFont();
-	SetTextFontSize(default_font, 10);
+	default_font = PGStyleManager::GetFont(PGFontTypeTextField);
 
 	this->language = PGLanguageManager::GetLanguage(ext);
 	if (this->language) {
@@ -77,7 +77,6 @@ TextFile::TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::stri
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
 		OpenFile(base, size, delete_file);
-		is_loaded = true;
 	}
 }
 
@@ -161,7 +160,7 @@ TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename
 		size = output_size;
 	}
 	auto stats = PGGetFileFlags(filename);
-	TextFile* file = new TextFile(textfield, result_encoding, filename, base, size, immediate_load);
+	TextFile* file = new TextFile(textfield, result_encoding, filename, base, size, immediate_load, true);
 	if (stats.flags == PGFileFlagsEmpty) {
 		file->last_modified_time = stats.modification_time;
 		file->last_modified_notification = stats.modification_time;
@@ -189,9 +188,6 @@ TextFile::~TextFile() {
 	}
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		delete *it;
-	}
-	if (default_font) {
-		PGDestroyFont(default_font);
 	}
 }
 
@@ -374,7 +370,6 @@ void TextFile::Unlock(PGLockType type) {
 	}
 }
 
-
 void TextFile::_InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
 	char* line_start = ptr + prev;
 	lng line_size = (lng)((bytes - prev) - offset);
@@ -439,15 +434,17 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		bytes = 3;
 	}
 
-	while (ptr[bytes]) {
+	while (bytes < size) {
 		int character_offset = utf8_character_length(ptr[bytes]);
 		if (character_offset <= 0) {
+			character_offset = 1;
+			/*
 			if (delete_file) {
 				panther::DestroyFileContents(base);
 			}
 			bytes = -1;
 			UnlockMutex(text_lock.get());
-			return;
+			return;*/
 		}
 		if (ptr[bytes] == '\n') {
 			// Unix line ending: \n
@@ -1223,16 +1220,16 @@ PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, double 
 
 	// first perform any fractional (less than one line) scrolling
 	double partial = offset - (lng)offset;
-	offset = (lng) offset;
+	offset = (lng)offset;
 	scroll.line_fraction += partial;
 	if (scroll.line_fraction >= 1) {
 		// the fraction is >= 1, we have to advance one actual line now
-		lng floor = (lng) scroll.line_fraction;
+		lng floor = (lng)scroll.line_fraction;
 		scroll.line_fraction -= floor;
 		offset += floor;
 	} else if (scroll.line_fraction < 0) {
 		// the fraction is < 0, we have to go one line back now
-		lng addition = (lng) std::ceil(std::abs(scroll.line_fraction));
+		lng addition = (lng)std::ceil(std::abs(scroll.line_fraction));
 		scroll.line_fraction += addition;
 		offset -= addition;
 		if (scroll.linenumber <= 0 && (!wordwrap || scroll.inner_line <= 0)) {
@@ -1247,7 +1244,7 @@ PGVerticalScroll TextFile::OffsetVerticalScroll(PGVerticalScroll scroll, double 
 	if (!wordwrap) {
 		// no wordwrap, simply add offset to the linenumber count
 		lng original_linenumber = scroll.linenumber;
-		scroll.linenumber += (lng) offset;
+		scroll.linenumber += (lng)offset;
 		lng max_y_scroll = GetMaxYScroll();
 		scroll.linenumber = std::max(std::min(scroll.linenumber, max_y_scroll), (lng)0);
 		if (scroll.linenumber >= max_y_scroll) {
@@ -3200,6 +3197,7 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 		text += std::to_string(start_line + linecount) + (is_match_line ? "> " : ": ") + *it + "\n";
 		linecount++;
 	}
+	// FIXME: also lock cursor
 	this->Lock(PGWriteLock);
 	cursors[0].SelectEndOfFile();
 	this->InsertLines(text, 0);
@@ -3219,30 +3217,48 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 	this->InvalidateParsing();
 }
 
+#include "projectexplorer.h"
+#include "controlmanager.h"
+#include "statusbar.h"
+
 struct FindAllInformation {
+	ProjectExplorer* explorer;
+	PGStatusNotification* notification;
 	TextFile* textfile;
 	PGRegexHandle regex_handle;
+	PGGlobSet whitelist;
 	std::vector<PGFile> files;
 	int context_lines;
 	std::shared_ptr<Task> task;
 };
 
-void TextFile::FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, int context_lines) {
+void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines) {
 	FindAllInformation* info = new FindAllInformation();
 	info->textfile = this;
 	info->regex_handle = regex_handle;
-	info->files = files;
 	info->context_lines = context_lines;
+	info->whitelist = whitelist;
+	info->explorer = explorer;
+	info->notification = GetControlManager(explorer)->statusbar->AddNotification(
+		PGStatusInProgress, 
+		"Finding \"" + PGGetRegexPattern(regex_handle) + "\" In Files", "Finding in file...", true);
 
-	this->find_task = std::shared_ptr<Task>(new Task([](std::shared_ptr<Task> task, void* inp) {
-		FindAllInformation* info = (FindAllInformation*)inp;
-		for (auto it = info->files.begin(); it != info->files.end(); it++) {
+
+	this->find_task = std::shared_ptr<Task>(new Task([](std::shared_ptr<Task> task, void* data) {
+		FindAllInformation* info = (FindAllInformation*)data;
+		info->explorer->IterateOverFiles([](PGFile f, void* data, lng filenr, lng total_files) -> bool {
+			FindAllInformation* info = (FindAllInformation*)data;
+			if (info->whitelist && !PGGlobSetMatches(info->whitelist, f.path.c_str())) {
+				return true;
+			}
+			info->notification->SetProgress((double)filenr / (double) total_files);
+
 			lng size;
 			PGFileError error = PGFileSuccess;
 			// FIXME: use streaming textfile instead
-			TextFile* textfile = TextFile::OpenTextFile(nullptr, it->path, error, true);
+			TextFile* textfile = TextFile::OpenTextFile(nullptr, f.path, error, true);
 			if (error != PGFileSuccess || !textfile) {
-				continue;
+				return true;
 			}
 			textfile->FindAllMatches(info->regex_handle, info->context_lines, [](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
 				FindAllInformation* info = (FindAllInformation*)data;
@@ -3253,11 +3269,18 @@ void TextFile::FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle reg
 			}, info);
 			delete textfile;
 			if (!info->task->active) {
-				break;
+				return false;
 			}
-		}
+			return true;
+		}, info);
 		if (info->regex_handle) {
 			PGDeleteRegex(info->regex_handle);
+		}
+		if (info->whitelist) {
+			PGDestroyGlobSet(info->whitelist);
+		}
+		if (info->notification) {
+			GetControlManager(info->explorer)->statusbar->RemoveNotification(info->notification);
 		}
 		delete info;
 	}, info));

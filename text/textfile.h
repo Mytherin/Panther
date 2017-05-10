@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+#include "rust/globset.h"
+
 #include "assert.h"
 
 typedef enum {
@@ -43,6 +45,7 @@ typedef enum {
 } PGLineIndentation;
 
 class BasicTextField;
+class ProjectExplorer;
 struct Interval;
 
 enum PGLockType {
@@ -232,7 +235,7 @@ public:
 
 	void ConvertToIndentation(PGLineIndentation indentation);
 
-	void FindAllMatchesAsync(std::vector<PGFile>& files, PGRegexHandle regex_handle, int context_lines);
+	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines);
 private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);

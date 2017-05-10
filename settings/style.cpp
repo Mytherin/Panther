@@ -16,6 +16,11 @@ PGColor* PGStyle::GetColor(PGColorType type) {
 }
 
 PGStyleManager::PGStyleManager() {
+	// default fonts
+	textfield_font = PGCreateFont(PGFontTypeTextField);
+	menu_font = PGCreateFont(PGFontTypeUI);
+	popup_font = PGCreateFont(PGFontTypePopup);
+
 	// standard style set
 	PGStyle vs;
 	vs.SetColor(PGColorToggleButtonToggled, PGColor(51, 51, 51));
@@ -133,6 +138,18 @@ PGColor PGStyleManager::_GetColor(PGColorType type, PGStyle* extra_style) {
 	if (color) return *color;
 
 	return PGColor(255, 255, 255);
+}
+
+PGFontHandle PGStyleManager::GetFont(PGFontType type) {
+	switch (type) {
+		case PGFontTypeTextField:
+			return GetInstance()->textfield_font;
+		case PGFontTypeUI:
+			return GetInstance()->menu_font;
+		case PGFontTypePopup:
+			return GetInstance()->popup_font;
+	}
+	return nullptr;
 }
 
 PGBitmapHandle PGStyleManager::_GetImage(std::string path) {

@@ -24,7 +24,7 @@ static void UpdateHighlight(Control* c, PGFindText* f) {
 
 PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	PGContainer(window), history_entry(0), field_lines(1), notification(nullptr) {
-	font = PGCreateFont("myriad", false, false);
+	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 
@@ -537,7 +537,7 @@ void PGFindText::FindInFiles() {
 	textfile->SetName("Find Results");
 	textfile->SetLanguage(PGLanguageManager::GetLanguage("findresults"));
 	textfield->GetTabControl()->OpenFile(textfile);
-
+	/*
 	// first find the list of files we want to search
 	std::vector<PGFile> files;
 	auto& directories = manager->active_projectexplorer->GetDirectories();
@@ -547,9 +547,9 @@ void PGFindText::FindInFiles() {
 
 	if (whitelist) {
 		PGDestroyGlobSet(whitelist);
-	}
+	}*/
 	// now schedule the actual search
-	textfile->FindAllMatchesAsync(files, regex, 2);
+	textfile->FindAllMatchesAsync(whitelist, manager->active_projectexplorer, regex, 2);
 }
 
 bool PGFindText::SelectAllMatches(bool in_selection) {

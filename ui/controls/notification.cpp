@@ -7,7 +7,7 @@ PGNotification::PGNotification(PGWindowHandle window, PGNotificationType type, P
 	PGContainer(window), type(type) {
 	this->width = width;
 
-	font = PGCreateFont("myriad", false, true);
+	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 
 	Label *warning_label = new Label(window, this);

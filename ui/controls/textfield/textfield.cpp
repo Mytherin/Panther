@@ -45,8 +45,8 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 		return ((TextField*)tf)->MinimapMouseEvent(mouse_enter);
 	});
 
-	textfield_font = PGCreateFont();
-	minimap_font = PGCreateFont();
+   	textfield_font = PGCreateFont(PGFontTypeTextField);
+	minimap_font = PGCreateFont(PGFontTypeTextField);
 
 	scrollbar = std::unique_ptr<DecoratedScrollbar>(new DecoratedScrollbar(this, window, false, false));
 	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
@@ -66,8 +66,6 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 	int size = 0;
 	if (PGSettingsManager::GetSetting("font_size", size)) {
 		SetTextFontSize(textfield_font, size);
-	} else {
-		SetTextFontSize(textfield_font, 15);
 	}
 	PGSettingsManager::GetSetting("display_line_numbers", display_linenumbers);
 	PGSettingsManager::GetSetting("display_minimap", display_minimap);
@@ -638,7 +636,6 @@ void TextField::Draw(PGRendererHandle renderer) {
 
 				// render the background of the minimap
 				RenderRectangle(renderer, PGIRect(x + textfield_width, y, minimap_region.width, this->height), PGColor(30, 30, 30), PGDrawStyleFill);
-
 				DrawTextField(renderer, minimap_font, true, x + textfield_width + 1, x + textfield_width, y, minimap_region.width, mouse_in_minimap);
 			}
 			if (!textfile->GetWordWrap()) {

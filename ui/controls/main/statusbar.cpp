@@ -7,7 +7,7 @@
 
 StatusBar::StatusBar(PGWindowHandle window) :
 	PGContainer(window), notifications(nullptr) {
-	font = PGCreateFont("myriad", false, false);
+	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 	GetControlManager(this)->OnSelectionChanged([](Control* c, void* data) {

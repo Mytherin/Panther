@@ -49,7 +49,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 		auto ptr = FileManager::OpenFile(*it);
 		this->tabs.push_back(OpenTab(ptr));
 	}
-	this->font = PGCreateFont("myriad", false, true);
+	this->font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(this->font, 12);
 	file_icon_height = (this->height - 2) * 0.6f;
 	file_icon_width = file_icon_height * 0.8f;

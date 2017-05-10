@@ -6,24 +6,21 @@
 
 #include "thread.h"
 
+#include <queue>
+
 #include <rust/globset.h>
 #include <rust/gitignore.h>
 
-typedef void(*PGDirectoryIterCallback)(PGFile f, void* data);
+typedef bool(*PGDirectoryIterCallback)(PGFile f, void* data, lng filenr, lng total_files);
 
 struct PGDirectory {
+	friend class ProjectExplorer;
+public:
 	std::string path;
-	std::vector<PGDirectory*> directories;
-	std::vector<PGFile> files;
 	lng last_modified_time;
 	bool loaded_files;
-	bool expanded;
 
-	std::unique_ptr<PGMutex> lock;
-
-	PGDirectory(std::string path, bool show_all_files);
-	PGDirectory(std::string path, PGIgnoreGlob glob = nullptr);
-	~PGDirectory();
+	PGDirectory(std::string path, PGDirectory* parent);
 
 	void WriteWorkspace(nlohmann::json& j);
 	void LoadWorkspace(nlohmann::json& j);
@@ -32,14 +29,32 @@ struct PGDirectory {
 
 	lng FindFile(std::string full_name, PGDirectory** directory, PGFile* file, bool search_only_expanded = false);
 
+	bool IsExpanded() { return expanded; }
+	void SetExpanded(bool expand);
 	void CollapseAll();
 
 	// Returns the number of files displayed by this directory
-	lng DisplayedFiles();
-	void Update(PGIgnoreGlob glob);
-	void GetFiles(std::vector<PGFile>& files);
-	void ListFiles(std::vector<PGFile>& result_files, PGGlobSet whitelist);
-	void IterateOverFiles(PGDirectoryIterCallback callback, void* data);
+	lng DisplayedFiles() { return 1 + (expanded ? displayed_files : 0); }
+	// Returns the total number of files in this directory
+	lng TotalFiles() { return total_files; }
+
+	bool IterateOverFiles(PGDirectoryIterCallback callback, void* data, lng& files, lng total_files);
+
+	void Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories);
 private:
-	void ActualUpdate(PGIgnoreGlob glob);
+	bool expanded;
+	std::unique_ptr<PGMutex> lock;
+
+	void AddFiles(lng files);
+	void AddDisplayedFiles(lng files);
+
+	std::vector<std::shared_ptr<PGDirectory>> directories;
+	std::vector<PGFile> files;
+
+	PGDirectory* parent;
+
+	// total amount of displayed files for this directory (including directories)
+	lng displayed_files;
+	// total amount of files in this directory (excluding directories)
+	lng total_files;
 };
