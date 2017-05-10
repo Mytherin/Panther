@@ -63,7 +63,7 @@ PGFileEncoding PGEncodingFromString(std::string);
 struct PGEncoder;
 typedef PGEncoder* PGEncoderHandle;
 
-bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text, lng* output_size, PGFileEncoding* result_encoding);
+bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text, lng* output_size, PGFileEncoding* result_encoding, bool ignore_binary);
 
 // Tools for incremental conversion, can be used if you want to repeatedly encode chunks of text
 PGEncoderHandle PGCreateEncoder(PGFileEncoding source_encoding, PGFileEncoding target_encoding);

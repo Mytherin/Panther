@@ -46,7 +46,7 @@ private:
 		PGFindTextToggleWholeword,
 		PGFindTextToggleWrap,
 		PGFindTextToggleHighlight,
-		PGFindTextToggleSourceOnly,
+		PGFindTextToggleIgnoreBinary,
 		PGFindTextToggleGitIgnore
 	};
 	void Toggle(PGFindTextToggles type);
@@ -56,7 +56,7 @@ private:
 	bool wholeword = false;
 	bool wrap = true;
 	bool highlight = true;
-	bool source_only = false;
+	bool ignore_binary_files = false;
 	bool respect_gitignore = false;
 
 	PGFindTextType type;

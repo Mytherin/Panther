@@ -14,7 +14,7 @@ public:
 	bool wholeword = false;
 	bool wrap = true;
 	bool highlight = true;
-	bool source_only = false;
+	bool ignore_binary_files = false;
 	bool respect_gitignore = false;
 
 	void LoadWorkspace(nlohmann::json& j);

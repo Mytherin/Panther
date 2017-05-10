@@ -140,7 +140,7 @@ bool TextFile::Reload(PGFileError& error) {
 	return true;
 }
 
-TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, PGFileError& error, bool immediate_load) {
+TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename, PGFileError& error, bool immediate_load, bool ignore_binary) {
 	lng size = 0;
 	char* base = (char*)panther::ReadFile(filename, size, error);
 	if (!base || size < 0) {
@@ -150,7 +150,7 @@ TextFile* TextFile::OpenTextFile(BasicTextField* textfield, std::string filename
 	char* output_text = nullptr;
 	lng output_size = 0;
 	PGFileEncoding result_encoding;
-	if (!PGTryConvertToUTF8(base, size, &output_text, &output_size, &result_encoding) || !output_text) {
+	if (!PGTryConvertToUTF8(base, size, &output_text, &output_size, &result_encoding, ignore_binary) || !output_text) {
 		error = PGFileEncodingFailure;
 		return nullptr;
 	}
@@ -3228,14 +3228,16 @@ struct FindAllInformation {
 	PGRegexHandle regex_handle;
 	PGGlobSet whitelist;
 	std::vector<PGFile> files;
+	bool ignore_binary;
 	int context_lines;
 	std::shared_ptr<Task> task;
 };
 
-void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines) {
+void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary) {
 	FindAllInformation* info = new FindAllInformation();
 	info->textfile = this;
 	info->regex_handle = regex_handle;
+	info->ignore_binary = ignore_binary;
 	info->context_lines = context_lines;
 	info->whitelist = whitelist;
 	info->explorer = explorer;
@@ -3256,7 +3258,7 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 			lng size;
 			PGFileError error = PGFileSuccess;
 			// FIXME: use streaming textfile instead
-			TextFile* textfile = TextFile::OpenTextFile(nullptr, f.path, error, true);
+			TextFile* textfile = TextFile::OpenTextFile(nullptr, f.path, error, true, info->ignore_binary);
 			if (error != PGFileSuccess || !textfile) {
 				return true;
 			}

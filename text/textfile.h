@@ -76,7 +76,7 @@ public:
 	TextFile(BasicTextField* textfield);
 	~TextFile();
 
-	static TextFile* OpenTextFile(BasicTextField* textfield, std::string filename, PGFileError& error, bool immediate_load = false);
+	static TextFile* OpenTextFile(BasicTextField* textfield, std::string filename, PGFileError& error, bool immediate_load = false, bool ignore_binary = false);
 
 	TextLineIterator* GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll);
 	TextLineIterator* GetLineIterator(BasicTextField* textfield, lng linenumber);
@@ -235,7 +235,7 @@ public:
 
 	void ConvertToIndentation(PGLineIndentation indentation);
 
-	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines);
+	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary);
 private:
 	// load textfile from a file
 	TextFile(BasicTextField* textfield, PGFileEncoding encoding, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);

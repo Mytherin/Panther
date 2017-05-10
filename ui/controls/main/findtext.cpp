@@ -95,7 +95,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	this->wholeword = manager.wholeword;
 	this->wrap = manager.wrap;
 	this->highlight = manager.highlight;
-	this->source_only = manager.source_only;
+	this->ignore_binary_files = manager.ignore_binary_files;
 	this->respect_gitignore = manager.respect_gitignore;
 
 	toggle_regex = ToggleButton::CreateFromCommand(this, "toggle_regex", "Toggle regular expressions",
@@ -271,8 +271,8 @@ void PGFindText::SetType(PGFindTextType type) {
 			}, (void*) this);
 
 
-			source_files_only = ToggleButton::CreateFromCommand(this, "toggle_sourceonly", "Only search source files",
-				PGFindText::keybindings_noargs, font, "So", this->source_only);
+			source_files_only = ToggleButton::CreateFromCommand(this, "toggle_ignorebinary", "Ignore binary files",
+				PGFindText::keybindings_noargs, font, "B", this->ignore_binary_files);
 			toggle_respect_gitignore = ToggleButton::CreateFromCommand(this, "toggle_gitignore", "Respect gitignore files",
 				PGFindText::keybindings_noargs, font, ".g", this->respect_gitignore);
 
@@ -549,7 +549,7 @@ void PGFindText::FindInFiles() {
 		PGDestroyGlobSet(whitelist);
 	}*/
 	// now schedule the actual search
-	textfile->FindAllMatchesAsync(whitelist, manager->active_projectexplorer, regex, 2);
+	textfile->FindAllMatchesAsync(whitelist, manager->active_projectexplorer, regex, 2, ignore_binary_files);
 }
 
 bool PGFindText::SelectAllMatches(bool in_selection) {
@@ -733,8 +733,8 @@ void PGFindText::InitializeKeybindings() {
 	noargs["toggle_highlight"] = [](Control* c) {
 		((PGFindText*)c)->Toggle(PGFindTextToggleHighlight);
 	};
-	noargs["toggle_sourceonly"] = [](Control* c) {
-		((PGFindText*)c)->Toggle(PGFindTextToggleSourceOnly);
+	noargs["toggle_ignorebinary"] = [](Control* c) {
+		((PGFindText*)c)->Toggle(PGFindTextToggleIgnoreBinary);
 	};
 	noargs["toggle_gitignore"] = [](Control* c) {
 		((PGFindText*)c)->Toggle(PGFindTextToggleGitIgnore);
@@ -804,11 +804,11 @@ void PGFindText::Toggle(PGFindTextToggles type) {
 				tf.SetSelectedMatch(-1);
 			}
 			break;
-		case PGFindTextToggleSourceOnly:
-			source_only = !source_only;
-			manager.source_only = source_only;
-			if (source_files_only) {
-				source_files_only->SetToggled(source_only);
+		case PGFindTextToggleIgnoreBinary:
+			ignore_binary_files = !ignore_binary_files;
+			manager.ignore_binary_files = ignore_binary_files;
+			if (ignore_binary_files) {
+				source_files_only->SetToggled(ignore_binary_files);
 			}
 			break;
 		case PGFindTextToggleGitIgnore:

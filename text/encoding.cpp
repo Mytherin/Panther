@@ -393,7 +393,7 @@ PGFileEncoding GuessEncoding(char* input_text, size_t input_size) {
 	return result_encoding;
 }
 
-bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text, lng* output_size, PGFileEncoding* result_encoding) {
+bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text, lng* output_size, PGFileEncoding* result_encoding, bool ignore_binary) {
 	*output_text = nullptr;
 	*output_size = 0;
 
@@ -408,6 +408,9 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 		*output_text = input_text;
 		*output_size = input_size;
 		return true;
+	}
+	if (ignore_binary && source_encoding == PGEncodingBinary) {
+		return false;
 	}
 
 	// if we do not have UTF8 we first convert from the (predicted) source encoding to UTF8

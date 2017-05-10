@@ -3,7 +3,7 @@
 
 FindTextManager::FindTextManager() :
 	regex(false), matchcase(false), wholeword(false), wrap(true), highlight(true),
-	source_only(false), respect_gitignore(false) {
+	ignore_binary_files(false), respect_gitignore(false) {
 
 }
 
@@ -22,8 +22,8 @@ void FindTextManager::LoadWorkspace(nlohmann::json& j) {
 			wrap = settings["toggle_wrap"];
 		if (settings.count("toggle_highlight") && settings["toggle_highlight"].is_boolean())
 			highlight = settings["toggle_highlight"];
-		if (settings.count("toggle_source_only") && settings["toggle_source_only"].is_boolean())
-			source_only = settings["toggle_source_only"];
+		if (settings.count("toggle_ignorebinary") && settings["toggle_ignorebinary"].is_boolean())
+			ignore_binary_files = settings["toggle_ignorebinary"];
 		if (settings.count("toggle_respect_gitignore") && settings["toggle_respect_gitignore"].is_boolean())
 			respect_gitignore = settings["toggle_respect_gitignore"];
 		if (settings.count("find_history") && settings["find_history"].is_array()) {
@@ -55,7 +55,7 @@ void FindTextManager::WriteWorkspace(nlohmann::json& j) {
 	settings["toggle_wholeword"] = wholeword;
 	settings["toggle_wrap"] = wrap;
 	settings["toggle_highlight"] = highlight;
-	settings["toggle_source_only"] = source_only;
+	settings["toggle_ignorebinary"] = ignore_binary_files;
 	settings["toggle_respect_gitignore"] = respect_gitignore;
 	settings["find_history"] = nlohmann::json::array();
 	{
