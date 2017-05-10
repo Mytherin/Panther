@@ -445,7 +445,7 @@ bool PGFindText::Find(PGDirection direction, bool include_selection) {
 	char* error_message = nullptr;
 
 	std::string pattern = field->GetText();
-	PGRegexHandle regex_handle = PGCompileRegex(pattern, toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	PGRegexHandle regex_handle = PGCompileRegex(pattern, this->regex, GetRegexFlags());
 	if (!regex_handle) {
 		// FIXME: throw an error, regex was not compiled properly
 		error_message = panther::strdup("Error");
@@ -493,7 +493,7 @@ void PGFindText::FindInFiles() {
 	// FIXME: white/black list
 	// first compile the regex
 	std::string regex_pattern = field->GetText();
-	PGRegexHandle regex = PGCompileRegex(regex_pattern, toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	PGRegexHandle regex = PGCompileRegex(regex_pattern, this->regex, GetRegexFlags());
 	if (!regex) {
 		// failed to compile regex
 		return;
@@ -594,7 +594,7 @@ void PGFindText::FindAll(bool select_first_match) {
 		return;
 	}
 
-	PGRegexHandle regex_handle = PGCompileRegex(pattern, regex, matchcase ? PGRegexFlagsNone : PGRegexCaseInsensitive);
+	PGRegexHandle regex_handle = PGCompileRegex(pattern, this->regex, GetRegexFlags());
 	if (!regex_handle || PGRegexHasErrors(regex_handle)) {
 		type = PGStatusError;
 		text = "Failed to compile regex: " + PGGetRegexError(regex_handle);
@@ -628,7 +628,7 @@ void PGFindText::Replace() {
 	if (this->Find(PGDirectionRight, true)) {
 		ControlManager* manager = GetControlManager(this);
 		TextFile& tf = manager->active_textfield->GetTextFile();
-		PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);
+		PGRegexHandle regex = PGCompileRegex(field->GetText(), this->regex, GetRegexFlags());
 		tf.RegexReplace(regex, replacement);
 		if (HighlightMatches()) {
 			this->FindAll(PGDirectionRight);
@@ -647,7 +647,7 @@ void PGFindText::ReplaceAll(bool in_selection) {
 		// no matches were found
 		return;
 	}
-	PGRegexHandle regex = PGCompileRegex(field->GetText(), toggle_regex->IsToggled(), toggle_matchcase->IsToggled() ? PGRegexCaseInsensitive : PGRegexFlagsNone);
+	PGRegexHandle regex = PGCompileRegex(field->GetText(), this->regex, GetRegexFlags());
 	tf.RegexReplace(regex, replacement);
 	if (HighlightMatches()) {
 		this->FindAll(false);
@@ -831,4 +831,11 @@ void PGFindText::Toggle(PGFindTextToggles type) {
 		default:
 			break;
 	}
+}
+
+PGRegexFlags PGFindText::GetRegexFlags() {
+	PGRegexFlags flags = PGRegexFlagsNone;
+	if (!this->matchcase) flags |= PGRegexCaseInsensitive;
+	if (this->wholeword) flags |= PGRegexWholeWordSearch;
+	return flags;
 }

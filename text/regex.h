@@ -16,15 +16,16 @@ struct PGRegexMatch {
 	PGTextRange groups[PGREGEX_MAXIMUM_MATCHES];
 };
 
-enum PGRegexFlags {
-	PGRegexFlagsNone,
-	PGRegexCaseInsensitive
-};
+typedef int PGRegexFlags;
+
+extern const PGRegexFlags PGRegexFlagsNone;
+extern const PGRegexFlags PGRegexCaseInsensitive;
+extern const PGRegexFlags PGRegexWholeWordSearch;
 
 bool PGRegexHasErrors(PGRegexHandle handle);
 std::string PGGetRegexError(PGRegexHandle handle);
 std::string PGGetRegexPattern(PGRegexHandle handle);
-PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexFlags);
+PGRegexHandle PGCompileRegex(std::string pattern, bool is_regex, PGRegexFlags);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, PGTextRange context, PGDirection direction);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, const char* data, lng size, PGDirection direction);
 PGRegexMatch PGMatchRegex(PGRegexHandle handle, std::string& context, PGDirection direction);

@@ -4,6 +4,9 @@
 
 #include <re2/re2.h>
 
+const PGRegexFlags PGRegexFlagsNone = 0;
+const PGRegexFlags PGRegexCaseInsensitive = 1 << 0;
+const PGRegexFlags PGRegexWholeWordSearch = 1 << 1;
 
 using namespace re2;
 
@@ -20,8 +23,12 @@ struct PGRegex {
 static std::vector<lng> PGPreprocessTextSearch(std::string& needle);
 static PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection direction);
 
-PGRegexHandle PGCompileRegex(const std::string& pattern, bool is_regex, PGRegexFlags flags) {
+PGRegexHandle PGCompileRegex(std::string pattern, bool is_regex, PGRegexFlags flags) {
 	PGRegexHandle handle = new PGRegex();
+	if (flags & PGRegexWholeWordSearch) {
+		is_regex = true;
+		pattern = "\\b" + pattern + "\\b";
+	}
 	handle->original_pattern = pattern;
 	handle->is_regex = is_regex;
 	handle->flags = flags;

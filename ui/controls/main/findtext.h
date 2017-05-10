@@ -40,6 +40,8 @@ public:
 	virtual PGControlType GetControlType() { return PGControlTypeFindText; }
 
 private:
+	PGRegexFlags GetRegexFlags();
+
 	enum PGFindTextToggles {
 		PGFindTextToggleRegex,
 		PGFindTextToggleMatchcase,
