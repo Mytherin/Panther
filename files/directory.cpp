@@ -153,7 +153,7 @@ bool PGDirectory::IterateOverFiles(PGDirectoryIterCallback callback, void* data,
 }
 
 void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories) {
-	lng difference, previous_dircount, directory_difference;
+	lng difference, previous_dircount, directory_difference = 0, file_difference = 0;
 	loaded_files = false;
 	if (PGFileIsIgnored(glob, this->path.c_str(), true)) {
 		// file is ignored by the .gitignore glob, skip this path
@@ -196,9 +196,14 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 	}
 	// remove any directories we did not find (because they have been deleted or removed)
 	for (auto it2 = current_directories.begin(); it2 != current_directories.end(); it2++) {
+		file_difference += -(*it2)->total_files;
+		if ((*it2)->expanded) {
+			directory_difference += -(*it2)->displayed_files;
+		}
 		directories.erase(std::find(directories.begin(), directories.end(), *it2));
 	}
-	directory_difference = directories.size() - previous_dircount;
+	directory_difference += directories.size() - previous_dircount;
+	this->AddFiles(file_difference);
 	this->AddDisplayedFiles(difference + directory_difference);
 	loaded_files = true;
 unlock:

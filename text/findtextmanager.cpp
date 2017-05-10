@@ -3,7 +3,7 @@
 
 FindTextManager::FindTextManager() :
 	regex(false), matchcase(false), wholeword(false), wrap(true), highlight(true),
-	ignore_binary_files(false), respect_gitignore(false) {
+	ignore_binary_files(true), respect_gitignore(false) {
 
 }
 

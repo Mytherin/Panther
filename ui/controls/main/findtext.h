@@ -56,7 +56,7 @@ private:
 	bool wholeword = false;
 	bool wrap = true;
 	bool highlight = true;
-	bool ignore_binary_files = false;
+	bool ignore_binary_files = true;
 	bool respect_gitignore = false;
 
 	PGFindTextType type;
