@@ -11,6 +11,7 @@ PGDirectory::PGDirectory(std::string path, PGDirectory* parent) :
 }
 
 void PGDirectory::FindFile(lng file_number, PGDirectory** directory, PGFile* file) {
+	lng entry;
 	if (file_number == 0) {
 		*directory = this;
 		return;
@@ -26,7 +27,7 @@ void PGDirectory::FindFile(lng file_number, PGDirectory** directory, PGFile* fil
 		file_count += files;
 	}
 	assert(this->expanded);
-	lng entry = file_number - file_count;
+	entry = file_number - file_count;
 	assert(entry >= 0 && entry < files.size());
 	*file = files[entry];
 	file->path = PGPathJoin(this->path, file->path);
@@ -152,6 +153,7 @@ bool PGDirectory::IterateOverFiles(PGDirectoryIterCallback callback, void* data,
 }
 
 void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories) {
+	lng difference, previous_dircount, directory_difference;
 	loaded_files = false;
 	if (PGFileIsIgnored(glob, this->path.c_str(), true)) {
 		// file is ignored by the .gitignore glob, skip this path
@@ -167,12 +169,12 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 	if (PGGetDirectoryFiles(path, dirs, files, glob) != PGDirectorySuccess) {
 		goto unlock;
 	}
-	lng difference = files.size() - previous_filecount;
+	difference = files.size() - previous_filecount;
 	this->AddFiles(difference);
 
 	// for each directory, check if it is already present
 	// if it is not we add it
-	lng previous_dircount = directories.size();
+	previous_dircount = directories.size();
 	current_directories = std::vector<std::shared_ptr<PGDirectory>>(directories.begin(), directories.end());
 	for (auto it = dirs.begin(); it != dirs.end(); it++) {
 		std::string path = PGPathJoin(this->path, it->path);
@@ -196,7 +198,7 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 	for (auto it2 = current_directories.begin(); it2 != current_directories.end(); it2++) {
 		directories.erase(std::find(directories.begin(), directories.end(), *it2));
 	}
-	lng directory_difference = directories.size() - previous_dircount;
+	directory_difference = directories.size() - previous_dircount;
 	this->AddDisplayedFiles(difference + directory_difference);
 	loaded_files = true;
 unlock:
