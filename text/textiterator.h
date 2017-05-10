@@ -25,6 +25,7 @@ public:
 
 	virtual lng GetCurrentLineNumber() { return current_line; }
 	virtual lng GetCurrentCharacterNumber() { return 0; }
+	virtual lng GetInnerLine() { return 0; }
 	virtual PGVerticalScroll GetCurrentScrollOffset() { return PGVerticalScroll(current_line, 0); }
 	virtual PGTextRange GetCurrentRange() { return PGTextRange(buffer, start_position, buffer, end_position); }
 

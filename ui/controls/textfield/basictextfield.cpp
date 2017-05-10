@@ -107,7 +107,7 @@ void BasicTextField::GetLineFromPosition(PGScalar y, lng& line) {
 	lng lineoffset_y = offset.linenumber;
 	PGScalar line_height = GetTextHeight(textfield_font);
 	y += line_height * offset.line_fraction;
-	lng line_offset = std::max(std::min((lng)(y / line_height), textfile->GetLineCount() - lineoffset_y - 1), (lng)0);
+	lng line_offset = std::max(std::min((lng)(y / line_height), textfile->GetLineCount() - lineoffset_y - 1), -lineoffset_y);
 	line = lineoffset_y + line_offset;
 }
 

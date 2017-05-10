@@ -10,6 +10,8 @@ public:
 
 	lng GetCurrentLineNumber() { return current_line; }
 	lng GetCurrentCharacterNumber() { return start_wrap; }
+	lng GetInnerLine() { return inner_line; }
+
 	PGTextRange GetCurrentRange() { return PGTextRange(buffer, start_position + start_wrap, buffer, start_position + end_wrap); }
 
 	PGVerticalScroll GetCurrentScrollOffset();

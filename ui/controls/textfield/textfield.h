@@ -35,7 +35,8 @@ struct RenderedLine {
 	TextLine tline;
 	lng line;
 	lng position;
-	RenderedLine(TextLine tline, lng line, lng position) : tline(tline), line(line), position(position) {
+	lng inner_line;
+	RenderedLine(TextLine tline, lng line, lng position, lng inner_line) : tline(tline), line(line), position(position), inner_line(inner_line) {
 	}
 };
 

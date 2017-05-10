@@ -185,7 +185,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 			lng current_start_position = line_iterator->GetCurrentCharacterNumber();
 
 			if (!minimap) {
-				rendered_lines.push_back(RenderedLine(current_line, current_start_line, current_start_position));
+				rendered_lines.push_back(RenderedLine(current_line, current_start_line, current_start_position, line_iterator->GetInnerLine()));
 			}
 
 			// render the linenumber of the current line if it is not wrapped
@@ -1192,10 +1192,32 @@ void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, 
 	auto offset = textfile->GetLineOffset();
 	PGScalar line_height = GetTextHeight(textfield_font);
 	y += line_height * offset.line_fraction;
-	lng line_offset = std::max(std::min((lng)(y / line_height), (lng)(rendered_lines.size() - 1)), (lng)0);
-	line = rendered_lines[line_offset].line;
-	_GetCharacterFromPosition(x, rendered_lines[line_offset].tline, character);
-	character += rendered_lines[line_offset].position;
+	if (y < 0) {
+		lng line_offset = (lng)(y / line_height);
+		PGVerticalScroll scroll = PGVerticalScroll(rendered_lines.front().line, rendered_lines.front().inner_line);
+		auto iterator = textfile->GetScrollIterator(this, scroll);
+		while(line_offset < 0 && iterator->GetLine().IsValid()) {
+			(*iterator)--;
+			line_offset++;
+		}
+		line = iterator->GetCurrentLineNumber();
+		character = iterator->GetCurrentCharacterNumber();
+	} else if (y > this->height) {
+		lng line_offset = (lng)((y - this->height) / line_height);
+		PGVerticalScroll scroll = PGVerticalScroll(rendered_lines.back().line, rendered_lines.back().inner_line);
+		auto iterator = textfile->GetScrollIterator(this, scroll);
+		while(line_offset > 0 && iterator->GetLine().IsValid()) {
+			(*iterator)++;
+			line_offset--;
+		}
+		line = iterator->GetCurrentLineNumber();
+		character = iterator->GetCurrentCharacterNumber();
+	} else {
+		lng line_offset = std::max(std::min((lng)(y / line_height), (lng)(rendered_lines.size() - 1)), (lng)0);
+		line = rendered_lines[line_offset].line;
+		_GetCharacterFromPosition(x, rendered_lines[line_offset].tline, character);
+		character += rendered_lines[line_offset].position;
+	}
 
 }
 
