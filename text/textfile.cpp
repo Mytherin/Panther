@@ -3226,7 +3226,7 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 
 struct FindAllInformation {
 	ProjectExplorer* explorer;
-	PGStatusNotification* notification;
+	std::shared_ptr<PGStatusNotification> notification;
 	TextFile* textfile;
 	PGRegexHandle regex_handle;
 	PGGlobSet whitelist;
@@ -3255,6 +3255,9 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 			FindAllInformation* info = (FindAllInformation*)data;
 			if (info->whitelist && !PGGlobSetMatches(info->whitelist, f.path.c_str())) {
 				return true;
+			}	
+			if (!info->task->active) {
+				return false;
 			}
 			info->notification->SetProgress((double)filenr / (double) total_files);
 

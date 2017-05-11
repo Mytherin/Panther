@@ -9,7 +9,8 @@ const PGAnchor PGAnchorBottom = 0x08;
 
 Control::Control(PGWindowHandle handle) :
 	percentage_width(-1), percentage_height(-1), fixed_height(-1), fixed_width(-1),
-	dirty(false), margin(PGPadding()), padding(PGPadding()), tooltip(nullptr) {
+	dirty(false), margin(PGPadding()), padding(PGPadding()), tooltip(nullptr),
+	destroyed(false) {
 	this->window = handle;
 	this->x = 0;
 	this->y = 0;

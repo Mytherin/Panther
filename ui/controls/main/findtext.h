@@ -92,7 +92,7 @@ private:
 
 	FindTextManager& GetFindTextManager();
 
-	PGStatusNotification* notification = nullptr;
+	std::shared_ptr<PGStatusNotification> notification = nullptr;
 
 	void UpdateFieldHeight(bool force_update = false);
 

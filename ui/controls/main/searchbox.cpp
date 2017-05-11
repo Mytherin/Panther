@@ -28,7 +28,7 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bo
 	field->OnTextChanged([](Control* c, void* data) {
 		((SearchBox*)data)->Filter(((SimpleTextField*)c)->GetText());
 	}, (void*) this);
-	this->AddControl(field);
+	this->AddControl(std::shared_ptr<Control>(field));
 	this->Filter("");
 
 	scrollbar = new Scrollbar(this, window, false, false);
@@ -42,7 +42,7 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bo
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
 		((SearchBox*)scroll->parent)->scroll_position = value;
 	});
-	this->AddControl(scrollbar);
+	this->AddControl(std::shared_ptr<Control>(scrollbar));
 }
 
 void SearchBox::SetSelectedEntry(lng entry) {

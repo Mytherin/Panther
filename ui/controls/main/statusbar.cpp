@@ -30,7 +30,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 		buttons[i]->fixed_size = false;
 		buttons[i]->padding.left = 20;
 		buttons[i]->padding.right = 20;
-		this->AddControl(buttons[i]);
+		this->AddControl(std::shared_ptr<Control>(buttons[i]));
 	}
 
 	unicode_button = buttons[0];
@@ -241,7 +241,7 @@ TextField* StatusBar::GetActiveTextField() {
 	return GetControlManager(this)->active_textfield;
 }
 
-PGStatusNotification* StatusBar::AddNotification(PGStatusType type, std::string text, std::string tooltip, bool progress_bar) {
+std::shared_ptr<PGStatusNotification> StatusBar::AddNotification(PGStatusType type, std::string text, std::string tooltip, bool progress_bar) {
 	PGStatusNotification* notification = new PGStatusNotification(window, font, type, text, tooltip, progress_bar);
 
 	notification->SetAnchor(PGAnchorTop | PGAnchorRight);
@@ -252,24 +252,25 @@ PGStatusNotification* StatusBar::AddNotification(PGStatusType type, std::string 
 	notification->percentage_height = 1;
 	notification->right_anchor = notifications ? (Control*)notifications : (Control*)tabwidth_button;
 	notifications = notification;
-	this->AddControl(notification);
+	auto n = std::shared_ptr<PGStatusNotification>(notification);
+	this->AddControl(n);
 	this->TriggerResize();
-	return notification;
+	return n;
 }
 
-void StatusBar::RemoveNotification(PGStatusNotification* notification) {
+void StatusBar::RemoveNotification(std::shared_ptr<PGStatusNotification> notification) {
 	PGStatusNotification* n = notifications;
 	PGStatusNotification* prev = nullptr;
 	while (n && n->GetControlType() == PGControlTypeStatusNotification) {
-		if (n == notification) {
+		if (n == notification.get()) {
 			if (prev) {
 				prev->right_anchor = n->right_anchor;
 			}
-			if (notification == notifications) {
+			if (notification.get() == notifications) {
 				notifications = n->right_anchor->GetControlType() == PGControlTypeStatusNotification ?
 					(PGStatusNotification*) n->right_anchor : nullptr;
 			}
-			this->RemoveControl(notification);
+			this->RemoveControl(notification.get());
 			return;
 		}
 		prev = n;

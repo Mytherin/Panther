@@ -87,9 +87,11 @@ void ControlManager::RefreshWindow(bool redraw_now) {
 
 void ControlManager::ShowProjectExplorer(bool visible) {
 	if (visible) {
+		active_projectexplorer->parent = this;
 		active_projectexplorer->fixed_width = projectexplorer_width;
 		splitter->fixed_width = 4;
 	} else {
+		active_projectexplorer->parent = nullptr;
 		projectexplorer_width = active_projectexplorer->width;
 		splitter->fixed_width = 0;
 		active_projectexplorer->fixed_width = 0;
@@ -184,7 +186,7 @@ void ControlManager::LoadWorkspace(nlohmann::json& j) {
 void ControlManager::WriteWorkspace(nlohmann::json& j) {
 	j["controlmanager"] = nlohmann::json::object();
 	j["controlmanager"]["projectexplorer_width"] = 
-		std::find(controls.begin(), controls.end(), active_projectexplorer) == controls.end() ? 
+		active_projectexplorer->parent == nullptr ? 
 		projectexplorer_width :
 		active_projectexplorer->width;
 	PGContainer::WriteWorkspace(j);
@@ -226,7 +228,7 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 		}
 	}
 	this->TriggerResize();
-	this->AddControl(view);
+	this->AddControl(std::shared_ptr<Control>(view));
 	this->Invalidate();
 }
 
@@ -262,7 +264,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 		for (lng i = current_textfields; i < total_textfields; i++) {
 			std::vector<std::shared_ptr<TextFile>> textfiles = initial_files;
 			TextFieldContainer* container = new TextFieldContainer(this->window, textfiles);
-			this->AddControl(container);
+			this->AddControl(std::shared_ptr<Control>(container));
 			textfields.push_back(container);
 		}
 	}
@@ -278,7 +280,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 		for (int i = splitters.size(); i < splitter_count; i++) {
 			Splitter *splitter = new Splitter(this->window, true);
 			splitters.push_back(splitter);
-			this->AddControl(splitter);
+			this->AddControl(std::shared_ptr<Control>(splitter));
 		}
 	} else if (splitter_count < splitters.size()) {
 		// have to remove splitters

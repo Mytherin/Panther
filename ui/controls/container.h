@@ -50,7 +50,8 @@ public:
 	PGCursorType GetDraggingCursor();
 	virtual bool IsDragging();
 
-	void AddControl(Control* control);
+	void AddControl(std::shared_ptr<Control> control);
+	void RemoveControl(std::shared_ptr<Control>& control);
 	void RemoveControl(Control* control);
 
 	void Invalidate(bool initial_invalidate = true);
@@ -63,14 +64,14 @@ protected:
 
 	virtual void SetFocusedControl(Control* c);
 
-	std::vector<Control*> controls;
+	std::vector<std::shared_ptr<Control>> controls;
 
 private:
 	bool pending_resize;
-	std::vector<Control*> pending_removes;
-	std::vector<Control*> pending_additions;
+	bool pending_removal;
+	std::vector<std::shared_ptr<Control>> pending_additions;
 
 	void FlushRemoves();
-	void ActuallyAddControl(Control* control);
-	void ActuallyRemoveControl(Control* control);
+	void ActuallyAddControl(std::shared_ptr<Control> control);
+	void ActuallyRemoveControl(size_t index);
 };

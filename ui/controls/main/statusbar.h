@@ -25,8 +25,8 @@ public:
 		RefreshWindow(this->window, rect);
 	}
 
-	PGStatusNotification* AddNotification(PGStatusType type, std::string text, std::string tooltip, bool progress_bar);
-	void RemoveNotification(PGStatusNotification* notification);
+	std::shared_ptr<PGStatusNotification> AddNotification(PGStatusType type, std::string text, std::string tooltip, bool progress_bar);
+	void RemoveNotification(std::shared_ptr<PGStatusNotification> notification);
 
 	TextField* GetActiveTextField();
 

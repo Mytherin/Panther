@@ -34,7 +34,7 @@ PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGo
 		buttons[i]->SetSize(PGSize(button_width, button_height));
 		buttons[i]->x = i * button_width;
 		buttons[i]->y = VPADDING;
-		this->AddControl(buttons[i]);
+		this->AddControl(std::shared_ptr<Control>(buttons[i]));
 	}
 	goto_command = buttons[0];
 	goto_line = buttons[1];
@@ -175,7 +175,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 					}
 				}
 			}, (void*) textfield);
-			this->AddControl(field);
+			this->AddControl(std::shared_ptr<Control>(field));
 			break;
 		}
 		case PGGotoFile:
@@ -284,7 +284,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				}
 			}, (void*)this);
 
-			this->AddControl(box);
+			this->AddControl(std::shared_ptr<Control>(box));
 			break;
 		}
 		case PGGotoDefinition:

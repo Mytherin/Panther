@@ -12,7 +12,7 @@ TextFieldContainer::TextFieldContainer(PGWindowHandle window, std::vector<std::s
 	tabcontrol->SetAnchor(PGAnchorTop | PGAnchorLeft);
 	tabcontrol->fixed_height = TEXT_TAB_HEIGHT;
 	tabcontrol->percentage_width = 1;
-	this->AddControl(tabcontrol);
-	this->AddControl(textfield);
+	this->AddControl(std::shared_ptr<Control>(tabcontrol));
+	this->AddControl(std::shared_ptr<Control>(textfield));
 	textfield->top_anchor = tabcontrol;
 }

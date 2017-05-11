@@ -63,7 +63,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 			f->FindAll(true);
 		}
 	}, (void*) this);
-	this->AddControl(field);
+	this->AddControl(std::shared_ptr<Control>(field));
 
 	this->percentage_width = 1;
 
@@ -80,7 +80,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 		buttons[i]->SetAnchor(PGAnchorRight | PGAnchorTop);
 		buttons[i]->margin.top = VPADDING;
 		buttons[i]->margin.left = HPADDING;
-		this->AddControl(buttons[i]);
+		this->AddControl(std::shared_ptr<Control>(buttons[i]));
 	}
 	find_expand = buttons[0];
 	find_button = buttons[1];
@@ -115,7 +115,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 		toggles[i]->left_anchor = i > 0 ? toggles[i - 1] : nullptr;
 		toggles[i]->margin.left = 1;
 		toggles[i]->margin.top = VPADDING;
-		this->AddControl(toggles[i]);
+		this->AddControl(std::shared_ptr<Control>(toggles[i]));
 	}
 
 	toggle_regex->margin.left = HPADDING_SMALL;
@@ -130,7 +130,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	find_label->margin.right = HPADDING_SMALL;
 	find_label->margin.top = VPADDING;
 	find_label->left_anchor = toggle_highlight;
-	this->AddControl(find_label);
+	this->AddControl(std::shared_ptr<Control>(find_label));
 
 	field->left_anchor = find_label;
 	field->right_anchor = find_button;
@@ -205,7 +205,7 @@ void PGFindText::SetType(PGFindTextType type) {
 			buttons[i]->margin.left = HPADDING;
 			buttons[i]->SetAnchor(PGAnchorTop | PGAnchorRight);
 			buttons[i]->right_anchor = i > 0 ? buttons[i - 1] : nullptr;
-			this->AddControl(buttons[i]);
+			this->AddControl(std::shared_ptr<Control>(buttons[i]));
 		}
 		find_all = buttons[0];
 		find_prev = buttons[1];
@@ -254,7 +254,7 @@ void PGFindText::SetType(PGFindTextType type) {
 			filter_label->fixed_width = find_label->fixed_width;
 			filter_label->fixed_height = find_label->fixed_height;
 			filter_label->margin = find_label->margin;
-			this->AddControl(filter_label);
+			this->AddControl(std::shared_ptr<Control>(filter_label));
 
 			files_to_include_field = new SimpleTextField(window, true);
 			files_to_include_field->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop);
@@ -263,7 +263,7 @@ void PGFindText::SetType(PGFindTextType type) {
 			files_to_include_field->percentage_width = 1;
 			files_to_include_field->fixed_height = field->fixed_height;
 			files_to_include_field->margin.top = VPADDING;
-			this->AddControl(files_to_include_field);
+			this->AddControl(std::shared_ptr<Control>(files_to_include_field));
 
 			files_to_include_field->OnTextChanged([](Control* c, void* data) {
 				PGFindText* f = (PGFindText*)data;
@@ -282,7 +282,7 @@ void PGFindText::SetType(PGFindTextType type) {
 				toggles[i]->left_anchor = i > 0 ? toggles[i - 1] : nullptr;
 				toggles[i]->margin.top = VPADDING;
 				toggles[i]->margin.left = 1;
-				this->AddControl(toggles[i]);
+				this->AddControl(std::shared_ptr<Control>(toggles[i]));
 			}
 			source_files_only->margin.left = HPADDING_SMALL;
 		}
@@ -296,7 +296,7 @@ void PGFindText::SetType(PGFindTextType type) {
 			replace_label->fixed_width = find_label->fixed_width;
 			replace_label->fixed_height = find_label->fixed_height;
 			replace_label->margin = find_label->margin;
-			this->AddControl(replace_label);
+			this->AddControl(std::shared_ptr<Control>(replace_label));
 
 			replace_field = new SimpleTextField(window, true);
 			replace_field->SetAnchor(PGAnchorLeft | PGAnchorRight | PGAnchorTop);
@@ -306,7 +306,7 @@ void PGFindText::SetType(PGFindTextType type) {
 			replace_field->percentage_width = 1;
 			replace_field->fixed_height = field->fixed_height;
 			replace_field->margin.top = VPADDING;
-			this->AddControl(replace_field);
+			this->AddControl(std::shared_ptr<Control>(replace_field));
 
 			replace_field->OnTextChanged([](Control* c, void* data) {
 				PGFindText* f = (PGFindText*)data;
@@ -331,7 +331,7 @@ void PGFindText::SetType(PGFindTextType type) {
 				buttons[i]->top_anchor = field;
 				buttons[i]->SetAnchor(PGAnchorTop | PGAnchorRight);
 				buttons[i]->right_anchor = i > 0 ? buttons[i - 1] : nullptr;
-				this->AddControl(buttons[i]);
+				this->AddControl(std::shared_ptr<Control>(buttons[i]));
 			}
 
 			replace_button = buttons[0];
@@ -365,7 +365,7 @@ void PGFindText::SetType(PGFindTextType type) {
 				replace_expand->margin.right = HPADDING_SMALL;
 				replace_expand->margin.bottom = VPADDING;
 				replace_expand->fixed_width = replace_expand->fixed_height = find_expand->fixed_width;
-				this->AddControl(replace_expand);
+				this->AddControl(std::shared_ptr<Control>(replace_expand));
 				replace_expand->SetText(std::string("v"), font);
 				replace_expand->OnPressed([](Button* b, void* data) {
 					PGFindText* tf = ((PGFindText*)data);

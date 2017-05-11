@@ -42,7 +42,7 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 		button->background_color = PGColor(0, 0, 0, 0);
 		button->background_stroke_color = PGColor(0, 0, 0, 0);
 		button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
-		this->AddControl(button);
+		this->AddControl(std::shared_ptr<Control>(button));
 		prev_button = button;
 	}
 }

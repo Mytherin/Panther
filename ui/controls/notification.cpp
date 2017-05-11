@@ -28,7 +28,7 @@ PGNotification::PGNotification(PGWindowHandle window, PGNotificationType type, P
 			warning_label->background_color = PGStyleManager::GetColor(PGColorNotificationWarning);
 			break;
 	}
-	this->AddControl(warning_label);
+	this->AddControl(std::shared_ptr<Control>(warning_label));
 
 	this->label = new Label(window, this);
 	this->label->SetText(text, font);
@@ -39,7 +39,7 @@ PGNotification::PGNotification(PGWindowHandle window, PGNotificationType type, P
 	this->label->padding = PGPadding(0, 0, 5, 5);
 	this->label->fixed_size = false;
 	this->label->wrap_text = true;
-	this->AddControl(label);
+	this->AddControl(std::shared_ptr<Control>(label));
 
 
 
@@ -95,7 +95,7 @@ void PGNotification::AddButton(PGControlDataCallback callback, Control* c, void*
 		ButtonData* bd = ((ButtonData*)data);
 		bd->callback(bd->control, bd->data);
 	}, b);
-	this->AddControl(button);
+	this->AddControl(std::shared_ptr<Control>(button));
 	label->right_anchor = button;
 	RecomputeHeight();
 }

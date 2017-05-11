@@ -944,7 +944,7 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				notification->AddButton([](Control* control, void* data) {
 					dynamic_cast<PGContainer*>(control->parent)->RemoveControl((Control*)data);
 				}, this, notification, "Cancel");
-				dynamic_cast<PGContainer*>(this->parent)->AddControl(notification);
+				dynamic_cast<PGContainer*>(this->parent)->AddControl(std::shared_ptr<Control>(notification));
 
 				return true;
 			}
@@ -984,7 +984,7 @@ void TextField::DisplayGotoDialog(PGGotoType goto_type) {
 		TextField* tf = static_cast<TextField*>(data);
 		tf->ClearSearchBox(c);
 	}, this);
-	dynamic_cast<PGContainer*>(this->parent)->AddControl(goto_anything);
+	dynamic_cast<PGContainer*>(this->parent)->AddControl(std::shared_ptr<Control>(goto_anything));
 }
 
 void TextField::DisplaySearchBox(std::vector<SearchEntry>& entries, SearchBoxCloseFunction close_function, void* close_data) {
@@ -1001,7 +1001,7 @@ void TextField::DisplaySearchBox(std::vector<SearchEntry>& entries, SearchBoxClo
 		TextField* tf = static_cast<TextField*>(data);
 		tf->ClearSearchBox(c);
 	}, this);
-	dynamic_cast<PGContainer*>(this->parent)->AddControl(searchbox);
+	dynamic_cast<PGContainer*>(this->parent)->AddControl(std::shared_ptr<Control>(searchbox));
 }
 
 void TextField::CloseSearchBox() {
@@ -1382,7 +1382,7 @@ void TextField::CreateNotification(PGNotificationType type, std::string text) {
 
 void TextField::ShowNotification() {
 	assert(notification);
-	dynamic_cast<PGContainer*>(this->parent)->AddControl(notification);
+	dynamic_cast<PGContainer*>(this->parent)->AddControl(std::shared_ptr<Control>(notification));
 }
 
 void TextField::ClearNotification() {

@@ -291,10 +291,10 @@ ControlManager* PGCreateControlManager(PGWindowHandle handle, std::vector<std::s
 	splitter->fixed_width = 4;
 	splitter->percentage_height = 1;
 
-	manager->AddControl(bar);
-	manager->AddControl(explorer);
-	manager->AddControl(splitter);
-	manager->AddControl(toolbar);
+	manager->AddControl(std::shared_ptr<Control>(bar));
+	manager->AddControl(std::shared_ptr<Control>(explorer));
+	manager->AddControl(std::shared_ptr<Control>(splitter));
+	manager->AddControl(std::shared_ptr<Control>(toolbar));
 
 	manager->toolbar = toolbar;
 	manager->statusbar = bar;

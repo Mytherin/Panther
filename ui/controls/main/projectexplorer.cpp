@@ -30,7 +30,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
 		((ProjectExplorer*)scroll->parent)->SetScrollbarOffset(value);
 	});
-	this->AddControl(scrollbar);
+	this->AddControl(std::shared_ptr<Control>(scrollbar));
 
 	file_render_height = std::max(GetTextHeight(font) + 2.0f, 16.0f);
 
@@ -42,7 +42,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	undo_button->SetAnchor(PGAnchorLeft | PGAnchorTop);
 	undo_button->margin.left = 2;
 	undo_button->margin.right = 2;
-	this->AddControl(undo_button);
+	this->AddControl(std::shared_ptr<Control>(undo_button));
 
 	redo_button = Button::CreateFromCommand(this, "redo", "Redo",
 		ProjectExplorer::keybindings_noargs, ProjectExplorer::keybindings_images);
@@ -50,7 +50,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	redo_button->margin.left = 2;
 	redo_button->margin.right = 2;
 	redo_button->left_anchor = undo_button;
-	this->AddControl(redo_button);
+	this->AddControl(std::shared_ptr<Control>(redo_button));
 
 	show_all_files_toggle = ToggleButton::CreateFromCommand(this, "toggle_show_all_files", "Show All Files",
 		ProjectExplorer::keybindings_noargs, ProjectExplorer::keybindings_images, this->show_all_files);
@@ -58,7 +58,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	show_all_files_toggle->margin.left = 2;
 	show_all_files_toggle->margin.right = 2;
 	show_all_files_toggle->left_anchor = redo_button;
-	this->AddControl(show_all_files_toggle);
+	this->AddControl(std::shared_ptr<Control>(show_all_files_toggle));
 
 	Button* b = Button::CreateFromCommand(this, "collapse_all", "Collapse All",
 		ProjectExplorer::keybindings_noargs, ProjectExplorer::keybindings_images);
@@ -66,7 +66,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	b->margin.left = 2;
 	b->margin.right = 2;
 	b->left_anchor = show_all_files_toggle;
-	this->AddControl(b);
+	this->AddControl(std::shared_ptr<Control>(b));
 }
 
 ProjectExplorer::~ProjectExplorer() {
@@ -312,7 +312,7 @@ void ProjectExplorer::RenameFile() {
 	textfield->height = file_render_height;
 	textfield->SetFont(font);
 
-	this->AddControl(this->textfield);
+	this->AddControl(std::shared_ptr<Control>(this->textfield));
 }
 
 void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& directory, PGScalar x, PGScalar& y, PGScalar max_y, lng& current_offset, lng offset, lng& selection, lng highlighted_entry) {

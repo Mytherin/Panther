@@ -97,6 +97,7 @@ public:
 	
 	void OnDestroy(PGControlDataCallback callback, void* data) { destroy_data.function = callback; destroy_data.data = data; }
 //protected:
+	bool destroyed;
 	bool dirty;
 	bool visible;
 

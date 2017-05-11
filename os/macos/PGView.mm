@@ -540,7 +540,7 @@ Control* GetFocusedControl(PGWindowHandle window) {
 
 void RegisterControl(PGWindowHandle window, Control *control) {
 	if (window->manager != nullptr)
-		window->manager->AddControl(control);
+		window->manager->AddControl(std::shared_ptr<Control>(control));
 }
 
 PGTime PGGetTimeOS() {
