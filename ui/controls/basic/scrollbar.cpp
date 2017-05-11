@@ -4,9 +4,9 @@
 #include "style.h"
 #include "searchbox.h"
 
-Scrollbar::Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows) :
+Scrollbar::Scrollbar(std::shared_ptr<Control> parent, PGWindowHandle window, bool horizontal, bool arrows) :
 	Control(window), horizontal(horizontal), arrows(arrows), drag_offset(0), drag_start(0) {
-	this->parent = parent;
+	this->parent = std::weak_ptr<Control>(parent);
 	if (horizontal) {
 		this->width = parent->width;
 		this->height = SCROLLBAR_SIZE;
@@ -35,11 +35,13 @@ Scrollbar::Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bo
 }
 
 Scrollbar::~Scrollbar() {
-	ControlManager* cm = GetControlManager(this);
-	cm->UnregisterMouseRegion(&scrollbar_area);
-	if (arrows) {
-		cm->UnregisterMouseRegion(&arrow_regions[0]);
-		cm->UnregisterMouseRegion(&arrow_regions[1]);
+	ControlManager* manager = GetControlManager(this);
+	if (manager) {
+		manager->UnregisterMouseRegion(&scrollbar_area);
+		if (arrows) {
+			manager->UnregisterMouseRegion(&arrow_regions[0]);
+			manager->UnregisterMouseRegion(&arrow_regions[1]);
+		}
 	}
 }
 
@@ -109,6 +111,10 @@ void Scrollbar::Draw(PGRendererHandle renderer) {
 	DrawBackground(renderer);
 	DrawScrollbar(renderer);
 	Control::Draw(renderer);
+}
+
+void Scrollbar::Invalidate() {
+	parent.lock()->Invalidate();
 }
 
 PGScalar Scrollbar::ComputeScrollbarSize() {

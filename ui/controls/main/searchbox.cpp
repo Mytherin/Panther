@@ -14,7 +14,9 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bo
 	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
+}
 
+void SearchBox::Initialize() {
 	field = new SimpleTextField(window);
 	field->width = this->width;
 	field->x = 0;
@@ -40,7 +42,7 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bo
 	scrollbar->fixed_width = SCROLLBAR_SIZE;
 	scrollbar->percentage_height = 1;	
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
-		((SearchBox*)scroll->parent)->scroll_position = value;
+		((SearchBox*)scroll->parent.lock().get())->scroll_position = value;
 	});
 	this->AddControl(std::shared_ptr<Control>(scrollbar));
 }
@@ -280,7 +282,8 @@ void SearchBox::OnResize(PGSize old_size, PGSize new_size) {
 }
 
 void SearchBox::Close(bool success) {
-	PGGotoAnything* goto_anything = dynamic_cast<PGGotoAnything*>(this->parent);
+	auto parent = this->parent.lock();
+	PGGotoAnything* goto_anything = dynamic_cast<PGGotoAnything*>(parent.get());
 	if (goto_anything != nullptr) {
 		goto_anything->Close(success);
 	} else {
@@ -289,7 +292,7 @@ void SearchBox::Close(bool success) {
 			SearchEntry& entry = entries[rank.index];
 			close_function(this, success, rank, entry, close_data);
 		}
-		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
+		dynamic_cast<PGContainer*>(parent.get())->RemoveControl(this);
 	}
 	/*
 	if (success && displayed_entries.size() > 0) {

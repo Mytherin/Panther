@@ -32,10 +32,12 @@ enum PGControlType {
 	PGControlTypeLabel
 };
 
-class Control {
+class Control : public std::enable_shared_from_this<Control> {
 public:
 	Control(PGWindowHandle window);
 	virtual ~Control();
+
+	virtual void Initialize();
 
 	virtual void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	// Returns true if the button has been consumed by the control, false if it has been ignored
@@ -70,7 +72,7 @@ public:
 
 	virtual Control* GetActiveControl() { return nullptr; }
 	virtual bool ControlTakesFocus() { return false; }
-	virtual bool ControlHasFocus() { return !parent ? true : (parent->ControlHasFocus() && parent->GetActiveControl() == this); }
+	virtual bool ControlHasFocus();
 
 	void SetSize(PGSize size);
 	void SetPosition(PGPoint point) { this->x = point.x; this->y = point.y; }
@@ -105,7 +107,7 @@ public:
 	PGScalar Y();
 	PGPoint Position();
 
-	Control* parent = nullptr;
+	std::weak_ptr<Control> parent;
 
 	bool size_resolved = false;
 	PGScalar x = 0, y = 0;
@@ -136,3 +138,10 @@ private:
 
 	PGFunctionData destroy_data;
 };
+
+template<class T, class... Args>
+std::shared_ptr<T> make_shared_control(Args&&... args) {
+	auto shared_ptr = std::make_shared<T>(std::forward<Args>(args)...);
+	shared_ptr->Initialize();
+	return shared_ptr;
+}

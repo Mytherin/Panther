@@ -9,9 +9,10 @@ PGContainer::PGContainer(PGWindowHandle window) :
 }
 
 PGContainer::~PGContainer() {
-	for(auto it = controls.begin(); it != controls.end(); it++) {
-		(*it)->parent = nullptr;
-	}
+}
+
+void PGContainer::Initialize() {
+	FlushRemoves();
 }
 
 bool PGContainer::KeyboardButton(PGButton button, PGModifier modifier) {
@@ -142,8 +143,9 @@ void PGContainer::MouseMove(int x, int y, PGMouseButton buttons) {
 }
 
 void PGContainer::SetFocus(void) {
-	if (!this->parent) return;
-	PGContainer* container = dynamic_cast<PGContainer*>(this->parent);
+	if (this->parent.expired()) return;
+	auto parent = this->parent.lock();
+	PGContainer* container = dynamic_cast<PGContainer*>(parent.get());
 	if (!container) return;
 	if (container) {
 		if (container->focused_control != this) {
@@ -201,7 +203,6 @@ void PGContainer::ClearDragDrop(PGDragDropType type) {
 }
 
 void PGContainer::OnResize(PGSize old_size, PGSize new_size) {
-	FlushRemoves();
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		(*it)->size_resolved = false;
 	}
@@ -258,7 +259,6 @@ bool PGContainer::IsDragging() {
 
 }
 
-
 void PGContainer::AddControl(std::shared_ptr<Control> control) {
 	pending_additions.push_back(control);
 }
@@ -299,8 +299,8 @@ void PGContainer::FlushRemoves() {
 
 void PGContainer::ActuallyAddControl(std::shared_ptr<Control> control) {
 	assert(control);
-	assert(control->parent == nullptr || control->parent == this);
-	control->parent = this;
+	assert(control->parent.expired() || control->parent.lock().get() == this);
+	control->parent = std::weak_ptr<Control>(shared_from_this());
 	controls.push_back(control);
 	if (control->ControlTakesFocus()) {
 		SetFocusedControl(control.get());

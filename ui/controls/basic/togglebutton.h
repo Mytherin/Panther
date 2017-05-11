@@ -6,7 +6,9 @@ typedef void(*PGToggleCallback)(Button*, bool toggled, void* data);
 
 class ToggleButton : public Button {
 public:
-	ToggleButton(PGWindowHandle window, Control* parent, bool toggled);
+	ToggleButton(PGWindowHandle window, std::shared_ptr<Control> parent, bool toggled);
+	ToggleButton(PGWindowHandle window, Control* parent, bool toggled) : ToggleButton(window, parent->shared_from_this(), toggled) { }
+
 
 	void Draw(PGRendererHandle renderer);
 

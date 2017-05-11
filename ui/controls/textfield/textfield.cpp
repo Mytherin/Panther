@@ -48,21 +48,6 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
    	textfield_font = PGCreateFont(PGFontTypeTextField);
 	minimap_font = PGCreateFont(PGFontTypeTextField);
 
-	scrollbar = std::unique_ptr<DecoratedScrollbar>(new DecoratedScrollbar(this, window, false, false));
-	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
-	scrollbar->padding.bottom = SCROLLBAR_PADDING;
-	scrollbar->padding.top = SCROLLBAR_PADDING;
-	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
-		((TextField*)scroll->parent)->GetTextFile().SetScrollOffset(value);
-	});
-	horizontal_scrollbar = std::unique_ptr<Scrollbar>(new Scrollbar(this, window, true, false));
-	horizontal_scrollbar->padding.right = SCROLLBAR_PADDING;
-	horizontal_scrollbar->padding.left = SCROLLBAR_PADDING;
-	horizontal_scrollbar->SetPosition(PGPoint(0, this->height - SCROLLBAR_SIZE));
-	horizontal_scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
-		((TextField*)scroll->parent)->GetTextFile().SetXOffset(value);
-	});
-
 	int size = 0;
 	if (PGSettingsManager::GetSetting("font_size", size)) {
 		SetTextFontSize(textfield_font, size);
@@ -75,7 +60,27 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextFile> file) :
 
 TextField::~TextField() {
 	ControlManager* manager = GetControlManager(this);
-	manager->UnregisterMouseRegion(&minimap_region);
+	if (manager) {
+		manager->UnregisterMouseRegion(&minimap_region);	
+	}
+}
+
+void TextField::Initialize() {
+	scrollbar = std::unique_ptr<DecoratedScrollbar>(new DecoratedScrollbar(this, window, false, false));
+	scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
+	scrollbar->padding.bottom = SCROLLBAR_PADDING;
+	scrollbar->padding.top = SCROLLBAR_PADDING;
+	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
+		((TextField*)scroll->parent.lock().get())->GetTextFile().SetScrollOffset(value);
+	});
+	horizontal_scrollbar = std::unique_ptr<Scrollbar>(new Scrollbar(this, window, true, false));
+	horizontal_scrollbar->padding.right = SCROLLBAR_PADDING;
+	horizontal_scrollbar->padding.left = SCROLLBAR_PADDING;
+	horizontal_scrollbar->SetPosition(PGPoint(0, this->height - SCROLLBAR_SIZE));
+	horizontal_scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
+		((TextField*)scroll->parent.lock().get())->GetTextFile().SetXOffset(value);
+	});
+
 }
 
 void TextField::Update() {
@@ -942,9 +947,9 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				notification->SetPosition(PGPoint(this->x + this->width * 0.2f, this->y));
 
 				notification->AddButton([](Control* control, void* data) {
-					dynamic_cast<PGContainer*>(control->parent)->RemoveControl((Control*)data);
+					dynamic_cast<PGContainer*>(control->parent.lock().get())->RemoveControl((Control*)data);
 				}, this, notification, "Cancel");
-				dynamic_cast<PGContainer*>(this->parent)->AddControl(std::shared_ptr<Control>(notification));
+				dynamic_cast<PGContainer*>(this->parent.lock().get())->AddControl(std::shared_ptr<Control>(notification));
 
 				return true;
 			}
@@ -969,14 +974,16 @@ void TextField::DisplayGotoDialog(PGGotoType goto_type) {
 	if (active_searchbox != nullptr) {
 		goto_anything = dynamic_cast<PGGotoAnything*>(active_searchbox);
 		if (goto_anything == nullptr) {
-			dynamic_cast<PGContainer*>(this->parent)->RemoveControl(goto_anything);
+			dynamic_cast<PGContainer*>(this->parent.lock().get())->RemoveControl(active_searchbox);
 			this->active_searchbox = nullptr;
 		} else {
 			goto_anything->SetType(goto_type);
 			return;
 		}
 	}
-	goto_anything = new PGGotoAnything(this, this->window, goto_type);
+
+	auto g = make_shared_control<PGGotoAnything>(this, this->window, goto_type);
+	goto_anything = g.get();
 	goto_anything->SetSize(PGSize(goto_anything->width, GetTextHeight(textfield_font) + 306));
 	goto_anything->SetPosition(PGPoint(this->x + (this->width - goto_anything->width) * 0.5f, this->y));
 	this->active_searchbox = goto_anything;
@@ -984,29 +991,29 @@ void TextField::DisplayGotoDialog(PGGotoType goto_type) {
 		TextField* tf = static_cast<TextField*>(data);
 		tf->ClearSearchBox(c);
 	}, this);
-	dynamic_cast<PGContainer*>(this->parent)->AddControl(std::shared_ptr<Control>(goto_anything));
+	dynamic_cast<PGContainer*>(this->parent.lock().get())->AddControl(g);
 }
 
 void TextField::DisplaySearchBox(std::vector<SearchEntry>& entries, SearchBoxCloseFunction close_function, void* close_data) {
 	if (active_searchbox != nullptr) {
-		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(active_searchbox);
+		dynamic_cast<PGContainer*>(this->parent.lock().get())->RemoveControl(active_searchbox);
 		this->active_searchbox = nullptr;
 	}
-	SearchBox* searchbox = new SearchBox(this->window, entries, false);
+	auto searchbox = make_shared_control<SearchBox>(this->window, entries, false);
 	searchbox->SetSize(PGSize(500, GetTextHeight(textfield_font) + 306));
 	searchbox->SetPosition(PGPoint(this->x + (this->width - searchbox->width) * 0.5f, this->y));
 	searchbox->OnClose(close_function, close_data);
-	this->active_searchbox = searchbox;
+	this->active_searchbox = searchbox.get();
 	this->active_searchbox->OnDestroy([](Control* c, void* data) {
 		TextField* tf = static_cast<TextField*>(data);
 		tf->ClearSearchBox(c);
 	}, this);
-	dynamic_cast<PGContainer*>(this->parent)->AddControl(std::shared_ptr<Control>(searchbox));
+	dynamic_cast<PGContainer*>(this->parent.lock().get())->AddControl(searchbox);
 }
 
 void TextField::CloseSearchBox() {
 	if (active_searchbox != nullptr) {
-		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(active_searchbox);
+		dynamic_cast<PGContainer*>(this->parent.lock().get())->RemoveControl(active_searchbox);
 		this->active_searchbox = nullptr;
 	}
 }
@@ -1382,12 +1389,12 @@ void TextField::CreateNotification(PGNotificationType type, std::string text) {
 
 void TextField::ShowNotification() {
 	assert(notification);
-	dynamic_cast<PGContainer*>(this->parent)->AddControl(std::shared_ptr<Control>(notification));
+	dynamic_cast<PGContainer*>(this->parent.lock().get())->AddControl(std::shared_ptr<Control>(notification));
 }
 
 void TextField::ClearNotification() {
 	if (this->notification) {
-		dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this->notification);
+		dynamic_cast<PGContainer*>(this->parent.lock().get())->RemoveControl(this->notification);
 		this->notification = nullptr;
 	}
 }

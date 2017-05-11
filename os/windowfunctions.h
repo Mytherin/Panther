@@ -405,9 +405,9 @@ void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j);
 void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j);
 
 class ControlManager;
-ControlManager* PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextFile>> initial_files);
+std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextFile>> initial_files);
 ControlManager* GetWindowManager(PGWindowHandle window);
-void SetWindowManager(PGWindowHandle window, ControlManager*);
+void SetWindowManager(PGWindowHandle window, std::shared_ptr<ControlManager> manager);
 
 
 void SetClipboardTextOS(PGWindowHandle window, std::string);

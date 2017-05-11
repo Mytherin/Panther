@@ -247,16 +247,16 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupC
 	PGPopupMenuInsertEntry(handle, info, callback, flags);
 }
 
-ControlManager* PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextFile>> initial_files) {
-	ControlManager* manager;
+std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextFile>> initial_files) {
+	std::shared_ptr<ControlManager> manager;
 	if (PGGlobalReplayManager::recording_replay) {
-		ReplayManager *m = new ReplayManager(handle);
+		auto m = std::make_shared<ReplayManager>(handle);
 		manager = m;
-		m->manager_id = PGGlobalReplayManager::RegisterManager(manager);
+		m->manager_id = PGGlobalReplayManager::RegisterManager(manager.get());
 	} else {
-		manager = new ControlManager(handle);
+		manager = std::make_shared<ControlManager>(handle);
 		if (PGGlobalReplayManager::running_replay) {
-			PGGlobalReplayManager::RegisterManager(manager);
+			PGGlobalReplayManager::RegisterManager(manager.get());
 		}
 	}
 	SetWindowManager(handle, manager);
@@ -265,46 +265,46 @@ ControlManager* PGCreateControlManager(PGWindowHandle handle, std::vector<std::s
 	manager->percentage_height = 1;
 	manager->percentage_width = 1;
 
-	ProjectExplorer* explorer = new ProjectExplorer(handle);
+	auto explorer = make_shared_control<ProjectExplorer>(handle);
 	explorer->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	explorer->fixed_width = 200;
 	explorer->percentage_height = 1;
 	explorer->minimum_width = 50;
 
-	PGToolbar* toolbar = new PGToolbar(handle);
+	auto toolbar = make_shared_control<PGToolbar>(handle);
 	toolbar->SetAnchor(PGAnchorLeft | PGAnchorTop);
 	toolbar->percentage_width = 1;
 	toolbar->fixed_height = TOOLBAR_HEIGHT;
 
-	StatusBar* bar = new StatusBar(handle);
+	auto bar = make_shared_control<StatusBar>(handle);
 	bar->SetAnchor(PGAnchorLeft | PGAnchorBottom);
 	bar->percentage_width = 1;
 	bar->fixed_height = STATUSBAR_HEIGHT;
-	explorer->bottom_anchor = bar;
-	explorer->top_anchor = toolbar;
+	explorer->bottom_anchor = bar.get();
+	explorer->top_anchor = toolbar.get();
 
-	Splitter *splitter = new Splitter(handle, true);
+	auto splitter = make_shared_control<Splitter>(handle, true);
 	splitter->SetAnchor(PGAnchorBottom | PGAnchorLeft);
-	splitter->left_anchor = explorer;
-	splitter->bottom_anchor = bar;
-	splitter->top_anchor = toolbar;
+	splitter->left_anchor = explorer.get();
+	splitter->bottom_anchor = bar.get();
+	splitter->top_anchor = toolbar.get();
 	splitter->fixed_width = 4;
 	splitter->percentage_height = 1;
 
-	manager->AddControl(std::shared_ptr<Control>(bar));
-	manager->AddControl(std::shared_ptr<Control>(explorer));
-	manager->AddControl(std::shared_ptr<Control>(splitter));
-	manager->AddControl(std::shared_ptr<Control>(toolbar));
+	manager->AddControl(bar);
+	manager->AddControl(explorer);
+	manager->AddControl(splitter);
+	manager->AddControl(toolbar);
 
-	manager->toolbar = toolbar;
-	manager->statusbar = bar;
-	manager->active_projectexplorer = explorer;
-	manager->splitter = splitter;
+	manager->toolbar = toolbar.get();
+	manager->statusbar = bar.get();
+	manager->active_projectexplorer = explorer.get();
+	manager->splitter = splitter.get();
 
 	manager->SetTextFieldLayout(1, 1, initial_files);
 
-	auto menu = PGCreateMenu(handle, manager);
-	auto file = PGCreatePopupMenu(handle, manager);
+	auto menu = PGCreateMenu(handle, manager.get());
+	auto file = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertCommand(file, "New File", "new_tab", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images, PGPopupMenuFlagsNone,
 		[](Control* c, PGPopupInformation* info) {
 		((PGKeyFunction)info->pdata)(((ControlManager*)c)->active_textfield->GetTabControl());
@@ -351,43 +351,43 @@ ControlManager* PGCreateControlManager(PGWindowHandle handle, std::vector<std::s
 	});
 	PGPopupMenuInsertSubmenu(menu, file, "File");
 
-	auto edit = PGCreatePopupMenu(handle, manager);
+	auto edit = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertEntry(edit, PGPopupInformation(edit, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});
 	PGPopupMenuInsertSubmenu(menu, edit, "Edit");
 
-	auto view = PGCreatePopupMenu(handle, manager);
+	auto view = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertEntry(view, PGPopupInformation(view, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});
 	PGPopupMenuInsertSubmenu(menu, view, "View");
 
-	auto project = PGCreatePopupMenu(handle, manager);
+	auto project = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertEntry(project, PGPopupInformation(project, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});
 	PGPopupMenuInsertSubmenu(menu, project, "Project");
 
-	auto build = PGCreatePopupMenu(handle, manager);
+	auto build = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertEntry(build, PGPopupInformation(build, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});
 	PGPopupMenuInsertSubmenu(menu, build, "Build");
 
-	auto tools = PGCreatePopupMenu(handle, manager);
+	auto tools = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertEntry(tools, PGPopupInformation(tools, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});
 	PGPopupMenuInsertSubmenu(menu, tools, "Tools");
 
-	auto preferences = PGCreatePopupMenu(handle, manager);
+	auto preferences = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertEntry(preferences, PGPopupInformation(preferences, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});
 	PGPopupMenuInsertSubmenu(menu, preferences, "Preferences");
 
-	auto help = PGCreatePopupMenu(handle, manager);
+	auto help = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertEntry(help, PGPopupInformation(help, "New File", "Ctrl+N"), [](Control* c, PGPopupInformation* info) {
 		assert(0);
 	});

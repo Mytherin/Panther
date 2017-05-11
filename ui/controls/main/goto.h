@@ -11,6 +11,8 @@ public:
 	PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGotoType type);
 	~PGGotoAnything();
 
+	void Initialize();
+
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	bool KeyboardCharacter(char character, PGModifier modifier);
 

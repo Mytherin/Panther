@@ -10,7 +10,13 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
+}
 
+PGToolbar::~PGToolbar() {
+
+}
+
+void PGToolbar::Initialize() {
 	std::vector<std::string> image_paths;
 	image_paths.push_back("data/icons/undo.png");
 	image_paths.push_back("data/icons/redo.png");
@@ -45,10 +51,6 @@ PGToolbar::PGToolbar(PGWindowHandle window) :
 		this->AddControl(std::shared_ptr<Control>(button));
 		prev_button = button;
 	}
-}
-
-PGToolbar::~PGToolbar() {
-
 }
 
 void PGToolbar::Draw(PGRendererHandle renderer) {

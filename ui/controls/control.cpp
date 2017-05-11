@@ -15,7 +15,6 @@ Control::Control(PGWindowHandle handle) :
 	this->x = 0;
 	this->y = 0;
 	this->anchor = PGAnchorNone;
-	this->parent = nullptr;
 	this->visible = true;
 }
 
@@ -26,6 +25,9 @@ Control::~Control() {
 	if (tooltip) {
 		PGDestroyTooltip(tooltip);
 	}
+}
+
+void Control::Initialize() {
 }
 
 void Control::Draw(PGRendererHandle handle) {
@@ -93,10 +95,20 @@ void Control::Invalidate(bool initial_invalidate) {
 		RefreshWindow(this->window, PGIRect((int)X() - 1, (int)Y() - 1, (int)this->width + 2, (int)this->height + 2), false);
 	}
 	this->dirty = true;
-	if (this->parent) {
-		this->parent->Invalidate(false);
+	if (!this->parent.expired()) {
+		this->parent.lock()->Invalidate(false);
 	}
 }
+
+bool Control::ControlHasFocus() {
+	if (this->parent.expired()) {
+		return true;
+	} else {
+		auto parent = this->parent.lock();
+		return (parent->ControlHasFocus() && parent->GetActiveControl() == this);
+	}
+}
+
 
 bool Control::HasFocus() {
 	return GetFocusedControl(this->window) == this;
@@ -139,11 +151,11 @@ PGScalar Control::Y() {
 
 PGPoint Control::Position() {
 	PGPoint point = PGPoint(x, y);
-	Control* p = parent;
+	auto p = parent.lock();
 	while (p) {
 		point.x += p->x;
 		point.y += p->y;
-		p = p->parent;
+		p = p->parent.lock();
 	}
 	return point;
 }

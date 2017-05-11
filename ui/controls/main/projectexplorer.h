@@ -36,6 +36,8 @@ public:
 	ProjectExplorer(PGWindowHandle window);
 	~ProjectExplorer();
 
+	void Initialize(void);
+
 	void Update(void);
 
 	bool KeyboardButton(PGButton button, PGModifier modifier);

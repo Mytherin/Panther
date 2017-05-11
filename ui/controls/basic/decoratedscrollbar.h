@@ -20,7 +20,9 @@ struct PGScrollbarDecoration {
 
 class DecoratedScrollbar : public Scrollbar {
 public:
-	DecoratedScrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows);
+	DecoratedScrollbar(std::shared_ptr<Control> parent, PGWindowHandle window, bool horizontal, bool arrows);
+	DecoratedScrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows) :
+		DecoratedScrollbar(parent->shared_from_this(), window, horizontal, arrows) { }
 
 	virtual void Draw(PGRendererHandle renderer);
 

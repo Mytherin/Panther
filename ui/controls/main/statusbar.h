@@ -14,6 +14,8 @@ public:
 	StatusBar(PGWindowHandle window);
 	~StatusBar();
 
+	void Initialize();
+
 	void SetText(std::string text);
 
 	void SelectionChanged();

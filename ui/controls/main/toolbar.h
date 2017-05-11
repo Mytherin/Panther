@@ -9,6 +9,8 @@ public:
 	PGToolbar(PGWindowHandle window);
 	~PGToolbar();
 
+	void Initialize();
+
 	PGCursorType GetCursor(PGPoint mouse);
 
 	void Draw(PGRendererHandle);

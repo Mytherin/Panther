@@ -181,8 +181,8 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 		bool found = false;
 		for (auto it2 = current_directories.begin(); it2 != current_directories.end(); it2++) {
 			if ((*it2)->path == path) {
-				current_directories.erase(it2);
 				open_directories.push(*it2);
+				current_directories.erase(it2);
 				found = true;
 				break;
 			}

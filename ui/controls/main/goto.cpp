@@ -22,10 +22,19 @@ struct ScrollData {
 
 PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGotoType type) :
 	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), 
-	preview(nullptr), scroll_data(nullptr) {
+	preview(nullptr), scroll_data(nullptr), type(type) {
 	font = PGCreateFont(PGFontTypeUI);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
+}
 
+PGGotoAnything::~PGGotoAnything() {
+	if (scroll_data) delete scroll_data;
+	if (preview) {
+		this->textfield->GetTabControl()->CloseTemporaryFile();
+	}
+}
+
+void PGGotoAnything::Initialize() {
 	PGScalar button_width = MeasureTextWidth(font, "Definition") + 2 * HPADDING;
 	PGScalar button_height = GetTextHeight(font) + VPADDING * 2;
 	ToggleButton* buttons[4];
@@ -60,15 +69,9 @@ PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGo
 	}, this);
 
 	this->width = button_width * 4;
+	auto new_type = this->type;
 	this->type = PGGotoNone;
-	SetType(type);
-}
-
-PGGotoAnything::~PGGotoAnything() {
-	if (scroll_data) delete scroll_data;
-	if (preview) {
-		this->textfield->GetTabControl()->CloseTemporaryFile();
-	}
+	SetType(new_type);
 }
 
 void PGGotoAnything::Draw(PGRendererHandle renderer) {
@@ -244,7 +247,8 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				}
 			}
 			*/
-			this->box = new SearchBox(this->window, entries);
+			auto box = make_shared_control<SearchBox>(this->window, entries);
+			this->box = box.get();
 			box->SetSize(PGSize(this->width, this->height - (goto_command->y + goto_command->height)));
 			box->SetPosition(PGPoint(0, goto_command->y + goto_command->height));
 			box->OnRender(
@@ -284,7 +288,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				}
 			}, (void*)this);
 
-			this->AddControl(std::shared_ptr<Control>(box));
+			this->AddControl(box);
 			break;
 		}
 		case PGGotoDefinition:
@@ -297,6 +301,9 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			goto_command->SetToggled(true);
 			break;
 		}
+		default:
+			assert(0);
+			break;
 	}
 }
 
@@ -335,7 +342,8 @@ void PGGotoAnything::Cancel(bool success) {
 
 void PGGotoAnything::Close(bool success) {
 	this->Cancel(success);
-	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
+	auto parent = this->parent.lock();
+	dynamic_cast<PGContainer*>(parent.get())->RemoveControl(this);
 }
 
 void PGGotoAnything::InitializeKeybindings() {

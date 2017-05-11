@@ -41,8 +41,6 @@ PGNotification::PGNotification(PGWindowHandle window, PGNotificationType type, P
 	this->label->wrap_text = true;
 	this->AddControl(std::shared_ptr<Control>(label));
 
-
-
 	RecomputeHeight();
 }
 

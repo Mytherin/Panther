@@ -2,7 +2,7 @@
 #include "decoratedscrollbar.h"
 
 
-DecoratedScrollbar::DecoratedScrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows) :
+DecoratedScrollbar::DecoratedScrollbar(std::shared_ptr<Control> parent, PGWindowHandle window, bool horizontal, bool arrows) :
 	Scrollbar(parent, window, horizontal, arrows) {
 
 }

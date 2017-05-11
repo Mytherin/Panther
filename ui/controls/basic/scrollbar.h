@@ -22,7 +22,9 @@ typedef void(*PGScrollbarCallback)(Scrollbar*, lng value);
 
 class Scrollbar : public Control {
 public:
-	Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows);
+	Scrollbar(std::shared_ptr<Control> parent, PGWindowHandle window, bool horizontal, bool arrows);
+	Scrollbar(Control* parent, PGWindowHandle window, bool horizontal, bool arrows) : Scrollbar(parent->shared_from_this(), window, horizontal, arrows) { }
+	
 	virtual ~Scrollbar();
 
 	virtual void Draw(PGRendererHandle renderer);
@@ -35,7 +37,7 @@ public:
 	
 	void OnScrollChanged(PGScrollbarCallback callback) { this->callback = callback; }
 
-	void Invalidate() { parent->Invalidate(); }
+	void Invalidate();
 
 	lng min_value = 0;
 	lng max_value = 1;

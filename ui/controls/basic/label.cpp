@@ -3,9 +3,9 @@
 #include "style.h"
 #include "textline.h"
 
-Label::Label(PGWindowHandle window, Control* parent) : 
+Label::Label(PGWindowHandle window, std::shared_ptr<Control> parent) : 
 	Control(window), wrap_text(false) {
-	this->parent = parent;
+	this->parent = std::weak_ptr<Control>(parent);
 
 	this->background_color.a = 0;
 	this->text_color = PGStyleManager::GetColor(PGColorTabControlText);
@@ -38,6 +38,10 @@ void Label::Draw(PGRendererHandle renderer) {
 			RenderText(renderer, font, text.c_str(), text.size(), render_rectangle.x + render_rectangle.width / 2, render_rectangle.y + (render_rectangle.height - GetTextHeight(font)) / 2 - 1, PGTextAlignHorizontalCenter);
 		}
 	}
+}
+
+void Label::Invalidate() {
+	parent.lock()->Invalidate();
 }
 
 void Label::ResolveSize(PGSize new_size) {

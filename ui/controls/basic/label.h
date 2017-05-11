@@ -6,11 +6,12 @@
 
 class Label : public Control {
 public:
-	Label(PGWindowHandle window, Control* parent);
+	Label(PGWindowHandle window, std::shared_ptr<Control> parent);
+	Label(PGWindowHandle window, Control* parent) : Label(window, parent->shared_from_this()) { }
 
 	void Draw(PGRendererHandle renderer);
 
-	void Invalidate() { parent->Invalidate(); }
+	void Invalidate();
 
 	void SetText(std::string text, PGFontHandle font) {
 		this->text = text;

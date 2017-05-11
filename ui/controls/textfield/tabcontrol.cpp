@@ -63,9 +63,11 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 }
 
 TabControl::~TabControl() {
-	auto cm = GetControlManager(this);
-	cm->UnregisterOnTextChanged(ClearEmptyFlag, this);
-	cm->UnregisterControlForMouseEvents(this);
+	auto manager = GetControlManager(this);
+	if (manager) {
+		manager->UnregisterOnTextChanged(ClearEmptyFlag, this);
+		manager->UnregisterControlForMouseEvents(this);
+	}
 }
 
 Tab TabControl::OpenTab(std::shared_ptr<TextFile> textfile) {
@@ -167,7 +169,7 @@ void TabControl::Draw(PGRendererHandle renderer) {
 	PGScalar position_x = 0;
 	PGColor color = PGStyleManager::GetColor(PGColorMainMenuBackground);
 	RenderRectangle(renderer, PGRect(x, y, this->width, this->height), color, PGDrawStyleFill);
-	bool parent_has_focus = this->parent->ControlHasFocus();
+	bool parent_has_focus = this->parent.lock()->ControlHasFocus();
 
 	bool rendered = false;
 	int index = 0;

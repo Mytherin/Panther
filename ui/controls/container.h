@@ -14,6 +14,8 @@ public:
 	PGContainer(PGWindowHandle window);
 	virtual ~PGContainer();
 
+	virtual void Initialize();
+
 	virtual void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);
 	virtual bool KeyboardButton(PGButton button, PGModifier modifier);
 	virtual bool KeyboardCharacter(char character, PGModifier modifier);
@@ -63,6 +65,7 @@ protected:
 	Control* focused_control = nullptr;
 
 	virtual void SetFocusedControl(Control* c);
+	void FlushRemoves();
 
 	std::vector<std::shared_ptr<Control>> controls;
 
@@ -71,7 +74,6 @@ private:
 	bool pending_removal;
 	std::vector<std::shared_ptr<Control>> pending_additions;
 
-	void FlushRemoves();
 	void ActuallyAddControl(std::shared_ptr<Control> control);
 	void ActuallyRemoveControl(size_t index);
 };

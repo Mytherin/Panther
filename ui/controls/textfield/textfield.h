@@ -45,6 +45,8 @@ public:
 	TextField(PGWindowHandle, std::shared_ptr<TextFile> file);
 	~TextField();
 
+	void Initialize();
+
 	void Update(void);
 	void Draw(PGRendererHandle);
 	void MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier);

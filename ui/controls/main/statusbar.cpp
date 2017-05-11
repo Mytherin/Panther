@@ -16,10 +16,17 @@ StatusBar::StatusBar(PGWindowHandle window) :
 	GetControlManager(this)->OnActiveTextFieldChanged([](Control* c, void* data) {
 		((StatusBar*)(data))->SelectionChanged();
 	}, (void*) this);
+}
 
+StatusBar::~StatusBar() {
+	// FIXME: unregister textfield function
+}
+
+void StatusBar::Initialize() {
 	Button* buttons[4];
 	for (int i = 0; i < 4; i++) {
-		buttons[i] = new Button(window, this);
+		auto button = make_shared_control<Button>(window, this);
+		buttons[i] = button.get();
 		buttons[i]->background_color = PGColor(0, 0, 0, 0);
 		buttons[i]->background_stroke_color = PGColor(0, 0, 0, 0);
 		buttons[i]->SetAnchor(PGAnchorTop | PGAnchorRight);
@@ -30,7 +37,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 		buttons[i]->fixed_size = false;
 		buttons[i]->padding.left = 20;
 		buttons[i]->padding.right = 20;
-		this->AddControl(std::shared_ptr<Control>(buttons[i]));
+		this->AddControl(button);
 	}
 
 	unicode_button = buttons[0];
@@ -39,7 +46,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 	tabwidth_button = buttons[3];
 	
 	unicode_button->OnPressed([](Button* button, void* data) {
-		Control* c = button->parent;
+		Control* c = button->parent.lock().get();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
 		PGPopupMenuHandle reopen_menu = PGCreatePopupMenu(button->window, c);
 		PGPopupMenuHandle savewith_menu = PGCreatePopupMenu(button->window, c);
@@ -60,7 +67,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 	}, this);
 
 	language_button->OnPressed([](Button* button, void* data) {
-		Control* c = button->parent;
+		Control* c = button->parent.lock().get();
 		TextField* tf = dynamic_cast<StatusBar*>(c)->GetActiveTextField();
 		TextFile& file = tf->GetTextFile();
 		std::vector<SearchEntry> entries;
@@ -94,7 +101,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 	}, this);
 
 	lineending_button->OnPressed([](Button* button, void* data) {
-		Control* c = button->parent;
+		Control* c = button->parent.lock().get();
 		TextFile& file = ((StatusBar*)c)->GetActiveTextField()->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(button->window, c);
 		PGPopupMenuInsertEntry(menu, "Windows (\\r\\n)", [](Control* control, PGPopupInformation* info) {
@@ -115,7 +122,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 			PGTextAlignRight | PGTextAlignBottom);
 	}, this);
 	tabwidth_button->OnPressed([](Button* button, void* data) {
-		Control* c = button->parent;
+		Control* c = button->parent.lock().get();
 		TextFile& file = ((StatusBar*)c)->GetActiveTextField()->GetTextFile();
 		PGPopupMenuHandle menu = PGCreatePopupMenu(c->window, c);
 
@@ -147,10 +154,7 @@ StatusBar::StatusBar(PGWindowHandle window) :
 			PGPoint(button->X() + button->width - 1, button->Y())),
 			PGTextAlignRight | PGTextAlignBottom);
 	}, this);
-}
-
-StatusBar::~StatusBar() {
-	// FIXME: unregister textfield function
+	PGContainer::Initialize();
 }
 
 void StatusBar::SetText(std::string text) {
@@ -230,6 +234,7 @@ void StatusBar::Draw(PGRendererHandle renderer) {
 			tabwidth_button->SetText(str, font);
 
 			this->TriggerResize();
+			this->FlushRemoves();
 
 			PGContainer::Draw(renderer);
 		}

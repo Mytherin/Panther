@@ -2,7 +2,7 @@
 #include "style.h"
 #include "togglebutton.h"
 
-ToggleButton::ToggleButton(PGWindowHandle window, Control* parent, bool toggled) : 
+ToggleButton::ToggleButton(PGWindowHandle window, std::shared_ptr<Control> parent, bool toggled) : 
 	Button(window, parent), toggled(toggled), on_toggle(nullptr) {
 
 	this->OnPressed([](Button* button, void* data) {
@@ -42,7 +42,8 @@ static ToggleButton* CreateToggleButtonFromCommand(Control* parent, std::string 
 	button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
 	button->SetTooltip(tooltip_text);
 	button->OnToggle([](Button* b, bool toggled, void* data) {
-		((PGKeyFunction)data)(b->parent);
+		auto parent = b->parent.lock();
+		((PGKeyFunction)data)(parent.get());
 	}, (void*) functions[command_name]);
 	return button;
 }

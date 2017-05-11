@@ -8,7 +8,8 @@ typedef void(*PGButtonCallback)(Button*, void*);
 
 class Button : public Control {
 public:
-	Button(PGWindowHandle window, Control* parent);
+	Button(PGWindowHandle window, Control* parent) : Button(window, parent->shared_from_this()) { }
+	Button(PGWindowHandle window, std::shared_ptr<Control> parent);
 	virtual ~Button();
 
 	bool hovering = false;
@@ -25,7 +26,7 @@ public:
 
 	bool IsDragging() { return clicking; }
 
-	void Invalidate() { parent->Invalidate(); }
+	void Invalidate();
 
 	void OnPressed(PGButtonCallback callback, void* data = nullptr) { on_pressed = callback; pressed_data = data; }
 

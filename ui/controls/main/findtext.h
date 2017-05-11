@@ -14,6 +14,8 @@ public:
 	PGFindText(PGWindowHandle window, PGFindTextType type);
 	~PGFindText();
 
+	void Initialize();
+
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 	
 	void Draw(PGRendererHandle renderer);

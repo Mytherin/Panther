@@ -4,9 +4,9 @@
 #include "style.h"
 
 
-Button::Button(PGWindowHandle window, Control* parent) : 
+Button::Button(PGWindowHandle window, std::shared_ptr<Control> parent) : 
 	Control(window), fixed_size(true), image(nullptr) {
-	this->parent = parent;
+	this->parent = std::weak_ptr<Control>(parent);
 	GetControlManager(this)->RegisterControlForMouseEvents(this);
 
 	this->background_color = PGStyleManager::GetColor(PGColorTabControlBackground);
@@ -17,7 +17,10 @@ Button::Button(PGWindowHandle window, Control* parent) :
 }
 
 Button::~Button() {
-	GetControlManager(this)->UnregisterControlForMouseEvents(this);
+	auto manager = GetControlManager(this);
+	if (manager) {
+		manager->UnregisterControlForMouseEvents(this);
+	}
 }
 
 void Button::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
@@ -91,6 +94,10 @@ void Button::Draw(PGRendererHandle renderer) {
 	}
 }
 
+void Button::Invalidate() {
+	parent.lock()->Invalidate();
+}
+
 void Button::SetText(std::string text, PGFontHandle font) {
 	this->text = text;
 	this->font = font;
@@ -112,7 +119,8 @@ Button* Button::CreateFromCommand(Control* parent, std::string command_name, std
 	button->background_color_hover = PGStyleManager::GetColor(PGColorTextFieldSelection);
 	button->SetTooltip(tooltip_text);
 	button->OnPressed([](Button* b, void* data) {
-		((PGKeyFunction)data)(b->parent);
+		auto parent = b->parent.lock();
+		((PGKeyFunction)data)(parent.get());
 	}, (void*) functions[command_name]);
 	return button;
 }

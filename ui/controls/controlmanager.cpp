@@ -39,11 +39,7 @@ void ControlManager::Update(void) {
 			(*it)->MouseMove(mouse);
 		}
 	}
-	for (auto it = controls.begin(); it != controls.end(); it++) {
-		// trigger the periodic render of the child controls
-		// this is mostly used for animations
-		(*it)->Update();
-	}
+	PGContainer::Update();
 	PGCursorType cursor = PGCursorStandard;
 	if (!is_dragging) {
 		cursor = GetCursor(mouse);
@@ -87,11 +83,11 @@ void ControlManager::RefreshWindow(bool redraw_now) {
 
 void ControlManager::ShowProjectExplorer(bool visible) {
 	if (visible) {
-		active_projectexplorer->parent = this;
+		active_projectexplorer->parent = std::weak_ptr<Control>(shared_from_this());
 		active_projectexplorer->fixed_width = projectexplorer_width;
 		splitter->fixed_width = 4;
 	} else {
-		active_projectexplorer->parent = nullptr;
+		active_projectexplorer->parent.reset();
 		projectexplorer_width = active_projectexplorer->width;
 		splitter->fixed_width = 0;
 		active_projectexplorer->fixed_width = 0;
@@ -186,7 +182,7 @@ void ControlManager::LoadWorkspace(nlohmann::json& j) {
 void ControlManager::WriteWorkspace(nlohmann::json& j) {
 	j["controlmanager"] = nlohmann::json::object();
 	j["controlmanager"]["projectexplorer_width"] = 
-		active_projectexplorer->parent == nullptr ? 
+		active_projectexplorer->parent.expired() ? 
 		projectexplorer_width :
 		active_projectexplorer->width;
 	PGContainer::WriteWorkspace(j);
@@ -218,17 +214,16 @@ void ControlManager::ShowFindReplace(PGFindTextType type) {
 		this->Invalidate();
 		return;
 	}
-	PGFindText* view = new PGFindText(this->window, type);
-	this->active_findtext = view;
+	auto view = make_shared_control<PGFindText>(this->window, type);
+	this->active_findtext = view.get();
 	view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	view->bottom_anchor = statusbar;
 	for (auto it = controls.begin(); it != controls.end(); it++) {
 		if ((*it)->bottom_anchor == statusbar) {
-			(*it)->bottom_anchor = view;
+			(*it)->bottom_anchor = view.get();
 		}
 	}
-	this->TriggerResize();
-	this->AddControl(std::shared_ptr<Control>(view));
+	this->AddControl(view);
 	this->Invalidate();
 }
 

@@ -47,6 +47,8 @@ class SearchBox : public PGContainer {
 public:
 	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles = true);
 
+	void Initialize();
+
 	bool KeyboardCharacter(char character, PGModifier modifier);
 	bool KeyboardButton(PGButton button, PGModifier modifier);
 

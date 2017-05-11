@@ -40,7 +40,7 @@ struct PGWindow {
 	NSEvent *event;
 	PGView* view;
 	bool pending_destroy = false;
-	ControlManager* manager;
+	std::shared_ptr<ControlManager> manager;
 	PGRendererHandle renderer;
 	PGWorkspace* workspace;
 
@@ -125,8 +125,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 		timer = CreateTimer(handle, MAX_REFRESH_FREQUENCY, PeriodicWindowRedraw, PGTimerFlagsNone);
 
-		ControlManager* manager = PGCreateControlManager(handle, textfiles);
-		handle->manager = manager;
+		PGCreateControlManager(handle, textfiles);
 	}
 	return self;
 }
@@ -160,7 +159,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 		invalidateRect.size.width,
 		invalidateRect.size.height);
 
-	RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager, [self scaleFactor]);
+	RenderControlsToBitmap(handle->renderer, bitmap, rect, handle->manager.get(), [self scaleFactor]);
 
 	// draw bitmap
 	CGContextRef context = (CGContextRef) [[NSGraphicsContext currentContext] graphicsPort];
@@ -170,7 +169,6 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 -(void)performClose {
 	handle->workspace->WriteWorkspace();
 	DeleteTimer(timer);
-	delete handle->manager;
 	DeleteRenderer(handle->renderer);
 	handle->renderer = nullptr;
 	handle->manager = nullptr;
@@ -383,7 +381,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 -(ControlManager*)getManager {
-	return handle->manager;
+	return handle->manager.get();
 }
 
 - (void)keyUp:(NSEvent *)event {
@@ -635,7 +633,7 @@ void DeleteTimer(PGTimerHandle handle) {
 }
 
 ControlManager* GetWindowManager(PGWindowHandle window) {
-	return window->manager;
+	return window->manager.get();
 }
 
 
@@ -946,7 +944,7 @@ void PGDestroyTooltip(PGTooltipHandle handle) {
 	delete handle;
 }
 
-void SetWindowManager(PGWindowHandle window, ControlManager* manager) {
+void SetWindowManager(PGWindowHandle window, std::shared_ptr<ControlManager> manager) {
 	window->manager = manager;
 }
 

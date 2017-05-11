@@ -23,11 +23,26 @@ static void UpdateHighlight(Control* c, PGFindText* f) {
 }
 
 PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
-	PGContainer(window), history_entry(0), field_lines(1), notification(nullptr) {
+	PGContainer(window), history_entry(0), field_lines(1), notification(nullptr), type(type) {
 	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
+}
 
+PGFindText::~PGFindText() {
+	ControlManager* manager = GetControlManager(this);
+	if (manager) {
+		manager->active_findtext = nullptr;
+		manager->UnregisterOnTextChanged((PGControlDataCallback)UpdateHighlight, this);
+		manager->UnregisterOnActiveTextFieldChanged((PGControlDataCallback)UpdateHighlight, this);
+		if (notification) {
+			manager->statusbar->RemoveNotification(notification);
+			notification = nullptr;
+		}
+	}
+}
+
+void PGFindText::Initialize() {
 	field = new SimpleTextField(window, true);
 	field->percentage_width = 1;
 	field->fixed_height = field->height;
@@ -155,18 +170,7 @@ PGFindText::PGFindText(PGWindowHandle window, PGFindTextType type) :
 	this->replace_label = nullptr;
 	this->filter_label = nullptr;
 
-	this->SetType(type);
-}
-
-PGFindText::~PGFindText() {
-	ControlManager* manager = GetControlManager(this);
-	manager->active_findtext = nullptr;
-	manager->UnregisterOnTextChanged((PGControlDataCallback)UpdateHighlight, this);
-	manager->UnregisterOnActiveTextFieldChanged((PGControlDataCallback)UpdateHighlight, this);
-	if (notification) {
-		manager->statusbar->RemoveNotification(notification);
-		notification = nullptr;
-	}
+	this->SetType(this->type);
 }
 
 void PGFindText::SetType(PGFindTextType type) {
@@ -402,7 +406,6 @@ void PGFindText::SetType(PGFindTextType type) {
 	}
 	this->UpdateFieldHeight(true);
 	GetControlManager(this)->TriggerResize();
-	this->TriggerResize();
 }
 
 void PGFindText::Draw(PGRendererHandle renderer) {
@@ -665,7 +668,8 @@ void PGFindText::Close() {
 	ControlManager* manager = GetControlManager(this);
 	TextFile& tf = manager->active_textfield->GetTextFile();
 	tf.ClearMatches();
-	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);
+	auto parent = this->parent.lock();
+	dynamic_cast<PGContainer*>(parent.get())->RemoveControl(this);
 }
 
 void PGFindText::ShiftTextfieldFocus(PGDirection direction) {
@@ -752,6 +756,8 @@ void PGFindText::ResolveSize(PGSize new_size) {
 		case PGFindReplaceSingleFile:
 			this->fixed_height = 2 * (field->fixed_height + VPADDING * 2);
 			break;
+		default:
+			assert(0);
 	}
 	PGContainer::ResolveSize(new_size);
 }

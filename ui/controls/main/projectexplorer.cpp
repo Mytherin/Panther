@@ -18,7 +18,14 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	SetTextFontSize(font, 12);
 
 	lock = std::unique_ptr<PGMutex>(CreateMutex());
+}
 
+ProjectExplorer::~ProjectExplorer() {
+	this->update_task = nullptr;
+	LockMutex(lock.get());
+}
+
+void ProjectExplorer::Initialize(void) {
 	scrollbar = new Scrollbar(this, window, false, false);
 	scrollbar->padding.bottom = SCROLLBAR_PADDING;
 	scrollbar->padding.top = SCROLLBAR_PADDING;
@@ -28,7 +35,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	scrollbar->percentage_height = 1;
 	//scrollbar->SetPosition(PGPoint(this->width - SCROLLBAR_SIZE, 0));
 	scrollbar->OnScrollChanged([](Scrollbar* scroll, lng value) {
-		((ProjectExplorer*)scroll->parent)->SetScrollbarOffset(value);
+		((ProjectExplorer*)scroll->parent.lock().get())->SetScrollbarOffset(value);
 	});
 	this->AddControl(std::shared_ptr<Control>(scrollbar));
 
@@ -67,11 +74,6 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	b->margin.right = 2;
 	b->left_anchor = show_all_files_toggle;
 	this->AddControl(std::shared_ptr<Control>(b));
-}
-
-ProjectExplorer::~ProjectExplorer() {
-	this->update_task = nullptr;
-	LockMutex(lock.get());
 }
 
 void ProjectExplorer::Update(void) {
