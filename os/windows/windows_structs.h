@@ -13,7 +13,7 @@ struct PGWindow {
 public:
 	PGModifier modifier;
 	HWND hwnd = nullptr;
-	ControlManager* manager = nullptr;
+	std::shared_ptr<ControlManager> manager;
 	PGRendererHandle renderer = nullptr;
 	IDropTarget* drop_target;
 	PGDropSource* source = nullptr;

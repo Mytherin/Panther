@@ -194,7 +194,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				break;
 			}
 
-			RenderControlsToBitmap(handle->renderer, handle->bitmap, PGIRect(0, 0, handle->manager->width, handle->manager->height), handle->manager, 1);
+			RenderControlsToBitmap(handle->renderer, handle->bitmap, PGIRect(0, 0, handle->manager->width, handle->manager->height), handle->manager.get(), 1);
 
 			SkBitmap* bitmap = &handle->bitmap;
 			SkBitmap subset_bitmap;
@@ -712,8 +712,7 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 	}
 
 
-	ControlManager* manager = PGCreateControlManager(handle, initial_files);
-	handle->manager = manager;
+	PGCreateControlManager(handle, initial_files);
 	return handle;
 }
 
@@ -731,7 +730,6 @@ void DestroyWindow(PGWindowHandle window) {
 	} else {
 		window->workspace->WriteWorkspace();
 	}
-	delete window->manager;
 	DeleteRenderer(window->renderer);
 	DeleteTimer(window->timer);
 	UnregisterDropWindow(window, window->drop_target);
@@ -791,11 +789,6 @@ PGPoint PGGetWindowPosition(PGWindowHandle window) {
 
 Control* GetFocusedControl(PGWindowHandle window) {
 	return window->manager->GetActiveControl();
-}
-
-void RegisterControl(PGWindowHandle window, Control *control) {
-	if (window->manager != nullptr)
-		window->manager->AddControl(control);
 }
 
 PGTime PGGetTimeOS() {
@@ -924,10 +917,10 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 }
 
 ControlManager* GetWindowManager(PGWindowHandle window) {
-	return window->manager;
+	return window->manager.get();
 }
 
-void SetWindowManager(PGWindowHandle window, ControlManager* manager) {
+void SetWindowManager(PGWindowHandle window, std::shared_ptr<ControlManager> manager) {
 	window->manager = manager;
 }
 

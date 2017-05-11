@@ -24,6 +24,7 @@ PGGotoAnything::PGGotoAnything(TextField* textfield, PGWindowHandle window, PGGo
 	PGContainer(window), textfield(textfield), box(nullptr), field(nullptr), 
 	preview(nullptr), scroll_data(nullptr), type(type) {
 	font = PGCreateFont(PGFontTypeUI);
+	SetTextFontSize(font, 12);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
 }
 
