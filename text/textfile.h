@@ -61,8 +61,9 @@ struct PGTextFileSettings {
 	std::vector<PGCursorRange> cursor_data;
 	PGLanguage* language;
 	PGFileEncoding encoding = PGEncodingUnknown;
+	std::string name;
 
-	PGTextFileSettings() : line_ending(PGLineEndingUnknown), xoffset(-1), yoffset(-1, -1), wordwrap(false), cursor_data(), language(nullptr), encoding(PGEncodingUnknown) { }
+	PGTextFileSettings() : line_ending(PGLineEndingUnknown), xoffset(-1), yoffset(-1, -1), wordwrap(false), cursor_data(), language(nullptr), encoding(PGEncodingUnknown), name("") { }
 };
 
 class TextFile {

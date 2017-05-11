@@ -403,6 +403,10 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 
 					Cursor::LoadCursors(*it, settings.cursor_data);
 
+					if (it->count("name") > 0) {
+						std::string name = (*it)["name"];
+						settings.name = name;
+					}
 					if (it->count("lineending") > 0) {
 						std::string ending = (*it)["lineending"];
 						if (ending == "windows") {
@@ -504,7 +508,10 @@ void TabControl::WriteWorkspace(nlohmann::json& j) {
 		std::string path = file->GetFullPath();
 		if (path.size() != 0) {
 			cur["file"] = path;
+		} else {
+			cur["name"] = file->GetName();
 		}
+
 
 		auto cursor_data = Cursor::GetCursorData(file->GetCursors());
 		Cursor::StoreCursors(cur, cursor_data);

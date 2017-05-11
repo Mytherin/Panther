@@ -94,6 +94,8 @@ public:
 	
 	void InvalidateWorkspace();
 
+	bool IsDestroyed() { return is_destroyed; }
+
 	PG_CONTROL_KEYBINDINGS;
 protected:
 	virtual void SetFocusedControl(Control* c);

@@ -3174,6 +3174,9 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 	if (settings.encoding != PGEncodingUnknown) {
 		this->encoding = settings.encoding;
 	}
+	if (settings.name.size() > 0) {
+		this->name = settings.name;
+	}
 }
 
 void TextFile::AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
@@ -3297,5 +3300,6 @@ PGTextFileSettings TextFile::GetSettings() {
 	settings.wordwrap = GetWordWrap();
 	settings.xoffset = GetXOffset();
 	settings.yoffset = yoffset;
+	settings.name = FileInMemory() ? this->name : "";
 	return settings;
 }
