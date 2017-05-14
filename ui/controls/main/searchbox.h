@@ -4,48 +4,23 @@
 #include "container.h"
 #include "scrollbar.h"
 #include "togglebutton.h"
+#include "searchindex.h"
 
 class SimpleTextField;
-
-struct SearchEntry {
-	std::string display_name;
-	std::string display_subtitle;
-	std::string text;
-	std::shared_ptr<TextFile> data;
-	std::string str_data;
-	void* ptr_data;
-	double multiplier;
-	double basescore;
-};
-
-struct SearchRank {
-	lng index;
-	double score;
-
-	SearchRank(lng index, double score) : index(index), score(score) {}
-
-	friend bool operator<(const SearchRank& l, const SearchRank& r) {
-		return l.score < r.score;
-	}
-	friend bool operator> (const SearchRank& lhs, const SearchRank& rhs){ return rhs < lhs; }
-	friend bool operator<=(const SearchRank& lhs, const SearchRank& rhs){ return !(lhs > rhs); }
-	friend bool operator>=(const SearchRank& lhs, const SearchRank& rhs){ return !(lhs < rhs); }
-	friend bool operator==(const SearchRank& lhs, const SearchRank& rhs) { return lhs.score == rhs.score; }
-	friend bool operator!=(const SearchRank& lhs, const SearchRank& rhs){ return !(lhs == rhs); }
-};
 
 #define SEARCHBOX_MAX_ENTRIES 30
 
 class SearchBox;
 
-typedef void(*SearchBoxRenderFunction)(PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height);
-typedef void(*SearchBoxSelectionChangedFunction)(SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data);
-typedef void(*SearchBoxCloseFunction)(SearchBox* searchbox, bool success, SearchRank& rank, SearchEntry& entry, void* data);
+typedef void(*SearchBoxRenderFunction)(PGRendererHandle renderer, PGFontHandle font, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height);
+typedef void(*SearchBoxSelectionChangedFunction)(SearchBox* searchbox, SearchEntry& entry, void* data);
+typedef void(*SearchBoxCloseFunction)(SearchBox* searchbox, bool success, SearchEntry& entry, void* data);
 
 
 class SearchBox : public PGContainer {
 public:
 	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles = true);
+	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, SearchIndex* index, bool render_subtitles = true);
 
 	void Initialize();
 
@@ -74,8 +49,9 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeSearchBox; }
 private:
+	SearchIndex* index = nullptr;
 	std::vector<SearchEntry> entries;
-	std::vector<SearchRank> displayed_entries;
+	std::vector<SearchEntry*> displayed_entries;
 
 	bool render_subtitles = false;
 

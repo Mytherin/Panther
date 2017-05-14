@@ -185,75 +185,27 @@ void PGGotoAnything::SetType(PGGotoType type) {
 		case PGGotoFile:
 		{
 			goto_file->SetToggled(true);
+			ControlManager* manager = GetControlManager(this);
+			ProjectExplorer* explorer = manager->active_projectexplorer;
+			TabControl* tabs = textfield->GetTabControl();
 			std::vector<SearchEntry> entries;
-			// add currently open files
-			// keep track of currently open files, so we do not display them twice if they are in the explorer's directories
-			std::unordered_set<std::string> blacklisted_entries;
-			TabControl* tb = textfield->GetTabControl();
-			for (auto it = tb->tabs.begin(); it != tb->tabs.end(); it++) {
+			for (auto it = tabs->tabs.begin(); it != tabs->tabs.end(); it++) {
 				SearchEntry entry;
 				entry.display_name = it->file->GetName();
 				entry.display_subtitle = it->file->GetFullPath();
 				entry.text = it->file->GetFullPath();
 				entry.data = it->file;
-				blacklisted_entries.insert(entry.text);
 				entry.basescore = 0;
 				entry.multiplier = 1.5;
 				entries.push_back(entry);
 			}
-			ControlManager* cm = GetControlManager(this);
-			ProjectExplorer* explorer = cm->active_projectexplorer;
-			/*
-			if (explorer) {
-				// add files from currently open directories
-				auto directories = explorer->GetDirectories();
-				for (auto it = directories.begin(); it != directories.end(); it++) {
-					// get a list of all whitelisted files (files not ignored by .gitignore/.hgignore/etc)
-					std::vector<PGFile> whitelisted_files;
-					std::unordered_set<std::string> whitelisted;
-					(*it)->ListFiles(whitelisted_files, nullptr);
-					for (auto it = whitelisted_files.begin(); it != whitelisted_files.end(); it++) {
-						whitelisted.insert(it->path);
-					}
-					// get a list of all files in the directory
-					std::vector<PGFile> files;
-					(*it)->GetFiles(files);
-					for (auto it2 = files.begin(); it2 != files.end(); it2++) {
-						if (blacklisted_entries.find(it2->path) != blacklisted_entries.end()) {
-							// the file is already in the dialog
-							continue;
-						}
-						SearchEntry entry;
-						entry.display_name = it2->Filename();
-						entry.display_subtitle = it2->path;
-						panther::replace(entry.display_subtitle, (*it)->path, "");
-						if (entry.display_subtitle.size() > 1 && entry.display_subtitle[0] == GetSystemPathSeparator()) {
-							entry.display_subtitle = entry.display_subtitle.substr(1);
-						}
-						// check if the file is ignored by .gitignore/.hgignore/etc
-						// if it is we give it a lower score
-						bool ignored = whitelisted.find(it2->path) == whitelisted.end();
-						entry.text = it2->path;
-						entry.data = nullptr;
-						entry.basescore = 0;
-						//entry.basescore = PGLanguageManager::GetLanguage(it2->Extension()) == nullptr ? 0 : 0.2;
-						entry.multiplier = 1;
-						if (ignored) {
-							entry.basescore = -1;
-							entry.multiplier = 0.5;
-						}
 
-						entries.push_back(entry);
-					}
-				}
-			}
-			*/
-			auto box = make_shared_control<SearchBox>(this->window, entries);
+			auto box = make_shared_control<SearchBox>(this->window, entries, &explorer->index);
 			this->box = box.get();
 			box->SetSize(PGSize(this->width, this->height - (goto_command->y + goto_command->height)));
 			box->SetPosition(PGPoint(0, goto_command->y + goto_command->height));
 			box->OnRender(
-				[](PGRendererHandle renderer, PGFontHandle font, SearchRank& rank, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height) {
+				[](PGRendererHandle renderer, PGFontHandle font, SearchEntry& entry, PGScalar& x, PGScalar& y, PGScalar button_height) {
 				// render the text file icon next to each open file
 				PGFile file = PGFile(entry.text);
 				std::string filename = file.Filename();
@@ -273,7 +225,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				SetTextColor(font, color);
 			});
 			current_textfile = textfield->GetTextfilePointer();
-			box->OnSelectionChanged([](SearchBox* searchbox, SearchRank& rank, SearchEntry& entry, void* data) {
+			box->OnSelectionChanged([](SearchBox* searchbox, SearchEntry& entry, void* data) {
 				PGGotoAnything* g = (PGGotoAnything*)data;
 				TabControl* tabs = g->textfield->GetTabControl();
 				if (g->preview) {
@@ -285,7 +237,9 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				} else {
 					PGFileError error;
 					g->preview = std::shared_ptr<TextFile>(TextFile::OpenTextFile(g->textfield, entry.text, error));
-					tabs->OpenTemporaryFile(g->preview);
+					if (g->preview) {
+						tabs->OpenTemporaryFile(g->preview);
+					}
 				}
 			}, (void*)this);
 

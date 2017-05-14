@@ -429,6 +429,7 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 }
 
 std::string utf8_tolower(std::string str) {
+	return panther::tolower(str);
 	UErrorCode status = U_ZERO_ERROR;
 	UCaseMap* casemap = ucasemap_open(nullptr, 0, &status);
 

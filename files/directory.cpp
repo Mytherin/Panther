@@ -4,6 +4,8 @@
 
 #include <rust/gitignore.h>
 
+#include "searchindex.h"
+
 PGDirectory::PGDirectory(std::string path, PGDirectory* parent) :
 	path(path), last_modified_time(-1), loaded_files(false), expanded(false),
 	displayed_files(0), total_files(0), parent(parent) {
@@ -152,7 +154,7 @@ bool PGDirectory::IterateOverFiles(PGDirectoryIterCallback callback, void* data,
 	return true;
 }
 
-void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories) {
+void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories, SearchIndex* index) {
 	lng difference, previous_dircount, directory_difference = 0, file_difference = 0;
 	loaded_files = false;
 	if (PGFileIsIgnored(glob, this->path.c_str(), true)) {
@@ -170,6 +172,19 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 		goto unlock;
 	}
 	difference = files.size() - previous_filecount;
+	// FIXME: only add files that were not in previously
+	if (index) {
+		for (auto it = files.begin(); it != files.end(); it++) {
+			std::string path = PGPathJoin(this->path, it->path);
+			SearchEntry entry;
+			entry.display_name = it->path;
+			entry.display_subtitle = path;
+			entry.text = path;
+			entry.basescore = 0;
+			entry.multiplier = 1;
+			index->AddEntry(entry);
+		}
+	}
 	this->AddFiles(difference);
 
 	// for each directory, check if it is already present

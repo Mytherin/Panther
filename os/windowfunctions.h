@@ -174,8 +174,6 @@ extern PGTextAlign PGTextAlignRight;
 extern PGTextAlign PGTextAlignHorizontalCenter;
 extern PGTextAlign PGTextAlignVerticalCenter;
 
-typedef unsigned char byte;
-
 struct PGColor {
 	byte r;
 	byte g;

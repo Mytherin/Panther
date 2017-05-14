@@ -1,4 +1,3 @@
-#pragma once
 
 #pragma once
 
@@ -8,6 +7,9 @@
 #include "simpletextfield.h"
 #include "togglebutton.h"
 #include "scrollbar.h"
+#include "searchindex.h"
+
+#include <unordered_set>
 
 typedef enum {
 	PGFileOperationRename
@@ -75,6 +77,8 @@ public:
 	void IterateOverFiles(PGDirectoryIterCallback callback, void* data);
 
 	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
+
+	SearchIndex index;
 private:
 #ifdef PANTHER_DEBUG
 	static void VerifyDirectory(PGDirectory* dir, lng& files, lng& displayed_files);

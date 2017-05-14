@@ -22,6 +22,7 @@
     <ClInclude Include="files\directory.h" />
     <ClInclude Include="files\filemanager.h" />
     <ClInclude Include="files\mmap.h" />
+    <ClInclude Include="files\searchindex.h" />
     <ClInclude Include="os\windowfunctions.h" />
     <ClInclude Include="os\windows\default-keybindings.h" />
     <ClInclude Include="os\windows\dirent.h" />
@@ -114,6 +115,7 @@
     <ClCompile Include="files\directory.cpp" />
     <ClCompile Include="files\file.cpp" />
     <ClCompile Include="files\filemanager.cpp" />
+    <ClCompile Include="files\searchindex.cpp" />
     <ClCompile Include="os\windowfunctions.cpp" />
     <ClCompile Include="os\windows\droptarget.cpp" />
     <ClCompile Include="os\windows\main.cpp" />

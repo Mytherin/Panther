@@ -14,6 +14,8 @@
 #include <vector>
 #include <float.h>
 
+typedef unsigned char byte;
+
 typedef enum {
 	PGDirectionLeft,
 	PGDirectionRight

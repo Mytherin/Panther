@@ -101,21 +101,24 @@ void ProjectExplorer::UpdateDirectories(bool force) {
 		this->update_task = std::shared_ptr<Task>(new Task([](std::shared_ptr<Task> task, void* data) {
 			UpdateInformation* info = (UpdateInformation*)data;
 			LockMutex(info->explorer->lock.get());
-			for (auto it = info->explorer->directories.begin(); it != info->explorer->directories.end(); it++) {
+			std::vector<std::shared_ptr<PGDirectory>> directories = info->explorer->directories;
+			UnlockMutex(info->explorer->lock.get());
+			for (auto it = directories.begin(); it != directories.end(); it++) {
 				std::queue<std::shared_ptr<PGDirectory>> open_directories;
 				PGIgnoreGlob glob = info->explorer->show_all_files ? nullptr : PGCreateGlobForDirectory((*it)->path.c_str());
-				(*it)->Update(glob, open_directories);
+				(*it)->Update(glob, open_directories, &info->explorer->index);
 				while (open_directories.size() > 0) {
 					std::shared_ptr<PGDirectory> subdir = open_directories.front();
 					open_directories.pop();
-					subdir->Update(glob, open_directories);
+					subdir->Update(glob, open_directories, &info->explorer->index);
 				}
 #ifdef PANTHER_DEBUG
+				LockMutex(info->explorer->lock.get());
 				info->explorer->VerifyDirectories();
+				UnlockMutex(info->explorer->lock.get());
 #endif
 				PGDestroyIgnoreGlob(glob);
 			}
-			UnlockMutex(info->explorer->lock.get());
 			info->explorer->Invalidate();
 			delete info;
 		}, info));

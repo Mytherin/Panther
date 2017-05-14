@@ -11,9 +11,12 @@
 #include <rust/globset.h>
 #include <rust/gitignore.h>
 
+class SearchIndex;
+
 typedef bool(*PGDirectoryIterCallback)(PGFile f, void* data, lng filenr, lng total_files);
 
 struct PGDirectory {
+	friend class DirectoryIterator;
 	friend class ProjectExplorer;
 public:
 	std::string path;
@@ -40,7 +43,7 @@ public:
 
 	bool IterateOverFiles(PGDirectoryIterCallback callback, void* data, lng& files, lng total_files);
 
-	void Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories);
+	void Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories, SearchIndex* index);
 private:
 	bool expanded;
 	std::unique_ptr<PGMutex> lock;
@@ -51,6 +54,7 @@ private:
 	std::vector<std::shared_ptr<PGDirectory>> directories;
 	std::vector<PGFile> files;
 
+	// FIXME: this should probably be a weak ptr
 	PGDirectory* parent;
 
 	// total amount of displayed files for this directory (including directories)

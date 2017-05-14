@@ -399,6 +399,9 @@
     <ClInclude Include="os\windows\default-keybindings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="files\searchindex.h">
+      <Filter>Header Files\files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="files\directory.cpp">
@@ -643,6 +646,9 @@
     </ClCompile>
     <ClCompile Include="os\windowfunctions.cpp">
       <Filter>Source Files\os</Filter>
+    </ClCompile>
+    <ClCompile Include="files\searchindex.cpp">
+      <Filter>Source Files\files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

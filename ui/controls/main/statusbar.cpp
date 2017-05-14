@@ -89,7 +89,7 @@ void StatusBar::Initialize() {
 			entry.display_subtitle = "";
 			entries.push_back(entry);
 		}
-		tf->DisplaySearchBox(entries, [](SearchBox* searchbox, bool success, SearchRank& rank, SearchEntry& entry, void* data) {
+		tf->DisplaySearchBox(entries, [](SearchBox* searchbox, bool success, SearchEntry& entry, void* data) {
 			if (success) {
 				// switch language
 				TextField* tf = (TextField*)data;

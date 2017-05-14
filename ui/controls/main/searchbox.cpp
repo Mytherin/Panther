@@ -7,13 +7,19 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(SearchBox);
 
-SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles) :
+SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, SearchIndex* index, bool render_subtitles) :
 	PGContainer(window), selected_entry(-1), entries(entries),
 	scrollbar(nullptr), scroll_position(0), render_subtitles(render_subtitles),
-	close_function(nullptr), close_data(nullptr) {
+	close_function(nullptr), close_data(nullptr), index(index) {
+
 	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
 	SetTextColor(font, PGStyleManager::GetColor(PGColorStatusBarText));
+}
+
+SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles) :
+	SearchBox(window, entries, nullptr, render_subtitles) {
+
 }
 
 void SearchBox::Initialize() {
@@ -62,9 +68,8 @@ void SearchBox::SetSelectedEntry(lng entry) {
 		SetScrollPosition(selected_entry);
 	}
 	if (displayed_entries.size() > 0 && selection_changed) {
-		SearchRank& rank = displayed_entries[selected_entry];
-		SearchEntry& search_entry = entries[rank.index];
-		selection_changed(this, rank, search_entry, selection_changed_data);
+		SearchEntry& search_entry = *displayed_entries[selected_entry];
+		selection_changed(this, search_entry, selection_changed_data);
 	}
 }
 
@@ -247,10 +252,9 @@ void SearchBox::Draw(PGRendererHandle renderer) {
 		}
 
 		current_y += 3;
-		SearchRank& rank = displayed_entries[current_selection];
-		SearchEntry& entry = entries[rank.index];
+		SearchEntry& entry = *displayed_entries[current_selection];
 		if (render_function) {
-			render_function(renderer, font, rank, entry, current_x, current_y, entry_height - 6);
+			render_function(renderer, font, entry, current_x, current_y, entry_height - 6);
 		}
 		// render the text
 		SetTextFontSize(font, 13);
@@ -288,89 +292,25 @@ void SearchBox::Close(bool success) {
 		goto_anything->Close(success);
 	} else {
 		if (close_function) {
-			SearchRank& rank = displayed_entries[selected_entry];
-			SearchEntry& entry = entries[rank.index];
-			close_function(this, success, rank, entry, close_data);
+			SearchEntry& entry = *displayed_entries[selected_entry];
+			close_function(this, success, entry, close_data);
 		}
 		dynamic_cast<PGContainer*>(parent.get())->RemoveControl(this);
 	}
-	/*
-	if (success && displayed_entries.size() > 0) {
-		if (selection_confirmed) {
-			SearchRank& rank = displayed_entries[selected_entry];
-			SearchEntry& entry = entries[rank.index];
-			selection_confirmed(this, rank, entry, selection_confirmed_data);
-		}
-	} else {
-		if (selection_cancelled) {
-			selection_cancelled(this, selection_cancelled_data);
-		}
-	}
-	dynamic_cast<PGContainer*>(this->parent)->RemoveControl(this);*/
-}
-
-size_t StringDistance(std::string s, std::string t) {
-	size_t similarity = t.size() + s.size();
-	size_t pos = utf8_tolower(t).find(s);
-	if (pos != std::string::npos) {
-		return pos;
-	}
-	similarity = t.size();
-	size_t prev_offset = 0;
-	size_t max_score = t.size() + s.size();
-	size_t found_characters = 0;
-	for (size_t i = 0; i < s.size(); i++) {
-		size_t offset = t.find(s[i]);
-		if (offset == std::string::npos) {
-			similarity += s.size() / 2;
-			continue;
-		}
-		found_characters++;
-		t.erase(t.begin() + offset);
-		if (offset != prev_offset) {
-			similarity += panther::abs((lng)offset - (lng)prev_offset) / 2;
-		}
-		prev_offset = offset;
-	}
-	if (similarity >= max_score || found_characters == 0 || found_characters < s.size() / 2) {
-		return std::string::npos;
-	}
-	return similarity;
 }
 
 void SearchBox::Filter(std::string filter) {
 	filter = utf8_tolower(filter);
 	displayed_entries.clear();
 	this->filter = filter;
-
-	for (lng index = 0; index < entries.size(); index++) {
-		SearchEntry& entry = entries[index];
-		size_t cost1 = StringDistance(filter, utf8_tolower(entry.display_name));
-		size_t cost2 = StringDistance(filter, utf8_tolower(entry.display_subtitle));
-		size_t cost3 = StringDistance(filter, utf8_tolower(entry.text));
-		if (cost1 != std::string::npos || cost2 != std::string::npos || cost3 != std::string::npos) {
-			cost2 = cost2 == std::string::npos ? cost2 : cost2 + entry.display_subtitle.size();
-			cost3 = cost3 == std::string::npos ? cost3 : cost3 + 2 * entry.text.size();
-			size_t score_pos = std::min(std::min(cost1, cost2), cost3);
-			double score = ((score_pos == 0 ? 1.1 : 1.0 / score_pos) * entry.multiplier) + entry.basescore;
-			//displayed_entries.push_back(SearchRank(index, score));
-			if (displayed_entries.size() >= SEARCHBOX_MAX_ENTRIES) {
-				// have to remove an entry
-				if (displayed_entries.front().score < score) {
-					displayed_entries.erase(displayed_entries.begin());
-				} else {
-					continue;
-				}
-			}
-			SearchRank rank = SearchRank(index, score);
-			// insertion sort
-			displayed_entries.insert(
-				std::upper_bound(displayed_entries.begin(), displayed_entries.end(), rank),
-				rank
-			);
-		}
+	std::vector<SearchEntry*> additional_entries;
+	for (auto it = this->entries.begin(); it != this->entries.end(); it++) {
+		additional_entries.push_back(&*it);
 	}
-	std::reverse(displayed_entries.begin(), displayed_entries.end());
+	auto entries = SearchIndex::Search(index, additional_entries, filter, SEARCHBOX_MAX_ENTRIES);
+	for (auto it = entries.begin(); it != entries.end(); it++) {
+		displayed_entries.push_back(*it);
+	}
 	SetSelectedEntry(0);
 	this->Invalidate();
 }
