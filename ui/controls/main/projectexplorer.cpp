@@ -4,6 +4,8 @@
 #include "style.h"
 #include "togglebutton.h"
 
+#include "settings.h"
+
 #include "toolbar.h"
 
 
@@ -18,6 +20,25 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 	SetTextFontSize(font, 12);
 
 	lock = std::unique_ptr<PGMutex>(CreateMutex());
+
+	std::string ignore_list;
+	if (PGSettingsManager::GetSetting("ignored_files", ignore_list)) {
+		try {
+			auto list = nlohmann::json::parse(ignore_list.c_str());
+			PGGlobBuilder builder = PGCreateGlobBuilder();
+			if (list.is_array()) {
+				for (auto it = list.begin(); it != list.end(); it++) {
+					if (it->is_string()) {
+						PGGlobBuilderAddGlob(builder, it->get<std::string>().c_str());
+					}
+				}
+			}
+			index.ignore_glob = PGCompileGlobBuilder(builder);
+			PGDestroyGlobBuilder(builder);
+		} catch (...) {
+			return;
+		}
+	}
 }
 
 ProjectExplorer::~ProjectExplorer() {
@@ -44,7 +65,7 @@ void ProjectExplorer::Initialize(void) {
 	//RenderImage(renderer, bitmap, x, y);    
 	//DeleteImage(bitmap);
 
-	undo_button = Button::CreateFromCommand(this, "undo", "Undo", 
+	undo_button = Button::CreateFromCommand(this, "undo", "Undo",
 		ProjectExplorer::keybindings_noargs, ProjectExplorer::keybindings_images);
 	undo_button->SetAnchor(PGAnchorLeft | PGAnchorTop);
 	undo_button->margin.left = 2;
@@ -96,7 +117,7 @@ void ProjectExplorer::UpdateDirectories(bool force) {
 		}
 	}
 	if (update_directory) {
-	  	UpdateInformation* info = new UpdateInformation();
+		UpdateInformation* info = new UpdateInformation();
 		info->explorer = this;
 		this->update_task = std::shared_ptr<Task>(new Task([](std::shared_ptr<Task> task, void* data) {
 			UpdateInformation* info = (UpdateInformation*)data;
@@ -118,13 +139,13 @@ void ProjectExplorer::UpdateDirectories(bool force) {
 				UnlockMutex(info->explorer->lock.get());
 #endif
 				PGDestroyIgnoreGlob(glob);
-			}
+				}
 			info->explorer->Invalidate();
 			delete info;
-		}, info));
+			}, info));
 		Scheduler::RegisterTask(update_task, PGTaskUrgent);
+		}
 	}
-}
 
 void ProjectExplorer::SetShowAllFiles(bool show_all_files) {
 	this->show_all_files = show_all_files;
@@ -534,7 +555,7 @@ void ProjectExplorer::MouseDown(int x, int y, PGMouseButton button, PGModifier m
 void ProjectExplorer::DeleteSelectedFiles() {
 	// we only do something if files are selected
 	if (selected_files.size() == 0) return;
-	
+
 	// if there are files to delete, pop open a confirmation box
 	PGConfirmationBox(window, DELETE_CHANGES_TITLE, DELETE_CHANGES_DIALOG,
 		[](PGWindowHandle window, Control* control, void* data, PGResponse response) {
@@ -654,7 +675,7 @@ void ProjectExplorer::AddDirectory(std::string directory) {
 			// show the project explorer again
 			GetControlManager(this)->ShowProjectExplorer(true);
 		}
-	}
+}
 }
 
 void ProjectExplorer::RemoveDirectory(lng index) {
@@ -889,6 +910,6 @@ void ProjectExplorer::VerifyDirectories() {
 		VerifyDirectory(it->get(), total_files, displayed_files);
 		assert((*it)->displayed_files == displayed_files);
 		assert((*it)->total_files == total_files);
-	}
+}
 }
 #endif

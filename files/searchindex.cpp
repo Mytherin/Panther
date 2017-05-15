@@ -5,11 +5,22 @@
 #include <queue>
 #include <unordered_set>
 
-SearchIndex::SearchIndex() {
+SearchIndex::SearchIndex() : 
+	ignore_glob(nullptr) {
 	this->lock = std::unique_ptr<PGMutex>(CreateMutex());
 }
 
+SearchIndex::~SearchIndex() {
+	if (ignore_glob) {
+		PGDestroyGlobSet(ignore_glob);
+	}
+}
+
 void SearchIndex::AddEntry(SearchEntry e) {
+	if (ignore_glob && PGGlobSetMatches(ignore_glob, e.display_name.c_str())) {
+		return;
+	}
+
 	TrieNode* node = &this->root;
 	for (size_t i = 0; i < e.display_name.size(); i++) {
 		byte b = e.display_name[i];

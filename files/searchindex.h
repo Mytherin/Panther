@@ -45,9 +45,13 @@ struct TrieNode {
 
 struct SearchIndex {
 	SearchIndex();
+	~SearchIndex();
 
 	std::list<SearchEntry> entries;
 	TrieNode root;
+
+	// optional glob that allows ignoring of files that match a specific pattern
+	PGGlobSet ignore_glob;
 
 	std::unique_ptr<PGMutex> lock;
 
