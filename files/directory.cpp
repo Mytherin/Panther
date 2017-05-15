@@ -4,6 +4,7 @@
 
 #include <rust/gitignore.h>
 
+#include <unordered_set>
 #include "searchindex.h"
 
 PGDirectory::PGDirectory(std::string path, PGDirectory* parent) :
@@ -165,6 +166,14 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 	LockMutex(lock.get());
 
 	lng previous_filecount = files.size();
+	std::unordered_set<std::string> old_files;
+	if (index) {
+		// we keep a list of old files around, so we know which 
+		// files have been added and deleted
+		for (auto it = files.begin(); it != files.end(); it++) {
+			old_files.insert(it->path);
+		}
+	}
 	files.clear();
 	std::vector<PGFile> dirs;
 	std::vector<std::shared_ptr<PGDirectory>> current_directories;
@@ -172,18 +181,32 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 		goto unlock;
 	}
 	difference = files.size() - previous_filecount;
-	// FIXME: only add files that were not in previously
 	if (index) {
+		LockMutex(index->lock.get());
+		// if there is an index, we update the index
 		for (auto it = files.begin(); it != files.end(); it++) {
-			std::string path = PGPathJoin(this->path, it->path);
-			SearchEntry entry;
-			entry.display_name = it->path;
-			entry.display_subtitle = path;
-			entry.text = path;
-			entry.basescore = 0;
-			entry.multiplier = 1;
-			index->AddEntry(entry);
+			auto current_entry = old_files.find(it->path);
+			if (current_entry == old_files.end()) {
+				// new file, add it to the search index
+				std::string path = PGPathJoin(this->path, it->path);
+				SearchEntry entry;
+				entry.display_name = it->path;
+				entry.display_subtitle = path;
+				entry.text = path;
+				entry.basescore = 0;
+				entry.multiplier = 1;
+				index->AddEntry(entry);
+			} else {
+				// file already exists, remove it from old_files
+				old_files.erase(current_entry);
+			}
 		}
+		// all remaining files in old_files have been deleted
+		// remove them from the search index
+		for (auto it = old_files.begin(); it != old_files.end(); it++) {
+			index->RemoveEntry(*it);
+		}
+		UnlockMutex(index->lock.get());
 	}
 	this->AddFiles(difference);
 

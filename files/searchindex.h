@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 struct SearchEntry {
+	std::list<SearchEntry>::iterator iterator;
 	std::string display_name;
 	std::string display_subtitle;
 	std::string text;
@@ -38,18 +39,35 @@ struct TrieNode {
 	SearchEntry* entry;
 	std::vector<std::unique_ptr<TrieNode>> leaves;
 
-	TrieNode() : entry(nullptr), b(0) { }
-	TrieNode(byte b) : entry(nullptr), b(b) { }
+	TrieNode() : entry(), b(0) { }
+	TrieNode(byte b) : entry(), b(b) { }
 };
 
 struct SearchIndex {
+	SearchIndex();
+
 	std::list<SearchEntry> entries;
 	TrieNode root;
 
-	SearchEntry* AddEntry(SearchEntry entry);
-	void RemoveEntry(SearchEntry* entry);
+	std::unique_ptr<PGMutex> lock;
 
+	// Adds an entry to the search index
+	// thread unsafe: should only be called when "lock" is held
+	void AddEntry(SearchEntry entry);
+	// Removes an entry with the given name from the search index
+	// thread unsafe: should only be called when "lock" is held
+	void RemoveEntry(std::string name);
+
+	// Returns the matched score of a given string for a given search term
+	// this is the score used by SearchIndex::Search() to rank entries
 	static int IndexScore(const std::string& str, const std::string& search_term);
-	static std::vector<SearchEntry*> Search(SearchIndex* index, const std::vector<SearchEntry*>& entries, const std::string& search_term, size_t max_entries);
+	// Searches the index for the best <max_entries> SearchEntries that matches 
+	// the given search_term. Additional entries can be provided in the <entries> parameter.
+	// Note that the index is optional. 
+	// This function is thread safe, and will get the the lock from "index" when required
+	static std::vector<SearchEntry*> Search(SearchIndex* index,
+		const std::vector<SearchEntry*>& entries,
+		const std::string& search_term,
+		size_t max_entries);
 };
 

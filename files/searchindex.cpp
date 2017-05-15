@@ -5,8 +5,11 @@
 #include <queue>
 #include <unordered_set>
 
+SearchIndex::SearchIndex() {
+	this->lock = std::unique_ptr<PGMutex>(CreateMutex());
+}
 
-SearchEntry* SearchIndex::AddEntry(SearchEntry e) {
+void SearchIndex::AddEntry(SearchEntry e) {
 	TrieNode* node = &this->root;
 	for (size_t i = 0; i < e.display_name.size(); i++) {
 		byte b = e.display_name[i];
@@ -26,20 +29,21 @@ SearchEntry* SearchIndex::AddEntry(SearchEntry e) {
 				// we only insert the entry if it is not already present
 				entries.push_back(e);
 				SearchEntry* entry = &entries.back();
+				entry->iterator = --entries.end();
 				node->entry = entry;
 			}
-			return node->entry;
+			return;
 		}
 		node = next;
 	}
-	assert(0);
-	return nullptr;
+	assert(0)
 }
 
-void SearchIndex::RemoveEntry(SearchEntry* entry) {
+void SearchIndex::RemoveEntry(std::string name) {
 	TrieNode* node = &this->root;
-	for (size_t i = 0; i < entry->display_name.size(); i++) {
-		byte b = entry->display_name[i];
+	std::vector<TrieNode*> list;
+	for (size_t i = 0; i < name.size(); i++) {
+		byte b = name[i];
 		TrieNode* next = nullptr;
 		for (auto it = node->leaves.begin(); it != node->leaves.end(); it++) {
 			if ((*it)->b == b) {
@@ -50,13 +54,29 @@ void SearchIndex::RemoveEntry(SearchEntry* entry) {
 		if (!next) {
 			return;
 		}
-		if (i == entry->display_name.size() - 1) {
+		if (i == name.size() - 1) {
+			// erase the element from the list using the iterator
+			entries.erase(node->entry->iterator);
 			node->entry = nullptr;
 		}
 		node = next;
+		list.push_back(node);
 	}
-	// FIXME: erase unnecessary nodes in the trie as well
-	// FIXME: <entry> remove from entries
+	for (size_t i = list.size() - 1; i >= 0; i--) {
+		TrieNode* node = list[i];
+		TrieNode* parent = i == 0 ? &this->root : list[i - 1];
+		if (node->entry == nullptr && node->leaves.size() == 0) {
+			// if the current element has no entry and no leaves
+			// erase it, as it is no longer required
+			for (size_t j = 0; j < parent->leaves.size(); j++) {
+				if (parent->leaves[j].get() == node) {
+					parent->leaves.erase(parent->leaves.begin() + j);
+					break;
+				}
+			}
+		}
+
+	}
 }
 
 struct SearchTermIndex {
@@ -132,6 +152,7 @@ std::vector<SearchEntry*> SearchIndex::Search(SearchIndex* ind, const std::vecto
 	}
 
 	if (ind) {
+		LockMutex(ind->lock.get());
 		// we start our search at the root node
 		SearchTermIndex index;
 		index.node = &ind->root;
@@ -189,6 +210,7 @@ std::vector<SearchEntry*> SearchIndex::Search(SearchIndex* ind, const std::vecto
 				open_nodes.push(next);
 			}
 		}
+		UnlockMutex(ind->lock.get());
 	}
 	std::vector<SearchEntry*> entries;
 	while (results.size() > 0) {

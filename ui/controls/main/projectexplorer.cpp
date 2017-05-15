@@ -96,7 +96,7 @@ void ProjectExplorer::UpdateDirectories(bool force) {
 		}
 	}
 	if (update_directory) {
-		UpdateInformation* info = new UpdateInformation();
+	  	UpdateInformation* info = new UpdateInformation();
 		info->explorer = this;
 		this->update_task = std::shared_ptr<Task>(new Task([](std::shared_ptr<Task> task, void* data) {
 			UpdateInformation* info = (UpdateInformation*)data;

@@ -55,7 +55,6 @@ class TabControl : public Control {
 	friend class TextField; //FIXME
 	friend class PGGotoAnything;
 	friend class PGTabMouseRegion;
-	friend class ProjectExplorerIterator;
 public:
 	TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files);
 	~TabControl();
