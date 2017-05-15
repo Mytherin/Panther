@@ -11,7 +11,7 @@
 #include <rust/globset.h>
 #include <rust/gitignore.h>
 
-class SearchIndex;
+struct SearchIndex;
 
 typedef bool(*PGDirectoryIterCallback)(PGFile f, void* data, lng filenr, lng total_files);
 
@@ -24,6 +24,7 @@ public:
 	bool loaded_files;
 
 	PGDirectory(std::string path, PGDirectory* parent);
+	~PGDirectory();
 
 	void WriteWorkspace(nlohmann::json& j);
 	void LoadWorkspace(nlohmann::json& j);
@@ -45,6 +46,7 @@ public:
 
 	void Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories, SearchIndex* index);
 private:
+	SearchIndex* index;
 	bool expanded;
 	std::unique_ptr<PGMutex> lock;
 

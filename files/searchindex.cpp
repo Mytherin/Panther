@@ -65,7 +65,7 @@ void SearchIndex::RemoveEntry(std::string name) {
 		if (!next) {
 			return;
 		}
-		if (i == name.size() - 1) {
+		if (i == name.size() - 1 && node->entry) {
 			// erase the element from the list using the iterator
 			entries.erase(node->entry->iterator);
 			node->entry = nullptr;
@@ -73,7 +73,7 @@ void SearchIndex::RemoveEntry(std::string name) {
 		node = next;
 		list.push_back(node);
 	}
-	for (size_t i = list.size() - 1; i >= 0; i--) {
+	for (lng i = list.size() - 1; i >= 0; i--) {
 		TrieNode* node = list[i];
 		TrieNode* parent = i == 0 ? &this->root : list[i - 1];
 		if (node->entry == nullptr && node->leaves.size() == 0) {

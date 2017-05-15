@@ -9,8 +9,19 @@
 
 PGDirectory::PGDirectory(std::string path, PGDirectory* parent) :
 	path(path), last_modified_time(-1), loaded_files(false), expanded(false),
-	displayed_files(0), total_files(0), parent(parent) {
+	displayed_files(0), total_files(0), parent(parent), index(nullptr) {
 	this->lock = std::unique_ptr<PGMutex>(CreateMutex());
+}
+
+PGDirectory::~PGDirectory() {
+	if (this->index) {
+		LockMutex(index->lock.get());
+		for (auto it = files.begin(); it != files.end(); it++) {
+			this->index->RemoveEntry(it->path);
+		}
+		UnlockMutex(index->lock.get());
+	}
+
 }
 
 void PGDirectory::FindFile(lng file_number, PGDirectory** directory, PGFile* file) {
@@ -168,6 +179,7 @@ void PGDirectory::Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirecto
 	lng previous_filecount = files.size();
 	std::unordered_set<std::string> old_files;
 	if (index) {
+		this->index = index;
 		// we keep a list of old files around, so we know which 
 		// files have been added and deleted
 		for (auto it = files.begin(); it != files.end(); it++) {
