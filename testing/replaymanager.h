@@ -31,6 +31,7 @@ extern PGReplayEvent PGReplayEventDropFile;
 extern PGReplayEvent PGReplayEventGetClipboardText;
 extern PGReplayEvent PGReplayEventGetTime;
 extern PGReplayEvent PGReplayEventGetReadFile;
+extern PGReplayEvent PGReplayEventGetDirectoryFiles;
 
 enum PGReplayAction {
 	PGReplayRecord,
@@ -38,6 +39,7 @@ enum PGReplayAction {
 };
 
 class PGGlobalReplayManager {
+	friend class ReplayManager;
 public:
 	static bool recording_replay;
 	static bool running_replay;
@@ -52,7 +54,9 @@ public:
 	static void RecordGetClipboardText(std::string text);
 	static void RecordGetTime(PGTime time);
 	static void RecordReadFile(std::string fname, void* result, lng result_size, PGFileError error);
+	static void RecordGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, PGDirectoryFlags flags);
 
+	static PGDirectoryFlags GetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files);
 	static PGTime GetTime() { return GetInstance()->_GetTime(); }
 	static std::string GetClipboardText() { return GetInstance()->_GetClipboardText(); }
 
@@ -61,7 +65,12 @@ public:
 	static void RunReplay() { GetInstance()->_RunReplay(); }
 
 	static void Initialize(std::string path, PGReplayAction action) { (void)GetInstance(path, action == PGReplayRecord); }
-	
+private:
+	static PGMutexHandle lock;
+
+	static void Lock();
+	static void Unlock();
+
 	static void WriteEvent(PGReplayEvent event) { return GetInstance()->_WriteByte(event); }
 	static void WriteEvent(PGManagerID manager_id, PGReplayEvent event) { return GetInstance()->_WriteEvent(manager_id, event); }
 	static void WriteByte(char value) { return GetInstance()->_WriteByte(value); }
@@ -70,7 +79,7 @@ public:
 	static void WriteInt(int value) { return GetInstance()->_WriteInt(value); }
 	static void WriteDouble(double value) { return GetInstance()->_WriteDouble(value); }
 	static void WriteString(std::string value) { return GetInstance()->_WriteString(value); }
-private:
+
 	PGGlobalReplayManager(std::string path, bool record);
 
 	static PGTime _GetTime();
@@ -88,6 +97,12 @@ private:
 		PGFileError error;
 	};
 	std::map<std::string, FileData> stored_files;
+	struct DirectoryData {
+		PGDirectoryFlags flags;
+		std::vector<std::string> directories;
+		std::vector<std::string> files;
+	};
+	std::map<std::string, DirectoryData> stored_directories;
 	lng current_time;
 	std::string current_clipboard;
 
@@ -98,9 +113,12 @@ private:
 	void ReadStoredFiles();
 	void _RunReplay();
 	std::string ReadString(char* data, size_t& position, size_t size);
-	void PeekEvent(PGReplayEvent event, char* data, size_t position, size_t size);
+	void PeekEvent(PGReplayEvent event, char* data, size_t position, size_t size, bool recursive = false);
 	bool NextEvent(PGReplayEvent event, char* data, size_t& position, size_t size);
 	bool ExecuteCommand(char* data, size_t& position, size_t size);
+
+	void ReadFileEvent(char* data, size_t& position, size_t size);
+	void ReadDirectoryEvent(char* data, size_t& position, size_t size);
 
 	char* data;
 	lng size;

@@ -24,13 +24,16 @@ PGReplayEvent PGReplayEventDropFile = 20;
 PGReplayEvent PGReplayEventGetClipboardText = 21;
 PGReplayEvent PGReplayEventGetTime = 22;
 PGReplayEvent PGReplayEventGetReadFile = 23;
+PGReplayEvent PGReplayEventGetDirectoryFiles = 24;
 
 bool PGGlobalReplayManager::recording_replay = false;
 bool PGGlobalReplayManager::running_replay = false;
+PGMutexHandle PGGlobalReplayManager::lock = nullptr;
 
 PGGlobalReplayManager::PGGlobalReplayManager(std::string path, bool record) :
 	path(path) {
 	assert(path.size() > 0);
+	lock = CreateMutex();
 	PGFileError error;
 	if (record) {
 		PGGlobalReplayManager::recording_replay = true;
@@ -44,30 +47,11 @@ PGGlobalReplayManager::PGGlobalReplayManager(std::string path, bool record) :
 			assert(0);
 			return;
 		}
-		// load all the embedded files from the replay
 		ReadStoredFiles();
 		PGGlobalReplayManager::running_replay = true;
 	}
 	assert(file);
 	assert(error == PGFileSuccess);
-}
-
-void PGGlobalReplayManager::ReadStoredFiles() {
-	size_t position = 0;
-	while (position < size) {
-		PGReplayEvent event = data[position++];
-		if (event == PGReplayEventGetReadFile) {
-			auto fname = ReadString(data, position, size);
-			PGFileError error = *((PGFileError*)(data + position));
-			position += sizeof(int);
-			auto text = ReadString(data, position, size);
-			stored_files[fname] = FileData();
-			stored_files[fname].data = text;
-			stored_files[fname].error = error;
-		} else if (!NextEvent(event, data, position, size)) {
-			break;
-		}
-	}
 }
 
 void PGGlobalReplayManager::_RunReplay() {
@@ -77,16 +61,83 @@ void PGGlobalReplayManager::_RunReplay() {
 	while (ExecuteCommand(data, position, size));
 }
 
-std::string PGGlobalReplayManager::ReadString(char* data, size_t& position, size_t size) {
-	size_t start = position;
-	while (position < size) {
-		if (data[position] == '\0') {
-			auto str = std::string(data + start, position - start);
-			position++;
-			return str;
-		}
-		position++;
+#define ReadEntry(result, load_type, target_type, data, position, size) {\
+	if (position + sizeof(load_type) > size) goto cleanup; \
+	load_type res = *((load_type*)(data + position)); \
+	position += sizeof(load_type); \
+	result = (target_type)res; \
+}
+
+void PGGlobalReplayManager::ReadFileEvent(char* data, size_t& position, size_t size) {
+	PGGlobalReplayManager::Lock();
+	auto fname = ReadString(data, position, size);
+	PGFileError error;
+	std::string text;
+	ReadEntry(error, int, PGFileError, data, position, size);
+	text = ReadString(data, position, size);
+	stored_files[fname] = FileData();
+	stored_files[fname].data = text;
+	stored_files[fname].error = error;
+	PGGlobalReplayManager::Unlock();
+	return;
+cleanup:
+	assert(0);
+	PGGlobalReplayManager::Unlock();
+}
+
+void PGGlobalReplayManager::ReadDirectoryEvent(char* data, size_t& position, size_t size) {
+	auto dirname = ReadString(data, position, size);
+	PGGlobalReplayManager::Lock();
+	stored_directories[dirname] = DirectoryData();
+	auto& dirdata = stored_directories[dirname];
+	lng directory_count;
+	ReadEntry(directory_count, lng, lng, data, position, size);
+	for (lng i = 0; i < directory_count; i++) {
+		dirdata.directories.push_back(ReadString(data, position, size));
 	}
+	lng file_count;
+	ReadEntry(file_count, lng, lng, data, position, size);
+	for (lng i = 0; i < file_count; i++) {
+		dirdata.files.push_back(ReadString(data, position, size));
+	}
+	ReadEntry(dirdata.flags, int, PGDirectoryFlags, data, position, size);
+	PGGlobalReplayManager::Unlock();
+	return;
+cleanup:
+	assert(0);
+	PGGlobalReplayManager::Unlock();
+}
+
+void PGGlobalReplayManager::ReadStoredFiles() {
+	size_t position = 0;
+	std::vector<PGReplayEvent> events;
+	while (position < size) {
+		PGReplayEvent event = data[position++];
+		if (event == PGReplayEventGetReadFile) {
+			ReadFileEvent(data, position, size);
+		} else if (event == PGReplayEventGetDirectoryFiles) {
+			ReadDirectoryEvent(data, position, size);
+			continue;
+cleanup:
+			assert(0);
+			return;
+		} else if (!NextEvent(event, data, position, size)) {
+			break;
+		}
+		events.insert(events.begin(), event);
+	}
+}
+
+std::string PGGlobalReplayManager::ReadString(char* data, size_t& position, size_t size) {
+	size_t string_size;
+	ReadEntry(string_size, size_t, size_t, data, position, size);
+	if (string_size < size && position + string_size < size) {
+		std::string val = std::string(data + position, string_size);
+		position += string_size;
+		return val;
+	}
+cleanup:
+	assert(0);
 	return "";
 }
 
@@ -138,22 +189,29 @@ bool PGGlobalReplayManager::NextEvent(PGReplayEvent event, char* data, size_t& p
 		auto fname = ReadString(data, position, size);
 		position += sizeof(int);
 		auto text = ReadString(data, position, size);
+	} else if (event == PGReplayEventGetDirectoryFiles) {
+		auto fname = ReadString(data, position, size);
+		lng dircount;
+		ReadEntry(dircount, lng, lng, data, position, size);
+		for (lng i = 0; i < dircount; i++) {
+			ReadString(data, position, size);
+		}
+		lng filecount;
+		ReadEntry(filecount, lng, lng, data, position, size);
+		for (lng i = 0; i < filecount; i++) {
+			ReadString(data, position, size);
+		}
+		position += sizeof(int);
 	} else {
 		// unrecognized event
+cleanup:
 		assert(0);
 		return false;
 	}
 	return position < size;
 }
 
-#define ReadEntry(result, load_type, target_type, data, position, size) {\
-	if (position + sizeof(load_type) > size) goto cleanup; \
-	load_type res = *((load_type*)(data + position)); \
-	position += sizeof(load_type); \
-	result = (target_type)res; \
-}
-
-void PGGlobalReplayManager::PeekEvent(PGReplayEvent event, char* data, size_t position, size_t size) {
+void PGGlobalReplayManager::PeekEvent(PGReplayEvent event, char* data, size_t position, size_t size, bool recursive) {
 	NextEvent(event, data, position, size);
 	while (position < size) {
 		PGReplayEvent event = data[position++];
@@ -162,10 +220,20 @@ void PGGlobalReplayManager::PeekEvent(PGReplayEvent event, char* data, size_t po
 			this->current_clipboard = ReadString(data, position, size);
 		} else if (event == PGReplayEventGetTime) {
 			ReadEntry(this->current_time, lng, lng, data, position, size);
+		} else if (event == PGReplayEventGetReadFile) {
+			ReadFileEvent(data, position, size);
+		} else if (event == PGReplayEventGetDirectoryFiles) {
+			ReadDirectoryEvent(data, position, size);
 		} else {
+			if (!recursive) {
+				// we have found an actual event that we have to execute
+				// however, first we read any subsequent GetClipboardText/GetTime/etc messages
+				size_t current_position = position;
+				PeekEvent(event, data, current_position, size, true);
+			}
 			return;
 		}
-		NextEvent(event, data, position, size);
+		//NextEvent(event, data, position, size);
 	}
 cleanup:
 	return;
@@ -310,6 +378,8 @@ bool PGGlobalReplayManager::ExecuteCommand(char* data, size_t& position, size_t 
 		return NextEvent(event, data, position, size);
 	} else if (event == PGReplayEventGetReadFile) {
 		return NextEvent(event, data, position, size);
+	} else if (event == PGReplayEventGetDirectoryFiles) {
+		return NextEvent(event, data, position, size);
 	} else {
 		// unrecognized event
 		assert(0);
@@ -323,36 +393,42 @@ cleanup:
 	return false;
 }
 
+void PGGlobalReplayManager::Lock() {
+	LockMutex(lock);
+}
+
+void PGGlobalReplayManager::Unlock() {
+	if (PGGlobalReplayManager::recording_replay) {
+		panther::Flush(GetInstance()->file);
+	}
+	UnlockMutex(lock);
+}
+
 void PGGlobalReplayManager::_WriteEvent(PGManagerID manager_id, PGReplayEvent event) {
 	panther::WriteToFile(file, (char*) &event, sizeof(PGReplayEvent));
 	panther::WriteToFile(file, (char*)&manager_id, sizeof(PGManagerID));
-	panther::Flush(file);
 }
 
 void PGGlobalReplayManager::_WriteByte(char value) {
 	panther::WriteToFile(file, &value, sizeof(char));
-	panther::Flush(file);
 }
 
 void PGGlobalReplayManager::_WriteLong(lng value) {
 	panther::WriteToFile(file, (char*)&value, sizeof(lng));
-	panther::Flush(file);
 }
 
 void PGGlobalReplayManager::_WriteInt(int value) {
 	panther::WriteToFile(file, (char*)&value, sizeof(int));
-	panther::Flush(file);
 }
 
 void PGGlobalReplayManager::_WriteDouble(double value) {
 	panther::WriteToFile(file, (char*)&value, sizeof(double));
-	panther::Flush(file);
 }
 
 void PGGlobalReplayManager::_WriteString(std::string value) {
+	size_t size = value.size();
+	panther::WriteToFile(file, (char*)&size, sizeof(size_t));
 	panther::WriteToFile(file, value.c_str(), value.size());
-	panther::WriteToFile(file, "\0", sizeof(byte));
-	panther::Flush(file);
 }
 
 int PGGlobalReplayManager::RegisterManager(ControlManager* manager) {
@@ -372,21 +448,27 @@ PGTime PGGlobalReplayManager::_GetTime() {
 }
 
 void PGGlobalReplayManager::RecordGetClipboardText(std::string text) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(PGReplayEventGetClipboardText);
 	PGGlobalReplayManager::WriteString(text);
+	PGGlobalReplayManager::Unlock();
 }
 
 void PGGlobalReplayManager::RecordGetTime(PGTime time) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(PGReplayEventGetTime);
 	PGGlobalReplayManager::WriteLong(time);
+	PGGlobalReplayManager::Unlock();
 }
 
 void PGGlobalReplayManager::RecordReadFile(std::string fname, void* result,
 	lng result_size, PGFileError error) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(PGReplayEventGetReadFile);
 	PGGlobalReplayManager::WriteString(fname);
 	PGGlobalReplayManager::WriteInt(error);
 	PGGlobalReplayManager::WriteString(std::string((char*)result, result_size));
+	PGGlobalReplayManager::Unlock();
 }
 
 void* PGGlobalReplayManager::ReadFile(std::string filename,
@@ -407,28 +489,53 @@ void* PGGlobalReplayManager::ReadFile(std::string filename,
 		result_size = d.data.size();
 	}
 	return ptr;
-
 }
+
+PGDirectoryFlags PGGlobalReplayManager::GetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files) {
+	assert(PGGlobalReplayManager::running_replay);
+	auto instance = GetInstance();
+	if (instance->stored_directories.count(directory) == 0) {
+		assert(0);
+		return PGDirectoryNotFound;
+	}
+	PGGlobalReplayManager::Lock();
+	DirectoryData& d = instance->stored_directories[directory];
+	for (auto it = d.directories.begin(); it != d.directories.end(); it++) {
+		directories.push_back(PGFile(*it));
+	}
+	for (auto it = d.files.begin(); it != d.files.end(); it++) {
+		files.push_back(PGFile(*it));
+	}
+	PGDirectoryFlags flags = d.flags;
+	PGGlobalReplayManager::Unlock();
+	return flags;
+}
+
 
 ReplayManager::ReplayManager(PGWindowHandle window) :
 	ControlManager(window) {
 }
 
 bool ReplayManager::KeyboardButton(PGButton button, PGModifier modifier) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventKeyboardButton);
 	PGGlobalReplayManager::WriteInt(button);
 	PGGlobalReplayManager::WriteByte(modifier);
+	PGGlobalReplayManager::Unlock();
 	return ControlManager::KeyboardButton(button, modifier);
 }
 
 bool ReplayManager::KeyboardCharacter(char character, PGModifier modifier) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventKeyboardCharacter);
 	PGGlobalReplayManager::WriteByte(character);
 	PGGlobalReplayManager::WriteByte(modifier);
+	PGGlobalReplayManager::Unlock();
 	return ControlManager::KeyboardCharacter(character, modifier);
 }
 
 bool ReplayManager::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventKeyboardUnicode);
 	PGGlobalReplayManager::WriteByte(character.length);
 	PGGlobalReplayManager::WriteByte(character.character[0]);
@@ -436,126 +543,178 @@ bool ReplayManager::KeyboardUnicode(PGUTF8Character character, PGModifier modifi
 	PGGlobalReplayManager::WriteByte(character.character[2]);
 	PGGlobalReplayManager::WriteByte(character.character[3]);
 	PGGlobalReplayManager::WriteByte(modifier);
+	PGGlobalReplayManager::Unlock();
 	return ControlManager::KeyboardUnicode(character, modifier);
 }
 
 void ReplayManager::Update() {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventUpdate);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::Update();
 }
 
 void ReplayManager::Draw(PGRendererHandle renderer) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventDraw);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::Draw(renderer);
 }
 
 void ReplayManager::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventMouseWheel);
 	PGGlobalReplayManager::WriteInt(x);
 	PGGlobalReplayManager::WriteInt(y);
 	PGGlobalReplayManager::WriteDouble(distance);
 	PGGlobalReplayManager::WriteDouble(hdistance);
 	PGGlobalReplayManager::WriteByte(modifier);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::MouseWheel(x, y, hdistance, distance, modifier);
 }
 
 void ReplayManager::MouseDown(int x, int y, PGMouseButton button, PGModifier modifier, int click_count) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventMouseDown);
 	PGGlobalReplayManager::WriteInt(x);
 	PGGlobalReplayManager::WriteInt(y);
 	PGGlobalReplayManager::WriteInt(button);
 	PGGlobalReplayManager::WriteByte(modifier);
 	PGGlobalReplayManager::WriteInt(click_count);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::MouseDown(x, y, button, modifier, click_count);
 }
 
 void ReplayManager::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventMouseUp);
 	PGGlobalReplayManager::WriteInt(x);
 	PGGlobalReplayManager::WriteInt(y);
 	PGGlobalReplayManager::WriteInt(button);
 	PGGlobalReplayManager::WriteByte(modifier);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::MouseUp(x, y, button, modifier);
 }
 
 void ReplayManager::MouseMove(int x, int y, PGMouseButton buttons) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventMouseMove);
 	PGGlobalReplayManager::WriteInt(x);
 	PGGlobalReplayManager::WriteInt(y);
 	PGGlobalReplayManager::WriteByte(buttons);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::MouseMove(x, y, buttons);
 }
 
 void ReplayManager::LosesFocus(void) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventLosesFocus);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::LosesFocus();
 }
 
 void ReplayManager::GainsFocus(void) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventGainsFocus);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::GainsFocus();
 }
 
 bool ReplayManager::AcceptsDragDrop(PGDragDropType type) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventAcceptsDragDrop);
 	PGGlobalReplayManager::WriteInt(type);
+	PGGlobalReplayManager::Unlock();
 	return ControlManager::AcceptsDragDrop(type);
 }
 
 void ReplayManager::DragDrop(PGDragDropType type, int x, int y, void* data) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventDragDrop);
 	PGGlobalReplayManager::WriteInt(type);
 	PGGlobalReplayManager::WriteInt(x);
 	PGGlobalReplayManager::WriteInt(y);
 	assert(0); // FIXME: data should be copied as well
+	PGGlobalReplayManager::Unlock();
 	ControlManager::DragDrop(type, x, y, data);
 }
 
 void ReplayManager::PerformDragDrop(PGDragDropType type, int x, int y, void* data) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventPerformDragDrop);
 	PGGlobalReplayManager::WriteInt(type);
 	PGGlobalReplayManager::WriteInt(x);
 	PGGlobalReplayManager::WriteInt(y);
 	assert(0); // FIXME: data should be copied as well
+	PGGlobalReplayManager::Unlock();
 	ControlManager::PerformDragDrop(type, x, y, data);
 }
 
 void ReplayManager::ClearDragDrop(PGDragDropType type) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventClearDragDrop);
 	PGGlobalReplayManager::WriteInt(type);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::ClearDragDrop(type);
 }
 
 void ReplayManager::SetSize(PGSize size) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventSetSize);
 	PGGlobalReplayManager::WriteDouble(size.width);
 	PGGlobalReplayManager::WriteDouble(size.height);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::SetSize(size);
 }
 
 bool ReplayManager::CloseControlManager() {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventCloseControlManager);
+	PGGlobalReplayManager::Unlock();
 	return ControlManager::CloseControlManager();
 }
 
 void ReplayManager::RefreshWindow(bool redraw_now) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventRefreshWindow);
 	PGGlobalReplayManager::WriteByte(redraw_now);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::RefreshWindow(redraw_now);
 }
 
 void ReplayManager::RefreshWindow(PGIRect rectangle, bool redraw_now) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventRefreshWindowRectangle);
 	PGGlobalReplayManager::WriteInt(rectangle.x);
 	PGGlobalReplayManager::WriteInt(rectangle.y);
 	PGGlobalReplayManager::WriteInt(rectangle.width);
 	PGGlobalReplayManager::WriteInt(rectangle.height);
 	PGGlobalReplayManager::WriteByte(redraw_now);
+	PGGlobalReplayManager::Unlock();
 	ControlManager::RefreshWindow(rectangle, redraw_now);
 }
 
 void ReplayManager::DropFile(std::string filename) {
+	PGGlobalReplayManager::Lock();
 	PGGlobalReplayManager::WriteEvent(manager_id, PGReplayEventDropFile);
 	PGGlobalReplayManager::WriteString(filename);
+	PGGlobalReplayManager::Unlock();
+
 	ControlManager::DropFile(filename);
+}
+
+void PGGlobalReplayManager::RecordGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, PGDirectoryFlags flags) {
+	PGGlobalReplayManager::Lock();
+	PGGlobalReplayManager::WriteEvent(PGReplayEventGetDirectoryFiles);
+	PGGlobalReplayManager::WriteString(directory);
+	PGGlobalReplayManager::WriteLong(directories.size());
+	for (auto it = directories.begin(); it != directories.end(); it++) {
+		PGGlobalReplayManager::WriteString(it->path);
+	}
+	PGGlobalReplayManager::WriteLong(files.size());
+	for (auto it = files.begin(); it != files.end(); it++) {
+		PGGlobalReplayManager::WriteString(it->path);
+	}
+	PGGlobalReplayManager::WriteInt(flags);
+	PGGlobalReplayManager::Unlock();
 }

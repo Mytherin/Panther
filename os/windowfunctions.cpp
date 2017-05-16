@@ -396,3 +396,13 @@ std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, st
 	PGSetWindowMenu(handle, menu);
 	return manager;
 }
+PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, void* glob) {
+	if (PGGlobalReplayManager::running_replay) {
+		return PGGlobalReplayManager::GetDirectoryFiles(directory, directories, files);
+	}
+	PGDirectoryFlags flags = PGGetDirectoryFilesOS(directory, directories, files, glob);
+	if (PGGlobalReplayManager::recording_replay) {
+		PGGlobalReplayManager::RecordGetDirectoryFiles(directory, directories, files, flags);
+	}
+	return flags;
+}

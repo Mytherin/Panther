@@ -591,6 +591,7 @@ enum PGDirectoryFlags {
 };
 
 PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, void* glob = nullptr);
+PGDirectoryFlags PGGetDirectoryFilesOS(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, void* glob = nullptr);
 
 std::string PGPathJoin(std::string path_one, std::string path_two);
 

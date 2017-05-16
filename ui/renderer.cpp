@@ -58,7 +58,29 @@ SkPaint* CreateTextPaint() {
 std::map<std::string, sk_sp<SkTypeface>> loaded_fonts;
 static sk_sp<SkTypeface> CreateFontFromFile(std::string path) {
 	if (loaded_fonts.count(path) == 0) {
-		loaded_fonts[path] = SkTypeface::MakeFromFile(path.c_str());
+		if (PGGlobalReplayManager::running_replay) {
+			lng result_size = 0;
+			PGFileError err = PGFileSuccess;
+			void* data = PGGlobalReplayManager::ReadFile(path, result_size, err);
+			if (data && err == PGFileSuccess) {
+				auto stream = new SkMemoryStream(data, result_size, true);
+				loaded_fonts[path] = SkTypeface::MakeFromStream(stream);
+				panther::DestroyFileContents(data);
+			}
+		} else {
+			if (PGGlobalReplayManager::recording_replay) {
+				lng result_size = 0;
+				PGFileError err = PGFileSuccess;
+				void* data = panther::ReadFile(path, result_size, err);
+				if (data) {
+					auto stream = new SkMemoryStream(data, result_size);
+					loaded_fonts[path] = SkTypeface::MakeFromStream(stream);
+					panther::DestroyFileContents(data);
+				}
+			} else {
+				loaded_fonts[path] = SkTypeface::MakeFromFile(path.c_str());
+			}
+		}
 	}
 	return loaded_fonts[path];
 }
@@ -167,8 +189,7 @@ PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
 PGFontHandle PGCreateFont(char* filename) {
 	PGFontHandle font = new PGFont();
 
-	font->normaltext = CreateTextPaint();
-	auto main_font = SkTypeface::MakeFromFile(filename);
+	auto main_font = CreateFontFromFile(filename);
 	font->normaltext->setTypeface(main_font);
 	font->textpaint = font->normaltext;
 
