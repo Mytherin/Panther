@@ -129,23 +129,31 @@ void ProjectExplorer::UpdateDirectories(bool force) {
 				PGIgnoreGlob glob = info->explorer->show_all_files ? nullptr : PGCreateGlobForDirectory((*it)->path.c_str());
 				(*it)->Update(glob, open_directories, &info->explorer->index);
 				while (open_directories.size() > 0) {
+					if (info->explorer->update_task != task) {
+						break;
+					}
 					std::shared_ptr<PGDirectory> subdir = open_directories.front();
 					open_directories.pop();
 					subdir->Update(glob, open_directories, &info->explorer->index);
+					if (subdir->parent && subdir->parent->IsExpanded()) {
+						info->explorer->Invalidate();
+					}
 				}
 #ifdef PANTHER_DEBUG
-				LockMutex(info->explorer->lock.get());
-				info->explorer->VerifyDirectories();
-				UnlockMutex(info->explorer->lock.get());
+				if (info->explorer->update_task == task) {
+					LockMutex(info->explorer->lock.get());
+					info->explorer->VerifyDirectories();
+					UnlockMutex(info->explorer->lock.get());
+				}
 #endif
 				PGDestroyIgnoreGlob(glob);
-				}
+			}
 			info->explorer->Invalidate();
 			delete info;
-			}, info));
+		}, info));
 		Scheduler::RegisterTask(update_task, PGTaskUrgent);
-		}
 	}
+}
 
 void ProjectExplorer::SetShowAllFiles(bool show_all_files) {
 	this->show_all_files = show_all_files;
@@ -176,28 +184,28 @@ void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_im
 			extension = "c++";
 		}
 		if (extension == "c++") {
-			file_image = PGStyleManager::GetImage("icon_cpp.png");
+			file_image = PGStyleManager::GetImage("data/icons/icon_cpp.png");
 		}
 		if (extension == "h") {
-			file_image = PGStyleManager::GetImage("icon_h.png");
+			file_image = PGStyleManager::GetImage("data/icons/icon_h.png");
 		}
 		if (extension == "json") {
-			file_image = PGStyleManager::GetImage("icon_json.png");
+			file_image = PGStyleManager::GetImage("data/icons/icon_json.png");
 		}
 		if (extension == "xml") {
-			file_image = PGStyleManager::GetImage("icon_xml.png");
+			file_image = PGStyleManager::GetImage("data/icons/icon_xml.png");
 		}
 		if (extension == "mm") {
-			file_image = PGStyleManager::GetImage("icon_objc.png");
+			file_image = PGStyleManager::GetImage("data/icons/icon_objc.png");
 		}
 		if (extension == "js") {
-			file_image = PGStyleManager::GetImage("icon_js.png");
+			file_image = PGStyleManager::GetImage("data/icons/icon_js.png");
 		}
 		if (extension == "py") {
-			file_image = PGStyleManager::GetImage("icon_py.png");
+			file_image = PGStyleManager::GetImage("data/icons/icon_py.png");
 		}
 		if (extension == "rs") {
-			file_image = PGStyleManager::GetImage("icon_rs.png");
+			file_image = PGStyleManager::GetImage("data/icons/icon_rs.png");
 		}
 	}
 
@@ -352,7 +360,7 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 		} else {
 			RenderTriangle(renderer, PGPoint(x - 8, y - 4 + file_render_height / 2.0f), PGPoint(x - 8, y + 4 + file_render_height / 2.0f), PGPoint(x - 2, y + file_render_height / 2.0f), PGColor(255, 255, 255), PGDrawStyleFill);
 		}
-		PGBitmapHandle image = directory.IsExpanded() ? PGStyleManager::GetImage("folder_open.png") : PGStyleManager::GetImage("folder_closed.png");
+		PGBitmapHandle image = !directory.loaded_files ? PGStyleManager::GetImage("data/icons/loading.png") : (directory.IsExpanded() ? PGStyleManager::GetImage("data/icons/folder_open.png") : PGStyleManager::GetImage("data/icons/folder_closed.png"));
 		DrawFile(renderer, image, PGFile(directory.path).Filename(), x, y, selected, highlighted_entry == current_offset);
 		SetTextStyle(font, PGTextStyleNormal);
 	}
@@ -675,7 +683,7 @@ void ProjectExplorer::AddDirectory(std::string directory) {
 			// show the project explorer again
 			GetControlManager(this)->ShowProjectExplorer(true);
 		}
-}
+	}
 }
 
 void ProjectExplorer::RemoveDirectory(lng index) {
@@ -712,12 +720,11 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 
 		if (directory && click) {
 			// (un)expand the selected directory
+			LockMutex(directory->lock.get());
 			lng current_count = directory->DisplayedFiles();
 			directory->SetExpanded(!directory->IsExpanded());
-#ifdef PANTHER_DEBUG
-			VerifyDirectories();
-#endif
 			lng new_count = directory->DisplayedFiles();
+			UnlockMutex(directory->lock.get());
 			// update any subsequent selections because they now point to a different location
 			for (lng i = 0; i < selected_files.size(); i++) {
 				if (selected_files[i] > selected_file) {
@@ -910,6 +917,6 @@ void ProjectExplorer::VerifyDirectories() {
 		VerifyDirectory(it->get(), total_files, displayed_files);
 		assert((*it)->displayed_files == displayed_files);
 		assert((*it)->total_files == total_files);
-}
+	}
 }
 #endif
