@@ -45,6 +45,7 @@ INCLUDE_FLAGS=$(SKIA_INCLUDE_FLAGS) $(ICU_INCLUDE_FLAGS) $(PANTHER_INCLUDE_FLAGS
 COBJECTS=$(OBJDIR)/files/directory.o \
 		$(OBJDIR)/files/file.o \
 		$(OBJDIR)/files/filemanager.o \
+		$(OBJDIR)/files/searchindex.o \
 		$(OBJDIR)/os/windowfunctions.o \
 		$(OBJDIR)/settings/globalsettings.o \
 		$(OBJDIR)/settings/keybindings.o \

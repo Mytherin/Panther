@@ -1,4 +1,3 @@
-#pragma once
 
 #include "searchindex.h"
 
@@ -47,7 +46,7 @@ void SearchIndex::AddEntry(SearchEntry e) {
 		}
 		node = next;
 	}
-	assert(0)
+	assert(0);
 }
 
 void SearchIndex::RemoveEntry(std::string name) {
