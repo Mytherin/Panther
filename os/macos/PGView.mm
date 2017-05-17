@@ -958,7 +958,7 @@ void PGSetWindowMenu(PGWindowHandle window, PGPopupMenuHandle menu) {
 
 #include <dirent.h>
 
-PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories,
+PGDirectoryFlags PGGetDirectoryFilesOS(std::string directory, std::vector<PGFile>& directories,
 	std::vector<PGFile>& files, void* glob) {
 	DIR *dp;
 	struct dirent *ep;
