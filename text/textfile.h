@@ -54,15 +54,11 @@ enum PGLockType {
 
 struct PGTextFileSettings {
 	PGLineEnding line_ending = PGLineEndingUnknown;
-	double xoffset = -1;
-	PGVerticalScroll yoffset = PGVerticalScroll(-1, -1);
-	bool wordwrap;
-	std::vector<PGCursorRange> cursor_data;
 	PGLanguage* language;
 	PGFileEncoding encoding = PGEncodingUnknown;
 	std::string name;
 
-	PGTextFileSettings() : line_ending(PGLineEndingUnknown), xoffset(-1), yoffset(-1, -1), wordwrap(false), cursor_data(), language(nullptr), encoding(PGEncodingUnknown), name("") { }
+	PGTextFileSettings() : line_ending(PGLineEndingUnknown), language(nullptr), encoding(PGEncodingUnknown), name("") { }
 };
 
 class TextFile {
@@ -81,27 +77,29 @@ public:
 
 	TextLine GetLine(lng linenumber);
 
-	void InsertText(char character);
-	void InsertText(PGUTF8Character character);
-	void InsertText(std::string text);
-	void InsertLines(std::string text, size_t cursor);
-	void ReplaceText(std::string replacement_text, size_t i);
+	void InsertText(std::vector<Cursor>& cursors, char character);
+	void InsertText(std::vector<Cursor>& cursors, PGUTF8Character character);
+	void InsertText(std::vector<Cursor>& cursors, std::string text);
+	void InsertLines(std::vector<Cursor>& cursors, std::string text, size_t cursor);
+	void ReplaceText(std::vector<Cursor>& cursors, std::string replacement_text, size_t i);
+
 	bool SplitLines(const std::string& text, std::vector<std::string>&);
 	std::vector<std::string> SplitLines(const std::string& text);
-	void DeleteCharacter(PGDirection direction);
-	void DeleteWord(PGDirection direction);
-	void AddNewLine();
-	void AddNewLine(std::string text);
-	void DeleteLines();
-	void DeleteLine(PGDirection direction);
-	void AddEmptyLine(PGDirection direction);
-	void MoveLines(int offset);
+
+	void DeleteCharacter(std::vector<Cursor>& cursors, PGDirection direction);
+	void DeleteWord(std::vector<Cursor>& cursors, PGDirection direction);
+	void AddNewLine(std::vector<Cursor>& cursors);
+	void AddNewLine(std::vector<Cursor>& cursors, std::string text);
+	void DeleteLines(std::vector<Cursor>& cursors);
+	void DeleteLine(std::vector<Cursor>& cursors, PGDirection direction);
+	void AddEmptyLine(std::vector<Cursor>& cursors, PGDirection direction);
+	void MoveLines(std::vector<Cursor>& cursors, int offset);
 
 	std::string GetText();
-	std::string CutText();
-	std::string CopyText();
-	void PasteText(std::string& text);
-	void RegexReplace(PGRegexHandle regex, std::string& replacement);
+	std::string CutText(std::vector<Cursor>& cursors);
+	std::string CopyText(std::vector<Cursor>& cursors);
+	void PasteText(std::vector<Cursor>& cursors, std::string& text);
+	void RegexReplace(std::vector<Cursor>& cursors, PGRegexHandle regex, std::string& replacement);
 
 	bool Reload(PGFileError& error);
 
@@ -110,8 +108,8 @@ public:
 	void ChangeIndentation(PGLineIndentation indentation);
 	void RemoveTrailingWhitespace();
 
-	void Undo();
-	void Redo();
+	void Undo(TextView* view);
+	void Redo(TextView* view);
 
 	void SaveChanges();
 	void SaveAs(std::string path);
@@ -130,7 +128,7 @@ public:
 	bool IsLoaded() { return is_loaded; }
 	double LoadPercentage() { return (double) bytes / (double) total_bytes; }
 
-	void IndentText(PGDirection direction);
+	void IndentText(std::vector<Cursor>& cursors, PGDirection direction);
 
 	void VerifyPartialTextfile();
 	void VerifyTextfile();
@@ -183,15 +181,15 @@ private:
 
 	// replace text in the specified text range with <replacement_text>
 	// neither <range> nor <replacement_text> may not contain newlines
-	void ReplaceText(PGTextRange range, std::string replacement_text);
+	void ReplaceText(std::vector<Cursor>& cursors, PGTextRange range, std::string replacement_text);
 	// insert text at the specified cursor number, text must not include newlines
-	void InsertText(std::string text, size_t cursornr);
+	void InsertText(std::vector<Cursor>& cursors, std::string text, size_t cursornr);
 	// insert text at the specified position, text must not include newlines
-	void InsertText(std::string text, PGTextBuffer* buffer, lng position);
+	void InsertText(std::vector<Cursor>& cursors, std::string text, PGTextBuffer* buffer, lng position);
 	// delete the selection of the specified cursor number, cursor selection must not be empty
-	void DeleteSelection(int cursornr);
+	void DeleteSelection(std::vector<Cursor>& cursors, size_t cursornr);
 	// delete the specified text range
-	void DeleteText(PGTextRange);
+	void DeleteText(std::vector<Cursor>& cursors, PGTextRange);
 
 	bool read_only = false;
 
@@ -216,15 +214,15 @@ private:
 	void OpenFile(char* base_data, lng size, bool delete_file);
 
 	void AddDelta(TextDelta* delta);
-	void Undo(TextDelta* delta);
+	void Undo(TextView* view, TextDelta* delta);
 
-	void Undo(PGReplaceText& delta, int i);
-	void Undo(PGRegexReplace& delta, int i);
-	void Undo(RemoveText& delta, std::string& text, int i);
+	void Undo(std::vector<Cursor>& cursors, PGReplaceText& delta, size_t i);
+	void Undo(std::vector<Cursor>& cursors, PGRegexReplace& delta, size_t i);
+	void Undo(std::vector<Cursor>& cursors, RemoveText& delta, std::string& text, size_t i);
 
-	void PerformOperation(TextDelta* delta);
-	bool PerformOperation(TextDelta* delta, bool redo);
-	std::vector<Interval> GetCursorIntervals();
+	void PerformOperation(std::vector<Cursor>& cursors, TextDelta* delta);
+	bool PerformOperation(std::vector<Cursor>& cursors, TextDelta* delta, bool redo);
+	std::vector<Interval> GetCursorIntervals(std::vector<Cursor>& cursors);
 
 	std::shared_ptr<Task> current_task = nullptr;
 	static void RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile);
@@ -247,6 +245,7 @@ private:
 	lng linecount = 0;
 	PGTextPosition max_line_length;
 
+	std::vector<std::weak_ptr<TextView>> views;
 	std::vector<PGTextBuffer*> buffers;
 	std::vector<std::unique_ptr<TextDelta>> deltas;
 	std::vector<RedoStruct> redos;

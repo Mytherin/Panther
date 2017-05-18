@@ -4,7 +4,21 @@
 #include "textfile.h"
 #include "utils.h"
 
+class BasicTextField;
+
+struct PGTextViewSettings {
+	double xoffset = -1;
+	PGVerticalScroll yoffset = PGVerticalScroll(-1, -1);
+	bool wordwrap;
+	std::vector<PGCursorRange> cursor_data;
+
+	PGTextViewSettings() : xoffset(-1), yoffset(-1, -1), wordwrap(false), cursor_data() {}
+};
+
 // a textview represents a view into a textfile
+// a view includes a scroll position (xoffset, yoffset)
+// edit information (cursors)
+// visual information (wordwrap, displayed search matches)
 struct TextView {
 public:
 	TextView(BasicTextField* field);
@@ -78,9 +92,6 @@ public:
 	void FindAllMatches(PGRegexHandle regex_handle, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap);
 	void FindAllMatches(PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data);
 
-	std::vector<PGCursorRange> BackupCursors();
-	PGCursorRange BackupCursor(int i);
-
 	void RestoreCursors(std::vector<PGCursorRange>& data);
 	Cursor RestoreCursor(PGCursorRange data);
 	// same as RestoreCursor, but selections are replaced by the LOWEST value
@@ -92,4 +103,10 @@ public:
 
 	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }
+
+	void ApplySettings(PGTextViewSettings& settings);
+
+	void InvalidateTextView();
+
+	void VerifyTextView();
 };

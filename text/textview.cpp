@@ -1,7 +1,7 @@
 
-#include "basictextfield.h"
 #include "textview.h"
 #include "wrappedtextiterator.h"
+#include "basictextfield.h"
 
 TextView::TextView(BasicTextField* textfield) :
 	textfield(textfield), wordwrap(false),
@@ -24,6 +24,7 @@ TextLineIterator* TextView::GetLineIterator(BasicTextField* textfield, lng linen
 	}
 	return new TextLineIterator(file.get(), linenumber);
 }
+
 double TextView::GetScrollPercentage(PGVerticalScroll scroll) {
 	if (wordwrap) {
 		auto buffer = file->GetBuffer(scroll.linenumber);
@@ -332,6 +333,30 @@ void TextView::SelectEndOfFile() {
 	Cursor::NormalizeCursors(this, cursors);
 }
 
+void TextView::RestoreCursors(std::vector<PGCursorRange>& data) {
+	ClearCursors();
+	for (auto it = data.begin(); it != data.end(); it++) {
+		cursors.push_back(Cursor(this, *it));
+	}
+	Cursor::NormalizeCursors(this, cursors);
+}
+
+Cursor TextView::RestoreCursor(PGCursorRange data) {
+	return Cursor(this, data);
+}
+
+Cursor TextView::RestoreCursorPartial(PGCursorRange data) {
+	if (data.start_line < data.end_line ||
+		(data.start_line == data.end_line && data.start_position < data.end_position)) {
+		data.end_line = data.start_line;
+		data.end_position = data.start_position;
+	} else {
+		data.start_line = data.end_line;
+		data.start_position = data.end_position;
+	}
+	return Cursor(nullptr, data);
+}
+
 void TextView::ClearExtraCursors() {
 	if (cursors.size() > 1) {
 		cursors.erase(cursors.begin() + 1, cursors.end());
@@ -365,4 +390,74 @@ void TextView::SelectEverything() {
 int TextView::GetLineHeight() {
 	if (!textfield) return -1;
 	return textfield->GetLineHeight();
+}
+
+void TextView::ApplySettings(PGTextViewSettings& settings) {
+	if (settings.xoffset >= 0) {
+		this->xoffset = settings.xoffset;
+		settings.xoffset = -1;
+	}
+	if (settings.yoffset.linenumber >= 0) {
+		this->yoffset = settings.yoffset;
+		this->yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, this->yoffset.linenumber));
+		settings.yoffset.linenumber = -1;
+	}
+	if (settings.wordwrap) {
+		this->wordwrap = settings.wordwrap;
+		this->wordwrap_width = -1;
+		settings.wordwrap = false;
+	}
+	if (settings.cursor_data.size() > 0) {
+		this->ClearCursors();
+		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
+			it->start_line = std::max((lng)0, std::min(file->linecount - 1, it->start_line));
+			it->end_line = std::max((lng)0, std::min(file->linecount - 1, it->end_line));
+			this->cursors.push_back(Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
+		}
+		std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
+		Cursor::NormalizeCursors(this, this->cursors, false);
+	}
+}
+
+void TextView::InvalidateTextView() {
+	yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, yoffset.linenumber));
+
+	matches.clear();
+
+	Cursor::NormalizeCursors(this, cursors, true);
+}
+
+void TextView::SetWordWrap(bool wordwrap, PGScalar wrap_width) {
+	this->wordwrap = wordwrap;
+	if (this->wordwrap && !panther::epsilon_equals(this->wordwrap_width, wrap_width)) {
+		// heuristic to determine new scroll position in current line after resize
+		this->yoffset.inner_line = (wordwrap_width / wrap_width) * this->yoffset.inner_line;
+		this->wordwrap_width = wrap_width;
+		this->xoffset = 0;
+	} else if (!this->wordwrap) {
+		this->wordwrap_width = -1;
+	}
+}
+
+void TextView::VerifyTextView() {
+#ifdef PANTHER_DEBUG
+	assert(cursors.size() > 0);
+	for (int i = 0; i < cursors.size(); i++) {
+		Cursor& c = cursors[i];
+		if (c.start_buffer == nullptr) continue;
+		if (i < cursors.size() - 1) {
+			if (cursors[i + 1].start_buffer == nullptr) continue;
+			auto end_position = c.EndCursorPosition();
+			auto begin_position = cursors[i + 1].BeginCursorPosition();
+			if (!(end_position.buffer == begin_position.buffer && end_position.position == begin_position.position)) {
+				assert(Cursor::CursorPositionOccursFirst(end_position.buffer, end_position.position,
+					begin_position.buffer, begin_position.position));
+			}
+		}
+		assert(c.start_buffer_position >= 0 && c.start_buffer_position < c.start_buffer->current_size);
+		assert(c.end_buffer_position >= 0 && c.end_buffer_position < c.end_buffer->current_size);
+		assert(std::find(file->buffers.begin(), file->buffers.end(), c.start_buffer) != file->buffers.end());
+		assert(std::find(file->buffers.begin(), file->buffers.end(), c.end_buffer) != file->buffers.end());
+	}
+#endif
 }

@@ -12,6 +12,7 @@ class TextView;
 class TextField;
 
 class Cursor {
+	friend class TextFile;
 	friend class TextView;
 public:
 	Cursor() : file(nullptr), x_position(-1), start_buffer(nullptr), start_buffer_position(-1), end_buffer(nullptr), end_buffer_position(-1) { }
@@ -21,6 +22,7 @@ public:
 	Cursor(TextView* file, PGCursorRange data);
 	Cursor(TextView* file, PGTextRange range);
 
+	static bool CursorsContainSelection(const std::vector<Cursor>& cursors);
 	static std::vector<PGCursorRange> GetCursorData(const std::vector<Cursor>& cursors);
 
 	PGCursorRange GetCursorData() const;
@@ -68,6 +70,9 @@ public:
 	bool OverlapsWith(const Cursor& cursor) const;
 	void Merge(const Cursor& cursor);
 
+	static std::vector<PGCursorRange> BackupCursors(std::vector<Cursor>& cursors);
+	static PGCursorRange BackupCursor(std::vector<Cursor>& cursors, int i);
+	static void NormalizeCursors(std::vector<Cursor>& cursors);
 	static void NormalizeCursors(TextView* textfile, std::vector<Cursor>& cursors, bool scroll_textfield = true);
 	static bool CursorOccursFirst(const Cursor& a, const Cursor& b);
 	// returns the index of the first cursor that points to <buffer>

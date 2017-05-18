@@ -144,6 +144,7 @@
     <ClCompile Include="text\textiterator.cpp" />
     <ClCompile Include="text\textline.cpp" />
     <ClCompile Include="text\textposition.cpp" />
+    <ClCompile Include="text\textview.cpp" />
     <ClCompile Include="text\unicode.cpp" />
     <ClCompile Include="text\wrappedtextiterator.cpp" />
     <ClCompile Include="third_party\re2\re2\bitstate.cc" />

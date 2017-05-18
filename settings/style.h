@@ -69,6 +69,8 @@ public:
 		return &style;
 	}
 
+	static PGFontHandle default_font;
+
 	static PGBitmapHandle GetImage(std::string path) { return GetInstance()->_GetImage(path); }
 	static PGColor GetColor(PGColorType type, PGStyle* extra_style = nullptr) { return GetInstance()->_GetColor(type, extra_style); }
 	static PGFontHandle GetFont(PGFontType);

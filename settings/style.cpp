@@ -17,6 +17,7 @@ PGColor* PGStyle::GetColor(PGColorType type) {
 
 PGStyleManager::PGStyleManager() {
 	// default fonts
+	default_font = PGCreateFont(PGFontTypeTextField);
 	textfield_font = PGCreateFont(PGFontTypeTextField);
 	menu_font = PGCreateFont(PGFontTypeUI);
 	popup_font = PGCreateFont(PGFontTypePopup);

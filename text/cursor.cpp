@@ -76,6 +76,15 @@ Cursor::Cursor(TextView* file, PGCursorRange data) :
    Cursor(file, data.start_line, data.start_position, data.end_line, data.end_position) {
 }
 
+bool Cursor::CursorsContainSelection(const std::vector<Cursor>& cursors) {
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		if (!(it->SelectionIsEmpty())) {
+			return true;
+		}
+	}
+	return false;
+}
+
 PGCursorRange Cursor::GetCursorData() const {
 	PGCursorPosition start = this->SelectedPosition();
 	PGCursorPosition end = this->UnselectedPosition();
@@ -607,6 +616,22 @@ void Cursor::Merge(const Cursor& cursor) {
 	}
 }
 
+std::vector<PGCursorRange> Cursor::BackupCursors(std::vector<Cursor>& cursors) {
+	std::vector<PGCursorRange> backup;
+	for (auto it = cursors.begin(); it != cursors.end(); it++) {
+		backup.push_back(it->GetCursorData());
+	}
+	return backup;
+}
+
+PGCursorRange Cursor::BackupCursor(std::vector<Cursor>& cursors, size_t i) {
+	return cursors[i].GetCursorData();
+}
+
+void Cursor::NormalizeCursors(std::vector<Cursor>& cursors) {
+	NormalizeCursors(nullptr, cursors, false);
+}
+
 void Cursor::NormalizeCursors(TextView* view, std::vector<Cursor>& cursors, bool scroll_textfield) {
 	for (size_t i = 0; i < cursors.size() - 1; i++) {
 		int j = i + 1;
@@ -616,13 +641,13 @@ void Cursor::NormalizeCursors(TextView* view, std::vector<Cursor>& cursors, bool
 			i--;
 		}
 	}
-	if (scroll_textfield && view->textfield) {
+	if (scroll_textfield && view && view->textfield) {
 		PGVerticalScroll line_offset = view->GetLineOffset();
 		lng line_height = view->GetLineHeight();
 		PGVerticalScroll end_scroll = PGVerticalScroll(std::min(view->file->GetLineCount() - 1, line_offset.linenumber + line_height), 0);
 		bool word_wrap = view->GetWordWrap();
 		if (word_wrap) {
-			auto it = view->file->GetScrollIterator(view->textfield, line_offset);
+			auto it = view->GetScrollIterator(view->textfield, line_offset);
 			for (lng i = 0; i < line_height; i++, (*it)++) {
 				if (!(*it).GetLine().IsValid()) {
 					break;
@@ -651,7 +676,7 @@ void Cursor::NormalizeCursors(TextView* view, std::vector<Cursor>& cursors, bool
 				line_offset = PGVerticalScroll(std::max((lng) 0, min_scroll.linenumber - line_height), 0);
 			} else {
 				lng count = line_height;
-				auto it = view->file->GetScrollIterator(textfile->textfield, min_scroll);
+				auto it = view->GetScrollIterator(view->textfield, min_scroll);
 				for (; ; (*it)--) {
 					if (!(*it).GetLine().IsValid()) {
 						break;
@@ -663,20 +688,20 @@ void Cursor::NormalizeCursors(TextView* view, std::vector<Cursor>& cursors, bool
 				line_offset = it->GetCurrentScrollOffset();
 			}
 		}
-		textfile->SetLineOffset(line_offset);
+		view->SetLineOffset(line_offset);
 
 		if (!word_wrap) {
-			PGScalar xoffset = textfile->GetXOffset();
-			PGScalar max_textwidth = textfile->textfield->GetTextfieldWidth() - 20;
+			PGScalar xoffset = view->GetXOffset();
+			PGScalar max_textwidth = view->textfield->GetTextfieldWidth() - 20;
 			if (cursor_max_xoffset < xoffset) {
 				xoffset = cursor_max_xoffset;
 			} else if (cursor_min_xoffset > xoffset + max_textwidth) {
 				xoffset = cursor_min_xoffset - max_textwidth;
 			}
-			textfile->SetXOffset(std::max(0.0f, std::min(xoffset, textfile->textfield->GetMaxXOffset())));
+			view->SetXOffset(std::max(0.0f, std::min(xoffset, view->textfield->GetMaxXOffset())));
 		}
-		if (textfile->textfield) {
-			textfile->textfield->SelectionChanged();
+		if (view->textfield) {
+			view->textfield->SelectionChanged();
 		}
 	}
 }
