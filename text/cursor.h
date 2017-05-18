@@ -8,18 +8,18 @@
 #include <vector>
 #include "windowfunctions.h"
 
-class TextFile;
+class TextView;
 class TextField;
 
 class Cursor {
-	friend class TextFile;
+	friend class TextView;
 public:
 	Cursor() : file(nullptr), x_position(-1), start_buffer(nullptr), start_buffer_position(-1), end_buffer(nullptr), end_buffer_position(-1) { }
-	Cursor(TextFile* file);
-	Cursor(TextFile* file, lng start_line, lng start_character);
-	Cursor(TextFile* file, lng start_line, lng start_character, lng end_line, lng end_character);
-	Cursor(TextFile* file, PGCursorRange data);
-	Cursor(TextFile* file, PGTextRange range);
+	Cursor(TextView* file);
+	Cursor(TextView* file, lng start_line, lng start_character);
+	Cursor(TextView* file, lng start_line, lng start_character, lng end_line, lng end_character);
+	Cursor(TextView* file, PGCursorRange data);
+	Cursor(TextView* file, PGTextRange range);
 
 	static std::vector<PGCursorRange> GetCursorData(const std::vector<Cursor>& cursors);
 
@@ -68,7 +68,7 @@ public:
 	bool OverlapsWith(const Cursor& cursor) const;
 	void Merge(const Cursor& cursor);
 
-	static void NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, bool scroll_textfield = true);
+	static void NormalizeCursors(TextView* textfile, std::vector<Cursor>& cursors, bool scroll_textfield = true);
 	static bool CursorOccursFirst(const Cursor& a, const Cursor& b);
 	// returns the index of the first cursor that points to <buffer>
 	// <cursors> is assumed to be sorted
@@ -92,7 +92,7 @@ private:
 
 	static bool CursorPositionOccursFirst(PGTextBuffer* a, lng a_pos, PGTextBuffer* b, lng b_pos);
 
-	TextFile* file;
+	TextView* file;
 	PGTextBuffer* start_buffer;
 	lng start_buffer_position;
 	PGTextBuffer* end_buffer;

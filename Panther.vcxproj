@@ -56,6 +56,7 @@
     <ClInclude Include="text\textiterator.h" />
     <ClInclude Include="text\textline.h" />
     <ClInclude Include="text\textposition.h" />
+    <ClInclude Include="text\textview.h" />
     <ClInclude Include="text\unicode.h" />
     <ClInclude Include="text\wrappedtextiterator.h" />
     <ClInclude Include="third_party\concurrent_queue\blockingconcurrentqueue.h" />

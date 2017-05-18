@@ -6,6 +6,7 @@
 
 class TextLineIterator {
 	friend class TextFile;
+	friend class TextView;
 public:
 	virtual TextLine GetLine();
 	friend TextLineIterator& operator++(TextLineIterator& element) {

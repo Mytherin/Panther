@@ -3,7 +3,6 @@
 #include "basictextfield.h"
 #include "control.h"
 #include "cursor.h"
-#include "textfile.h"
 #include "time.h"
 #include "searchbox.h"
 

@@ -9,14 +9,14 @@ class TabControl;
 
 struct Tab {
 	lng id = 0;
-	std::shared_ptr<TextFile> file;
+	std::shared_ptr<TextView> view;
 	PGScalar width;
 	PGScalar x = -1;
 	PGScalar target_x = -1;
 	bool hover = false;
 	bool button_hover = false;
 
-	Tab(std::shared_ptr<TextFile> file, lng id) : file(file), x(-1), target_x(-1), id(id), hover(false), button_hover(false) { }
+	Tab(std::shared_ptr<TextView> view, lng id) : view(view), x(-1), target_x(-1), id(id), hover(false), button_hover(false) { }
 };
 
 struct PGTabMouseRegion : public PGMouseRegion {
@@ -39,13 +39,13 @@ struct PGClosedTab {
 		id = tab.id;
 		this->neighborid = neighborid;
 		this->settings = settings;
-		filepath = tab.file->GetFullPath();
+		filepath = tab.view->file->GetFullPath();
 	}
 };
 
 struct TabDragDropStruct {
-	TabDragDropStruct(std::shared_ptr<TextFile> file, TabControl* tabs, PGScalar drag_offset) : file(file), tabs(tabs), accepted(nullptr), drag_offset(drag_offset) {}
-	std::shared_ptr<TextFile> file;
+	TabDragDropStruct(std::shared_ptr<TextView> view, TabControl* tabs, PGScalar drag_offset) : view(view), tabs(tabs), accepted(nullptr), drag_offset(drag_offset) {}
+	std::shared_ptr<TextView> view;
 	TabControl* tabs;
 	TabControl* accepted = nullptr;
 	PGScalar drag_offset;
@@ -110,7 +110,7 @@ public:
 	TextField* GetTextField() { return textfield; }
 
 	bool IsDragging() {
-		return drag_tab || dragging_tab.file != nullptr;
+		return drag_tab || dragging_tab.view != nullptr;
 	}
 
 	int currently_selected_tab = 0;
@@ -155,7 +155,7 @@ protected:
 
 	TextField* textfield;
 
-	void SwitchToFile(std::shared_ptr<TextFile> file);
+	void SwitchToFile(std::shared_ptr<TextView> file);
 
 	PGScalar tab_offset;
 	int active_tab;
@@ -173,7 +173,7 @@ protected:
 
 	lng current_id = 0;
 	
-	std::shared_ptr<TextFile> temporary_textfile = nullptr;
+	std::shared_ptr<TextView> temporary_textfile = nullptr;
 	PGScalar temporary_tab_width = 0;
 
 	bool is_empty = false;

@@ -402,6 +402,9 @@
     <ClInclude Include="files\searchindex.h">
       <Filter>Header Files\files</Filter>
     </ClInclude>
+    <ClInclude Include="text\textview.h">
+      <Filter>Header Files\text</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="files\directory.cpp">

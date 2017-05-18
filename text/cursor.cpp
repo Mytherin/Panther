@@ -45,34 +45,34 @@ void Cursor::LoadCursors(nlohmann::json& j, std::vector<PGCursorRange>& stored_c
 	}
 }
 
-Cursor::Cursor(TextFile* file) :
+Cursor::Cursor(TextView* file) :
 	file(file), x_position(-1) {
-	start_buffer = file->GetBuffer(0);
+	start_buffer = file->file->GetBuffer(0);
 	start_buffer_position = 0;
 	end_buffer = start_buffer;
 	end_buffer_position = start_buffer_position;
 }
 
-Cursor::Cursor(TextFile* file, lng line, lng character) :
+Cursor::Cursor(TextView* file, lng line, lng character) :
 	file(file), x_position(-1) {
-	start_buffer = file->GetBuffer(line);
+	start_buffer = file->file->GetBuffer(line);
 	start_buffer_position = start_buffer->GetBufferLocationFromCursor(line, character);
 	end_buffer = start_buffer;
 	end_buffer_position = start_buffer_position;
 	assert(start_buffer_position >= 0);
 }
 
-Cursor::Cursor(TextFile* file, lng start_line, lng start_character, lng end_line, lng end_character) :
+Cursor::Cursor(TextView* file, lng start_line, lng start_character, lng end_line, lng end_character) :
 	file(file), x_position(-1) {
-	start_buffer = file->GetBuffer(start_line);
+	start_buffer = file->file->GetBuffer(start_line);
 	start_buffer_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
-	end_buffer = file->GetBuffer(end_line);
+	end_buffer = file->file->GetBuffer(end_line);
 	end_buffer_position = end_buffer->GetBufferLocationFromCursor(end_line, end_character);
 	assert(start_buffer_position >= 0);
 	assert(end_buffer_position >= 0);
 }
 
-Cursor::Cursor(TextFile* file, PGCursorRange data) : 
+Cursor::Cursor(TextView* file, PGCursorRange data) :
    Cursor(file, data.start_line, data.start_position, data.end_line, data.end_position) {
 }
 
@@ -90,7 +90,7 @@ std::vector<PGCursorRange> Cursor::GetCursorData(const std::vector<Cursor>& curs
 	return data;
 }
 
-Cursor::Cursor(TextFile* file, PGTextRange range) : 
+Cursor::Cursor(TextView* file, PGTextRange range) :
 	file(file), x_position(-1), 
 	start_buffer(range.start_buffer), 
 	start_buffer_position(range.start_position), 
@@ -123,12 +123,12 @@ void Cursor::OffsetSelectionLine(lng offset) {
 		// the file has word wrapping enabled
 		// when we press up/down, we might not go to the next line
 		// but stay on the same line
-		TextLine line = TextLine(start_buffer, start_line, file->GetLineCount());
+		TextLine line = TextLine(start_buffer, start_line, file->file->GetLineCount());
 		lng start_wrap = 0;
 		lng end_wrap = -1;
 		bool wrap = false;
 		if (offset > 0) {
-			lng* lines = line.WrapLine(start_buffer, start_line, file->GetLineCount(), textfield_font, file->wordwrap_width);
+			lng* lines = line.WrapLine(start_buffer, start_line, file->file->GetLineCount(), textfield_font, file->wordwrap_width);
 			start_wrap = 0;
 			lng index = 0;
 			// we have the cursor down
@@ -159,7 +159,7 @@ void Cursor::OffsetSelectionLine(lng offset) {
 				}
 			}
 		} else {
-			lng* lines = line.WrapLine(start_buffer, start_line, file->GetLineCount(), textfield_font, file->wordwrap_width);
+			lng* lines = line.WrapLine(start_buffer, start_line, file->file->GetLineCount(), textfield_font, file->wordwrap_width);
 			start_wrap = 0;
 			lng index = 0;
 			lng prev_wrap = -1;
@@ -190,17 +190,17 @@ void Cursor::OffsetSelectionLine(lng offset) {
 				// however, the line ABOVE us might be wrapped as well
 				// we want to move the cursor to the LAST part of that line
 				if (x_position < 0) {
-					x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line, file->GetLineCount()).GetLine(), start_character);
+					x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line, file->file->GetLineCount()).GetLine(), start_character);
 				}
 
-				lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
+				lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->file->GetLineCount() - 1);
 				if (new_line != start_line) {
 					start_line = new_line;
 					start_wrap = 0;
-					auto buffer = this->file->GetBuffer(start_line);
-					line = this->file->GetLine(start_line);
-					lng* lines = line.WrapLine(buffer, start_line, file->GetLineCount(), textfield_font, file->wordwrap_width);
-					lng rendered_lines = line.RenderedLines(buffer, start_line, file->GetLineCount(), textfield_font, file->wordwrap_width);
+					auto buffer = this->file->file->GetBuffer(start_line);
+					line = this->file->file->GetLine(start_line);
+					lng* lines = line.WrapLine(buffer, start_line, file->file->GetLineCount(), textfield_font, file->wordwrap_width);
+					lng rendered_lines = line.RenderedLines(buffer, start_line, file->file->GetLineCount(), textfield_font, file->wordwrap_width);
 					start_wrap = rendered_lines > 1 ? lines[rendered_lines - 2] : 0;
 					end_wrap = lines[rendered_lines - 1];
 					start_character = GetPositionInLine(textfield_font, x_position, line.GetLine() + start_wrap, end_wrap - start_wrap);
@@ -212,13 +212,13 @@ void Cursor::OffsetSelectionLine(lng offset) {
 	}
 
 	if (x_position < 0) {
-		x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line, file->GetLineCount()).GetLine(), start_character);
+		x_position = MeasureTextWidth(textfield_font, TextLine(start_buffer, start_line, file->file->GetLineCount()).GetLine(), start_character);
 	}
 
-	lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->GetLineCount() - 1);
+	lng new_line = std::min(std::max(start_line + offset, (lng)0), this->file->file->GetLineCount() - 1);
 	if (new_line != start_line) {
 		start_line = new_line;
-		TextLine line = this->file->GetLine(start_line);
+		TextLine line = this->file->file->GetLine(start_line);
 		start_character = GetPositionInLine(textfield_font, x_position, line.GetLine(), line.GetLength());
 		_SetCursorStartLocation(start_line, start_character);
 	}
@@ -410,12 +410,12 @@ void Cursor::OffsetEndOfFile() {
 }
 
 void Cursor::SelectStartOfFile() {
-	start_buffer = file->buffers.front();
+	start_buffer = file->file->buffers.front();
 	start_buffer_position = 0;
 }
 
 void Cursor::SelectEndOfFile() {
-	start_buffer = file->buffers.back();
+	start_buffer = file->file->buffers.back();
 	start_buffer_position = start_buffer->current_size - 1;
 }
 
@@ -434,7 +434,7 @@ void Cursor::SetCursorLocation(PGTextRange range) {
 	x_position = -1;
 }
 void Cursor::_SetCursorStartLocation(lng linenr, lng characternr) {
-	start_buffer = file->GetBuffer(linenr);
+	start_buffer = file->file->GetBuffer(linenr);
 	start_buffer_position = start_buffer->GetBufferLocationFromCursor(linenr, characternr);
 }
 
@@ -448,21 +448,21 @@ bool Cursor::SelectionIsEmpty() const {
 }
 
 PGCursorPosition Cursor::SelectedPosition() const {
-	return start_buffer->GetCursorFromPosition(start_buffer_position, file->GetLineCount());
+	return start_buffer->GetCursorFromPosition(start_buffer_position, file->file->GetLineCount());
 }
 
 PGCursorPosition Cursor::UnselectedPosition() const {
-	return end_buffer->GetCursorFromPosition(end_buffer_position, file->GetLineCount());
+	return end_buffer->GetCursorFromPosition(end_buffer_position, file->file->GetLineCount());
 }
 
 PGCursorPosition Cursor::BeginPosition() const {
 	PGTextPosition begin = BeginCursorPosition();
-	return begin.buffer->GetCursorFromPosition(begin.position, file->GetLineCount());
+	return begin.buffer->GetCursorFromPosition(begin.position, file->file->GetLineCount());
 }
 
 PGCursorPosition Cursor::EndPosition() const {
 	PGTextPosition end = EndCursorPosition();
-	return end.buffer->GetCursorFromPosition(end.position, file->GetLineCount());
+	return end.buffer->GetCursorFromPosition(end.position, file->file->GetLineCount());
 }
 
 PGCharacterPosition Cursor::SelectedCharacterPosition() const {
@@ -607,7 +607,7 @@ void Cursor::Merge(const Cursor& cursor) {
 	}
 }
 
-void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, bool scroll_textfield) {
+void Cursor::NormalizeCursors(TextView* view, std::vector<Cursor>& cursors, bool scroll_textfield) {
 	for (size_t i = 0; i < cursors.size() - 1; i++) {
 		int j = i + 1;
 		if (cursors[i].OverlapsWith(cursors[j])) {
@@ -616,13 +616,13 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, 
 			i--;
 		}
 	}
-	if (scroll_textfield && textfile->textfield) {
-		PGVerticalScroll line_offset = textfile->GetLineOffset();
-		lng line_height = textfile->GetLineHeight();
-		PGVerticalScroll end_scroll = PGVerticalScroll(std::min(textfile->GetLineCount() - 1, line_offset.linenumber + line_height), 0);
-		bool word_wrap = textfile->GetWordWrap();
+	if (scroll_textfield && view->textfield) {
+		PGVerticalScroll line_offset = view->GetLineOffset();
+		lng line_height = view->GetLineHeight();
+		PGVerticalScroll end_scroll = PGVerticalScroll(std::min(view->file->GetLineCount() - 1, line_offset.linenumber + line_height), 0);
+		bool word_wrap = view->GetWordWrap();
 		if (word_wrap) {
-			auto it = textfile->GetScrollIterator(textfile->textfield, line_offset);
+			auto it = view->file->GetScrollIterator(view->textfield, line_offset);
 			for (lng i = 0; i < line_height; i++, (*it)++) {
 				if (!(*it).GetLine().IsValid()) {
 					break;
@@ -630,15 +630,15 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, 
 			}
 			end_scroll = (*it).GetCurrentScrollOffset();
 		}
-		if (textfile->active_cursor < 0 || textfile->active_cursor >= cursors.size()) {
-			textfile->active_cursor = 0;
+		if (view->active_cursor < 0 || view->active_cursor >= cursors.size()) {
+			view->active_cursor = 0;
 		}
-		PGCursorPosition cursor_min_position = cursors[textfile->active_cursor].SelectedPosition();
+		PGCursorPosition cursor_min_position = cursors[view->active_cursor].SelectedPosition();
 		PGCursorPosition cursor_max_position = cursor_min_position;
-		PGScalar cursor_min_xoffset = word_wrap ? 0 : cursors[textfile->active_cursor].SelectedXPosition();
+		PGScalar cursor_min_xoffset = word_wrap ? 0 : cursors[view->active_cursor].SelectedXPosition();
 		PGScalar cursor_max_xoffset = cursor_min_xoffset;
 
-		PGVerticalScroll min_scroll = textfile->GetVerticalScroll(cursor_min_position.line, cursor_min_position.position);
+		PGVerticalScroll min_scroll = view->GetVerticalScroll(cursor_min_position.line, cursor_min_position.position);
 		PGVerticalScroll max_scroll = min_scroll;
 
 		if (max_scroll < line_offset) {
@@ -651,7 +651,7 @@ void Cursor::NormalizeCursors(TextFile* textfile, std::vector<Cursor>& cursors, 
 				line_offset = PGVerticalScroll(std::max((lng) 0, min_scroll.linenumber - line_height), 0);
 			} else {
 				lng count = line_height;
-				auto it = textfile->GetScrollIterator(textfile->textfield, min_scroll);
+				auto it = view->file->GetScrollIterator(textfile->textfield, min_scroll);
 				for (; ; (*it)--) {
 					if (!(*it).GetLine().IsValid()) {
 						break;

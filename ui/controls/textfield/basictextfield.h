@@ -2,6 +2,7 @@
 
 #include "control.h"
 #include "textfile.h"
+#include "textview.h"
 
 #define FLICKER_CARET_INTERVAL 15
 
@@ -50,8 +51,7 @@ public:
 	
 	virtual PGCursorType GetCursor(PGPoint mouse);
 
-	TextFile& GetTextFile() { return *textfile; }
-	std::shared_ptr<TextFile> GetTextfilePointer() { return textfile; }
+	std::shared_ptr<TextView> GetTextView() { return textview; }
 
 	virtual bool IsDragging() { return drag_type != PGDragNone; }
 	PGCursorType GetDraggingCursor() { return drag_type == PGDragSelection ? PGCursorIBeam : PGCursorStandard; }
@@ -81,7 +81,7 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeBasicTextField; }
 protected:
-	std::shared_ptr<TextFile> textfile = nullptr;
+	std::shared_ptr<TextView> textview = nullptr;
 	PGFontHandle textfield_font = nullptr;
 
 	int display_carets_count = 0;
