@@ -125,6 +125,8 @@ protected:
 
 	void ReopenFile(PGClosedTab tab);
 
+	void ClearTabs();
+
 	void AddTab(std::shared_ptr<TextView> file, lng id, lng neighborid);
 
 	bool CloseTabConfirmation(int tab, bool respect_hot_exit = true);

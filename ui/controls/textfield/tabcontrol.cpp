@@ -373,7 +373,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 		if (tb.count("views") > 0) {
 			nlohmann::json& f = tb["views"];
 			if (f.is_array() && f.size() > 0) {
-				tabs.clear();
+				ClearTabs();
 				for (auto it = f.begin(); it != f.end(); ++it) {
 					if (!it->is_object()) continue;
 
@@ -475,7 +475,7 @@ bool TabControl::KeyboardCharacter(char character, PGModifier modifier) {
 void TabControl::NewTab() {
 	if (is_empty) {
 		active_tab = -1;
-		tabs.clear();
+		ClearTabs();
 	}
 	std::shared_ptr<TextFile> file = FileManager::OpenFile();
 	tabs.insert(tabs.begin() + active_tab + 1, OpenTab(make_shared_control<TextView>(textfield, file)));
@@ -533,7 +533,6 @@ void TabControl::CloseTemporaryFile() {
 	if (textfield->GetTextView() == view) {
 		SwitchToFile(tabs[active_tab].view);
 	}
-	FileManager::CloseFile(view->file);
 	this->Invalidate();
 }
 
@@ -592,7 +591,7 @@ void TabControl::AddTab(std::shared_ptr<TextView> file) {
 	assert(file);
 	assert(active_tab < tabs.size());
 	if (is_empty) {
-		tabs.clear();
+		ClearTabs();
 		tabs.push_back(OpenTab(file));
 		active_tab = 0;
 		is_empty = false;
@@ -808,6 +807,13 @@ bool TabControl::CloseAllTabs() {
 		}
 	}
 	return true;
+}
+
+void TabControl::ClearTabs() {
+	for (auto it = tabs.begin(); it != tabs.end(); it++) {
+		FileManager::CloseFile(it->view->file);
+	}
+	tabs.clear();
 }
 
 bool TabControl::CloseAllTabs(PGDirection direction) {

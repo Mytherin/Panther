@@ -77,9 +77,7 @@ TextFile::TextFile(PGFileEncoding encoding, std::string path, char* base, lng si
 }
 
 void TextFile::AddTextView(std::shared_ptr<TextView> view) {
-	LockMutex(this->text_lock.get());
 	views.push_back(std::weak_ptr<TextView>(view));
-	UnlockMutex(this->text_lock.get());
 }
 
 void TextFile::SetLanguage(PGLanguage* language) {
@@ -521,6 +519,13 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	}
 	linecount = linenr;
 	total_width = current_width;
+
+	for (auto it = views.begin(); it != views.end(); it++) {
+		auto view = it->lock();
+		if (view) {
+			view->cursors.push_back(Cursor(view.get()));
+		}
+	}
 
 	if (delete_file) {
 		panther::DestroyFileContents(base);

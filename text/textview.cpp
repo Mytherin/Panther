@@ -9,6 +9,9 @@ TextView::TextView(BasicTextField* textfield, std::shared_ptr<TextFile> file) :
 }
 
 void TextView::Initialize() {
+	if (file->IsLoaded()) {
+		cursors.push_back(Cursor(this));
+	}
 	file->AddTextView(shared_from_this());
 }
 
