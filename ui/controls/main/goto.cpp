@@ -137,16 +137,16 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			field->SetPosition(PGPoint(0, goto_line->y + goto_line->height));
 
 			this->scroll_data = new ScrollData();
-			std::shared_ptr<TextFile> tf = textfield->GetTextfilePointer();
-			assert(tf.get());
-			scroll_data->offset = tf->GetLineOffset();
+			std::shared_ptr<TextView> view = textfield->GetTextView();
+			assert(view.get());
+			scroll_data->offset = view->GetLineOffset();
 			scroll_data->tf = textfield;
-			scroll_data->backup_cursors = tf->BackupCursors();
+			scroll_data->backup_cursors = Cursor::BackupCursors(view->cursors);
 
 			field->OnTextChanged([](Control* c, void* data) {
 				SimpleTextField* input = (SimpleTextField*)c;
 				TextField* tf = (TextField*)data;
-				TextLine textline = input->GetTextFile().GetLine(0);
+				TextLine textline = input->GetTextView()->file->GetLine(0);
 				std::string str = std::string(textline.GetLine(), textline.GetLength());
 				const char* line = str.c_str();
 				char* p = nullptr;
@@ -161,14 +161,14 @@ void PGGotoAnything::SetType(PGGotoType type) {
 						if (converted <= 0) {
 							converted = 1;
 							valid = false;
-						} else if (converted > tf->GetTextFile().GetLineCount()) {
-							converted = tf->GetTextFile().GetLineCount();
+						} else if (converted > tf->GetTextView()->file->GetLineCount()) {
+							converted = tf->GetTextView()->file->GetLineCount();
 							valid = false;
 						}
 						converted--;
 						// move the cursor and offset of the currently active file
-						tf->GetTextFile().SetLineOffset(std::max(converted - tf->GetLineHeight() / 2, (long)0));
-						tf->GetTextFile().SetCursorLocation(converted, 0);
+						tf->GetTextView()->SetLineOffset(std::max(converted - tf->GetLineHeight() / 2, (long)0));
+						tf->GetTextView()->SetCursorLocation(converted, 0);
 						tf->Invalidate();
 						input->SetValidInput(valid);
 						input->Invalidate();
@@ -191,10 +191,10 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			std::vector<SearchEntry> entries;
 			for (auto it = tabs->tabs.begin(); it != tabs->tabs.end(); it++) {
 				SearchEntry entry;
-				entry.display_name = it->file->GetName();
-				entry.display_subtitle = it->file->GetFullPath();
-				entry.text = it->file->GetFullPath();
-				entry.data = it->file;
+				entry.display_name = it->view->file->GetName();
+				entry.display_subtitle = it->view->file->GetFullPath();
+				entry.text = it->view->file->GetFullPath();
+				entry.data = it->view;
 				entry.basescore = 0;
 				entry.multiplier = 1.5;
 				entries.push_back(entry);
@@ -224,7 +224,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				x += file_icon_width + 2.5f;
 				SetTextColor(font, color);
 			});
-			current_textfile = textfield->GetTextfilePointer();
+			current_textfile = textfield->GetTextView();
 			box->OnSelectionChanged([](SearchBox* searchbox, SearchEntry& entry, void* data) {
 				PGGotoAnything* g = (PGGotoAnything*)data;
 				TabControl* tabs = g->textfield->GetTabControl();
@@ -236,8 +236,9 @@ void PGGotoAnything::SetType(PGGotoType type) {
 					tabs->SwitchToTab(entry.data);
 				} else {
 					PGFileError error;
-					g->preview = std::shared_ptr<TextFile>(TextFile::OpenTextFile(g->textfield, entry.text, error));
-					if (g->preview) {
+					auto file = FileManager::OpenFile(entry.text, error);
+					if (file) {
+						g->preview = make_shared_control<TextView>(g->textfield, file);
 						tabs->OpenTemporaryFile(g->preview);
 					}
 				}
@@ -268,8 +269,8 @@ void PGGotoAnything::Cancel(bool success) {
 		{
 			assert(scroll_data);
 			if (!success) {
-				textfield->GetTextFile().RestoreCursors(scroll_data->backup_cursors);
-				textfield->GetTextFile().SetLineOffset(scroll_data->offset);
+				textfield->GetTextView()->RestoreCursors(scroll_data->backup_cursors);
+				textfield->GetTextView()->SetLineOffset(scroll_data->offset);
 			}
 			break;
 		}

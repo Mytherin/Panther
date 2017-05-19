@@ -3,6 +3,7 @@
 
 #include <algorithm>
 
+PGFontHandle PGStyleManager::default_font = nullptr;
 
 void PGStyle::SetColor(PGColorType type, PGColor color) {
 	colors[type] = color;

@@ -457,21 +457,21 @@ bool Cursor::SelectionIsEmpty() const {
 }
 
 PGCursorPosition Cursor::SelectedPosition() const {
-	return start_buffer->GetCursorFromPosition(start_buffer_position, file->file->GetLineCount());
+	return start_buffer->GetCursorFromPosition(start_buffer_position);
 }
 
 PGCursorPosition Cursor::UnselectedPosition() const {
-	return end_buffer->GetCursorFromPosition(end_buffer_position, file->file->GetLineCount());
+	return end_buffer->GetCursorFromPosition(end_buffer_position);
 }
 
 PGCursorPosition Cursor::BeginPosition() const {
 	PGTextPosition begin = BeginCursorPosition();
-	return begin.buffer->GetCursorFromPosition(begin.position, file->file->GetLineCount());
+	return begin.buffer->GetCursorFromPosition(begin.position);
 }
 
 PGCursorPosition Cursor::EndPosition() const {
 	PGTextPosition end = EndCursorPosition();
-	return end.buffer->GetCursorFromPosition(end.position, file->file->GetLineCount());
+	return end.buffer->GetCursorFromPosition(end.position);
 }
 
 PGCharacterPosition Cursor::SelectedCharacterPosition() const {

@@ -7,10 +7,10 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(BasicTextField);
 
-BasicTextField::BasicTextField(PGWindowHandle window, std::shared_ptr<TextFile> textfile) :
-	Control(window), textfile(textfile), prev_loaded(false), support_multiple_lines(false) {
-	if (textfile) {
-		textfile->SetTextField(this);
+BasicTextField::BasicTextField(PGWindowHandle window, std::shared_ptr<TextView> view) :
+	Control(window), view(view), prev_loaded(false), support_multiple_lines(false) {
+	if (view) {
+		view->SetTextField(this);
 	}
 
 	drag_type = PGDragNone;
@@ -23,7 +23,7 @@ BasicTextField::~BasicTextField() {
 }
 
 void BasicTextField::Update(void) {
-	bool loaded = textfile->IsLoaded();
+	bool loaded = view->file->IsLoaded();
 	if (loaded != prev_loaded || !loaded) {
 		this->Invalidate();
 		prev_loaded = loaded;
@@ -60,9 +60,9 @@ bool BasicTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 }
 
 bool BasicTextField::KeyboardCharacter(char character, PGModifier modifier) {
-	if (!textfile->IsLoaded()) return false;
+	if (!view->file->IsLoaded()) return false;
 	if (modifier == PGModifierNone) {
-		this->textfile->InsertText(character);
+		view->InsertText(character);
 		return true;
 	} else if (this->PressCharacter(BasicTextField::keybindings, character, modifier)) {
 		return true;
@@ -71,10 +71,10 @@ bool BasicTextField::KeyboardCharacter(char character, PGModifier modifier) {
 }
 
 bool BasicTextField::KeyboardUnicode(PGUTF8Character character, PGModifier modifier) {
-	if (!textfile->IsLoaded()) return false;
+	if (!view->file->IsLoaded()) return false;
 
 	if (modifier == PGModifierNone) {
-		this->textfile->InsertText(character);
+		view->InsertText(character);
 		return true;
 	}
 	return false;
@@ -90,7 +90,7 @@ void BasicTextField::_GetCharacterFromPosition(PGScalar x, TextLine line, lng& c
 		return;
 	}
 	x -= text_offset;
-	x += textfile->GetXOffset();
+	x += view->GetXOffset();
 	char* text = line.GetLine();
 	lng length = line.GetLength();
 	character = GetPositionInLine(textfield_font, x, text, length);
@@ -98,26 +98,26 @@ void BasicTextField::_GetCharacterFromPosition(PGScalar x, TextLine line, lng& c
 
 void BasicTextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character) {
 	GetLineFromPosition(y, line);
-	_GetCharacterFromPosition(x, textfile->GetLine(line), character);
+	_GetCharacterFromPosition(x, view->file->GetLine(line), character);
 }
 
 void BasicTextField::GetLineFromPosition(PGScalar y, lng& line) {
 	// find the line position of the mouse
-	auto offset = textfile->GetLineOffset();
+	auto offset = view->GetLineOffset();
 	lng lineoffset_y = offset.linenumber;
 	PGScalar line_height = GetTextHeight(textfield_font);
 	y += line_height * offset.line_fraction;
-	lng line_offset = std::max(std::min((lng)(y / line_height), textfile->GetLineCount() - lineoffset_y - 1), -lineoffset_y);
+	lng line_offset = std::max(std::min((lng)(y / line_height), view->file->GetLineCount() - lineoffset_y - 1), -lineoffset_y);
 	line = lineoffset_y + line_offset;
 }
 
 void BasicTextField::GetPositionFromLineCharacter(lng line, lng pos, PGScalar& x, PGScalar& y) {
 	GetPositionFromLine(line, y);
-	_GetPositionFromCharacter(pos, textfile->GetLine(line), x);
+	_GetPositionFromCharacter(pos, view->file->GetLine(line), x);
 }
 
 void BasicTextField::GetPositionFromLine(lng line, PGScalar& y) {
-	lng lineoffset_y = textfile->GetLineOffset().linenumber;
+	lng lineoffset_y = view->GetLineOffset().linenumber;
 	y = (line - lineoffset_y) * GetTextHeight(textfield_font);
 }
 
@@ -128,7 +128,7 @@ void BasicTextField::_GetPositionFromCharacter(lng pos, TextLine line, PGScalar&
 	}
 	x = MeasureTextWidth(textfield_font, line.GetLine(), pos);
 	x += text_offset;
-	x -= textfile->GetXOffset();
+	x -= view->GetXOffset();
 }
 
 void BasicTextField::RefreshCursors() {
@@ -141,8 +141,8 @@ int BasicTextField::GetLineHeight() {
 }
 
 PGScalar BasicTextField::GetMaxXOffset() {
-	if (textfile->GetWordWrap()) return 0;
-	PGScalar max_textsize = textfile->GetMaxLineWidth(textfield_font);
+	if (view->GetWordWrap()) return 0;
+	PGScalar max_textsize = view->file->GetMaxLineWidth(textfield_font);
 	return std::max(max_textsize - GetTextfieldWidth() + text_offset, 0.0f);
 }
 
@@ -167,10 +167,10 @@ void BasicTextField::PasteHistory() {
 		panther::replace(info.text, "\n", "\\n");
 		info.data = *it;
 		PGPopupMenuInsertEntry(menu, info, [](Control* c, PGPopupInformation* info) {
-			dynamic_cast<BasicTextField*>(c)->textfile->PasteText(info->data);
+			dynamic_cast<BasicTextField*>(c)->view->PasteText(info->data);
 		});
 	}
-	Cursor& c = textfile->GetActiveCursor();
+	Cursor& c = view->GetActiveCursor();
 	PGScalar x, y;
 	auto position = c.BeginPosition();
 	GetPositionFromLineCharacter(position.line, position.position + 1, x, y);
@@ -203,18 +203,18 @@ void BasicTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 			if (drag_type == PGDragSelection) {
 				// FIXME: when having multiple cursors and we are altering the active cursor,
 				// the active cursor can never "consume" the other selections (they should always stay)
-				// FIXME: this should be done in the textfile
+				// FIXME: this should be done in the textview
 				lng line, character;
 				GetLineCharacterFromPosition(mouse.x, mouse.y, line, character);
-				Cursor& active_cursor = textfile->GetActiveCursor();
+				Cursor& active_cursor = view->GetActiveCursor();
 				auto selected_pos = active_cursor.SelectedCharacterPosition();
 				if (selected_pos.line != line || selected_pos.character != character) {
 					lng old_line = selected_pos.line;
 					active_cursor.SetCursorStartLocation(line, character);
-					if (minimal_selections.count(textfile->GetActiveCursorIndex()) > 0) {
-						active_cursor.ApplyMinimalSelection(minimal_selections[textfile->GetActiveCursorIndex()]);
+					if (minimal_selections.count(view->GetActiveCursorIndex()) > 0) {
+						active_cursor.ApplyMinimalSelection(minimal_selections[view->GetActiveCursorIndex()]);
 					}
-					Cursor::NormalizeCursors(textfile.get(), textfile->GetCursors());
+					Cursor::NormalizeCursors(view.get(), view->GetCursors());
 				}
 			}
 		} else {
@@ -228,7 +228,7 @@ void BasicTextField::StartDragging(PGMouseButton button, PGDragType drag_type) {
 	if (this->drag_type == PGDragNone) {
 		this->drag_button = button;
 		this->drag_type = drag_type;
-		auto cursors = textfile->GetCursors();
+		auto cursors = view->GetCursors();
 		for (lng i = 0; i < cursors.size(); i++) {
 			minimal_selections[i] = cursors[i].GetCursorSelection();
 		}
@@ -247,27 +247,27 @@ void BasicTextField::InitializeKeybindings() {
 	images["undo"] = PGStyleManager::GetImage("data/icons/undo.png");
 	noargs["undo"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->Undo();
+		t->view->Undo();
 	};
 	images["redo"] = PGStyleManager::GetImage("data/icons/redo.png");
 	noargs["redo"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->Redo();
+		t->view->Redo();
 	};
 	noargs["select_all"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->SelectEverything();
+		t->view->SelectEverything();
 	};
 	images["copy"] = PGStyleManager::GetImage("data/icons/newproject.png");
 	noargs["copy"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		std::string text = t->textfile->CopyText();
+		std::string text = t->view->CopyText();
 		SetClipboardText(t->window, text);
 	};
 	noargs["paste"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
 		std::string text = GetClipboardText(t->window);
-		t->textfile->PasteText(text);
+		t->view->PasteText(text);
 	};
 	noargs["paste_from_history"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
@@ -275,68 +275,68 @@ void BasicTextField::InitializeKeybindings() {
 	};
 	noargs["cut"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		std::string text = t->textfile->CutText();
+		std::string text = t->view->CutText();
 		SetClipboardText(t->window, text);
 	};
 	noargs["left_delete"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->DeleteCharacter(PGDirectionLeft);
+		t->view->DeleteCharacter(PGDirectionLeft);
 	};
 	noargs["left_delete_word"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->DeleteWord(PGDirectionLeft);
+		t->view->DeleteWord(PGDirectionLeft);
 	};
 	noargs["left_delete_line"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->DeleteLine(PGDirectionLeft);
+		t->view->DeleteLine(PGDirectionLeft);
 	};
 	noargs["right_delete"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->DeleteCharacter(PGDirectionRight);
+		t->view->DeleteCharacter(PGDirectionRight);
 	};
 	noargs["right_delete_word"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->DeleteWord(PGDirectionRight);
+		t->view->DeleteWord(PGDirectionRight);
 	};
 	noargs["right_delete_line"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->DeleteLine(PGDirectionRight);
+		t->view->DeleteLine(PGDirectionRight);
 	};
 	noargs["delete_selected_lines"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->DeleteLines();
+		t->view->DeleteLines();
 	};
 	noargs["offset_start_of_line"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->OffsetStartOfLine();
+		t->view->OffsetStartOfLine();
 	};
 	noargs["select_start_of_line"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->SelectStartOfLine();
+		t->view->SelectStartOfLine();
 	};
 	noargs["offset_end_of_line"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->OffsetEndOfLine();
+		t->view->OffsetEndOfLine();
 	};
 	noargs["select_end_of_line"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->SelectEndOfLine();
+		t->view->SelectEndOfLine();
 	};
 	noargs["offset_start_of_file"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->OffsetStartOfFile();
+		t->view->OffsetStartOfFile();
 	};
 	noargs["select_start_of_file"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->SelectStartOfFile();
+		t->view->SelectStartOfFile();
 	};
 	noargs["offset_end_of_file"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->OffsetEndOfFile();
+		t->view->OffsetEndOfFile();
 	};
 	noargs["select_end_of_file"] = [](Control* c) {
 		BasicTextField* t = (BasicTextField*)c;
-		t->textfile->SelectEndOfFile();
+		t->view->SelectEndOfFile();
 	};
 	std::map<std::string, PGKeyFunctionArgs>& args = BasicTextField::keybindings_varargs;
 	args["insert"] = [](Control* c, std::map<std::string, std::string> args) {
@@ -344,7 +344,7 @@ void BasicTextField::InitializeKeybindings() {
 		if (args.count("characters") == 0) {
 			return;
 		}
-		tf->GetTextFile().PasteText(args["characters"]);
+		tf->view->PasteText(args["characters"]);
 	};
 	args["offset_character"] = [](Control* c, std::map<std::string, std::string> args) {
 		BasicTextField* tf = (BasicTextField*)c;
@@ -356,15 +356,15 @@ void BasicTextField::InitializeKeybindings() {
 		PGDirection direction = args["direction"] == "left" ? PGDirectionLeft : PGDirectionRight;
 		if (word) {
 			if (selection) {
-				tf->textfile->OffsetSelectionWord(direction);
+				tf->view->OffsetSelectionWord(direction);
 			} else {
-				tf->textfile->OffsetWord(direction);
+				tf->view->OffsetWord(direction);
 			}
 		} else {
 			if (selection) {
-				tf->textfile->OffsetSelectionCharacter(direction);
+				tf->view->OffsetSelectionCharacter(direction);
 			} else {
-				tf->textfile->OffsetCharacter(direction);
+				tf->view->OffsetCharacter(direction);
 			}
 		}
 	};
@@ -376,7 +376,7 @@ void BasicTextField::InitializeKeybindings() {
 		}
 		double offset = atof(args["amount"].c_str());
 		if (offset != 0.0) {
-			tf->GetTextFile().OffsetLineOffset(offset);
+			tf->view->OffsetLineOffset(offset);
 			tf->Invalidate();
 		}
 	};
@@ -395,9 +395,9 @@ void BasicTextField::InitializeKeybindings() {
 		}
 		if (offset != 0.0) {
 			if (selection) {
-				tf->GetTextFile().OffsetSelectionLine((int)offset);
+				tf->view->OffsetSelectionLine((int)offset);
 			} else {
-				tf->GetTextFile().OffsetLine((int)offset);
+				tf->view->OffsetLine((int)offset);
 			}
 		}
 	};
@@ -405,33 +405,33 @@ void BasicTextField::InitializeKeybindings() {
 	mouse_bindings["add_cursor"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
-		tf->GetTextFile().AddNewCursor(line, character);
+		tf->view->AddNewCursor(line, character);
 		tf->StartDragging(button, PGDragSelection);
 	};
 	mouse_bindings["set_cursor_location"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
-		tf->GetTextFile().SetCursorLocation(line, character);
+		tf->view->SetCursorLocation(line, character);
 		tf->StartDragging(button, PGDragSelection);
 	};
 	mouse_bindings["set_cursor_selection"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
-		tf->GetTextFile().GetActiveCursor().SetCursorStartLocation(line, character);
+		tf->view->GetActiveCursor().SetCursorStartLocation(line, character);
 		tf->StartDragging(button, PGDragSelection);
 	};
 	mouse_bindings["select_word"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
-		tf->GetTextFile().SetCursorLocation(line, character);
-		tf->GetTextFile().GetActiveCursor().SelectWord();
+		tf->view->SetCursorLocation(line, character);
+		tf->view->GetActiveCursor().SelectWord();
 		tf->StartDragging(button, PGDragSelection);
 	};
 	mouse_bindings["select_line"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
-		tf->GetTextFile().SetCursorLocation(line, character);
-		tf->GetTextFile().GetActiveCursor().SelectLine();
+		tf->view->SetCursorLocation(line, character);
+		tf->view->GetActiveCursor().SelectLine();
 		tf->StartDragging(button, PGDragSelection);
 	};
 }

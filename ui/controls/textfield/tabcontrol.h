@@ -33,9 +33,9 @@ struct PGClosedTab {
 	lng id;
 	lng neighborid;
 	std::string filepath;
-	PGTextFileSettings settings;
+	PGTextViewSettings settings;
 
-	PGClosedTab(Tab tab, lng neighborid, PGTextFileSettings settings) {
+	PGClosedTab(Tab tab, lng neighborid, PGTextViewSettings settings) {
 		id = tab.id;
 		this->neighborid = neighborid;
 		this->settings = settings;
@@ -56,7 +56,7 @@ class TabControl : public Control {
 	friend class PGGotoAnything;
 	friend class PGTabMouseRegion;
 public:
-	TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextFile>> files);
+	TabControl(PGWindowHandle window, TextField* textfield, std::vector<std::shared_ptr<TextView>> files);
 	~TabControl();
 
 	void Update(void);
@@ -87,23 +87,23 @@ public:
 	void RenderTab(PGRendererHandle renderer, Tab& tab, PGScalar& position_x, PGScalar x, PGScalar y, PGTabType type);
 
 	void OpenFile(std::string path);
-	void OpenFile(std::shared_ptr<TextFile> textfile);
-	void OpenFile(std::shared_ptr<TextFile> textfile, lng index);
+	void OpenFile(std::shared_ptr<TextView> textfile);
+	void OpenFile(std::shared_ptr<TextView> textfile, lng index);
 	void PrevTab();
 	void NextTab();
 	void CloseTab(int tab);
-	void CloseTab(std::shared_ptr<TextFile> textfile);
+	void CloseTab(std::shared_ptr<TextView> textfile);
 	bool CloseAllTabs();
 	bool CloseAllTabs(PGDirection direction);
 
-	void AddTab(std::shared_ptr<TextFile> textfile);
-	void AddTab(std::shared_ptr<TextFile> file, lng index);
+	void AddTab(std::shared_ptr<TextView> textfile);
+	void AddTab(std::shared_ptr<TextView> file, lng index);
 	void NewTab();
-	void SwitchToTab(std::shared_ptr<TextFile> file);
+	void SwitchToTab(std::shared_ptr<TextView> file);
 	bool SwitchToTab(std::string path);
 	void ReopenLastFile();
 
-	void OpenTemporaryFile(std::shared_ptr<TextFile> textfile);
+	void OpenTemporaryFile(std::shared_ptr<TextView> textfile);
 	void OpenTemporaryFileAsActualFile();
 	void CloseTemporaryFile();
 
@@ -125,13 +125,13 @@ protected:
 
 	void ReopenFile(PGClosedTab tab);
 
-	void AddTab(std::shared_ptr<TextFile> file, lng id, lng neighborid);
+	void AddTab(std::shared_ptr<TextView> file, lng id, lng neighborid);
 
 	bool CloseTabConfirmation(int tab, bool respect_hot_exit = true);
 	void ActuallyCloseTab(int tab);
-	void ActuallyCloseTab(std::shared_ptr<TextFile> textfile);
+	void ActuallyCloseTab(std::shared_ptr<TextView> textfile);
 
-	Tab OpenTab(std::shared_ptr<TextFile> textfile);
+	Tab OpenTab(std::shared_ptr<TextView> textfile);
 
 	PGScalar MeasureTabWidth(Tab& tab);
 	

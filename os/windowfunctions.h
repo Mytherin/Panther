@@ -275,10 +275,11 @@ std::string GetMouseButtonName(PGMouseButton);
 std::string GetModifierName(PGModifier);
 
 class TextFile;
+class TextView;
 
 // Window Functions
-PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextFile>> initial_files);
-PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_ptr<TextFile>> initial_files);
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextView>> initial_files);
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_ptr<TextView>> initial_files);
 void PGCloseWindow(PGWindowHandle window);
 void ShowWindow(PGWindowHandle window);
 void HideWindow(PGWindowHandle window);
@@ -402,7 +403,7 @@ void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j);
 void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j);
 
 class ControlManager;
-std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextFile>> initial_files);
+std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextView>> initial_files);
 ControlManager* GetWindowManager(PGWindowHandle window);
 void SetWindowManager(PGWindowHandle window, std::shared_ptr<ControlManager> manager);
 

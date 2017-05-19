@@ -664,11 +664,11 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_ptr<TextFile>> initial_files) {
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_ptr<TextView>> initial_files) {
 	return PGCreateWindow(workspace, PGPoint(CW_USEDEFAULT, CW_USEDEFAULT), initial_files);
 }
 
-PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextFile>> initial_files) {
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextView>> initial_files) {
 	PGWindowHandle handle = new PGWindow(workspace);
 	if (!handle) {
 		return nullptr;

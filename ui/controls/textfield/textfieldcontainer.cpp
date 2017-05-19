@@ -1,7 +1,7 @@
 
 #include "textfieldcontainer.h"
 
-TextFieldContainer::TextFieldContainer(PGWindowHandle window, std::vector<std::shared_ptr<TextFile>> textfiles) : PGContainer(window) {
+TextFieldContainer::TextFieldContainer(PGWindowHandle window, std::vector<std::shared_ptr<TextView>> textfiles) : PGContainer(window) {
 	this->width = 0;
 	this->height = TEXT_TAB_HEIGHT;
 

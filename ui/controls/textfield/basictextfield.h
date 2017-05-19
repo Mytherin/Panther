@@ -32,7 +32,7 @@ typedef void(*PGTextFieldCallback)(BasicTextField* textfield);
 
 class BasicTextField : public Control {
 public:
-	BasicTextField(PGWindowHandle, std::shared_ptr<TextFile> textfile);
+	BasicTextField(PGWindowHandle, std::shared_ptr<TextView> textfile);
 	~BasicTextField();
 
 	virtual void Update(void);
@@ -51,7 +51,7 @@ public:
 	
 	virtual PGCursorType GetCursor(PGPoint mouse);
 
-	std::shared_ptr<TextView> GetTextView() { return textview; }
+	std::shared_ptr<TextView> GetTextView() { return view; }
 
 	virtual bool IsDragging() { return drag_type != PGDragNone; }
 	PGCursorType GetDraggingCursor() { return drag_type == PGDragSelection ? PGCursorIBeam : PGCursorStandard; }
@@ -81,7 +81,7 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeBasicTextField; }
 protected:
-	std::shared_ptr<TextView> textview = nullptr;
+	std::shared_ptr<TextView> view = nullptr;
 	PGFontHandle textfield_font = nullptr;
 
 	int display_carets_count = 0;

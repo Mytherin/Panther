@@ -3,10 +3,13 @@
 #include "wrappedtextiterator.h"
 #include "basictextfield.h"
 
-TextView::TextView(BasicTextField* textfield) :
-	textfield(textfield), wordwrap(false),
+TextView::TextView(BasicTextField* textfield, std::shared_ptr<TextFile> file) :
+	textfield(textfield), file(file), wordwrap(false),
 	xoffset(0), yoffset(0, 0) {
-	cursors.push_back(Cursor(this));
+}
+
+void TextView::Initialize() {
+	file->AddTextView(shared_from_this());
 }
 
 TextLineIterator* TextView::GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll) {
@@ -392,6 +395,15 @@ int TextView::GetLineHeight() {
 	return textfield->GetLineHeight();
 }
 
+PGTextViewSettings TextView::GetSettings() {
+	PGTextViewSettings settings;
+	settings.xoffset = this->xoffset;
+	settings.yoffset = this->yoffset;
+	settings.wordwrap = this->wordwrap;
+	settings.cursor_data = Cursor::BackupCursors(cursors);
+	return settings;
+}
+
 void TextView::ApplySettings(PGTextViewSettings& settings) {
 	if (settings.xoffset >= 0) {
 		this->xoffset = settings.xoffset;
@@ -417,6 +429,11 @@ void TextView::ApplySettings(PGTextViewSettings& settings) {
 		std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 		Cursor::NormalizeCursors(this, this->cursors, false);
 	}
+}
+
+bool TextView::IsLastFileView() {
+	// FIXME:
+	return true;
 }
 
 void TextView::InvalidateTextView() {
@@ -460,4 +477,296 @@ void TextView::VerifyTextView() {
 		assert(std::find(file->buffers.begin(), file->buffers.end(), c.end_buffer) != file->buffers.end());
 	}
 #endif
+}
+
+struct FindInformation {
+	TextView* view;
+	PGRegexHandle handle;
+	lng start_line;
+	lng start_character;
+};
+
+void TextView::RunTextFinder(std::shared_ptr<Task> task, TextView* view, PGRegexHandle regex_handle, lng current_line, lng current_character, bool select_first_match) {
+	view->finished_search = false;
+	view->matches.clear();
+
+	if (!regex_handle) return;
+
+	view->file->Lock(PGReadLock);
+	bool found_initial_match = !select_first_match;
+	PGTextBuffer* selection_buffer = view->file->buffers[PGTextBuffer::GetBuffer(view->file->buffers, current_line)];
+	lng selection_position = selection_buffer->GetBufferLocationFromCursor(current_line, current_character);
+	PGTextPosition position = PGTextPosition(selection_buffer, selection_position);
+
+
+	PGTextRange bounds;
+	bounds.start_buffer = view->file->buffers.front();
+	bounds.start_position = 0;
+	bounds.end_buffer = view->file->buffers.back();
+	bounds.end_position = bounds.end_buffer->current_size - 1;
+	while (true) {
+		/*if (textfile->find_task != task) {
+			// a new find task has been activated
+			// stop searching for an outdated find query
+			PGDeleteRegex(regex_handle);
+			return;
+		}*/
+		PGRegexMatch match = PGMatchRegex(regex_handle, bounds, PGDirectionRight);
+		if (!match.matched) {
+			break;
+		}
+		view->matches.push_back(match.groups[0]);
+
+		if (!found_initial_match && match.groups[0].startpos() >= position) {
+			found_initial_match = true;
+			view->selected_match = view->matches.size() - 1;
+			view->SetCursorLocation(match.groups[0]);
+		}
+
+		if (bounds.start_buffer == match.groups[0].end_buffer &&
+			bounds.start_position == match.groups[0].end_position)
+			break;
+		bounds.start_buffer = match.groups[0].end_buffer;
+		bounds.start_position = match.groups[0].end_position;
+
+
+		/*if (textfile->find_task != task) {
+			// a new find task has been activated
+			// stop searching for an outdated find query
+			PGDeleteRegex(regex_handle);
+			return;
+		}
+		if (!start_buffer && !end_buffer) {
+			textfile->finished_search = true;
+			break;
+		}*/
+	}
+	view->finished_search = true;
+	view->file->Unlock(PGReadLock);
+#ifdef PANTHER_DEBUG
+	// FIXME: check if matches overlap?
+	/*for (lng i = 0; i < textfile->matches.size() - 1; i++) {
+	if (textfile->matches[i].start_line == textfile->matches[i].start_line) {
+
+	}
+	}*/
+#endif
+	if (regex_handle) PGDeleteRegex(regex_handle);
+	if (view->textfield) {
+		view->textfield->SearchMatchesChanged();
+		view->textfield->Invalidate();
+	}
+}
+
+void TextView::ClearMatches() {
+	matches.clear();
+	if (textfield) {
+		textfield->SearchMatchesChanged();
+		textfield->Invalidate();
+	}
+}
+
+void TextView::FindAllMatches(PGRegexHandle handle, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap) {
+	if (!file->is_loaded) return;
+	if (!handle) {
+		matches.clear();
+		if (textfield) {
+			textfield->SelectionChanged();
+			textfield->SearchMatchesChanged();
+		}
+		return;
+	}
+
+	FindInformation* info = new FindInformation();
+	info->view = this;
+	info->handle = handle;
+	info->start_line = start_line;
+	info->start_character = start_character;
+
+	RunTextFinder(nullptr, this, handle, start_line, start_character, select_first_match);
+	/*
+
+	this->find_task = new Task([](Task* t, void* in) {
+	FindInformation* info = (FindInformation*)in;
+	RunTextFinder(t, info->textfile, info->pattern, PGDirectionRight,
+	info->end_line, info->end_character,
+	info->start_line, info->start_character, info->match_case,
+	true, info->regex);
+	delete info;
+	}, (void*)info);
+	Scheduler::RegisterTask(this->find_task, PGTaskUrgent);*/
+}
+
+bool TextView::FindMatch(PGRegexHandle handle, PGDirection direction, bool wrap, bool include_selection) {
+	if (!file->is_loaded) return false;
+	PGTextRange match;
+	if (selected_match >= 0) {
+		// if FindAll has been performed, we should already have all the matches
+		// simply select the next match, rather than searching again
+		if (!finished_search) {
+			// the search is still in progress: we might not have found the proper match to select
+			if (direction == PGDirectionLeft && selected_match == 0) {
+				// our FindPrev will wrap us to the end, however, there might be matches
+				// that we still have not found, hence we have to wait
+				while (!finished_search && selected_match == 0);
+			} else if (direction == PGDirectionRight && selected_match == matches.size() - 1) {
+				// our FindNext will wrap us back to the start
+				// however, there might still be matches after us
+				// hence we have to wait
+				while (!finished_search && selected_match == matches.size() - 1);
+			}
+		}
+		if (matches.size() == 0) {
+			return false;
+		}
+		if (!include_selection) {
+			if (direction == PGDirectionLeft) {
+				selected_match = selected_match == 0 ? matches.size() - 1 : selected_match - 1;
+			} else {
+				selected_match = selected_match == matches.size() - 1 ? 0 : selected_match + 1;
+			}
+		}
+
+		match = matches[selected_match];
+		if (match.start_buffer != nullptr) {
+			this->SetCursorLocation(match);
+		}
+		return true;
+	}
+	if (!handle) {
+		matches.clear();
+		if (textfield) textfield->SelectionChanged();
+		return false;
+	}
+	// otherwise, search only for the next match in either direction
+	file->Lock(PGReadLock);
+	auto begin = GetActiveCursor().BeginCursorPosition();
+	auto end = GetActiveCursor().EndCursorPosition();
+	match = file->FindMatch(handle, direction,
+		include_selection ? end.buffer : begin.buffer,
+		include_selection ? end.position : begin.position,
+		include_selection ? begin.buffer : end.buffer,
+		include_selection ? begin.position : end.position, wrap, nullptr);
+	file->Unlock(PGReadLock);
+
+	if (match.start_buffer != nullptr) {
+		SetCursorLocation(match);
+	}
+	matches.clear();
+	if (match.start_buffer != nullptr) {
+		matches.push_back(match);
+	}
+	if (textfield) {
+		textfield->SearchMatchesChanged();
+	}
+	return match.start_buffer != nullptr;
+
+	return false;
+}
+
+bool TextView::SelectMatches(bool in_selection) {
+	if (matches.size() == 0) return false;
+
+	if (in_selection) {
+		std::vector<Cursor> backup = cursors;
+		std::vector<PGTextRange> selections;
+		for (auto it = cursors.begin(); it != cursors.end(); it++) {
+			selections.push_back(it->GetCursorSelection());
+		}
+		ClearCursors();
+		for (auto it = matches.begin(); it != matches.end(); it++) {
+			for (auto it2 = selections.begin(); it2 != selections.end(); it2++) {
+				if (!(*it < *it2 || *it > *it2)) {
+					cursors.push_back(Cursor(this, *it));
+					break;
+				}
+			}
+		}
+		if (cursors.size() == 0) {
+			cursors = backup;
+			return false;
+		}
+	} else {
+		ClearCursors();
+		for (auto it = matches.begin(); it != matches.end(); it++) {
+			cursors.push_back(Cursor(this, *it));
+		}
+	}
+	active_cursor = 0;
+	VerifyTextView();
+	if (textfield) textfield->SelectionChanged();
+	return true;
+}
+
+void TextView::InsertText(char character) {
+	file->InsertText(cursors, character);
+}
+
+void TextView::InsertText(PGUTF8Character character) {
+	file->InsertText(cursors, character);
+}
+
+void TextView::InsertText(std::string text) {
+	file->InsertText(cursors, text);
+}
+
+
+void TextView::DeleteCharacter(PGDirection direction) {
+	file->DeleteCharacter(cursors, direction);
+}
+
+void TextView::DeleteWord(PGDirection direction) {
+	file->DeleteWord(cursors, direction);
+}
+
+void TextView::AddNewLine() {
+	file->AddNewLine(cursors);
+}
+
+void TextView::AddNewLine(std::string text) {
+	file->AddNewLine(cursors, text);
+}
+
+void TextView::DeleteLines() {
+	file->DeleteLines(cursors);
+}
+
+void TextView::DeleteLine(PGDirection direction) {
+	file->DeleteLine(cursors, direction);
+}
+
+void TextView::AddEmptyLine(PGDirection direction) {
+	file->AddEmptyLine(cursors, direction);
+}
+
+void TextView::MoveLines(int offset) {
+	file->MoveLines(cursors, offset);
+}
+
+std::string TextView::CutText() {
+	return file->CutText(cursors);
+}
+
+std::string TextView::CopyText() {
+	return file->CopyText(cursors);
+}
+
+void TextView::PasteText(std::string& text) {
+	file->PasteText(cursors, text);
+}
+
+void TextView::RegexReplace(PGRegexHandle regex, std::string& replacement) {
+	file->RegexReplace(cursors, regex, replacement);
+}
+
+void TextView::IndentText(PGDirection direction) {
+	file->IndentText(cursors, direction);
+}
+
+void TextView::Undo() {
+	file->Undo(this);
+}
+
+void TextView::Redo() {
+	file->Redo(this);
 }

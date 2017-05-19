@@ -311,7 +311,7 @@ void ProjectExplorer::FinishRename(bool success, bool update_selection) {
 	if (renaming_file < 0) return;
 	renaming_file = -1;
 	if (success) {
-		std::string new_name = textfield->GetTextFile().GetText();
+		std::string new_name = textfield->GetText();
 		std::string full_name = PGPathJoin(PGFile(renaming_path).Directory(), new_name);
 		ActuallyPerformRename(renaming_path, full_name, update_selection);
 		this->undos.push_back(std::unique_ptr<FileOperationDelta>(new FileOperationRename(renaming_path, full_name)));
@@ -338,8 +338,9 @@ void ProjectExplorer::RenameFile() {
 	this->textfield = new SimpleTextField(window);
 	this->textfield->SetText(initial_text);
 	lng pos = initial_text.find('.');
-	this->textfield->GetTextFile().SetCursorLocation(0, 0, 0, pos == std::string::npos ? initial_text.size() : pos);
-	textfield->GetTextFile().SetXOffset(0);
+	auto view = textfield->GetTextView();
+	view->SetCursorLocation(0, 0, 0, pos == std::string::npos ? initial_text.size() : pos);
+	view->SetXOffset(0);
 	textfield->SetRenderBackground(false);
 	textfield->x = 0; // FIXME
 	textfield->width = this->width - textfield->x - scrollbar->width - 16;
@@ -742,10 +743,10 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 				} else {
 					PGFileError error;
 					if (!(t->SwitchToTab(file.path))) {
-						auto ptr = std::shared_ptr<TextFile>(TextFile::OpenTextFile(t->GetTextField(), file.path, error));
+						auto ptr = std::shared_ptr<TextFile>(TextFile::OpenTextFile(file.path, error));
 						if (error == PGFileSuccess) {
 							assert(ptr);
-							t->OpenTemporaryFile(ptr);
+							t->OpenTemporaryFile(make_shared_control<TextView>(t->GetTextField(), ptr));
 						}
 					}
 				}

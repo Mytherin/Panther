@@ -6,7 +6,7 @@
 
 class TextFieldContainer : public PGContainer {
 public:
-	TextFieldContainer(PGWindowHandle window, std::vector<std::shared_ptr<TextFile>> textfiles);
+	TextFieldContainer(PGWindowHandle window, std::vector<std::shared_ptr<TextView>> textfiles);
 
 	virtual PGControlType GetControlType() { return PGControlTypeTextFieldContainer; }
 	

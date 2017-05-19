@@ -63,9 +63,11 @@ struct PGTextFileSettings {
 
 class TextFile {
 	friend class Cursor;
+	friend class FileManager;
 	friend class TextLineIterator;
 	friend class WrappedTextLineIterator;
 	friend class TextField;
+	friend class TextFile;
 	friend class TabControl;
 	friend class TextView;
 public:
@@ -80,8 +82,6 @@ public:
 	void InsertText(std::vector<Cursor>& cursors, char character);
 	void InsertText(std::vector<Cursor>& cursors, PGUTF8Character character);
 	void InsertText(std::vector<Cursor>& cursors, std::string text);
-	void InsertLines(std::vector<Cursor>& cursors, std::string text, size_t cursor);
-	void ReplaceText(std::vector<Cursor>& cursors, std::string replacement_text, size_t i);
 
 	bool SplitLines(const std::string& text, std::vector<std::string>&);
 	std::vector<std::string> SplitLines(const std::string& text);
@@ -110,6 +110,8 @@ public:
 
 	void Undo(TextView* view);
 	void Redo(TextView* view);
+
+	void AddTextView(std::shared_ptr<TextView> view);
 
 	void SaveChanges();
 	void SaveAs(std::string path);
@@ -167,6 +169,9 @@ public:
 	PGTextFileSettings GetSettings();
 
 	// only used for "Find Results"
+	// FIXME: this should not be in the TextFile class
+	void FindMatchesWithContext(PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data);
+	std::shared_ptr<Task> find_task = nullptr;
 	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
 	std::string current_find_file;
 
@@ -179,6 +184,8 @@ private:
 
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 
+	void InsertLines(std::vector<Cursor>& cursors, std::string text, size_t cursor);
+	void ReplaceText(std::vector<Cursor>& cursors, std::string replacement_text, size_t i);
 	// replace text in the specified text range with <replacement_text>
 	// neither <range> nor <replacement_text> may not contain newlines
 	void ReplaceText(std::vector<Cursor>& cursors, PGTextRange range, std::string replacement_text);
@@ -227,9 +234,6 @@ private:
 	std::shared_ptr<Task> current_task = nullptr;
 	static void RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile);
 	static void OpenFileAsync(std::shared_ptr<Task> task, void* info);
-
-	std::shared_ptr<Task> find_task = nullptr;
-	static void RunTextFinder(std::shared_ptr<Task> task, TextFile* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character, bool select_first_match);
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateBuffers();

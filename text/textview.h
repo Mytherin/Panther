@@ -19,11 +19,18 @@ struct PGTextViewSettings {
 // a view includes a scroll position (xoffset, yoffset)
 // edit information (cursors)
 // visual information (wordwrap, displayed search matches)
-struct TextView {
-public:
-	TextView(BasicTextField* field);
 
-	std::shared_ptr<TextFile> file;
+// we assume a TextView is only ever used by a single thread
+// hence there are no locks on any of the fields used by the TextView
+// however, multiple textviews can exist into the same file
+// all the necessary locking to allow concurrent TextViews happens in the TextFile structure
+class TextView : public std::enable_shared_from_this<TextView> {
+public:
+	TextView(BasicTextField* field, std::shared_ptr<TextFile> file);
+
+	void Initialize();
+
+	const std::shared_ptr<TextFile> file;
 
 	bool finished_search = false;
 	std::vector<PGTextRange> matches;
@@ -42,6 +49,30 @@ public:
 
 	TextLineIterator* GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll);
 	TextLineIterator* GetLineIterator(BasicTextField* textfield, lng linenumber);
+
+	void InsertText(char character);
+	void InsertText(PGUTF8Character character);
+	void InsertText(std::string text);
+
+	void DeleteCharacter(PGDirection direction);
+	void DeleteWord(PGDirection direction);
+	void AddNewLine();
+	void AddNewLine(std::string text);
+	void DeleteLines();
+	void DeleteLine(PGDirection direction);
+	void AddEmptyLine(PGDirection direction);
+	void MoveLines(int offset);
+
+	void Undo();
+	void Redo();
+
+	std::string CutText();
+	std::string CopyText();
+
+	void PasteText(std::string& text);
+	void RegexReplace(PGRegexHandle regex, std::string& replacement);
+
+	void IndentText(PGDirection direction);
 
 	void ClearExtraCursors();
 	void ClearCursors();
@@ -88,9 +119,12 @@ public:
 	std::vector<Cursor>& GetCursors() { return cursors; }
 	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
 
+	bool IsLastFileView();
+
 	bool FindMatch(PGRegexHandle regex_handle, PGDirection direction, bool wrap, bool include_selection);
 	void FindAllMatches(PGRegexHandle regex_handle, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap);
-	void FindAllMatches(PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data);
+
+	static void RunTextFinder(std::shared_ptr<Task> task, TextView* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character, bool select_first_match);
 
 	void RestoreCursors(std::vector<PGCursorRange>& data);
 	Cursor RestoreCursor(PGCursorRange data);
@@ -104,6 +138,7 @@ public:
 	void SetWordWrap(bool wordwrap, PGScalar wrap_width);
 	bool GetWordWrap() { return wordwrap; }
 
+	PGTextViewSettings GetSettings();
 	void ApplySettings(PGTextViewSettings& settings);
 
 	void InvalidateTextView();

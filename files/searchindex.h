@@ -11,7 +11,7 @@ struct SearchEntry {
 	std::string display_name;
 	std::string display_subtitle;
 	std::string text;
-	std::shared_ptr<TextFile> data;
+	std::shared_ptr<TextView> data;
 	std::string str_data;
 	void* ptr_data;
 	double multiplier;

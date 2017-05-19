@@ -119,7 +119,7 @@ public:
 	void GetCursorFromBufferLocation(lng position, lng& line, lng& character);
 
 	PGCharacterPosition GetCharacterFromPosition(ulng position);
-	PGCursorPosition GetCursorFromPosition(ulng position, lng total_lines);
+	PGCursorPosition GetCursorFromPosition(ulng position);
 	TextLine GetLineFromPosition(ulng position);
 
 	void VerifyBuffer();

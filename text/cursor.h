@@ -71,7 +71,7 @@ public:
 	void Merge(const Cursor& cursor);
 
 	static std::vector<PGCursorRange> BackupCursors(std::vector<Cursor>& cursors);
-	static PGCursorRange BackupCursor(std::vector<Cursor>& cursors, int i);
+	static PGCursorRange BackupCursor(std::vector<Cursor>& cursors, size_t i);
 	static void NormalizeCursors(std::vector<Cursor>& cursors);
 	static void NormalizeCursors(TextView* textfile, std::vector<Cursor>& cursors, bool scroll_textfield = true);
 	static bool CursorOccursFirst(const Cursor& a, const Cursor& b);

@@ -238,12 +238,12 @@ void ControlManager::SetFocusedControl(Control* c) {
 }
 
 void ControlManager::SetTextFieldLayout(int columns, int rows) {
-	std::vector<std::shared_ptr<TextFile>> textfiles;
-	textfiles.push_back(std::shared_ptr<TextFile>(new TextFile(nullptr)));
+	std::vector<std::shared_ptr<TextView>> textfiles;
+	textfiles.push_back(make_shared_control<TextView>(nullptr, std::make_shared<TextFile>()));
 	SetTextFieldLayout(columns, rows, textfiles);
 }
 
-void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::shared_ptr<TextFile>> initial_files) {
+void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::shared_ptr<TextView>> initial_files) {
 	int total_textfields = columns * rows;
 	int current_textfields = textfields.size();
 	if (total_textfields < current_textfields) {
@@ -257,7 +257,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 		// have to add textfields
 		// the new textfields will be empty
 		for (lng i = current_textfields; i < total_textfields; i++) {
-			std::vector<std::shared_ptr<TextFile>> textfiles = initial_files;
+			std::vector<std::shared_ptr<TextView>> textfiles = initial_files;
 			TextFieldContainer* container = new TextFieldContainer(this->window, textfiles);
 			this->AddControl(std::shared_ptr<Control>(container));
 			textfields.push_back(container);
@@ -360,7 +360,7 @@ void ControlManager::SetTextFieldLayout(int columns, int rows, std::vector<std::
 }
 
 void ControlManager::CreateNewWindow() {
-	std::vector<std::shared_ptr<TextFile>> files;
+	std::vector<std::shared_ptr<TextView>> files;
 	PGWindowHandle new_window = PGCreateWindow(PGGetWorkspace(window), files);
 	ShowWindow(new_window);
 }
@@ -561,7 +561,8 @@ void ControlManager::ActiveTextFieldChanged(Control *control) {
 void ControlManager::ActiveFileChanged(Control *control) {
 	TextField* field = dynamic_cast<TextField*>(control);
 	assert(field);
-	std::string text = field->GetTextFile().GetName() + std::string(" - Panther");
+	auto view = field->GetTextView();
+	std::string text = view->file->GetName() + std::string(" - Panther");
 	SetWindowTitle(this->window, text.c_str());
 	TriggerCallback(active_file_callbacks, control);
 	this->InvalidateWorkspace();

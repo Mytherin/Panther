@@ -7,7 +7,7 @@
 PG_CONTROL_INITIALIZE_KEYBINDINGS(SimpleTextField);
 
 SimpleTextField::SimpleTextField(PGWindowHandle window, bool multiline) :
-	BasicTextField(window, std::shared_ptr<TextFile>(new TextFile(nullptr))), valid_input(true),
+	BasicTextField(window, make_shared_control<TextView>(this, std::make_shared<TextFile>())), valid_input(true),
 	on_user_cancel(), on_user_confirm(), on_prev_entry(), on_next_entry(), render_background(true) {
 	this->support_multiple_lines = multiline;
 	this->height = std::ceil(GetTextHeight(textfield_font)) + 6;
@@ -29,13 +29,13 @@ void SimpleTextField::GainsFocus(void) {
 void SimpleTextField::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
 		if (distance != 0) {
-			textfile->OffsetLineOffset(-distance / GetTextHeight(textfield_font));
+			view->OffsetLineOffset(-distance / GetTextHeight(textfield_font));
 			this->ClampScroll();
 			this->Invalidate();
 		}
 	}
 	if (hdistance != 0) {
-		textfile->SetXOffset(textfile->GetXOffset() - hdistance);
+		view->SetXOffset(view->GetXOffset() - hdistance);
 		this->Invalidate();
 	}
 }
@@ -45,7 +45,7 @@ void SimpleTextField::Draw(PGRendererHandle renderer) {
 	PGScalar y = Y();
 	PGScalar initial_position_y = y;
 	PGScalar max_x = x + this->width;
-	PGScalar xoffset = textfile->GetXOffset();
+	PGScalar xoffset = view->GetXOffset();
 
 	PGRect textfield_region = PGRect(x, y, this->width, this->height);
 
@@ -55,13 +55,13 @@ void SimpleTextField::Draw(PGRendererHandle renderer) {
 	x += 4;
 	y += 2;
 
-	const std::vector<Cursor>& cursors = textfile->GetCursors();
+	const std::vector<Cursor>& cursors = view->GetCursors();
 	lng current_cursor = 0;
 
 	SetTextColor(textfield_font, PGStyleManager::GetColor(PGColorTextFieldText));
 	PGScalar line_height = GetTextHeight(textfield_font);
 
-	auto line_iterator = textfile->GetLineIterator(this, textfile->GetLineOffset().linenumber);
+	auto line_iterator = view->GetLineIterator(this, view->GetLineOffset().linenumber);
 	TextLine textline;
 	SetRenderBounds(renderer, textfield_region);
 	while ((textline = line_iterator->GetLine()).IsValid()) {
@@ -176,18 +176,18 @@ bool SimpleTextField::KeyboardButton(PGButton button, PGModifier modifier) {
 }
 
 std::string SimpleTextField::GetText() {
-	return textfile->GetText();
+	return view->file->GetText();
 }
 
 void SimpleTextField::SetText(std::string text) {
-	textfile->SelectEverything();
+	view->SelectEverything();
 	if (text.size() > 0) {
-		textfile->PasteText(text);
+		view->PasteText(text);
 	} else {
-		textfile->DeleteCharacter(PGDirectionLeft);
+		view->DeleteCharacter(PGDirectionLeft);
 	}
-	textfile->SelectEverything();
-	textfile->SetXOffset(0);
+	view->SelectEverything();
+	view->SetXOffset(0);
 }
 
 void SimpleTextField::SetValidInput(bool valid) {
@@ -227,16 +227,16 @@ void SimpleTextField::InitializeKeybindings() {
 		if (args.count("characters") == 0) {
 			return;
 		}
-		tf->GetTextFile().PasteText(args["characters"]);
+		tf->GetTextView()->PasteText(args["characters"]);
 	};
 }
 
 void SimpleTextField::ClampScroll() {
-	PGVerticalScroll scroll = textfile->GetLineOffset();
+	PGVerticalScroll scroll = view->GetLineOffset();
 	lng rendered_lines = std::max(1LL, (lng)std::floor(this->height / GetTextHeight(textfield_font)));
-	lng max_scroll = std::max(0LL, textfile->GetLineCount() - rendered_lines);
+	lng max_scroll = std::max(0LL, view->file->GetLineCount() - rendered_lines);
 	if (scroll.linenumber > max_scroll) {
-		textfile->SetLineOffset(PGVerticalScroll(max_scroll, 0));
+		view->SetLineOffset(PGVerticalScroll(max_scroll, 0));
 	}
 }
 

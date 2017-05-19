@@ -77,7 +77,7 @@ void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& cha
 		assert(this->prev);
 		return this->prev->GetCursorFromBufferLocation(position + this->prev->current_size, line, character);
 	}
-	auto pos = GetCursorFromPosition(position, 0);
+	auto pos = GetCursorFromPosition(position);
 	line = pos.line;
 	character = pos.position;
 }
@@ -89,7 +89,7 @@ ulng PGTextBuffer::GetBufferLocationFromCursor(lng line, lng position) {
 	return start + position;
 }
 
-PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position, lng total_lines) {
+PGCursorPosition PGTextBuffer::GetCursorFromPosition(ulng position) {
 	assert(position <= current_size);
 	PGCursorPosition pos;
 	lng line_end = GetStartLine(position);

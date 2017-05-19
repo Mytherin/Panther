@@ -419,14 +419,14 @@ void PGFindText::Draw(PGRendererHandle renderer) {
 }
 
 void PGFindText::UpdateFieldHeight(bool force_update) {
-	lng current_lines = std::max(1LL, field->GetTextFile().GetLineCount());
+	lng current_lines = std::max(1LL, field->GetTextView()->file->GetLineCount());
 	lng textfield_count = 1;
 	if (replace_field) {
-		current_lines = std::max(current_lines, replace_field->GetTextFile().GetLineCount());
+		current_lines = std::max(current_lines, replace_field->GetTextView()->file->GetLineCount());
 		textfield_count++;
 	}
 	if (files_to_include_field) {
-		current_lines = std::max(current_lines, files_to_include_field->GetTextFile().GetLineCount());
+		current_lines = std::max(current_lines, files_to_include_field->GetTextView()->file->GetLineCount());
 		textfield_count++;
 	}
 	if (current_lines != field_lines || force_update) {
@@ -443,8 +443,8 @@ void PGFindText::UpdateFieldHeight(bool force_update) {
 
 bool PGFindText::Find(PGDirection direction, bool include_selection) {
 	ControlManager* manager = GetControlManager(this);
-	TextFile& tf = manager->active_textfield->GetTextFile();
-	if (!tf.IsLoaded()) return false;
+	auto view = manager->active_textfield->GetTextView();
+	if (!view->file->IsLoaded()) return false;
 	char* error_message = nullptr;
 
 	std::string pattern = field->GetText();
@@ -455,7 +455,7 @@ bool PGFindText::Find(PGDirection direction, bool include_selection) {
 		return false;
 	}
 
-	bool found_result = tf.FindMatch(regex_handle, direction,
+	bool found_result = view->FindMatch(regex_handle, direction,
 		toggle_wrap->IsToggled(),
 		include_selection);
 
@@ -533,13 +533,14 @@ void PGFindText::FindInFiles() {
 	// create a textfile for us to store the search results
 	ControlManager* manager = GetControlManager(this);
 	TextField* textfield = manager->active_textfield;
-	auto textfile = std::shared_ptr<TextFile>(new TextFile(nullptr));
+	auto textfile = std::make_shared<TextFile>();
+	auto view = make_shared_control<TextView>(nullptr, textfile);
 
 	textfile->SetReadOnly(true);
 
 	textfile->SetName("Find Results");
 	textfile->SetLanguage(PGLanguageManager::GetLanguage("findresults"));
-	textfield->GetTabControl()->OpenFile(textfile);
+	textfield->GetTabControl()->OpenFile(view);
 	/*
 	// first find the list of files we want to search
 	std::vector<PGFile> files;
@@ -557,39 +558,38 @@ void PGFindText::FindInFiles() {
 
 bool PGFindText::SelectAllMatches(bool in_selection) {
 	ControlManager* manager = GetControlManager(this);
-	TextFile& tf = manager->active_textfield->GetTextFile();
-	if (!tf.IsLoaded()) return false;
+	auto view = manager->active_textfield->GetTextView();
+	if (!view->file->IsLoaded()) return false;
 
 	if (HighlightMatches()) {
 		// toggle-highlight is turned on
 		// so we should already be searching
 		// wait for the search to finish
-		while (!tf.FinishedSearch());
+		while (!view->FinishedSearch());
 	} else {
 		// otherwise, we have to actually perform the search
 		// FIXME: if FindAll becomes non-blocking, we have to call the
 		// blocking version here
 		this->FindAll(false);
 	}
-	assert(tf.FinishedSearch());
-	return tf.SelectMatches(in_selection);
+	assert(view->FinishedSearch());
+	return view->SelectMatches(in_selection);
 }
 void PGFindText::FindAll(bool select_first_match) {
 	ControlManager* manager = GetControlManager(this);
-	TextFile& tf = manager->active_textfield->GetTextFile();
-
-	if (!tf.IsLoaded()) return;
+	auto view = manager->active_textfield->GetTextView();
+	if (!view->file->IsLoaded()) return;
 
 	PGStatusType type;
 	std::string text;
 
-	tf.SetSelectedMatch(0);
-	auto begin_pos = tf.GetActiveCursor().BeginPosition();
-	auto end_pos = tf.GetActiveCursor().EndPosition();
+	view->SetSelectedMatch(0);
+	auto begin_pos = view->GetActiveCursor().BeginPosition();
+	auto end_pos = view->GetActiveCursor().EndPosition();
 	std::string pattern = field->GetText();
 
 	if (pattern.size() == 0) {
-		tf.ClearMatches();
+		view->ClearMatches();
 		if (notification) {
 			GetControlManager(this)->statusbar->RemoveNotification(notification);
 			notification = nullptr;
@@ -604,13 +604,13 @@ void PGFindText::FindAll(bool select_first_match) {
 		this->field->SetValidInput(false);
 		goto set_notification;
 	}
-	tf.FindAllMatches(regex_handle, select_first_match,
+	view->FindAllMatches(regex_handle, select_first_match,
 		begin_pos.line, begin_pos.position,
 		end_pos.line, end_pos.position,
 		toggle_wrap->IsToggled());
 	
 	{
-		size_t match_count = tf.GetFindMatches().size();
+		size_t match_count = view->GetFindMatches().size();
 		type = match_count == 0 ? PGStatusWarning : PGStatusInProgress;
 		text = "Found " + std::to_string(match_count) + " matches";
 		this->field->SetValidInput(true);
@@ -630,9 +630,9 @@ void PGFindText::Replace() {
 	std::string replacement = replace_field->GetText();
 	if (this->Find(PGDirectionRight, true)) {
 		ControlManager* manager = GetControlManager(this);
-		TextFile& tf = manager->active_textfield->GetTextFile();
+		auto view = manager->active_textfield->GetTextView();
 		PGRegexHandle regex = PGCompileRegex(field->GetText(), this->regex, GetRegexFlags());
-		tf.RegexReplace(regex, replacement);
+		view->RegexReplace(regex, replacement);
 		if (HighlightMatches()) {
 			this->FindAll(PGDirectionRight);
 		}
@@ -643,15 +643,15 @@ void PGFindText::ReplaceAll(bool in_selection) {
 	if (!replace_field) return;
 	std::string replacement = replace_field->GetText();
 	ControlManager* manager = GetControlManager(this);
-	TextFile& tf = manager->active_textfield->GetTextFile();
-	if (!tf.IsLoaded()) return;
+	auto view = manager->active_textfield->GetTextView();
+	if (!view->file->IsLoaded()) return;
 
 	if (!this->SelectAllMatches(in_selection)) {
 		// no matches were found
 		return;
 	}
 	PGRegexHandle regex = PGCompileRegex(field->GetText(), this->regex, GetRegexFlags());
-	tf.RegexReplace(regex, replacement);
+	view->RegexReplace(regex, replacement);
 	if (HighlightMatches()) {
 		this->FindAll(false);
 	}
@@ -666,8 +666,8 @@ bool PGFindText::KeyboardButton(PGButton button, PGModifier modifier) {
 
 void PGFindText::Close() {
 	ControlManager* manager = GetControlManager(this);
-	TextFile& tf = manager->active_textfield->GetTextFile();
-	tf.ClearMatches();
+	auto view = manager->active_textfield->GetTextView();
+	view->ClearMatches();
 	auto parent = this->parent.lock();
 	dynamic_cast<PGContainer*>(parent.get())->RemoveControl(this);
 }
@@ -805,9 +805,9 @@ void PGFindText::Toggle(PGFindTextToggles type) {
 			}
 			if (!highlight) {
 				ControlManager* manager = GetControlManager(this);
-				TextFile& tf = manager->active_textfield->GetTextFile();
-				tf.ClearMatches();
-				tf.SetSelectedMatch(-1);
+				auto view = manager->active_textfield->GetTextView();
+				view->ClearMatches();
+				view->SetSelectedMatch(-1);
 			}
 			break;
 		case PGFindTextToggleIgnoreBinary:

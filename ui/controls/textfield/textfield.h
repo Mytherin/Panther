@@ -41,7 +41,7 @@ struct RenderedLine {
 
 class TextField : public BasicTextField {
 public:
-	TextField(PGWindowHandle, std::shared_ptr<TextFile> file);
+	TextField(PGWindowHandle, std::shared_ptr<TextView> file);
 	~TextField();
 
 	void Initialize();
@@ -65,7 +65,7 @@ public:
 
 	bool IsDragging();
 
-	void SetTextFile(std::shared_ptr<TextFile> textfile);
+	void SetTextView(std::shared_ptr<TextView> textfile);
 
 	void SetTabControl(TabControl* tabs) { tabcontrol = tabs; }
 	TabControl* GetTabControl() { return tabcontrol; }

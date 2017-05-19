@@ -247,7 +247,7 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupC
 	PGPopupMenuInsertEntry(handle, info, callback, flags);
 }
 
-std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextFile>> initial_files) {
+std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, std::vector<std::shared_ptr<TextView>> initial_files) {
 	std::shared_ptr<ControlManager> manager;
 	if (PGGlobalReplayManager::recording_replay) {
 		auto m = std::make_shared<ReplayManager>(handle);
