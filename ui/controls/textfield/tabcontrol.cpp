@@ -518,6 +518,7 @@ void TabControl::OpenTemporaryFile(std::shared_ptr<TextView> view) {
 }
 
 void TabControl::OpenTemporaryFileAsActualFile() {
+	FileManager::OpenFile(temporary_textfile->file);
 	auto file = temporary_textfile;
 	AddTab(file);
 	this->temporary_textfile = nullptr;

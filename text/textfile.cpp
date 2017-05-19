@@ -265,7 +265,7 @@ void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
 	buffer->cumulative_width = -1;
 }
 
-void TextFile::InvalidateBuffers() {
+void TextFile::InvalidateBuffers(TextView* responsible_view) {
 	double current_width = 0;
 	double current_lines = 0;
 	PGTextBuffer* buffer = buffers.front();
@@ -332,10 +332,12 @@ void TextFile::InvalidateBuffers() {
 	total_width = current_width;
 	linecount = current_lines;
 
+	// invalidate all the views of this textfield
 	for (lng i = 0; i < views.size(); i++) {
 		auto ptr = views[i].lock();
 		if (ptr) {
-			ptr->InvalidateTextView();
+			// only scroll the view if it was responsible for the changed text
+			ptr->InvalidateTextView(ptr.get() == responsible_view);
 		} else {
 			views.erase(views.begin() + i);
 			i--;
@@ -1729,7 +1731,7 @@ void TextFile::Undo(TextView* view) {
 	Lock(PGWriteLock);
 	VerifyTextfile();
 	this->Undo(view, delta);
-	InvalidateBuffers();
+	InvalidateBuffers(view);
 	VerifyTextfile();
 	Unlock(PGWriteLock);
 	this->redos.push_back(RedoStruct(Cursor::BackupCursors(view->cursors)));
@@ -1756,7 +1758,7 @@ void TextFile::Redo(TextView* view) {
 	// perform the operation
 	PerformOperation(view->cursors, delta, true);
 	// release the locks again
-	InvalidateBuffers();
+	InvalidateBuffers(view);
 	VerifyTextfile();
 	Unlock(PGWriteLock);
 	this->deltas.push_back(std::move(redo.delta));
@@ -1791,7 +1793,7 @@ void TextFile::PerformOperation(std::vector<Cursor>& cursors, TextDelta* delta) 
 	// perform the operation
 	bool success = PerformOperation(cursors, delta, false);
 	// release the locks again
-	InvalidateBuffers();
+	InvalidateBuffers(cursors[0].file);
 	VerifyTextfile();
 	Unlock(PGWriteLock);
 	if (!success) return;
@@ -2488,7 +2490,7 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 		//Cursor c = Cursor(nullptr, data.start_line, data.start_position, data.end_line, data.end_position);
 		//matches.push_back(c.GetCursorSelection());
 	}*/
-	InvalidateBuffers();
+	InvalidateBuffers(nullptr);
 	VerifyTextfile();
 	this->Unlock(PGWriteLock);
 
@@ -2605,7 +2607,7 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 			PGFileError error = PGFileSuccess;
 			// FIXME: use streaming textfile instead
 			TextFile* textfile = TextFile::OpenTextFile(f.path, error, true, info->ignore_binary);
-			if (error != PGFileSuccess || !textfile) {
+			if (!textfile) {
 				return true;
 			}
 			textfile->FindMatchesWithContext(info->regex_handle, info->context_lines, [](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {

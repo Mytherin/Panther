@@ -360,7 +360,7 @@ Cursor TextView::RestoreCursorPartial(PGCursorRange data) {
 		data.start_line = data.end_line;
 		data.start_position = data.end_position;
 	}
-	return Cursor(nullptr, data);
+	return Cursor(this, data);
 }
 
 void TextView::ClearExtraCursors() {
@@ -439,12 +439,16 @@ bool TextView::IsLastFileView() {
 	return true;
 }
 
-void TextView::InvalidateTextView() {
+void TextView::InvalidateTextView(bool scroll) {
 	yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, yoffset.linenumber));
 
 	matches.clear();
 
-	Cursor::NormalizeCursors(this, cursors, true);
+	Cursor::NormalizeCursors(this, cursors, scroll);
+
+	if (textfield) {
+		textfield->TextChanged();
+	}
 }
 
 void TextView::SetWordWrap(bool wordwrap, PGScalar wrap_width) {

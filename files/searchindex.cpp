@@ -22,7 +22,7 @@ void SearchIndex::AddEntry(SearchEntry e) {
 
 	TrieNode* node = &this->root;
 	for (size_t i = 0; i < e.display_name.size(); i++) {
-		byte b = e.display_name[i];
+		byte b = tolower(e.display_name[i]);
 		TrieNode* next = nullptr;
 		for (auto it = node->leaves.begin(); it != node->leaves.end(); it++) {
 			if ((*it)->b == b) {
@@ -53,7 +53,7 @@ void SearchIndex::RemoveEntry(std::string name) {
 	TrieNode* node = &this->root;
 	std::vector<TrieNode*> list;
 	for (size_t i = 0; i < name.size(); i++) {
-		byte b = name[i];
+		byte b = tolower(name[i]);
 		TrieNode* next = nullptr;
 		for (auto it = node->leaves.begin(); it != node->leaves.end(); it++) {
 			if ((*it)->b == b) {
@@ -108,7 +108,6 @@ int SearchIndex::IndexScore(const std::string& str, const std::string& search_te
 			// if we have completely matched the search_term, we stop
 			// we apply a small penalty for the size of "str"
 			// (i.e. smaller strings that fully match get more points than longer ones)
-			score -= str.size() - i;
 			return score;
 		} else if (str[i] == search_term[search_index]) {
 			// if the current character matches, we increase the score
@@ -198,7 +197,7 @@ std::vector<SearchEntry*> SearchIndex::Search(SearchIndex* ind, const std::vecto
 				next.node = it->get();
 				if (current.index == search_term.size()) {
 					next.index = current.index;
-					next.score = current.score - 1;
+					next.score = current.score;
 				} else if (next.node->b == search_term[current.index]) {
 					next.index = current.index + 1;
 					next.score = current.score + 10000 / (current.depth - current.index + 1);

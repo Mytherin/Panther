@@ -236,7 +236,7 @@ private:
 	static void OpenFileAsync(std::shared_ptr<Task> task, void* info);
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
-	void InvalidateBuffers();
+	void InvalidateBuffers(TextView* responsible_view);
 	void InvalidateParsing();
 
 	bool reload_on_changed = true;

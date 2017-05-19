@@ -195,7 +195,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				entry.display_subtitle = it->view->file->GetFullPath();
 				entry.text = it->view->file->GetFullPath();
 				entry.data = it->view;
-				entry.basescore = 0;
+				entry.basescore = 10;
 				entry.multiplier = 1.5;
 				entries.push_back(entry);
 			}
@@ -283,7 +283,7 @@ void PGGotoAnything::Cancel(bool success) {
 				tabs->SwitchToTab(current_textfile);
 			} else {
 				if (preview) {
-					tabs->OpenTab(preview);
+					tabs->OpenFile(preview);
 					tabs->CloseTemporaryFile();
 					preview = nullptr;
 				}

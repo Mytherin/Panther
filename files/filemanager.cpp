@@ -34,12 +34,14 @@ std::shared_ptr<TextFile> FileManager::_OpenFile(std::shared_ptr<TextFile> textf
 	open_files.push_back(textfile);
 	UnlockMutex(lock.get());
 	return textfile;
-}
+} 
 
-void FileManager::_CloseFile(std::shared_ptr<TextFile> textfile) {
+void FileManager::_CloseFile(std::shared_ptr<TextFile> file) {
 	LockMutex(lock.get());
-	assert(std::find(open_files.begin(), open_files.end(), textfile) != open_files.end());
-	open_files.erase(std::find(open_files.begin(), open_files.end(), textfile));
+	file->find_task = nullptr;
+	file->current_task = nullptr;
+	assert(std::find(open_files.begin(), open_files.end(), file) != open_files.end());
+	open_files.erase(std::find(open_files.begin(), open_files.end(), file));
 	UnlockMutex(lock.get());
 }
 

@@ -141,7 +141,7 @@ public:
 	PGTextViewSettings GetSettings();
 	void ApplySettings(PGTextViewSettings& settings);
 
-	void InvalidateTextView();
+	void InvalidateTextView(bool scroll);
 
 	void VerifyTextView();
 };
