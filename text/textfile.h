@@ -61,6 +61,8 @@ struct PGTextFileSettings {
 	PGTextFileSettings() : line_ending(PGLineEndingUnknown), language(nullptr), encoding(PGEncodingUnknown), name("") { }
 };
 
+struct FindAllInformation;
+
 class TextFile {
 	friend class Cursor;
 	friend class FileManager;
@@ -170,7 +172,7 @@ public:
 
 	// only used for "Find Results"
 	// FIXME: this should not be in the TextFile class
-	void FindMatchesWithContext(PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data);
+	void FindMatchesWithContext(FindAllInformation* info, PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data);
 	std::shared_ptr<Task> find_task = nullptr;
 	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
 	std::string current_find_file;

@@ -724,7 +724,7 @@ void TabControl::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier
 			} else {
 				// if the tab is from a different tab control 
 				// we have to open the file
-				this->OpenFile(dragging_tab.view, new_index);
+				this->AddTab(dragging_tab.view, new_index);
 			}
 			active_tab_hidden = false;
 			dragging_tab.view = nullptr;

@@ -106,8 +106,6 @@ int SearchIndex::IndexScore(const std::string& str, const std::string& search_te
 	for (size_t i = 0; i < str.size(); i++) {
 		if (search_index == search_term.size()) {
 			// if we have completely matched the search_term, we stop
-			// we apply a small penalty for the size of "str"
-			// (i.e. smaller strings that fully match get more points than longer ones)
 			return score;
 		} else if (str[i] == search_term[search_index]) {
 			// if the current character matches, we increase the score

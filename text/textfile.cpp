@@ -9,7 +9,23 @@
 #include "regex.h"
 #include "wrappedtextiterator.h"
 
+#include "projectexplorer.h"
+#include "controlmanager.h"
+#include "statusbar.h"
+
 #include "style.h"
+
+struct FindAllInformation {
+	ProjectExplorer* explorer;
+	std::shared_ptr<PGStatusNotification> notification;
+	TextFile* textfile;
+	PGRegexHandle regex_handle;
+	PGGlobSet whitelist;
+	std::vector<PGFile> files;
+	bool ignore_binary;
+	int context_lines;
+	std::shared_ptr<Task> task;
+};
 
 struct OpenFileInformation {
 	TextFile* textfile;
@@ -2497,7 +2513,7 @@ void TextFile::AddFindMatches(std::string filename, const std::vector<std::strin
 	this->InvalidateParsing();
 }
 
-void TextFile::FindMatchesWithContext(PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data) {
+void TextFile::FindMatchesWithContext(FindAllInformation* info, PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data) {
 	PGTextBuffer* current_buffer = buffers.front();
 	lng current_position = 0;
 	std::vector<PGCursorRange> matches;
@@ -2505,6 +2521,10 @@ void TextFile::FindMatchesWithContext(PGRegexHandle regex_handle, int context_li
 	lng end_line = -1;
 	while (true) {
 		PGTextRange match = FindMatch(regex_handle, PGDirectionRight, current_buffer, current_position, current_buffer, current_position, false, nullptr);
+		if (!info->task->active) {
+			// task is no longer active, cancel the search
+			return;
+		}
 		if (match.start_buffer == nullptr) {
 			// no more matches found
 			// if there are any matches stored, report them now
@@ -2562,21 +2582,6 @@ void TextFile::FindMatchesWithContext(PGRegexHandle regex_handle, int context_li
 	}
 	//textfield->SearchMatchesChanged();
 }
-#include "projectexplorer.h"
-#include "controlmanager.h"
-#include "statusbar.h"
-
-struct FindAllInformation {
-	ProjectExplorer* explorer;
-	std::shared_ptr<PGStatusNotification> notification;
-	TextFile* textfile;
-	PGRegexHandle regex_handle;
-	PGGlobSet whitelist;
-	std::vector<PGFile> files;
-	bool ignore_binary;
-	int context_lines;
-	std::shared_ptr<Task> task;
-};
 
 void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary) {
 	FindAllInformation* info = new FindAllInformation();
@@ -2601,6 +2606,7 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 			if (!info->task->active) {
 				return false;
 			}
+			info->notification->SetText("Searching File \"" + f.path + "\"");
 			info->notification->SetProgress((double)filenr / (double) total_files);
 
 			lng size;
@@ -2610,7 +2616,7 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 			if (!textfile) {
 				return true;
 			}
-			textfile->FindMatchesWithContext(info->regex_handle, info->context_lines, [](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
+			textfile->FindMatchesWithContext(info, info->regex_handle, info->context_lines, [](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
 				FindAllInformation* info = (FindAllInformation*)data;
 				if (!info->task->active) {
 					return;
