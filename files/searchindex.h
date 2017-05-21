@@ -69,7 +69,7 @@ struct SearchIndex {
 	// the given search_term. Additional entries can be provided in the <entries> parameter.
 	// Note that the index is optional. 
 	// This function is thread safe, and will get the the lock from "index" when required
-	static std::vector<SearchEntry*> Search(SearchIndex* index,
+	static std::vector<SearchEntry*> Search(std::vector<std::shared_ptr<SearchIndex>>& indices,
 		const std::vector<SearchEntry*>& entries,
 		const std::string& search_term,
 		size_t max_entries);

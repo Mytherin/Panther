@@ -440,6 +440,8 @@ bool TextView::IsLastFileView() {
 }
 
 void TextView::InvalidateTextView(bool scroll) {
+	// FIXME: invalidate TextView can be called from a different thread (when scroll == false)
+	// this can cause concurrency conflicts
 	yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, yoffset.linenumber));
 
 	matches.clear();

@@ -20,7 +20,7 @@ typedef void(*SearchBoxCloseFunction)(SearchBox* searchbox, bool success, Search
 class SearchBox : public PGContainer {
 public:
 	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles = true);
-	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, SearchIndex* index, bool render_subtitles = true);
+	SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, std::vector<std::shared_ptr<SearchIndex>> index, bool render_subtitles = true);
 
 	void Initialize();
 
@@ -49,7 +49,7 @@ public:
 
 	virtual PGControlType GetControlType() { return PGControlTypeSearchBox; }
 private:
-	SearchIndex* index = nullptr;
+	std::vector<std::shared_ptr<SearchIndex>> indices;
 	std::vector<SearchEntry> entries;
 	std::vector<SearchEntry*> displayed_entries;
 

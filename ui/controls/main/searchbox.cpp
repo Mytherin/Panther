@@ -7,10 +7,10 @@
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(SearchBox);
 
-SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, SearchIndex* index, bool render_subtitles) :
+SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, std::vector<std::shared_ptr<SearchIndex>> indices, bool render_subtitles) :
 	PGContainer(window), selected_entry(-1), entries(entries),
 	scrollbar(nullptr), scroll_position(0), render_subtitles(render_subtitles),
-	close_function(nullptr), close_data(nullptr), index(index) {
+	close_function(nullptr), close_data(nullptr), indices(indices) {
 
 	font = PGCreateFont(PGFontTypeUI);
 	SetTextFontSize(font, 13);
@@ -18,7 +18,7 @@ SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, Se
 }
 
 SearchBox::SearchBox(PGWindowHandle window, std::vector<SearchEntry> entries, bool render_subtitles) :
-	SearchBox(window, entries, nullptr, render_subtitles) {
+	SearchBox(window, entries, std::vector<std::shared_ptr<SearchIndex>>(), render_subtitles) {
 
 }
 
@@ -307,7 +307,7 @@ void SearchBox::Filter(std::string filter) {
 	for (auto it = this->entries.begin(); it != this->entries.end(); it++) {
 		additional_entries.push_back(&*it);
 	}
-	auto entries = SearchIndex::Search(index, additional_entries, filter, SEARCHBOX_MAX_ENTRIES);
+	auto entries = SearchIndex::Search(indices, additional_entries, filter, SEARCHBOX_MAX_ENTRIES);
 	for (auto it = entries.begin(); it != entries.end(); it++) {
 		displayed_entries.push_back(*it);
 	}

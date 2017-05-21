@@ -44,9 +44,9 @@ public:
 
 	bool IterateOverFiles(PGDirectoryIterCallback callback, void* data, lng& files, lng total_files);
 
-	void Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories, SearchIndex* index);
+	void Update(PGIgnoreGlob glob, std::queue<std::shared_ptr<PGDirectory>>& open_directories, std::shared_ptr<SearchIndex> index);
 private:
-	SearchIndex* index;
+	std::weak_ptr<SearchIndex> index;
 	bool expanded;
 	std::unique_ptr<PGMutex> lock;
 

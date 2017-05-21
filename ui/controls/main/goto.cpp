@@ -199,8 +199,10 @@ void PGGotoAnything::SetType(PGGotoType type) {
 				entry.multiplier = 1.5;
 				entries.push_back(entry);
 			}
+			
+			auto indices = explorer->GetIndices();
 
-			auto box = make_shared_control<SearchBox>(this->window, entries, &explorer->index);
+			auto box = make_shared_control<SearchBox>(this->window, entries, indices);
 			this->box = box.get();
 			box->SetSize(PGSize(this->width, this->height - (goto_command->y + goto_command->height)));
 			box->SetPosition(PGPoint(0, goto_command->y + goto_command->height));

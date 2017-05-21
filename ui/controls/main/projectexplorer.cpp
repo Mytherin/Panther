@@ -33,7 +33,7 @@ ProjectExplorer::ProjectExplorer(PGWindowHandle window) :
 					}
 				}
 			}
-			index.ignore_glob = PGCompileGlobBuilder(builder);
+			this->ignore_glob = PGCompileGlobBuilder(builder);
 			PGDestroyGlobBuilder(builder);
 		} catch (...) {
 			return;
@@ -109,9 +109,9 @@ void ProjectExplorer::UpdateDirectories(bool force) {
 	bool update_directory = force;
 	if (!force) {
 		for (auto it = directories.begin(); it != directories.end(); it++) {
-			auto flags = PGGetFileFlags((*it)->path);
-			if (flags.modification_time != (*it)->last_modified_time) {
-				(*it)->last_modified_time = flags.modification_time;
+			auto flags = PGGetFileFlags(it->directory->path);
+			if (flags.modification_time != it->directory->last_modified_time) {
+				it->directory->last_modified_time = flags.modification_time;
 				update_directory = true;
 			}
 		}
@@ -122,19 +122,19 @@ void ProjectExplorer::UpdateDirectories(bool force) {
 		this->update_task = std::shared_ptr<Task>(new Task([](std::shared_ptr<Task> task, void* data) {
 			UpdateInformation* info = (UpdateInformation*)data;
 			LockMutex(info->explorer->lock.get());
-			std::vector<std::shared_ptr<PGDirectory>> directories = info->explorer->directories;
+			auto directories = info->explorer->directories;
 			UnlockMutex(info->explorer->lock.get());
 			for (auto it = directories.begin(); it != directories.end(); it++) {
 				std::queue<std::shared_ptr<PGDirectory>> open_directories;
-				PGIgnoreGlob glob = info->explorer->show_all_files ? nullptr : PGCreateGlobForDirectory((*it)->path.c_str());
-				(*it)->Update(glob, open_directories, &info->explorer->index);
+				PGIgnoreGlob glob = info->explorer->show_all_files ? nullptr : PGCreateGlobForDirectory(it->directory->path.c_str());
+				it->directory->Update(glob, open_directories, it->index);
 				while (open_directories.size() > 0) {
 					if (info->explorer->update_task != task) {
 						break;
 					}
 					std::shared_ptr<PGDirectory> subdir = open_directories.front();
 					open_directories.pop();
-					subdir->Update(glob, open_directories, &info->explorer->index);
+					subdir->Update(glob, open_directories, it->index);
 					if (subdir->parent && subdir->parent->IsExpanded()) {
 						info->explorer->Invalidate();
 					}
@@ -166,7 +166,7 @@ void ProjectExplorer::SetShowAllFiles(bool show_all_files) {
 
 void ProjectExplorer::CollapseAll() {
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		(*it)->CollapseAll();
+		it->directory->CollapseAll();
 	}
 	this->Invalidate();
 }
@@ -417,7 +417,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 
 	// render the files in the directory
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		DrawDirectory(renderer, **it, x + FOLDER_IDENT + 2, y, y + this->height - PROJECT_EXPLORER_PADDING, current_offset, offset, current_selection, highlighted_entry);
+		DrawDirectory(renderer, *it->directory.get(), x + FOLDER_IDENT + 2, y, y + this->height - PROJECT_EXPLORER_PADDING, current_offset, offset, current_selection, highlighted_entry);
 	}
 
 	scrollbar->UpdateValues(0, MaximumScrollOffset(), RenderedFiles(), scrollbar_offset);
@@ -611,11 +611,11 @@ void ProjectExplorer::MouseMove(int x, int y, PGMouseButton buttons) {
 lng ProjectExplorer::FindFile(std::string full_name, PGDirectory** directory, PGFile* file) {
 	lng index = 0;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		lng entry = (*it)->FindFile(full_name, directory, file);
+		lng entry = it->directory->FindFile(full_name, directory, file);
 		if (entry >= 0) {
 			return index + entry;
 		}
-		index += (*it)->DisplayedFiles();
+		index += it->directory->DisplayedFiles();
 	}
 	return -1;
 }
@@ -625,16 +625,16 @@ bool ProjectExplorer::RevealFile(std::string full_name, bool search_only_expande
 	PGFile file;
 	lng index = 0;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		lng entry = (*it)->FindFile(full_name, &directory, &file, search_only_expanded);
+		lng entry = it->directory->FindFile(full_name, &directory, &file, search_only_expanded);
 		if (entry >= 0) {
 			this->selected_files.clear();
 			this->selected_files.push_back(index + entry);
 			ScrollToFile(index + entry);
-			(*it)->SetExpanded(true);
+			it->directory->SetExpanded(true);
 			this->Invalidate();
 			return true;
 		}
-		index += (*it)->DisplayedFiles();
+		index += it->directory->DisplayedFiles();
 	}
 	return false;
 }
@@ -643,9 +643,9 @@ void ProjectExplorer::FindFile(lng file_number, PGDirectory** directory, PGFile*
 	*directory = nullptr;
 	lng file_count = 0;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		lng files = (*it)->DisplayedFiles();
+		lng files = it->directory->DisplayedFiles();
 		if (file_number >= file_count && file_number < file_count + files) {
-			(*it)->FindFile(file_number - file_count, directory, file);
+			it->directory->FindFile(file_number - file_count, directory, file);
 			return;
 		}
 		file_count += files;
@@ -657,14 +657,14 @@ void ProjectExplorer::AddDirectory(std::string directory) {
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		PGFile f;
 		PGDirectory* d;
-		lng entry = (*it)->FindFile(directory, &d, &f, false);
+		lng entry = it->directory->FindFile(directory, &d, &f, false);
 		if (entry >= 0) {
 			// this directory is already opened or part of an already opened directory
 			this->ScrollToFile(entries + entry);
 			this->Invalidate();
 			return;
 		}
-		entries += (*it)->DisplayedFiles();
+		entries += it->directory->DisplayedFiles();
 	}
 
 	auto dir = std::shared_ptr<PGDirectory>(new PGDirectory(directory, nullptr));
@@ -702,12 +702,22 @@ void ProjectExplorer::RemoveDirectory(lng index) {
 
 void ProjectExplorer::RemoveDirectory(PGDirectory* directory) {
 	for (size_t i = 0; i < directories.size(); i++) {
-		if (directories[i].get() == directory) {
+		if (directories[i].directory.get() == directory) {
 			RemoveDirectory(i);
 			return;
 		}
 	}
 	assert(0);
+}
+
+std::vector<std::shared_ptr<SearchIndex>> ProjectExplorer::GetIndices() {
+	std::vector<std::shared_ptr<SearchIndex>> indices;
+	LockMutex(lock.get());
+	for (size_t i = 0; i < directories.size(); i++) {
+		indices.push_back(directories[i].index);
+	}
+	UnlockMutex(lock.get());
+	return indices;
 }
 
 void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool open_file, bool click) {
@@ -791,7 +801,7 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 lng ProjectExplorer::TotalFiles() {
 	lng total_files = 0;
 	for (auto it = directories.begin(); it != directories.end(); it++) {
-		total_files += (*it)->DisplayedFiles();
+		total_files += it->directory->DisplayedFiles();
 	}
 	return total_files;
 }
@@ -844,9 +854,9 @@ void ProjectExplorer::WriteWorkspace(nlohmann::json& j) {
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		arr.push_back(nlohmann::json::object());
 		nlohmann::json& obj = arr.back();
-		obj["directory"] = (*it)->path;
+		obj["directory"] = it->directory->path;
 		obj["expansions"] = nlohmann::json::object();
-		(*it)->WriteWorkspace(obj["expansions"]);
+		it->directory->WriteWorkspace(obj["expansions"]);
 	}
 	UnlockMutex(lock.get());
 }
@@ -882,15 +892,15 @@ void ProjectExplorer::ToggleShowAllFiles() {
 
 void ProjectExplorer::IterateOverFiles(PGDirectoryIterCallback callback, void* data) {
 	LockMutex(lock.get());
-	std::vector<std::shared_ptr<PGDirectory>> dirs = this->directories;
+	auto dirs = this->directories;
 	UnlockMutex(lock.get());
 	lng filenumber = 0;
 	lng total_files = 0;
 	for (auto it = dirs.begin(); it != dirs.end(); it++) {
-		total_files += (*it)->total_files;
+		total_files += it->directory->total_files;
 	}
 	for (auto it = dirs.begin(); it != dirs.end(); it++) {
-		if (!((*it)->IterateOverFiles(callback, data, filenumber, total_files))) {
+		if (!(it->directory->IterateOverFiles(callback, data, filenumber, total_files))) {
 			return;
 		}
 	}
@@ -915,9 +925,9 @@ void ProjectExplorer::VerifyDirectory(PGDirectory* dir, lng& files, lng& display
 void ProjectExplorer::VerifyDirectories() {
 	for (auto it = directories.begin(); it != directories.end(); it++) {
 		lng total_files = 0, displayed_files = 0;
-		VerifyDirectory(it->get(), total_files, displayed_files);
-		assert((*it)->displayed_files == displayed_files);
-		assert((*it)->total_files == total_files);
+		VerifyDirectory(it->directory.get(), total_files, displayed_files);
+		assert(it->directory->displayed_files == displayed_files);
+		assert(it->directory->total_files == total_files);
 	}
 }
 #endif

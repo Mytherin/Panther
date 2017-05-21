@@ -76,9 +76,9 @@ public:
 
 	void IterateOverFiles(PGDirectoryIterCallback callback, void* data);
 
-	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
+	std::vector<std::shared_ptr<SearchIndex>> GetIndices();
 
-	SearchIndex index;
+	virtual PGControlType GetControlType() { return PGControlTypeProjectExplorer; }
 private:
 #ifdef PANTHER_DEBUG
 	static void VerifyDirectory(PGDirectory* dir, lng& files, lng& displayed_files);
@@ -113,7 +113,15 @@ private:
 	void FinishRename(bool success, bool update_selection);
 	void ActuallyPerformRename(std::string old_name, std::string new_name, bool update_selection);
 
-	std::vector<std::shared_ptr<PGDirectory>> directories;
+	struct DirectoryIndex {
+		DirectoryIndex(std::shared_ptr<PGDirectory> directory) : directory(directory), index(std::make_shared<SearchIndex>()) { }
+
+		std::shared_ptr<PGDirectory> directory;
+		std::shared_ptr<SearchIndex> index;
+	};
+
+	PGGlobSet ignore_glob;
+	std::vector<DirectoryIndex> directories;
 
 	bool dragging_scrollbar;
 	double scrollbar_offset = 0;

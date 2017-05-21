@@ -123,7 +123,7 @@ int SearchIndex::IndexScore(const std::string& str, const std::string& search_te
 	return score;
 }
 
-std::vector<SearchEntry*> SearchIndex::Search(SearchIndex* ind, const std::vector<SearchEntry*>& additional_entries, const std::string& search_term, size_t max_entries) {
+std::vector<SearchEntry*> SearchIndex::Search(std::vector<std::shared_ptr<SearchIndex>>& indices, const std::vector<SearchEntry*>& additional_entries, const std::string& search_term, size_t max_entries) {
 	// we search the trie for search_term, and return at most max_entries results
 	// we do fuzzy matching here, and return the n best matches
 	// we compute the score as is done in SearchIndex::IndexScore incrementally over the trie
@@ -158,66 +158,69 @@ std::vector<SearchEntry*> SearchIndex::Search(SearchIndex* ind, const std::vecto
 		}
 	}
 
-	if (ind) {
-		LockMutex(ind->lock.get());
-		// we start our search at the root node
+	for (auto it = indices.begin(); it != indices.end(); it++) {
+		LockMutex((*it)->lock.get());
 		SearchTermIndex index;
-		index.node = &ind->root;
+		// we start our search at the root node of each index
+		index.node = &(*it)->root;
 		index.index = 0;
 		index.score = 0;
 		index.depth = 0;
 		open_nodes.push(index);
-		while (open_nodes.size() > 0) {
-			SearchTermIndex current = open_nodes.top();
-			open_nodes.pop();
-			TrieNode* node = current.node;
-			if (node->entry) {
-				// if the node has an entry we insert if its score is good enough
-				current.score = node->entry->basescore + node->entry->multiplier * current.score;
-				bool insert_entry = false;
-				if (results.size() < max_entries) {
-					insert_entry = true;
-				} else if (results.top().score < current.score) {
-					results.pop();
-					insert_entry = true;
-				}
-				if (insert_entry) {
-					if (blacklist.count(node->entry->text) == 0) {
-						SearchRank r(node->entry, current.score);
-						results.push(r);
-					}
-				}
+	}
+
+	while (open_nodes.size() > 0) {
+		SearchTermIndex current = open_nodes.top();
+		open_nodes.pop();
+		TrieNode* node = current.node;
+		if (node->entry) {
+			// if the node has an entry we insert if its score is good enough
+			current.score = node->entry->basescore + node->entry->multiplier * current.score;
+			bool insert_entry = false;
+			if (results.size() < max_entries) {
+				insert_entry = true;
+			} else if (results.top().score < current.score) {
+				results.pop();
+				insert_entry = true;
 			}
-			for (auto it = node->leaves.begin(); it != node->leaves.end(); it++) {
-				// for each of the leaves, compute the score based on the next character
-				SearchTermIndex next;
-				next.depth = current.depth + 1;
-				next.node = it->get();
-				if (current.index == search_term.size()) {
-					next.index = current.index;
-					next.score = current.score;
-				} else if (next.node->b == search_term[current.index]) {
-					next.index = current.index + 1;
-					next.score = current.score + 10000 / (current.depth - current.index + 1);
-				} else {
-					next.index = current.index;
-					next.score = current.score - current.score / 5;
+			if (insert_entry) {
+				if (blacklist.count(node->entry->text) == 0) {
+					SearchRank r(node->entry, current.score);
+					results.push(r);
 				}
-				if (results.size() >= max_entries) {
-					// if we already have n results we determine if we should stop branching
-					// based on the maximum possible score we can possible get in this branch
-					// assuming the next [search_term.size() - current.index] characters 
-					// match the query exactly, we compute the maximum possible score
-					// if this is lower than the lowest score in the top n entries, we stop
-					size_t maximum_score = next.score + (search_term.size() - next.index) * 10000 / (next.depth - next.index + 1);
-					if (maximum_score <= results.top().score) {
-						continue;
-					}
-				}
-				open_nodes.push(next);
 			}
 		}
-		UnlockMutex(ind->lock.get());
+		for (auto it = node->leaves.begin(); it != node->leaves.end(); it++) {
+			// for each of the leaves, compute the score based on the next character
+			SearchTermIndex next;
+			next.depth = current.depth + 1;
+			next.node = it->get();
+			if (current.index == search_term.size()) {
+				next.index = current.index;
+				next.score = current.score;
+			} else if (next.node->b == search_term[current.index]) {
+				next.index = current.index + 1;
+				next.score = current.score + 10000 / (current.depth - current.index + 1);
+			} else {
+				next.index = current.index;
+				next.score = current.score - current.score / 5;
+			}
+			if (results.size() >= max_entries) {
+				// if we already have n results we determine if we should stop branching
+				// based on the maximum possible score we can possible get in this branch
+				// assuming the next [search_term.size() - current.index] characters 
+				// match the query exactly, we compute the maximum possible score
+				// if this is lower than the lowest score in the top n entries, we stop
+				size_t maximum_score = next.score + (search_term.size() - next.index) * 10000 / (next.depth - next.index + 1);
+				if (maximum_score <= results.top().score) {
+					continue;
+				}
+			}
+			open_nodes.push(next);
+		}
+	}
+	for (auto it = indices.begin(); it != indices.end(); it++) {
+		UnlockMutex((*it)->lock.get());
 	}
 	std::vector<SearchEntry*> entries;
 	while (results.size() > 0) {
