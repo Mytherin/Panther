@@ -638,7 +638,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 				// only rerender the actual minimap if it is dirty
 
 				// render the background of the minimap
-				RenderRectangle(renderer, PGIRect(x + textfield_width, y, minimap_region.width, this->height), PGColor(30, 30, 30), PGDrawStyleFill);
+				RenderRectangle(renderer, PGIRect(x + textfield_width, y, minimap_region.width, this->height), PGStyleManager::GetColor(PGColorMainMenuBackground), PGDrawStyleFill);
 				DrawTextField(renderer, minimap_font, true, x + textfield_width + 1, x + textfield_width, y, minimap_region.width, mouse_in_minimap);
 			}
 			if (!view->GetWordWrap()) {

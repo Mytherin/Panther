@@ -273,7 +273,7 @@ PGStyleManager::PGStyleManager() {
 	bp.SetColor(PGColorSyntaxClass6, *bp.GetColor(PGColorSyntaxClass1));
 	this->styles["Black Panther"] = bp;*/
 
-	this->default_style = this->styles["Black Panther (Green Comments)"];
+	this->default_style = this->styles["White Panther"];
 }
 
 void PGStyleManager::LoadStyles(const char* data) {

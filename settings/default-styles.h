@@ -59,6 +59,57 @@ const char* PANTHER_DEFAULT_STYLES = R"DEFAULTSTYLES(
 		"colors": {
 			"syntax_comment": "#84C684"
 		}
+	},
+	{
+		"name": "White Panther",
+		"colors": {
+			"toggle_button_toggled": "#B2B2B2",
+			"notification_background": "#FFFFFF",
+			"notification_text": "#000000",
+			"notification_error": "#BE1100",
+			"notification_in_progress": "#4169E1",
+			"notification_warning": "#FF8C00",
+			"notification_button": "#0E639C",
+			"explorer_text": "#000000",
+			"textfield_background": "#FFFFFF",
+			"textfield_text": "#000000",
+			"textfield_selection": "#C3DCFF",
+			"textfield_caret": "#000000",
+			"textfield_linenumber": "#888888",
+			"textfield_error": "#FC4036",
+			"textfield_findmatch": "#804020",
+			"scrollbar_background": "#9E9E9E",
+			"scrollbar_foreground": "#686868",
+			"scrollbar_hover": "#3E3E42",
+			"scrollbar_drag": "#222222",
+			"minimap_hover": "#44444460",
+			"minimap_drag": "#44444480",
+			"mainmenu_background": "#B2B2B2",
+			"menu_background": "#B2B2B2",
+			"menu_text": "#000000",
+			"menu_disabled": "#656565",
+			"menu_hover": "#333334",
+			"tab_text": "#000000",
+			"tab_border": "#686868",
+			"tab_background": "#DEDEDE",
+			"tab_unsaved_text": "#DE2222",
+			"tab_hover": "#1C97EA",
+			"tab_selected": "#007ACC",
+			"tab_temporary": "#68217A",
+			"statusbar_background": "#B2B2B2",
+			"statusbar_text": "#000000",
+			"syntax_string": "#228822",
+			"syntax_constant": "#F99157",
+			"syntax_comment": "#44AA44",
+			"syntax_keyword": "#804040",
+			"syntax_operator": ">syntax_string",
+			"syntax_class1": "#804040",
+			"syntax_class2": "#878642",
+			"syntax_class3": "#883388",
+			"syntax_class4": ">syntax_class1",
+			"syntax_class5": ">syntax_class1",
+			"syntax_class6": ">syntax_class1"
+		}
 	}
 ]
 )DEFAULTSTYLES";

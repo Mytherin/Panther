@@ -172,9 +172,8 @@ void ProjectExplorer::CollapseAll() {
 }
 
 void ProjectExplorer::DrawFile(PGRendererHandle renderer, PGBitmapHandle file_image, PGFile file, PGScalar x, PGScalar& y, bool selected, bool highlighted) {
-	if (selected || highlighted) {
-		PGColor color = selected ? PGStyleManager::GetColor(PGColorTextFieldSelection) : PGColor(45, 45, 45);
-		RenderRectangle(renderer, PGRect(x, y, this->width, file_render_height), color, PGDrawStyleFill);
+	if (selected) {
+		RenderRectangle(renderer, PGRect(x, y, this->width, file_render_height), PGStyleManager::GetColor(PGColorTextFieldSelection), PGDrawStyleFill);
 	}
 	if (!file_image) {
 		std::string extension = file.Extension();
@@ -408,7 +407,7 @@ void ProjectExplorer::Draw(PGRendererHandle renderer) {
 	SetRenderBounds(renderer, PGRect(x, y, this->width, this->height - PROJECT_EXPLORER_PADDING));
 
 	// render the background
-	RenderRectangle(renderer, PGRect(x, y, this->width, this->height - PROJECT_EXPLORER_PADDING), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
+	RenderRectangle(renderer, PGRect(x, y, this->width, this->height - PROJECT_EXPLORER_PADDING), PGStyleManager::GetColor(PGColorMainMenuBackground), PGDrawStyleFill);
 
 	SetTextColor(font, PGStyleManager::GetColor(PGColorProjectExplorerText));
 	lng offset = scrollbar_offset;
