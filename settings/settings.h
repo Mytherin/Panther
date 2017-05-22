@@ -7,7 +7,7 @@
 class PGSettings {
 public:
 	void LoadSettings(std::string filename);
-	void LoadSettingsFromData(char* data);
+	void LoadSettingsFromData(const char* data);
 
 
 	void SetSetting(std::string name, bool setting);

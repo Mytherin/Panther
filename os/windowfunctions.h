@@ -640,3 +640,5 @@ struct PGMouseRegionContainer : public PGMouseRegion {
 PGTooltipHandle PGCreateTooltip(PGWindowHandle, PGRect rect, std::string text);
 void PGUpdateTooltipRegion(PGTooltipHandle, PGRect rect);
 void PGDestroyTooltip(PGTooltipHandle);
+
+std::string PGApplicationPath();

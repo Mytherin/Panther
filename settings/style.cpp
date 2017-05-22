@@ -159,7 +159,7 @@ PGBitmapHandle PGStyleManager::_GetImage(std::string path) {
 	if (entry != images.end()) {
 		return images[path];
 	}
-	auto handle = PGLoadImage(path);
+	auto handle = PGLoadImage(PGPathJoin(PGApplicationPath(), path));
 	if (!handle) {
 		return nullptr;
 	}

@@ -22,7 +22,7 @@ void PGSettings::LoadSettings(std::string filename) {
 	panther::DestroyFileContents(ptr);
 }
 
-void PGSettings::LoadSettingsFromData(char* data) {
+void PGSettings::LoadSettingsFromData(const char* data) {
 	json j;
 	try {
 		j = json::parse(data);

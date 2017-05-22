@@ -196,7 +196,7 @@ std::string ParseEscapeCharacters(std::string str) {
 	return result;
 }
 
-void PGKeyBindingsManager::LoadSettingsFromData(char* data) {
+void PGKeyBindingsManager::LoadSettingsFromData(const char* data) {
 	json j;
 	//try {
 	j = json::parse(data);

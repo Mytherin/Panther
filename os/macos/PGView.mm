@@ -104,7 +104,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 
 @implementation PGView : NSView
 
-- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(PGWorkspace*)workspace :(std::vector<std::shared_ptr<TextFile>>)textfiles
+- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(PGWorkspace*)workspace :(std::vector<std::shared_ptr<TextView>>)textfiles
 {
 	if(self = [super initWithFrame:frameRect]) {
 #ifdef RETINA_API_AVAILABLE
@@ -472,7 +472,7 @@ PGPoint GetMousePosition(PGWindowHandle window) {
 	NSPoint mouseLoc = [NSEvent mouseLocation];
 	// convert screen coordinates to local coordinates of the window
 	NSRect mouseScreen = [window->window convertRectFromScreen:NSMakeRect(mouseLoc.x, mouseLoc.y, 0, 0)];
-	return PGPoint(mouseScreen.origin.x, [window->view getBounds].size.height - mouseScreen.origin.y);
+	return PGPoint(mouseScreen.origin.x, window->manager->height - mouseScreen.origin.y);
 }
 
 PGMouseButton GetMouseState(PGWindowHandle window) {
@@ -488,7 +488,7 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 	return button;
 }
 
-PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextFile>> textfiles) {
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextView>> textfiles) {
 	PGNSWindow *window;
 	NSRect contentSize = NSMakeRect(0, 0, 1000.0, 700.0);
 	NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
@@ -507,7 +507,7 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 	return [view getHandle];
 }
 
-PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_ptr<TextFile>> textfiles) {
+PGWindowHandle PGCreateWindow(PGWorkspace* workspace, std::vector<std::shared_ptr<TextView>> textfiles) {
 	return PGCreateWindow(workspace, PGPoint(20, 20), textfiles);
 }
 
@@ -986,3 +986,6 @@ PGDirectoryFlags PGGetDirectoryFilesOS(std::string directory, std::vector<PGFile
 	return PGDirectorySuccess;
 }
 
+std::string PGApplicationPath() {
+	return std::string([[[NSBundle mainBundle] bundlePath] UTF8String]);
+}

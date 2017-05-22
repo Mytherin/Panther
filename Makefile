@@ -70,6 +70,7 @@ COBJECTS=$(OBJDIR)/files/directory.o \
 		$(OBJDIR)/text/textiterator.o \
 		$(OBJDIR)/text/textline.o \
 		$(OBJDIR)/text/textposition.o \
+		$(OBJDIR)/text/textview.o \
 		$(OBJDIR)/text/unicode.o \
 		$(OBJDIR)/text/wrappedtextiterator.o \
 		$(OBJDIR)/ui/controls/basic/button.o \

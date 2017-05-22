@@ -1,6 +1,6 @@
 #pragma once
 
-char* PANTHER_DEFAULT_KEYBINDINGS = R"DEFAULTSETTINGS(
+const char* PANTHER_DEFAULT_KEYBINDINGS = R"DEFAULTSETTINGS(
 {
 	"global": [
 		{ "key": "cmd+shift+n", "command": "new_window" },

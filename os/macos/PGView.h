@@ -24,7 +24,7 @@
 -(void)performClose;
 -(ControlManager*)getManager;
 -(PGWindowHandle)getHandle;
-- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(PGWorkspace*)workspace :(std::vector<std::shared_ptr<TextFile>>)textfiles;
+- (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(PGWorkspace*)workspace :(std::vector<std::shared_ptr<TextView>>)textfiles;
 -(NSRect)getBounds;
 - (void)targetMethod:(NSTimer*)timer;
 - (BOOL)acceptsFirstMouse:(NSEvent *)event;

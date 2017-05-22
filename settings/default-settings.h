@@ -1,6 +1,6 @@
 #pragma once
 
-char* PANTHER_DEFAULT_SETTINGS = R"DEFAULTSETTINGS(
+const char* PANTHER_DEFAULT_SETTINGS = R"DEFAULTSETTINGS(
 {
 	"font_size": 15,
 	"display_line_numbers" : true,
@@ -11,6 +11,6 @@ char* PANTHER_DEFAULT_SETTINGS = R"DEFAULTSETTINGS(
 	"hot_exit" : true,
 	"automatic_reload_threshold" : 1000,
 	"default_terminal" : "C:\\Program Files\\Git\\git-bash.exe",
-	"ignored_files": ["*.exe", "*.app", "*.dll", "*.so", "*.dylib", "*.o", "*.O", "*.pyc", "*.ttf", "*.sys", "*.msi", "*.jpg", "*.jpeg", "*.png", "*.bmp", "*.ico", "*.mp3", "*.wav", "*.mp4"]
+	"ignored_files": ["*.exe", "*.app", "*.dll", "*.so", "*.dylib", "*.o", "*.O", "*.obj", "*.pyc", "*.ttf", "*.sys", "*.msi", "*.jpg", "*.jpeg", "*.png", "*.bmp", "*.ico", "*.mp3", "*.wav", "*.mp4"]
 }
 )DEFAULTSETTINGS";

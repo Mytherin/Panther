@@ -117,6 +117,6 @@ private:
 	bool ParseKeyPress(std::string keys, PGKeyPress& keypress);
 	bool ParseMousePress(std::string keys, PGMousePress& keypress);
 	void LoadSettings(std::string file);
-	void LoadSettingsFromData(char* data);
+	void LoadSettingsFromData(const char* data);
 };
 
