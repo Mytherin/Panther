@@ -405,6 +405,9 @@
     <ClInclude Include="text\textview.h">
       <Filter>Header Files\text</Filter>
     </ClInclude>
+    <ClInclude Include="settings\default-styles.h">
+      <Filter>Header Files\settings</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="files\directory.cpp">

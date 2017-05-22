@@ -595,6 +595,8 @@ PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>&
 PGDirectoryFlags PGGetDirectoryFilesOS(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, void* glob = nullptr);
 
 std::string PGPathJoin(std::string path_one, std::string path_two);
+std::string PGRootPath(std::string path);
+
 
 enum PGFindTextType {
 	PGFindSingleFile,

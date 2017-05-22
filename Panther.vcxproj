@@ -32,6 +32,7 @@
     <ClInclude Include="rust\include\rust\gitignore.h" />
     <ClInclude Include="rust\include\rust\globset.h" />
     <ClInclude Include="settings\default-settings.h" />
+    <ClInclude Include="settings\default-styles.h" />
     <ClInclude Include="settings\globalsettings.h" />
     <ClInclude Include="settings\keybindings.h" />
     <ClInclude Include="settings\settings.h" />

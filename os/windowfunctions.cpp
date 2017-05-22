@@ -240,6 +240,12 @@ std::string PGPathJoin(std::string path_one, std::string path_two) {
 	return path_one + GetSystemPathSeparator() + path_two;
 }
 
+std::string PGRootPath(std::string path) {
+	size_t index = path.rfind(GetSystemPathSeparator());
+	if (index == std::string::npos) return path;
+	return path.substr(0, index);
+}
+
 void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, std::string text, PGPopupCallback callback, PGPopupMenuFlags flags) {
 	PGPopupInformation info(handle);
 	info.text = text;

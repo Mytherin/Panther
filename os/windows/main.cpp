@@ -1486,3 +1486,10 @@ void PGDestroyTooltip(PGTooltipHandle handle) {
 	}
 	delete handle;
 }
+
+std::string PGApplicationPath() {
+	WCHAR szFileName[MAX_PATH + 1];
+	GetModuleFileNameW(NULL, szFileName, MAX_PATH + 1);
+	std::string path = PGRootPath(UCS2toUTF8(szFileName));
+	return path;
+}

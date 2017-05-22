@@ -21,6 +21,7 @@ const char* PANTHER_DEFAULT_STYLES = R"DEFAULTSTYLES(
 			"textfield_error": "#FC4036",
 			"textfield_findmatch": "#804020",
 			"scrollbar_background": "#3E3E42",
+			"scrollbar_foreground": "#686868",
 			"scrollbar_hover": "#9E9E9E",
 			"scrollbar_drag": "#EFEBEF",
 			"minimap_hover": "#FFFFFF60",
@@ -56,7 +57,7 @@ const char* PANTHER_DEFAULT_STYLES = R"DEFAULTSTYLES(
 		"name": "Black Panther (Green Comments)",
 		"base": "Black Panther",
 		"colors": {
-			"syntax_comment": "#84C684",
+			"syntax_comment": "#84C684"
 		}
 	}
 ]

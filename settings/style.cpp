@@ -20,9 +20,47 @@ PGColor* PGStyle::GetColor(PGColorType type) {
 	return nullptr;
 }
 
-unsigned ToHex(std::string& str, size_t start, size_t end) {
-	
-
+unsigned FromHex(std::string& str, size_t start, size_t end) {
+	unsigned value = 0;
+	unsigned multiplier = 1;
+	for (lng i = end - 1; i >= (lng) start; i--) {
+		unsigned v = 0;
+		if (str[i] >= '0' && str[i] <= '9') {
+			v = str[i] - '0';
+		} else {
+			switch (str[i]) {
+				case 'a':
+				case 'A':
+					v = 10;
+					break;
+				case 'b':
+				case 'B':
+					v = 11;
+					break;
+				case 'c':
+				case 'C':
+					v = 12;
+					break;
+				case 'd':
+				case 'D':
+					v = 13;
+					break;
+				case 'e':
+				case 'E':
+					v = 14;
+					break;
+				case 'f':
+				case 'F':
+					v = 15;
+					break;
+				default:
+					return (unsigned)-1;
+			}
+		}
+		value += multiplier * v;
+		multiplier *= 16;
+	}
+	return value;
 }
 
 PGColor ParseColor(std::string str) {
@@ -31,18 +69,18 @@ PGColor ParseColor(std::string str) {
 	unsigned b = 255;
 	unsigned a = 255;
 	if (str.size() == 3 || str.size() == 4) {
-		r = std::stoul(&str[0], &str[1], 16);
-		g = std::stoul(&str[1], &str[2], 16);
-		b = std::stoul(&str[2], &str[3], 16);
+		r = FromHex(str, 0, 1);
+		g = FromHex(str, 1, 2);
+		b = FromHex(str, 2, 3);
 		if (str.size() == 4) {
-			a = std::stoul(str[3], str[4], 16);
+			a = FromHex(str, 3, 4);
 		}
 	} else if (str.size() == 6 || str.size() == 8) {
-		r = std::stoul(&str[0], &str[2], 16);
-		g = std::stoul(&str[2], &str[4], 16);
-		b = std::stoul(&str[4], &str[6], 16);
+		r = FromHex(str, 0, 2);
+		g = FromHex(str, 2, 4);
+		b = FromHex(str, 4, 6);
 		if (str.size() == 8) {
-			a = std::stoul(&str[6], &str[8], 16);
+			a = FromHex(str, 6, 8);
 		}
 	}
 	return PGColor((byte) r, (byte) g, (byte) b, (byte) a);
