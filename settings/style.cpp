@@ -1,9 +1,13 @@
 
 #include "style.h"
+#include "default-styles.h"
 
 #include <algorithm>
 
+using namespace nlohmann;
+
 PGFontHandle PGStyleManager::default_font = nullptr;
+std::map<std::string, PGColorType> enum_color_map;
 
 void PGStyle::SetColor(PGColorType type, PGColor color) {
 	colors[type] = color;
@@ -16,12 +20,119 @@ PGColor* PGStyle::GetColor(PGColorType type) {
 	return nullptr;
 }
 
+unsigned ToHex(std::string& str, size_t start, size_t end) {
+	
+
+}
+
+PGColor ParseColor(std::string str) {
+	unsigned r = 255;
+	unsigned g = 255;
+	unsigned b = 255;
+	unsigned a = 255;
+	if (str.size() == 3 || str.size() == 4) {
+		r = std::stoul(&str[0], &str[1], 16);
+		g = std::stoul(&str[1], &str[2], 16);
+		b = std::stoul(&str[2], &str[3], 16);
+		if (str.size() == 4) {
+			a = std::stoul(str[3], str[4], 16);
+		}
+	} else if (str.size() == 6 || str.size() == 8) {
+		r = std::stoul(&str[0], &str[2], 16);
+		g = std::stoul(&str[2], &str[4], 16);
+		b = std::stoul(&str[4], &str[6], 16);
+		if (str.size() == 8) {
+			a = std::stoul(&str[6], &str[8], 16);
+		}
+	}
+	return PGColor((byte) r, (byte) g, (byte) b, (byte) a);
+}
+
+PGStyle PGStyle::LoadStyle(PGStyle style, nlohmann::json& j) {
+	for(json::iterator it = j.begin(); it != j.end(); it++) {
+		std::string color_name = it.key();
+		std::string color_value = it.value();
+
+		if (enum_color_map.count(color_name) == 0) continue;
+		if (color_value.size() == 0) continue;
+
+		PGColorType type = enum_color_map[color_name];
+		PGColor color;
+		if (color_value[0] == '#') {
+			// hex color
+			color = ParseColor(color_value.substr(1));
+		} else if (color_value[0] == '>') {
+			std::string reference = color_value.substr(1);
+			if (enum_color_map.count(reference) == 0) continue;
+
+			PGColorType ref = enum_color_map[reference];
+			if (style.colors.count(ref) == 0) continue;
+
+			color = style.colors[ref];
+		}
+		style.colors[type] = color;
+	}
+	return style;
+}
+
 PGStyleManager::PGStyleManager() {
 	// default fonts
 	default_font = PGCreateFont(PGFontTypeTextField);
 	textfield_font = PGCreateFont(PGFontTypeTextField);
 	menu_font = PGCreateFont(PGFontTypeUI);
 	popup_font = PGCreateFont(PGFontTypePopup);
+
+	enum_color_map["toggle_button_toggled"] = PGColorToggleButtonToggled;
+	enum_color_map["notification_background"] = PGColorNotificationBackground;
+	enum_color_map["notification_text"] = PGColorNotificationText;
+	enum_color_map["notification_error"] = PGColorNotificationError;
+	enum_color_map["notification_in_progress"] = PGColorNotificationInProgress;
+	enum_color_map["notification_warning"] = PGColorNotificationWarning;
+	enum_color_map["notification_button"] = PGColorNotificationButton;
+	enum_color_map["explorer_text"] = PGColorProjectExplorerText;
+	enum_color_map["textfield_background"] = PGColorTextFieldBackground;
+	enum_color_map["textfield_text"] = PGColorTextFieldText;
+	enum_color_map["textfield_selection"] = PGColorTextFieldSelection;
+	enum_color_map["textfield_caret"] = PGColorTextFieldCaret;
+	enum_color_map["textfield_linenumber"] = PGColorTextFieldLineNumber;
+	enum_color_map["textfield_error"] = PGColorTextFieldError;
+	enum_color_map["textfield_findmatch"] = PGColorTextFieldFindMatch;
+	enum_color_map["scrollbar_background"] = PGColorScrollbarBackground;
+	enum_color_map["scrollbar_foreground"] = PGColorScrollbarForeground;
+	enum_color_map["scrollbar_hover"] = PGColorScrollbarHover;
+	enum_color_map["scrollbar_drag"] = PGColorScrollbarDrag;
+	enum_color_map["minimap_hover"] = PGColorMinimapHover;
+	enum_color_map["minimap_drag"] = PGColorMinimapDrag;
+	enum_color_map["mainmenu_background"] = PGColorMainMenuBackground;
+	enum_color_map["menu_background"] = PGColorMenuBackground;
+	enum_color_map["menu_text"] = PGColorMenuText;
+	enum_color_map["menu_disabled"] = PGColorMenuDisabled;
+	enum_color_map["menu_hover"] = PGColorMenuHover;
+	enum_color_map["tab_text"] = PGColorTabControlText;
+	enum_color_map["tab_border"] = PGColorTabControlBorder;
+	enum_color_map["tab_background"] = PGColorTabControlBackground;
+	enum_color_map["tab_unsaved_text"] = PGColorTabControlUnsavedText;
+	enum_color_map["tab_hover"] = PGColorTabControlHover;
+	enum_color_map["tab_selected"] = PGColorTabControlSelected;
+	enum_color_map["tab_temporary"] = PGColorTabControlTemporary;
+	enum_color_map["statusbar_background"] = PGColorStatusBarBackground;
+	enum_color_map["statusbar_text"] = PGColorStatusBarText;
+	enum_color_map["syntax_string"] = PGColorSyntaxString;
+	enum_color_map["syntax_constant"] = PGColorSyntaxConstant;
+	enum_color_map["syntax_comment"] = PGColorSyntaxComment;
+	enum_color_map["syntax_function"] = PGColorSyntaxFunction;
+	enum_color_map["syntax_keyword"] = PGColorSyntaxKeyword;
+	enum_color_map["syntax_operator"] = PGColorSyntaxOperator;
+	enum_color_map["syntax_class1"] = PGColorSyntaxClass1;
+	enum_color_map["syntax_class2"] = PGColorSyntaxClass2;
+	enum_color_map["syntax_class3"] = PGColorSyntaxClass3;
+	enum_color_map["syntax_class4"] = PGColorSyntaxClass4;
+	enum_color_map["syntax_class5"] = PGColorSyntaxClass5;
+	enum_color_map["syntax_class6"] = PGColorSyntaxClass6;
+
+
+	LoadStyles(PANTHER_DEFAULT_STYLES);
+	/*
 
 	// standard style set
 	PGStyle vs;
@@ -122,9 +233,37 @@ PGStyleManager::PGStyleManager() {
 	bp.SetColor(PGColorSyntaxClass4, *bp.GetColor(PGColorSyntaxClass1));
 	bp.SetColor(PGColorSyntaxClass5, *bp.GetColor(PGColorSyntaxClass1));
 	bp.SetColor(PGColorSyntaxClass6, *bp.GetColor(PGColorSyntaxClass1));
-	this->styles["Black Panther"] = bp;
+	this->styles["Black Panther"] = bp;*/
 
-	this->default_style = this->styles["Black Panther"];
+	this->default_style = this->styles["Black Panther (Green Comments)"];
+}
+
+void PGStyleManager::LoadStyles(const char* data) {
+	json j;
+	//try {
+		j = json::parse(data);
+	//} catch (...) {
+	//	return;
+	//}
+	if (!j.is_array()) {
+		return;
+	}
+	for(auto it = j.begin(); it != j.end(); it++) {
+		if (!it->is_object()) continue;
+		nlohmann::json& s = *it;
+		std::string name = "Unnamed Style";
+		if (s.count("name") > 0 && s["name"].is_string())
+			name = s["name"].get<std::string>();
+		if (s.count("colors") == 0 || !s["colors"].is_object()) return;
+		PGStyle base_style;
+		if (s.count("base") > 0 && s["base"].is_string()) {
+			std::string base = s["base"].get<std::string>();
+			if (this->styles.count(base) > 0) {
+				base_style = this->styles[base];
+			}
+		}
+		this->styles[name] = PGStyle::LoadStyle(base_style, s["colors"]);
+	}
 }
 
 PGColor PGStyleManager::_GetColor(PGColorType type, PGStyle* extra_style) {

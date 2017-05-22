@@ -60,6 +60,8 @@ public:
 	PGColor* GetColor(PGColorType);
 
 	std::map<PGColorType, PGColor> colors;
+
+	static PGStyle LoadStyle(PGStyle base, nlohmann::json& j);
 };
 
 class PGStyleManager {
@@ -83,6 +85,8 @@ private:
 
 	PGBitmapHandle _GetImage(std::string path);
 	PGColor _GetColor(PGColorType type, PGStyle* extra_style);
+
+	void LoadStyles(const char* text);
 
 	PGStyle default_style;
 	PGStyle user_style;
