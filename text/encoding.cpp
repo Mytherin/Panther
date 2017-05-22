@@ -288,7 +288,7 @@ lng PGConvertText(std::string input, char** output, PGFileEncoding source_encodi
 PGFileEncoding GuessEncoding(char* input_text, size_t input_size) {
 	if (input_size == 0) {
 		// default encoding is UTF-8
-		return PGEncodingUTF8BOM;
+		return PGEncodingUTF8;
 	}
 
 	// check for common known bit patterns
@@ -339,6 +339,105 @@ PGFileEncoding GuessEncoding(char* input_text, size_t input_size) {
 			return PGEncodingUTF32LE;
 	}
 
+	// if no common headers are found, check the data for valid UTF data
+	// first check for valid UTF-8
+	bool valid_utf8 = true;
+	for (size_t i = 0; i < input_size; i++) {
+		if (input_text[i] == '\0') {
+			valid_utf8 = false;
+			break;
+		}
+		int charlen = utf8_character_length(input_text[i]);
+		if (charlen <= 0) {
+			valid_utf8 = false;
+			break;
+		} else if (i + charlen - 1 >= input_size) {
+			break;
+		} else {
+			for (size_t j = 0; j < charlen - 1; j++) {
+				if ((input_text[++i] & 0b11000000) != 0b10000000) {
+					valid_utf8 = false;
+					break;
+				}
+			}
+		}
+	}
+	if (valid_utf8) {
+		return PGEncodingUTF8;
+	}
+	// check for valid UTF-16BE and UTF-16LE
+	// because UTF-16BE and UTF-16LE are so lenient we have an additional requirement
+	// the space character must exist for the encoding to be chosen
+	bool valid_utf16be = true; bool utf16be_pair = false;
+	int utf16be_spaces = 0, utf16le_spaces = 0;
+	bool valid_utf16le = true; bool utf16le_pair = false;
+	for (size_t i = 0; i < input_size - 1; i += 2) {
+		if (!valid_utf16be && !valid_utf16le) break;
+		if (valid_utf16be) {
+			if (!utf16be_pair) {
+				// the first byte of the pair must either be
+				// (1) smaller than 0xD8
+				// (2) start with 0b110110
+				if (input_text[i + 1] >= 0xD8) {
+					if (input_text[i + 1] & 0b11111100 == 0b11011000) {
+						// first byte of four-byte pair
+						// next byte may be anything (0-255)
+						// but byte afterwards must start with 0b110111
+						utf16be_pair = true;
+					} else {
+						valid_utf16be = false;
+					}
+				} else {
+					if (input_text[i + 1] == 0x20 && input_text[i] == 0x00) {
+						utf16be_spaces++;
+					}
+				}
+			} else {
+				if (input_text[i + 1] & 0b11111100 != 0b11011100) {
+					valid_utf16be = false;
+				}
+				utf16be_pair = false;
+			}
+		}
+		if (valid_utf16le) {
+			if (!utf16le_pair) {
+				// the second byte of the pair must either be
+				// (1) smaller than 0xD8
+				// (2) start with 0b110110
+				if (input_text[i] >= 0xD8) {
+					if (input_text[i] & 0b11111100 == 0b11011000) {
+						// first byte of four-byte pair
+						// next byte may be anything (0-255)
+						// but byte afterwards must start with 0b110111
+						utf16be_pair = true;
+					} else {
+						valid_utf16be = false;
+					}
+				} else {
+					if (input_text[i] == 0x20 && input_text[i + 1] == 0x00) {
+						utf16le_spaces++;
+					}
+				}
+			} else {
+				if (input_text[i] & 0b11111100 != 0b11011100) {
+					valid_utf16le = false;
+				}
+				utf16le_pair = false;
+			}
+		}
+	}
+	if (utf16be_spaces == 0) valid_utf16be = false;
+	if (utf16le_spaces == 0) valid_utf16le = false;
+
+	if (valid_utf16be && valid_utf16le) {
+		return utf16be_spaces > utf16le_spaces ? PGEncodingUTF16BE : PGEncodingUTF16LE;
+	}
+	if (valid_utf16be) {
+		return PGEncodingUTF16BE;
+	}
+	if (valid_utf16le) {
+		return PGEncodingUTF16LE;
+	}
 	// if no common headers are found, check for NULL bytes in the data
 	// if a NULL byte is present we assume the text is binary
 	// otherwise we guess the encoding using ICU
@@ -368,24 +467,6 @@ PGFileEncoding GuessEncoding(char* input_text, size_t input_size) {
 	ucsdet_close(csd);
 	// convert the predicted encoding
 	PGFileEncoding result_encoding = GetEncodingFromName(encoding);
-	if (result_encoding == PGEncodingWesternISO8859_1) {
-		// ICU likes to assign ascii text to ISO-8859-1
-		// we prefer UTF-8 for ASCII encoding
-		// thus if we encounter ISO-8859-1 encoding, check if the sample contains only ASCII text
-		// if it does, we use UTF-8 instead of ISO-8859-1
-		bool utf8 = true;
-		for (lng i = 0; i < input_size;) {
-			int character_offset = utf8_character_length(input_text[i]);
-			if (character_offset != 1) {
-				utf8 = false;
-				break;
-			}
-			i += character_offset;
-		}
-		if (utf8) {
-			result_encoding = PGEncodingUTF8;
-		}
-	}
 	if (result_encoding == PGEncodingUnknown) {
 		// if we don't recognize ICU's encoding, we just use Binary Encoding
 		result_encoding = PGEncodingBinary;
