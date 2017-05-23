@@ -39,7 +39,8 @@ struct OpenFileInformation {
 
 TextFile::TextFile() :
 	highlighter(nullptr), bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
-	last_modified_deletion(false), saved_undo_count(0), read_only(false), reload_on_changed(true) {
+	last_modified_deletion(false), saved_undo_count(0), read_only(false), reload_on_changed(true),
+	error(PGFileSuccess) {
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
@@ -57,48 +58,11 @@ TextFile::TextFile() :
 	saved_undo_count = 0;
 }
 
-/*
-TextFile::TextFile(PGFileEncoding encoding, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
-	highlighter(nullptr), path(path),
-	bytes(0), total_bytes(1), is_loaded(false), last_modified_time(-1),
-	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false),
-	encoding(encoding), reload_on_changed(true) {
-
-	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
-	lng pos = path.find_last_of('.');
-	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
-	this->current_task = nullptr;
-	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
-
-	this->language = PGLanguageManager::GetLanguage(ext);
-	if (this->language) {
-		highlighter = std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter());
-	}
-	unsaved_changes = false;
-	if (size < 1048576 / 2) {
-		// always immediately load files under 500KB
-		immediate_load = true;
-	}
-	if (!immediate_load) {
-		OpenFileInformation* info = new OpenFileInformation(this, base, size, delete_file);
-		this->current_task = std::shared_ptr<Task>(new Task(
-			[](std::shared_ptr<Task> task, void* inp) {
-				OpenFileInformation* info = (OpenFileInformation*)inp;
-				info->textfile->OpenFile(info->base, info->size, info->delete_file);
-				delete info;
-			}
-			, info));
-		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
-	} else {
-		OpenFile(base, size, delete_file);
-	}
-}*/
-
 TextFile::TextFile(std::string path)  :
 	highlighter(nullptr), path(path),
 	bytes(0), total_bytes(1), is_loaded(false), last_modified_time(-1),
 	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false),
-	encoding(PGEncodingUTF8), reload_on_changed(true) {
+	encoding(PGEncodingUTF8), reload_on_changed(true), error(PGFileSuccess) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
@@ -146,8 +110,53 @@ void TextFile::ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, boo
 	}
 }
 
+#define PANTHER_BUFSIZ 8192
+
 void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_binary) {
-	PGFileError error;
+	PGFileHandle handle = panther::OpenFile(file->path, PGFileReadOnly, this->error);
+	if (!handle) {
+		bytes = -1;
+		return;
+	}
+	this->encoding = PGEncodingUnknown;
+	char buffer[PANTHER_BUFSIZ + 1];
+	total_bytes = panther::GetFileSize(handle);
+	bytes = 0;
+	PGEncoderHandle decoder = nullptr;
+	while (bytes < total_bytes) {
+		size_t bytes_read = panther::ReadFromFile(handle, buffer, PANTHER_BUFSIZ);
+		size_t bufsiz = bytes_read;
+		char* buf = buffer;
+		if (encoding == PGEncodingUnknown) {
+			// first read from file: determine encoding based on sample
+			this->encoding = PGGuessEncoding(buffer, std::max((size_t)1024, bytes_read));
+			if (encoding != PGEncodingUTF8 || encoding != PGEncodingUTF8BOM) {
+				// FIXME: set decoder to proper decoder
+			}
+			if (((unsigned char*)buffer)[0] == 0xEF &&
+				((unsigned char*)buffer)[1] == 0xBB &&
+				((unsigned char*)buffer)[2] == 0xBF) {
+				// skip byte order mark
+				buf += 3;
+				bufsiz -= 3;
+			}
+		}
+		if (decoder) {
+			// FIXME: convert to UTF8 if encoding is different
+		}
+		ConsumeBytes(ptr, size, prev, offset, max_length, current_width, current_buffer, linenr);
+
+		// FIXME: process buffer
+		bytes += bytes_read;
+
+		if (file->pending_delete) {
+			bytes = -1;
+			panther::CloseFile(handle);
+			return;
+		}
+	}
+	panther::CloseFile(handle);
+
 	lng size = 0;
 	char* base = (char*)panther::ReadFile(file->path, size, error);
 	if (!base || size < 0) {
@@ -479,9 +488,9 @@ void TextFile::Unlock(PGLockType type) {
 	}
 }
 
-void TextFile::_InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+void TextFile::_InsertLine(char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
 	char* line_start = ptr + prev;
-	lng line_size = (lng)((bytes - prev) - offset);
+	lng line_size = (lng)(current - prev);
 	if (current_buffer == nullptr ||
 		(current_buffer->current_size > TEXT_BUFFER_SIZE) ||
 		(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
@@ -516,46 +525,33 @@ void TextFile::_InsertLine(char* ptr, size_t prev, int& offset, PGScalar& max_le
 	current_width += length;
 
 	linenr++;
+}
+
+void _InsertText(char* ptr, size_t current, size_t prev) {
 
 }
 
-void TextFile::OpenFile(char* base, lng size, bool delete_file) {
-	this->lineending = PGLineEndingUnknown;
-	this->indentation = PGIndentionTabs; // FIXME: default from settings
-	this->tabwidth = 4; // FIXME: default tabwidth
-
-	char* ptr = base;
+void TextFile::ConsumeBytes(char* buffer, size_t buffer_size,
+	PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
 	size_t prev = 0;
-	int offset = 0;
-	LockMutex(text_lock.get());
-	lng linenr = 0;
-	PGTextBuffer* current_buffer = nullptr;
-	PGScalar max_length = -1;
-
-	total_bytes = size;
-	bytes = 0;
-	double current_width = 0;
-	if (((unsigned char*)ptr)[0] == 0xEF &&
-		((unsigned char*)ptr)[1] == 0xBB &&
-		((unsigned char*)ptr)[2] == 0xBF) {
-		// skip byte order mark
-		prev = 3;
-		bytes = 3;
+	for (size_t i = 0; i < buffer_size; i++) {
+		if (buffer[i] == '\r' || buffer[i] == '\n') {
+			_InsertLine(buffer, i, prev, max_length, current_width, current_buffer, linenr);
+			prev = i + 1;
+		}
 	}
+	_InsertText(buffer, prev, buffer_size);
+}
 
-	while (bytes < size) {
-		int character_offset = utf8_character_length(ptr[bytes]);
+void TextFile::ConsumeBytes(char* buffer, size_t buffer_size, size_t& prev, int& offset,
+	PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+	size_t i = 0;
+	while (i < buffer_size) {
+		int character_offset = utf8_character_length(buffer[i]);
 		if (character_offset <= 0) {
 			character_offset = 1;
-			/*
-			if (delete_file) {
-				panther::DestroyFileContents(base);
-			}
-			bytes = -1;
-			UnlockMutex(text_lock.get());
-			return;*/
 		}
-		if (ptr[bytes] == '\n') {
+		if (buffer[i] == '\n') {
 			// Unix line ending: \n
 			if (this->lineending == PGLineEndingUnknown) {
 				this->lineending = PGLineEndingUnix;
@@ -563,10 +559,10 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 				this->lineending = PGLineEndingMixed;
 			}
 		}
-		if (ptr[bytes] == '\r') {
-			if (ptr[bytes + 1] == '\n') {
+		if (buffer[i] == '\r') {
+			if (buffer[i + 1] == '\n') {
 				offset = 1;
-				bytes++;
+				i++;
 				// Windows line ending: \r\n
 				if (this->lineending == PGLineEndingUnknown) {
 					this->lineending = PGLineEndingWindows;
@@ -582,25 +578,46 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 				}
 			}
 		}
-		if (ptr[bytes] == '\r' || ptr[bytes] == '\n') {
-			_InsertLine(ptr, prev, offset, max_length, current_width, current_buffer, linenr);
+		if (buffer[i] == '\r' || buffer[i] == '\n') {
+			_InsertLine(buffer, i, prev, offset, max_length, current_width, current_buffer, linenr);
 
-			prev = bytes + 1;
+			prev = i + 1;
 			offset = 0;
-
-			if (pending_delete) {
-				if (delete_file) {
-					panther::DestroyFileContents(base);
-				}
-				UnlockMutex(text_lock.get());
-				bytes = -1;
-				return;
-			}
 		}
-		bytes += character_offset;
+		i += character_offset;
 	}
+	bytes = i;
+}
+
+
+
+void TextFile::OpenFile(char* base, lng size, bool delete_file) {
+	this->lineending = PGLineEndingUnknown;
+	this->indentation = PGIndentionTabs; // FIXME: default from settings
+	this->tabwidth = 4; // FIXME: default tabwidth
+
+	char* ptr = base;
+	size_t prev = 0;
+	int offset = 0;
+	LockMutex(text_lock.get());
+	lng linenr = 0;
+	PGTextBuffer* current_buffer = nullptr;
+	PGScalar max_length = -1;
+
+	double current_width = 0;
+	if (((unsigned char*)ptr)[0] == 0xEF &&
+		((unsigned char*)ptr)[1] == 0xBB &&
+		((unsigned char*)ptr)[2] == 0xBF) {
+		// skip byte order mark
+		ptr += 3;
+		size -= 3;
+	}
+	bytes = 0;
+	total_bytes = size;
+
+	ConsumeBytes(ptr, size, prev, offset, max_length, current_width, current_buffer, linenr);
 	// insert the final line
-	_InsertLine(ptr, prev, offset, max_length, current_width, current_buffer, linenr);
+	_InsertLine(ptr, bytes, prev, offset, max_length, current_width, current_buffer, linenr);
 	if (linenr == 0) {
 		lineending = GetSystemLineEnding();
 		current_buffer = new PGTextBuffer("", 1, 0);

@@ -63,6 +63,25 @@ namespace panther {
 		fclose(handle->f);
 	}
 
+	size_t GetFileSize(PGFileHandle handle) {
+		FILE* f = handle->f;
+		if (fseek(f, 0, SEEK_END) != 0) {
+			return (size_t)-1;
+		}
+		long fsize = ftell(f);
+		if (fsize < 0) {
+			return (size_t)-1;
+		}
+		if (fseek(f, 0, SEEK_SET) != 0) {
+			return (size_t)-1;
+		}
+		return fsize;
+	}
+
+	size_t ReadFromFile(PGFileHandle handle, char* buffer, size_t buffer_size) {
+		return fread(buffer, buffer_size, 1, handle->f);
+	}
+
 	void* ReadFile(PGFileHandle handle, lng& result_size, PGFileError& error) {
 		error = PGFileSuccess;
 		FILE* f = handle->f;

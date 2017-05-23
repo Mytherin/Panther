@@ -34,6 +34,8 @@ namespace panther {
 
 	PGFileHandle OpenFile(std::string filename, PGFileAccess access, PGFileError& error);
 	void CloseFile(PGFileHandle handle);
+	size_t GetFileSize(PGFileHandle handle);
+	size_t ReadFromFile(PGFileHandle handle, char* buffer, size_t buffer_size);
 	void WriteToFile(PGFileHandle handle, const char* text, lng length);
 	void Flush(PGFileHandle handle);
 	void* ReadFile(PGFileHandle, lng& result_size, PGFileError& error);

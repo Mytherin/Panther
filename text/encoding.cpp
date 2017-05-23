@@ -285,7 +285,7 @@ lng PGConvertText(std::string input, char** output, PGFileEncoding source_encodi
 
 #define MAXIMUM_TEXT_SAMPLE 1024
 
-PGFileEncoding GuessEncoding(char* input_text, size_t input_size) {
+PGFileEncoding PGGuessEncoding(char* input_text, size_t input_size) {
 	if (input_size == 0) {
 		// default encoding is UTF-8
 		return PGEncodingUTF8;
@@ -481,7 +481,7 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	// try to determine the encoding from a sample of the text
 	lng sample_size = std::min((size_t)MAXIMUM_TEXT_SAMPLE, input_size);
 	// guess the encoding from the sample
-	PGFileEncoding source_encoding = GuessEncoding(input_text, sample_size);
+	PGFileEncoding source_encoding = PGGuessEncoding(input_text, sample_size);
 	*result_encoding = source_encoding;
 	if (source_encoding == PGEncodingUTF8 ||
 		source_encoding == PGEncodingUTF8BOM) {
