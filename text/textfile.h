@@ -75,9 +75,13 @@ class TextFile {
 public:
 	// create an in-memory textfile with currently unspecified path
 	TextFile();
+	// load textfile from a file
+	TextFile(std::string filename);
 	~TextFile();
 
-	static TextFile* OpenTextFile(std::string filename, PGFileError& error, bool immediate_load = false, bool ignore_binary = false);
+	static std::shared_ptr<TextFile> OpenTextFile();
+	static std::shared_ptr<TextFile> OpenTextFile(std::string filename, PGFileError& error, bool immediate_load = false, bool ignore_binary = false);
+	static std::shared_ptr<TextFile> OpenTextFile(PGFileEncoding encoding, std::string path, char* buffer, size_t buffer_size, bool immediate_load = false);
 
 	TextLine GetLine(lng linenumber);
 
@@ -181,9 +185,6 @@ public:
 
 	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary);
 private:
-	TextFile(PGFileEncoding encoding, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);
-	// load textfile from a file
-	TextFile(std::string filename, bool immediate_load = false, bool ignore_binary = false);
 
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 
@@ -221,8 +222,10 @@ private:
 	double total_width = 0;
 	lng longest_line = 0;
 
+	void OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding, char* base, size_t size, bool immediate_load);
 	void OpenFile(char* base_data, lng size, bool delete_file);
-	void ReadFile(TextFile* file, bool ignore_binary);
+	void ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, bool ignore_binary);
+	void ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_binary);
 
 	void AddDelta(TextDelta* delta);
 	void Undo(TextView* view, TextDelta* delta);

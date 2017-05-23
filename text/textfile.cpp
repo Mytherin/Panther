@@ -28,12 +28,12 @@ struct FindAllInformation {
 };
 
 struct OpenFileInformation {
-	TextFile* textfile;
+	std::shared_ptr<TextFile> file;
 	char* base;
 	lng size;
 	bool delete_file;
 
-	OpenFileInformation(TextFile* file, char* base, lng size, bool delete_file) : textfile(file), base(base), size(size), delete_file(delete_file) {}
+	OpenFileInformation(std::shared_ptr<TextFile> file, char* base, lng size, bool delete_file) : file(file), base(base), size(size), delete_file(delete_file) {}
 };
 
 
@@ -57,6 +57,7 @@ TextFile::TextFile() :
 	saved_undo_count = 0;
 }
 
+/*
 TextFile::TextFile(PGFileEncoding encoding, std::string path, char* base, lng size, bool immediate_load, bool delete_file) :
 	highlighter(nullptr), path(path),
 	bytes(0), total_bytes(1), is_loaded(false), last_modified_time(-1),
@@ -91,9 +92,9 @@ TextFile::TextFile(PGFileEncoding encoding, std::string path, char* base, lng si
 	} else {
 		OpenFile(base, size, delete_file);
 	}
-}
+}*/
 
-TextFile::TextFile(std::string path, bool immediate_load, bool ignore_binary)  :
+TextFile::TextFile(std::string path)  :
 	highlighter(nullptr), path(path),
 	bytes(0), total_bytes(1), is_loaded(false), last_modified_time(-1),
 	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false),
@@ -110,22 +111,42 @@ TextFile::TextFile(std::string path, bool immediate_load, bool ignore_binary)  :
 		highlighter = std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter());
 	}
 	unsaved_changes = false;
+}
+
+void TextFile::OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding, char* base, size_t size, bool immediate_load) {
+	file->encoding = encoding;
 	if (!immediate_load) {
-		OpenFileInformation* info = new OpenFileInformation(this, nullptr, 0, ignore_binary);
+		OpenFileInformation* info = new OpenFileInformation(file, base, size, false);
 		this->current_task = std::shared_ptr<Task>(new Task(
 			[](std::shared_ptr<Task> task, void* inp) {
 				OpenFileInformation* info = (OpenFileInformation*)inp;
-				info->textfile->ReadFile(info->textfile, info->delete_file);
+				info->file->OpenFile(info->base, info->size, info->delete_file);
 				delete info;
 			}
 			, info));
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
-		ReadFile(this, ignore_binary);
+		OpenFile(base, size, false);
 	}
 }
 
-void TextFile::ReadFile(TextFile* file, bool ignore_binary) {
+void TextFile::ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, bool ignore_binary) {
+	if (!immediate_load) {
+		OpenFileInformation* info = new OpenFileInformation(file, nullptr, 0, ignore_binary);
+		this->current_task = std::shared_ptr<Task>(new Task(
+			[](std::shared_ptr<Task> task, void* inp) {
+				OpenFileInformation* info = (OpenFileInformation*)inp;
+				info->file->ActuallyReadFile(info->file, info->delete_file);
+				delete info;
+			}
+			, info));
+		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
+	} else {
+		ActuallyReadFile(file, ignore_binary);
+	}
+}
+
+void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_binary) {
 	PGFileError error;
 	lng size = 0;
 	char* base = (char*)panther::ReadFile(file->path, size, error);
@@ -240,9 +261,17 @@ bool TextFile::Reload(PGFileError& error) {
 	return true;
 }
 
-TextFile* TextFile::OpenTextFile(std::string filename, PGFileError& error, bool immediate_load, bool ignore_binary) {
+std::shared_ptr<TextFile> TextFile::OpenTextFile(std::string filename, PGFileError& error, bool immediate_load, bool ignore_binary) {
 	error = PGFileSuccess;
-	return new TextFile(filename, immediate_load, ignore_binary);
+	auto file = std::make_shared<TextFile>(filename);
+	file->ReadFile(file, immediate_load, ignore_binary);
+	return file;
+}
+
+std::shared_ptr<TextFile> TextFile::OpenTextFile(PGFileEncoding encoding, std::string path, char* buffer, size_t buffer_size, bool immediate_load) {
+	auto file = std::make_shared<TextFile>(path);
+	file->OpenFile(file, encoding, buffer, buffer_size, immediate_load);
+	return file;
 }
 
 TextFile::~TextFile() {
@@ -2654,18 +2683,17 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 			lng size;
 			PGFileError error = PGFileSuccess;
 			// FIXME: use streaming textfile instead
-			TextFile* textfile = TextFile::OpenTextFile(f.path, error, true, info->ignore_binary);
-			if (!textfile) {
+			auto file = TextFile::OpenTextFile(f.path, error, true, info->ignore_binary);
+			if (!file) {
 				return true;
 			}
-			textfile->FindMatchesWithContext(info, info->regex_handle, info->context_lines, [](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
+			file->FindMatchesWithContext(info, info->regex_handle, info->context_lines, [](void* data, std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line) {
 				FindAllInformation* info = (FindAllInformation*)data;
 				if (!info->task->active) {
 					return;
 				}
 				info->textfile->AddFindMatches(filename, lines, matches, start_line);
 			}, info);
-			delete textfile;
 			if (!info->task->active) {
 				return false;
 			}

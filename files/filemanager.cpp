@@ -14,8 +14,7 @@ std::shared_ptr<TextFile> FileManager::_OpenFile() {
 }
 
 std::shared_ptr<TextFile> FileManager::_OpenFile(std::string path, PGFileError& error) {
-	TextFile* textfile = TextFile::OpenTextFile(path, error, false);
-	return _OpenFile(textfile);
+	return _OpenFile(TextFile::OpenTextFile(path, error, false));
 }
 
 std::shared_ptr<TextFile> FileManager::_OpenFile(TextFile* textfile) {
@@ -74,7 +73,8 @@ void FileManager::_LoadWorkspace(nlohmann::json& j) {
 			// if we have the text stored in a buffer
 			// we load the text from the buffer, rather than from the file
 			std::string buffer = (*it)["buffer"];
-			file = std::shared_ptr<TextFile>(new TextFile(PGEncodingUTF8, path.c_str(), (char*)buffer.c_str(), buffer.size(), true, false));
+			file = TextFile::OpenTextFile(PGEncodingUTF8, path, (char*)buffer.c_str(), buffer.size(), true);
+			//file = std::shared_ptr<TextFile>(new TextFile(PGEncodingUTF8, path.c_str(), (char*)buffer.c_str(), buffer.size(), true, false));
 			if (path.size() == 0) {
 				file->name = "untitled";
 			}
