@@ -155,6 +155,10 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 		bytes = -1;
 		return;
 	}
+	if (file->pending_delete) {
+		panther::DestroyFileContents(base);
+		return;
+	}
 	char* output_text = nullptr;
 	lng output_size = 0;
 	PGFileEncoding result_encoding;
@@ -167,6 +171,10 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 		panther::DestroyFileContents(base);
 		base = output_text;
 		size = output_size;
+	}
+	if (file->pending_delete) {
+		panther::DestroyFileContents(base);
+		return;
 	}
 	auto stats = PGGetFileFlags(file->path);
 	file->encoding = result_encoding;
@@ -256,7 +264,7 @@ bool TextFile::Reload(PGFileError& error) {
 		assert(i < views.size());
 		auto ptr = views[i].lock();
 		ptr->ApplySettings(settings[i]);
-	}
+	} 
 	//this->ApplySettings(settings);
 	return true;
 }
@@ -275,22 +283,18 @@ std::shared_ptr<TextFile> TextFile::OpenTextFile(PGFileEncoding encoding, std::s
 }
 
 TextFile::~TextFile() {
-	pending_delete = true;
-	if (current_task) {
-		current_task->active = false;
-		current_task = nullptr;
-	}
-	// we only proceed with deleting after we have obtained a lock on everything
-	if (is_loaded) {
-		// if loaded we make sure there are no read locks and no write locks
-		Lock(PGWriteLock);
-	} else {
-		// otherwise we only need the text_lock, which is used by the loading code
-		LockMutex(text_lock.get());
-	}
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		delete *it;
 	}
+}
+
+void TextFile::PendDelete() {
+	if (find_task) {
+		find_task->active = false;
+		find_task = nullptr;
+	}
+	current_task = nullptr;
+	pending_delete = true;
 }
 
 PGTextBuffer* TextFile::GetBuffer(lng line) {

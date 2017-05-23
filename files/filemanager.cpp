@@ -37,11 +37,7 @@ std::shared_ptr<TextFile> FileManager::_OpenFile(std::shared_ptr<TextFile> textf
 
 void FileManager::_CloseFile(std::shared_ptr<TextFile> file) {
 	LockMutex(lock.get());
-	if (file->find_task) {
-		file->find_task->active = false;
-		file->find_task = nullptr;
-	}
-	file->current_task = nullptr;
+	file->PendDelete();
 	assert(std::find(open_files.begin(), open_files.end(), file) != open_files.end());
 	open_files.erase(std::find(open_files.begin(), open_files.end(), file));
 	UnlockMutex(lock.get());

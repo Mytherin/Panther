@@ -121,32 +121,6 @@ namespace panther {
 		return string;
 	}
 
-	void* ReadPreview(std::string filename, lng max_size, lng& result_size, PGFileError& error) {
-		result_size = -1;
-		PGFileHandle handle = OpenFile(filename, PGFileReadOnly, error);
-		if (!handle) {
-			return nullptr;
-		}
-		FILE* f = handle->f;
-
-		fseek(f, 0, SEEK_END);
-		lng fsize = (lng) ftell(f);
-		fseek(f, 0, SEEK_SET);
-
-		max_size = std::min(fsize, max_size);
-
-		char* string = (char*)malloc(max_size + 1);
-		if (!string) {
-			return nullptr;
-		}
-		fread(string, max_size, 1, f);
-		CloseFile(handle);
-
-		string[max_size] = '\0';
-		result_size = max_size;
-		return string;
-	}
-
 	void WriteToFile(PGFileHandle handle, const char* text, lng length) {
 		if (PGGlobalReplayManager::running_replay) return;
 

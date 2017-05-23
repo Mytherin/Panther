@@ -184,6 +184,8 @@ public:
 	void ConvertToIndentation(PGLineIndentation indentation);
 
 	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary);
+
+	void PendDelete();
 private:
 
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
