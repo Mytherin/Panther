@@ -181,8 +181,9 @@ public:
 
 	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary);
 private:
-	// load textfile from a file
 	TextFile(PGFileEncoding encoding, std::string filename, char* base_data, lng size, bool immediate_load = false, bool delete_file = true);
+	// load textfile from a file
+	TextFile(std::string filename, bool immediate_load = false, bool ignore_binary = false);
 
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 
@@ -221,6 +222,7 @@ private:
 	lng longest_line = 0;
 
 	void OpenFile(char* base_data, lng size, bool delete_file);
+	void ReadFile(TextFile* file, bool ignore_binary);
 
 	void AddDelta(TextDelta* delta);
 	void Undo(TextView* view, TextDelta* delta);
@@ -235,7 +237,6 @@ private:
 
 	std::shared_ptr<Task> current_task = nullptr;
 	static void RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile);
-	static void OpenFileAsync(std::shared_ptr<Task> task, void* info);
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateBuffers(TextView* responsible_view);

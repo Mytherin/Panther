@@ -92,7 +92,7 @@ const char* PANTHER_DEFAULT_STYLES = R"DEFAULTSTYLES(
 			"tab_text": "#000000",
 			"tab_border": "#686868",
 			"tab_background": "#DEDEDE",
-			"tab_unsaved_text": "#DE2222",
+			"tab_unsaved_text": "#FF4444",
 			"tab_hover": "#1C97EA",
 			"tab_selected": "#007ACC",
 			"tab_temporary": "#68217A",

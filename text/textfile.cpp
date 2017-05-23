@@ -36,11 +36,6 @@ struct OpenFileInformation {
 	OpenFileInformation(TextFile* file, char* base, lng size, bool delete_file) : textfile(file), base(base), size(size), delete_file(delete_file) {}
 };
 
-void TextFile::OpenFileAsync(std::shared_ptr<Task> task, void* inp) {
-	OpenFileInformation* info = (OpenFileInformation*)inp;
-	info->textfile->OpenFile(info->base, info->size, info->delete_file);
-	delete info;
-}
 
 TextFile::TextFile() :
 	highlighter(nullptr), bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
@@ -79,18 +74,88 @@ TextFile::TextFile(PGFileEncoding encoding, std::string path, char* base, lng si
 		highlighter = std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter());
 	}
 	unsaved_changes = false;
-	if (size < 1048576) {
-		// always immediately load files under 1MB
+	if (size < 1048576 / 2) {
+		// always immediately load files under 500KB
 		immediate_load = true;
 	}
 	if (!immediate_load) {
 		OpenFileInformation* info = new OpenFileInformation(this, base, size, delete_file);
-		this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)OpenFileAsync, info));
+		this->current_task = std::shared_ptr<Task>(new Task(
+			[](std::shared_ptr<Task> task, void* inp) {
+				OpenFileInformation* info = (OpenFileInformation*)inp;
+				info->textfile->OpenFile(info->base, info->size, info->delete_file);
+				delete info;
+			}
+			, info));
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
 		OpenFile(base, size, delete_file);
 	}
 }
+
+TextFile::TextFile(std::string path, bool immediate_load, bool ignore_binary)  :
+	highlighter(nullptr), path(path),
+	bytes(0), total_bytes(1), is_loaded(false), last_modified_time(-1),
+	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false),
+	encoding(PGEncodingUTF8), reload_on_changed(true) {
+
+	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
+	lng pos = path.find_last_of('.');
+	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
+	this->current_task = nullptr;
+	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
+
+	this->language = PGLanguageManager::GetLanguage(ext);
+	if (this->language) {
+		highlighter = std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter());
+	}
+	unsaved_changes = false;
+	if (!immediate_load) {
+		OpenFileInformation* info = new OpenFileInformation(this, nullptr, 0, ignore_binary);
+		this->current_task = std::shared_ptr<Task>(new Task(
+			[](std::shared_ptr<Task> task, void* inp) {
+				OpenFileInformation* info = (OpenFileInformation*)inp;
+				info->textfile->ReadFile(info->textfile, info->delete_file);
+				delete info;
+			}
+			, info));
+		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
+	} else {
+		ReadFile(this, ignore_binary);
+	}
+}
+
+void TextFile::ReadFile(TextFile* file, bool ignore_binary) {
+	PGFileError error;
+	lng size = 0;
+	char* base = (char*)panther::ReadFile(file->path, size, error);
+	if (!base || size < 0) {
+		// FIXME: proper error message
+		bytes = -1;
+		return;
+	}
+	char* output_text = nullptr;
+	lng output_size = 0;
+	PGFileEncoding result_encoding;
+	if (!PGTryConvertToUTF8(base, size, &output_text, &output_size, &result_encoding, ignore_binary) || !output_text) {
+		error = PGFileEncodingFailure;
+		bytes = -1;
+		return;
+	}
+	if (output_text != base) {
+		panther::DestroyFileContents(base);
+		base = output_text;
+		size = output_size;
+	}
+	auto stats = PGGetFileFlags(file->path);
+	file->encoding = result_encoding;
+	if (stats.flags == PGFileFlagsEmpty) {
+		file->last_modified_time = stats.modification_time;
+		file->last_modified_notification = stats.modification_time;
+	}
+	OpenFile(base, size, true);
+}
+
 
 void TextFile::AddTextView(std::shared_ptr<TextView> view) {
 	views.push_back(std::weak_ptr<TextView>(view));
@@ -176,31 +241,8 @@ bool TextFile::Reload(PGFileError& error) {
 }
 
 TextFile* TextFile::OpenTextFile(std::string filename, PGFileError& error, bool immediate_load, bool ignore_binary) {
-	lng size = 0;
-	char* base = (char*)panther::ReadFile(filename, size, error);
-	if (!base || size < 0) {
-		// FIXME: proper error message
-		return nullptr;
-	}
-	char* output_text = nullptr;
-	lng output_size = 0;
-	PGFileEncoding result_encoding;
-	if (!PGTryConvertToUTF8(base, size, &output_text, &output_size, &result_encoding, ignore_binary) || !output_text) {
-		error = PGFileEncodingFailure;
-		return nullptr;
-	}
-	if (output_text != base) {
-		panther::DestroyFileContents(base);
-		base = output_text;
-		size = output_size;
-	}
-	auto stats = PGGetFileFlags(filename);
-	TextFile* file = new TextFile(result_encoding, filename, base, size, immediate_load, true);
-	if (stats.flags == PGFileFlagsEmpty) {
-		file->last_modified_time = stats.modification_time;
-		file->last_modified_notification = stats.modification_time;
-	}
-	return file;
+	error = PGFileSuccess;
+	return new TextFile(filename, immediate_load, ignore_binary);
 }
 
 TextFile::~TextFile() {

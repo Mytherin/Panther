@@ -234,9 +234,9 @@ void SearchBox::Draw(PGRendererHandle renderer) {
 		if (current_selection >= displayed_entries.size()) break;
 
 		// render the background
-		PGColor background_color = PGColor(34, 34, 34);
+		PGColor background_color = PGStyleManager::GetColor(PGColorTabControlBackground);
 		if (selected_entry == current_selection) {
-			background_color = PGColor(64, 64, 64);
+			background_color = PGStyleManager::GetColor(PGColorTabControlSelected);
 		}
 
 		if (current_selection != initial_selection) {
@@ -248,7 +248,7 @@ void SearchBox::Draw(PGRendererHandle renderer) {
 			RenderLine(renderer, PGLine(
 				PGPoint(current_x, current_y), 
 				PGPoint(current_x + this->width, current_y)),
-				PGColor(30, 30, 30), 2);
+				PGStyleManager::GetColor(PGColorTabControlBorder), 2);
 		}
 
 		current_y += 3;
