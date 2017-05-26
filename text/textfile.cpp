@@ -180,8 +180,8 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 
 	for (auto it = views.begin(); it != views.end(); it++) {
 		auto view = it->lock();
-		if (view && view->cursors.size() == 0) {
-			view->cursors.push_back(Cursor(view.get()));
+		if (view) {
+			view->ActuallyApplySettings(view->settings);
 		}
 	}
 

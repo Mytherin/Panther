@@ -9,8 +9,11 @@ TextView::TextView(BasicTextField* textfield, std::shared_ptr<TextFile> file) :
 }
 
 void TextView::Initialize() {
+	// FIXME: race condition
 	if (file->IsLoaded()) {
 		cursors.push_back(Cursor(this));
+	} else {
+		settings.cursor_data.push_back(PGCursorRange(0, 0, 0, 0));
 	}
 	file->AddTextView(shared_from_this());
 }
@@ -408,13 +411,20 @@ PGTextViewSettings TextView::GetSettings() {
 }
 
 void TextView::ApplySettings(PGTextViewSettings& settings) {
+	this->settings = settings;
+	if (file->is_loaded) {
+		ActuallyApplySettings(settings);
+	}
+}
+
+void TextView::ActuallyApplySettings(PGTextViewSettings& settings) {
 	if (settings.xoffset >= 0) {
 		this->xoffset = settings.xoffset;
 		settings.xoffset = -1;
 	}
 	if (settings.yoffset.linenumber >= 0) {
 		this->yoffset = settings.yoffset;
-		this->yoffset.linenumber = std::max((lng)0, this->yoffset.linenumber);
+		this->yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, this->yoffset.linenumber));
 		settings.yoffset.linenumber = -1;
 	}
 	if (settings.wordwrap) {

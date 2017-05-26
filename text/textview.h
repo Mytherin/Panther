@@ -47,6 +47,8 @@ public:
 
 	BasicTextField* textfield;
 
+	PGTextViewSettings settings;
+
 	TextLineIterator* GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll);
 	TextLineIterator* GetLineIterator(BasicTextField* textfield, lng linenumber);
 
@@ -140,6 +142,7 @@ public:
 
 	PGTextViewSettings GetSettings();
 	void ApplySettings(PGTextViewSettings& settings);
+	void ActuallyApplySettings(PGTextViewSettings& settings);
 
 	void InvalidateTextView(bool scroll);
 
