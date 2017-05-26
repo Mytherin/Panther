@@ -111,6 +111,7 @@ void TextFile::ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, boo
 }
 
 #define PANTHER_BUFSIZ 8192
+//lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_size, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
 
 void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_binary) {
 	PGFileHandle handle = panther::OpenFile(file->path, PGFileReadOnly, this->error);
@@ -118,45 +119,117 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 		bytes = -1;
 		return;
 	}
+	this->lineending = PGLineEndingUnknown;
+	this->indentation = PGIndentionTabs; // FIXME: default from settings
+	this->tabwidth = 4; // FIXME: default tabwidth
+
+	LockMutex(text_lock.get());
+	lng linenr = 0;
+	PGTextBuffer* current_buffer = nullptr;
+	PGScalar max_length = -1;
+	double current_width = 0;
+	char prev_character = '\0';
+
 	this->encoding = PGEncodingUnknown;
 	char buffer[PANTHER_BUFSIZ + 1];
 	total_bytes = panther::GetFileSize(handle);
+	size_t bytes_to_read = total_bytes;
 	bytes = 0;
 	PGEncoderHandle decoder = nullptr;
+
+	char* output = nullptr;
+	lng output_size = 0;
+	char* intermediate_buffer = nullptr;
+	lng intermediate_size = 0;
 	while (bytes < total_bytes) {
-		size_t bytes_read = panther::ReadFromFile(handle, buffer, PANTHER_BUFSIZ);
+		size_t bytes_read = std::min((size_t) PANTHER_BUFSIZ, bytes_to_read);
+		panther::ReadFromFile(handle, buffer, bytes_read);
+		bytes_to_read -= bytes_read;
 		size_t bufsiz = bytes_read;
 		char* buf = buffer;
 		if (encoding == PGEncodingUnknown) {
 			// first read from file: determine encoding based on sample
-			this->encoding = PGGuessEncoding(buffer, std::max((size_t)1024, bytes_read));
+			this->encoding = PGGuessEncoding((unsigned char*)buffer, std::min((size_t)1024, bytes_read));
 			if (encoding != PGEncodingUTF8 || encoding != PGEncodingUTF8BOM) {
-				// FIXME: set decoder to proper decoder
-			}
-			if (((unsigned char*)buffer)[0] == 0xEF &&
-				((unsigned char*)buffer)[1] == 0xBB &&
-				((unsigned char*)buffer)[2] == 0xBF) {
-				// skip byte order mark
-				buf += 3;
-				bufsiz -= 3;
+				decoder = PGCreateEncoder(this->encoding, PGEncodingUTF8);
+			} else {
+				if (((unsigned char*)buffer)[0] == 0xEF &&
+					((unsigned char*)buffer)[1] == 0xBB &&
+					((unsigned char*)buffer)[2] == 0xBF) {
+					// skip UTF-8 BOM byte order mark
+					buf += 3;
+					bufsiz -= 3;
+				}
 			}
 		}
 		if (decoder) {
-			// FIXME: convert to UTF8 if encoding is different
+			bufsiz = PGConvertText(decoder, buf, bufsiz, &output, &output_size, &intermediate_buffer, &intermediate_size);
+			buf = output;
 		}
-		ConsumeBytes(ptr, size, prev, offset, max_length, current_width, current_buffer, linenr);
 
-		// FIXME: process buffer
+		ConsumeBytes(buf, bufsiz, max_length, current_width, current_buffer, linenr, prev_character);
 		bytes += bytes_read;
 
 		if (file->pending_delete) {
 			bytes = -1;
-			panther::CloseFile(handle);
-			return;
+			goto wrapup;
 		}
+	}
+	linecount = linenr;
+	total_width = current_width;
+
+	for (auto it = views.begin(); it != views.end(); it++) {
+		auto view = it->lock();
+		if (view && view->cursors.size() == 0) {
+			view->cursors.push_back(Cursor(view.get()));
+		}
+	}
+
+	VerifyTextfile();
+
+	if (highlighter) {
+		// we parse the first 10 blocks before opening the textfield for viewing
+		// (heuristic: probably should be dependent on highlight speed/amount of text/etc)
+		// anything else we schedule for highlighting in a separate thread
+		// first create all the textblocks
+		lng current_line = 0;
+		// parse the first 10 blocks
+		PGParseErrors errors;
+		PGParserState state = highlighter->GetDefaultState();
+		for (lng i = 0; i < (lng)std::min((size_t)10, buffers.size()); i++) {
+			auto lines = buffers[i]->GetLines();
+			buffers[i]->syntax.clear();
+			int index = 0;
+			for (auto it = lines.begin(); it != lines.end(); it++) {
+				PGSyntax syntax;
+				state = highlighter->IncrementalParseLine(*it, i, state, errors, syntax);
+				buffers[i]->syntax.push_back(syntax);
+			}
+			buffers[i]->state = highlighter->CopyParserState(state);
+			buffers[i]->parsed = true;
+		}
+		highlighter->DeleteParserState(state);
+		if (buffers.size() > 10) {
+			is_loaded = true;
+			this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)RunHighlighter, (void*) this));
+			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
+		}
+	}
+
+	ApplySettings(this->settings);
+	is_loaded = true;
+wrapup:
+	UnlockMutex(text_lock.get());
+
+	if (output) {
+		free(output);
+	}
+	if (intermediate_buffer) {
+		free(intermediate_buffer);
 	}
 	panther::CloseFile(handle);
 
+	/*
 	lng size = 0;
 	char* base = (char*)panther::ReadFile(file->path, size, error);
 	if (!base || size < 0) {
@@ -191,7 +264,7 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 		file->last_modified_time = stats.modification_time;
 		file->last_modified_notification = stats.modification_time;
 	}
-	OpenFile(base, size, true);
+	OpenFile(base, size, true);*/
 }
 
 
@@ -527,20 +600,72 @@ void TextFile::_InsertLine(char* ptr, size_t current, size_t prev, PGScalar& max
 	linenr++;
 }
 
-void _InsertText(char* ptr, size_t current, size_t prev) {
+void TextFile::_InsertText(char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+	if (current_buffer == nullptr) {
+		_InsertLine(ptr, current, prev, max_length, current_width, current_buffer, linenr);
+		return;
+	}
+	if (current == prev) {
+		return;
+	}
+	char* line_start = ptr + prev;
+	lng line_size = (lng)(current - prev);
 
+	// add text to the last line of the buffer
+	auto update = current_buffer->InsertText(buffers, current_buffer, current_buffer->current_size - 1, std::string(line_start, line_size));
+	PGTextBuffer* new_buffer = update.new_buffer ? update.new_buffer : current_buffer;
+	// measure the new line width
+	PGScalar prev_length = current_buffer->line_lengths.back();
+	lng new_line_begin = new_buffer->line_start.size() == 0 ? 0 : new_buffer->line_start.back();
+	PGScalar line_length = MeasureTextWidth(PGStyleManager::default_font, new_buffer->buffer + new_line_begin, new_buffer->current_size - 1 - new_line_begin);
+	PGScalar added_length = line_length - prev_length;
+	if (line_length > max_length) {
+		max_line_length.buffer = new_buffer;
+		max_line_length.position = new_buffer->line_count - 1;
+		max_length = line_length;
+	}
+	current_buffer->line_lengths.back() = line_length;
+	current_buffer->width += added_length;
+	if (update.new_buffer) {
+		size_t start = current_buffer->line_count;
+		for(size_t i = 0; i < update.new_buffer->line_count; i++) {
+			current_buffer->width -= current_buffer->line_lengths[start + i];
+			update.new_buffer->width += current_buffer->line_lengths[start + i];
+			update.new_buffer->line_lengths.push_back(current_buffer->line_lengths[start + i]);
+		}
+		current_buffer->line_lengths.erase(current_buffer->line_lengths.begin() + start, current_buffer->line_lengths.end());
+		update.new_buffer->index = current_buffer->index + 1;
+		update.new_buffer->cumulative_width = current_buffer->cumulative_width + current_buffer->width;
+		current_buffer = update.new_buffer;
+	}
+	current_width += added_length;
 }
 
 void TextFile::ConsumeBytes(char* buffer, size_t buffer_size,
-	PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+	PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr, char& prev_character) {
 	size_t prev = 0;
 	for (size_t i = 0; i < buffer_size; i++) {
 		if (buffer[i] == '\r' || buffer[i] == '\n') {
-			_InsertLine(buffer, i, prev, max_length, current_width, current_buffer, linenr);
+			// if this is the first character of this buffer, and the last character of the previous
+			// buffer was \r, we skip this character as well
+			if (!(i == 0 && prev_character == '\r' && buffer[i] == '\n')) {
+				if (prev == 0) {
+					_InsertText(buffer, i, prev, max_length, current_width, current_buffer, linenr);
+				} else {
+					_InsertLine(buffer, i, prev, max_length, current_width, current_buffer, linenr);
+				}
+				if (i + 1 < buffer_size && buffer[i] == '\r' && buffer[i + 1] == '\n') {
+					// skip \n in \r\n newline sequence
+					i++;
+				}
+			}
 			prev = i + 1;
 		}
 	}
-	_InsertText(buffer, prev, buffer_size);
+	_InsertLine(buffer, buffer_size, prev, max_length, current_width, current_buffer, linenr);
+	if (buffer_size > 0) {
+		prev_character = buffer[buffer_size - 1];
+	}
 }
 
 void TextFile::ConsumeBytes(char* buffer, size_t buffer_size, size_t& prev, int& offset,
@@ -579,7 +704,7 @@ void TextFile::ConsumeBytes(char* buffer, size_t buffer_size, size_t& prev, int&
 			}
 		}
 		if (buffer[i] == '\r' || buffer[i] == '\n') {
-			_InsertLine(buffer, i, prev, offset, max_length, current_width, current_buffer, linenr);
+			_InsertLine(buffer, i - offset, prev, max_length, current_width, current_buffer, linenr);
 
 			prev = i + 1;
 			offset = 0;
@@ -617,7 +742,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 
 	ConsumeBytes(ptr, size, prev, offset, max_length, current_width, current_buffer, linenr);
 	// insert the final line
-	_InsertLine(ptr, bytes, prev, offset, max_length, current_width, current_buffer, linenr);
+	_InsertLine(ptr, bytes - offset, prev, max_length, current_width, current_buffer, linenr);
 	if (linenr == 0) {
 		lineending = GetSystemLineEnding();
 		current_buffer = new PGTextBuffer("", 1, 0);
@@ -640,7 +765,6 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	if (delete_file) {
 		panther::DestroyFileContents(base);
 	}
-	is_loaded = true;
 	VerifyTextfile();
 
 	if (highlighter) {
@@ -673,6 +797,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	}
 
 	ApplySettings(this->settings);
+	is_loaded = true;
 	UnlockMutex(text_lock.get());
 }
 
@@ -715,7 +840,7 @@ void TextFile::InsertText(std::vector<Cursor>& cursors, std::string text, size_t
 	PGTextBuffer* buffer = cursor.start_buffer;
 	// invalidate parsing of the current buffer
 	buffer->parsed = false;
-	PGBufferUpdate update = PGTextBuffer::InsertText(buffers, cursor.start_buffer, insert_point, text, this->linecount);
+	PGBufferUpdate update = PGTextBuffer::InsertText(buffers, cursor.start_buffer, insert_point, text);
 
 	if (update.new_buffer != nullptr) {
 		// since the split point can be BEFORE this cursor
@@ -1402,7 +1527,7 @@ void TextFile::InsertText(std::vector<Cursor>& cursors, std::string text, PGText
 	// invalidate parsing of the current buffer
 	buffer->parsed = false;
 	// insert the actual text
-	PGBufferUpdate update = PGTextBuffer::InsertText(buffers, buffer, insert_point, text, this->linecount);
+	PGBufferUpdate update = PGTextBuffer::InsertText(buffers, buffer, insert_point, text);
 
 	// now we need to update the cursors
 	// we only need to consider cursors that currently point to "buffer"

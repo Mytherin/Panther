@@ -285,7 +285,7 @@ lng PGConvertText(std::string input, char** output, PGFileEncoding source_encodi
 
 #define MAXIMUM_TEXT_SAMPLE 1024
 
-PGFileEncoding PGGuessEncoding(char* input_text, size_t input_size) {
+PGFileEncoding PGGuessEncoding(unsigned char* input_text, size_t input_size) {
 	if (input_size == 0) {
 		// default encoding is UTF-8
 		return PGEncodingUTF8;
@@ -379,7 +379,7 @@ PGFileEncoding PGGuessEncoding(char* input_text, size_t input_size) {
 				// (1) smaller than 0xD8
 				// (2) start with 0b110110
 				if (input_text[i + 1] >= 0xD8) {
-					if (input_text[i + 1] & 0b11111100 == 0b11011000) {
+					if ((input_text[i + 1] & 0b11111100) == 0b11011000) {
 						// first byte of four-byte pair
 						// next byte may be anything (0-255)
 						// but byte afterwards must start with 0b110111
@@ -393,7 +393,7 @@ PGFileEncoding PGGuessEncoding(char* input_text, size_t input_size) {
 					}
 				}
 			} else {
-				if (input_text[i + 1] & 0b11111100 != 0b11011100) {
+				if ((input_text[i + 1] & 0b11111100) != 0b11011100) {
 					valid_utf16be = false;
 				}
 				utf16be_pair = false;
@@ -405,7 +405,7 @@ PGFileEncoding PGGuessEncoding(char* input_text, size_t input_size) {
 				// (1) smaller than 0xD8
 				// (2) start with 0b110110
 				if (input_text[i] >= 0xD8) {
-					if (input_text[i] & 0b11111100 == 0b11011000) {
+					if ((input_text[i] & 0b11111100) == 0b11011000) {
 						// first byte of four-byte pair
 						// next byte may be anything (0-255)
 						// but byte afterwards must start with 0b110111
@@ -419,7 +419,7 @@ PGFileEncoding PGGuessEncoding(char* input_text, size_t input_size) {
 					}
 				}
 			} else {
-				if (input_text[i] & 0b11111100 != 0b11011100) {
+				if ((input_text[i] & 0b11111100) != 0b11011100) {
 					valid_utf16le = false;
 				}
 				utf16le_pair = false;
@@ -452,7 +452,7 @@ PGFileEncoding PGGuessEncoding(char* input_text, size_t input_size) {
 	if (U_FAILURE(status)) {
 		return PGEncodingUnknown;
 	}
-	ucsdet_setText(csd, input_text, input_size, &status);
+	ucsdet_setText(csd, (char*) input_text, input_size, &status);
 	if (U_FAILURE(status)) {
 		return PGEncodingUnknown;
 	}
@@ -481,7 +481,7 @@ bool PGTryConvertToUTF8(char* input_text, size_t input_size, char** output_text,
 	// try to determine the encoding from a sample of the text
 	lng sample_size = std::min((size_t)MAXIMUM_TEXT_SAMPLE, input_size);
 	// guess the encoding from the sample
-	PGFileEncoding source_encoding = PGGuessEncoding(input_text, sample_size);
+	PGFileEncoding source_encoding = PGGuessEncoding((unsigned char*)input_text, sample_size);
 	*result_encoding = source_encoding;
 	if (source_encoding == PGEncodingUTF8 ||
 		source_encoding == PGEncodingUTF8BOM) {

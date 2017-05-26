@@ -92,7 +92,7 @@ public:
 	static lng GetBuffer(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer);
 	// insert text into the specified buffer, "text" should not contain newlines
 	// this function accounts for extending buffers and creating new buffers
-	static PGBufferUpdate InsertText(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer, ulng position, std::string text, ulng linecount);
+	static PGBufferUpdate InsertText(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer, ulng position, std::string text);
 
 	// delete text from the specified buffer, text is deleted rightwards =>
 	// this function can merge adjacent buffers together, if two adjacent buffers

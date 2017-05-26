@@ -57,6 +57,14 @@ const char* PANTHER_DEFAULT_KEYBINDINGS = R"DEFAULTSETTINGS(
 		{ "key": "ctrl+e", "command": "offset_end_of_line"},
 		{ "key": "ctrl+shift+e", "command": "select_end_of_line"},
 
+		{ "key": "cmd+up", "command": "scroll_lines", "args": {"amount": -1.0 } },
+		{ "key": "cmd+down", "command": "scroll_lines", "args": {"amount": 1.0 } },
+
+		{ "key": "up", "command": "offset_line", "args": {"amount": -1.0 } },
+		{ "key": "shift+up", "command": "offset_line", "args": {"amount": -1.0, "selection": true } },
+		{ "key": "down", "command": "offset_line", "args": {"amount": 1.0 } },
+		{ "key": "shift+down", "command": "offset_line", "args": {"amount": 1.0, "selection": true } },
+
 		{ "mouse": "cmd+left", "command": "select_word" },
 		{ "mouse": "shift+left", "command": "set_cursor_selection" },
 		{ "mouse": "left", "clicks": 1, "command": "set_cursor_location" },
@@ -89,13 +97,6 @@ const char* PANTHER_DEFAULT_KEYBINDINGS = R"DEFAULTSETTINGS(
 		{ "key": "cmd+equals", "command": "increase_font_size" },
 		{ "key": "cmd+shift+equals", "command": "decrease_font_size" },
 		{ "key": "cmd+shift+keypad_plus", "command": "decrease_font_size" },
-		{ "key": "cmd+up", "command": "scroll_lines", "args": {"amount": -1.0 } },
-		{ "key": "cmd+down", "command": "scroll_lines", "args": {"amount": 1.0 } },
-
-		{ "key": "up", "command": "offset_line", "args": {"amount": -1.0 } },
-		{ "key": "shift+up", "command": "offset_line", "args": {"amount": -1.0, "selection": true } },
-		{ "key": "down", "command": "offset_line", "args": {"amount": 1.0 } },
-		{ "key": "shift+down", "command": "offset_line", "args": {"amount": 1.0, "selection": true } },
 
 		{ "key": "pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page" } },
 		{ "key": "shift+pageup", "command": "offset_line", "args": {"amount": -1.0, "unit": "page", "selection": true } },

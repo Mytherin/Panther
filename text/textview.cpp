@@ -414,7 +414,7 @@ void TextView::ApplySettings(PGTextViewSettings& settings) {
 	}
 	if (settings.yoffset.linenumber >= 0) {
 		this->yoffset = settings.yoffset;
-		this->yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, this->yoffset.linenumber));
+		this->yoffset.linenumber = std::max((lng)0, this->yoffset.linenumber);
 		settings.yoffset.linenumber = -1;
 	}
 	if (settings.wordwrap) {

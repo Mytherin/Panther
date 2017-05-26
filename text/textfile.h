@@ -227,6 +227,8 @@ private:
 	lng longest_line = 0;
 
 	void OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding, char* base, size_t size, bool immediate_load);
+
+	void ConsumeBytes(char* buffer, size_t buffer_size, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr, char& prev_character);
 	void ConsumeBytes(char* buffer, size_t buffer_size, size_t& prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 	void OpenFile(char* base_data, lng size, bool delete_file);
 	void ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, bool ignore_binary);
@@ -279,5 +281,5 @@ private:
 	PGTextFileSettings settings;
 	
 	void _InsertLine(char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
-	void _InsertText(char* ptr, size_t current, size_t prev);
+	void _InsertText(char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 };

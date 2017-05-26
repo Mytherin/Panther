@@ -125,7 +125,7 @@ void PGTextBuffer::Extend(ulng new_size) {
 	buffer_size = new_size;
 }
 
-PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer, ulng position, std::string text, ulng linecount) {
+PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGTextBuffer* buffer, ulng position, std::string text) {
 	if (buffer->current_size + text.size() >= buffer->buffer_size) {
 		// data does not fit within the current buffer
 		if (buffer->line_count == 1) {
