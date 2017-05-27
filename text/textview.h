@@ -19,12 +19,8 @@ struct PGTextViewSettings {
 // a view includes a scroll position (xoffset, yoffset)
 // edit information (cursors)
 // visual information (wordwrap, displayed search matches)
-
-// we assume a TextView is only ever used by a single thread
-// hence there are no locks on any of the fields used by the TextView
-// however, multiple textviews can exist into the same file
-// all the necessary locking to allow concurrent TextViews happens in the TextFile structure
 class TextView : public std::enable_shared_from_this<TextView> {
+	friend class TextFile;
 public:
 	TextView(BasicTextField* field, std::shared_ptr<TextFile> file);
 
@@ -44,6 +40,8 @@ public:
 
 	std::vector<Cursor> cursors;
 	lng active_cursor;
+
+	std::unique_ptr<PGMutex> lock;
 
 	BasicTextField* textfield;
 
@@ -76,8 +74,6 @@ public:
 
 	void IndentText(PGDirection direction);
 
-	void ClearExtraCursors();
-	void ClearCursors();
 	void SetCursorLocation(lng line, lng character);
 	void SetCursorLocation(lng start_line, lng start_character, lng end_line, lng end_character);
 	void SetCursorLocation(PGTextRange range);
@@ -118,6 +114,7 @@ public:
 	PGVerticalScroll OffsetVerticalScroll(PGVerticalScroll scroll, double offset, lng& lines_offset);
 	Cursor& GetActiveCursor();
 	lng GetActiveCursorIndex();
+	// FIXME: this should be private
 	std::vector<Cursor>& GetCursors() { return cursors; }
 	void SetTextField(BasicTextField* textfield) { this->textfield = textfield; }
 
@@ -128,7 +125,6 @@ public:
 
 	static void RunTextFinder(std::shared_ptr<Task> task, TextView* textfile, PGRegexHandle regex_handle, lng start_line, lng start_character, bool select_first_match);
 
-	void RestoreCursors(std::vector<PGCursorRange>& data);
 	Cursor RestoreCursor(PGCursorRange data);
 	// same as RestoreCursor, but selections are replaced by the LOWEST value
 	Cursor RestoreCursorPartial(PGCursorRange data);
@@ -146,5 +142,12 @@ public:
 
 	void InvalidateTextView(bool scroll);
 
+	void RestoreCursors(std::vector<PGCursorRange>& data);
+
 	void VerifyTextView();
+private:
+	void ActuallyRestoreCursors(std::vector<PGCursorRange>& data);
+
+	void ClearExtraCursors();
+	void ClearCursors();
 };

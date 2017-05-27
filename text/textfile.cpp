@@ -2298,6 +2298,7 @@ void TextFile::Undo(TextView* view, TextDelta* delta) {
 	switch (delta->type) {
 		case PGDeltaReplaceText:
 		{
+			LockMutex(view->lock.get());
 			view->ClearCursors();
 			PGReplaceText* replace = (PGReplaceText*)delta;
 			// we perform undo's in reverse order
@@ -2307,10 +2308,12 @@ void TextFile::Undo(TextView* view, TextDelta* delta) {
 				view->cursors[index] = view->RestoreCursor(delta->stored_cursors[index]);
 				Undo(view->cursors, *replace, index);
 			}
+			UnlockMutex(view->lock.get());
 			break;
 		}
 		case PGDeltaRegexReplace:
 		{
+			LockMutex(view->lock.get());
 			view->ClearCursors();
 			PGRegexReplace* replace = (PGRegexReplace*)delta;
 			// we perform undo's in reverse order
@@ -2320,11 +2323,13 @@ void TextFile::Undo(TextView* view, TextDelta* delta) {
 				view->cursors[index] = view->RestoreCursor(delta->stored_cursors[index]);
 				Undo(view->cursors, *replace, index);
 			}
+			UnlockMutex(view->lock.get());
 			break;
 		}
 		case PGDeltaRemoveText:
 		{
 			RemoveText* remove = (RemoveText*)delta;
+			LockMutex(view->lock.get());
 			view->ClearCursors();
 			view->cursors.resize(delta->stored_cursors.size());
 			for (int i = 0; i < delta->stored_cursors.size(); i++) {
@@ -2333,6 +2338,7 @@ void TextFile::Undo(TextView* view, TextDelta* delta) {
 				Undo(view->cursors, *remove, remove->removed_text[index], index);
 				view->cursors[index] = view->RestoreCursor(delta->stored_cursors[index]);
 			}
+			UnlockMutex(view->lock.get());
 			break;
 		}
 		case PGDeltaRemoveLine:
@@ -2356,28 +2362,33 @@ void TextFile::Undo(TextView* view, TextDelta* delta) {
 		case PGDeltaAddTextPosition:
 		{
 			AddTextPosition* add = (AddTextPosition*)delta;
+			LockMutex(view->lock.get());
 			for (lng i = add->data.size() - 1; i >= 0; i--) {
 				PGTextBuffer* start_buffer = GetBuffer(add->data[i].line);
 				lng start_position = start_buffer->GetBufferLocationFromCursor(add->data[i].line, add->data[i].character);
 				DeleteText(view->cursors, PGTextRange(start_buffer, start_position, start_buffer, start_position + add->data[i].text.size()));
 			}
-			view->RestoreCursors(add->stored_cursors);
+			view->ActuallyRestoreCursors(add->stored_cursors);
+			UnlockMutex(view->lock.get());
 			return;
 		}
 		case PGDeltaRemoveTextPosition:
 		{
 			RemoveTextPosition* remove = (RemoveTextPosition*)delta;
+			LockMutex(view->lock.get());
 			for (lng i = remove->data.size() - 1; i >= 0; i--) {
 				PGTextBuffer* start_buffer = GetBuffer(remove->data[i].start_line);
 				lng start_position = start_buffer->GetBufferLocationFromCursor(remove->data[i].start_line, remove->data[i].start_position);
 				InsertText(view->cursors, remove->removed_text[i], start_buffer, start_position);
 			}
-			view->RestoreCursors(remove->stored_cursors);
+			view->ActuallyRestoreCursors(remove->stored_cursors);
+			UnlockMutex(view->lock.get());
 			return;
 		}
 		case PGDeltaReplaceTextPosition:
 		{
 			ReplaceTextPosition* remove = (ReplaceTextPosition*)delta;
+			LockMutex(view->lock.get());
 			for (lng i = remove->data.size() - 1; i >= 0; i--) {
 				PGTextBuffer* start_buffer = GetBuffer(remove->data[i].start_line);
 				lng start_position = start_buffer->GetBufferLocationFromCursor(remove->data[i].start_line, remove->data[i].start_position);
@@ -2386,7 +2397,8 @@ void TextFile::Undo(TextView* view, TextDelta* delta) {
 				PGTextRange range = PGTextRange(start_buffer, start_position, end_buffer, end_position);
 				ReplaceText(view->cursors, range, remove->removed_text[i]);
 			}
-			view->RestoreCursors(remove->stored_cursors);
+			view->ActuallyRestoreCursors(remove->stored_cursors);
+			UnlockMutex(view->lock.get());
 			return;
 		}
 		default:

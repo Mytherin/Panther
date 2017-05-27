@@ -6,15 +6,17 @@
 TextView::TextView(BasicTextField* textfield, std::shared_ptr<TextFile> file) :
 	textfield(textfield), file(file), wordwrap(false),
 	xoffset(0), yoffset(0, 0) {
+	lock = std::unique_ptr<PGMutex>(CreateMutex());
 }
 
 void TextView::Initialize() {
-	// FIXME: race condition
+	LockMutex(lock.get());
 	if (file->IsLoaded()) {
 		cursors.push_back(Cursor(this));
 	} else {
 		settings.cursor_data.push_back(PGCursorRange(0, 0, 0, 0));
 	}
+	UnlockMutex(lock.get());
 	file->AddTextView(shared_from_this());
 }
 
@@ -213,47 +215,59 @@ void TextView::OffsetLineOffset(double offset) {
 }
 
 void TextView::SetCursorLocation(lng line, lng character) {
+	LockMutex(lock.get());
 	ClearExtraCursors();
 	cursors[0].SetCursorLocation(line, character);
+	UnlockMutex(lock.get());
 	if (textfield) textfield->SelectionChanged();
 }
 
 void TextView::SetCursorLocation(lng start_line, lng start_character, lng end_line, lng end_character) {
+	LockMutex(lock.get());
 	ClearExtraCursors();
 	cursors[0].SetCursorLocation(end_line, end_character);
 	cursors[0].SetCursorStartLocation(start_line, start_character);
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::SetCursorLocation(PGTextRange range) {
+	LockMutex(lock.get());
 	ClearExtraCursors();
 	cursors[0].SetCursorLocation(range);
 	Cursor::NormalizeCursors(this, cursors);
-
+	UnlockMutex(lock.get());
 }
 
 void TextView::AddNewCursor(lng line, lng character) {
+	LockMutex(lock.get());
 	cursors.push_back(Cursor(this, line, character));
 	active_cursor = cursors.size() - 1;
 	std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 	Cursor::NormalizeCursors(this, cursors, false);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetLine(lng offset) {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetLine(offset);
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetSelectionLine(lng offset) {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetSelectionLine(offset);
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetCharacter(PGDirection direction) {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		if (it->SelectionIsEmpty()) {
 			it->OffsetCharacter(direction);
@@ -263,86 +277,116 @@ void TextView::OffsetCharacter(PGDirection direction) {
 		}
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetSelectionCharacter(PGDirection direction) {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetSelectionCharacter(direction);
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetWord(PGDirection direction) {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetWord(direction);
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetSelectionWord(PGDirection direction) {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetSelectionWord(direction);
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetStartOfLine() {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetStartOfLine();
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::SelectStartOfLine() {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->SelectStartOfLine();
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetStartOfFile() {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetStartOfFile();
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::SelectStartOfFile() {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->SelectStartOfFile();
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetEndOfLine() {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetEndOfLine();
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::SelectEndOfLine() {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->SelectEndOfLine();
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::OffsetEndOfFile() {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->OffsetEndOfFile();
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
 void TextView::SelectEndOfFile() {
+	LockMutex(lock.get());
 	for (auto it = cursors.begin(); it != cursors.end(); it++) {
 		it->SelectEndOfFile();
 	}
 	Cursor::NormalizeCursors(this, cursors);
+	UnlockMutex(lock.get());
 }
 
+
 void TextView::RestoreCursors(std::vector<PGCursorRange>& data) {
+	LockMutex(lock.get());
+	ActuallyRestoreCursors(data);
+	UnlockMutex(lock.get());
+}
+
+void TextView::ActuallyRestoreCursors(std::vector<PGCursorRange>& data) {
 	ClearCursors();
 	for (auto it = data.begin(); it != data.end(); it++) {
 		cursors.push_back(Cursor(this, *it));
@@ -433,6 +477,7 @@ void TextView::ActuallyApplySettings(PGTextViewSettings& settings) {
 		settings.wordwrap = false;
 	}
 	if (settings.cursor_data.size() > 0) {
+		LockMutex(lock.get());
 		this->ClearCursors();
 		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
 			it->start_line = std::max((lng)0, std::min(file->linecount - 1, it->start_line));
@@ -441,6 +486,7 @@ void TextView::ActuallyApplySettings(PGTextViewSettings& settings) {
 		}
 		std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 		Cursor::NormalizeCursors(this, this->cursors, false);
+		UnlockMutex(lock.get());
 	}
 }
 
@@ -456,7 +502,9 @@ void TextView::InvalidateTextView(bool scroll) {
 
 	matches.clear();
 
+	LockMutex(lock.get());
 	Cursor::NormalizeCursors(this, cursors, scroll);
+	UnlockMutex(lock.get());
 
 	if (textfield) {
 		textfield->TextChanged();

@@ -864,7 +864,7 @@ void TextField::MouseMove(int x, int y, PGMouseButton buttons) {
 				Cursor& active_cursor = view->GetActiveCursor();
 				auto end_pos = active_cursor.UnselectedPosition();
 				auto start_scroll = view->GetVerticalScroll(end_pos.line, end_pos.position);
-				view->ClearCursors();
+				cursors.clear();
 				bool backwards = end_pos.line > line || (end_pos.line == line && end_pos.position > character);
 				PGScalar start_x;
 				bool single_cursor = true;
