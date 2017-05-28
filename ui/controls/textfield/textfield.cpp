@@ -32,7 +32,7 @@ void TextField::MinimapMouseEvent(bool mouse_enter) {
 TextField::TextField(PGWindowHandle window, std::shared_ptr<TextView> view) :
 	BasicTextField(window, view), display_scrollbar(true), display_minimap(true),
 	display_linenumbers(true), notification(nullptr), tabcontrol(nullptr),
-	vscroll_left(0), hscroll_left(0), vscroll_speed(0), active_searchbox(nullptr),
+	active_searchbox(nullptr),
 	is_minimap_dirty(true) {
 	if (view) {
 		view->SetTextField(this);
@@ -95,20 +95,6 @@ void TextField::Update() {
 			}, this, notification, "Close");
 			ShowNotification();
 		}
-	}
-	if (vscroll_left != 0) {
-		double offset = vscroll_speed;
-		if (vscroll_left > 0) offset = -offset;
-
-		if (std::abs(vscroll_left) < std::abs(offset)) {
-			offset = -vscroll_left;
-			vscroll_left = 0;
-			vscroll_speed = 0;
-		} else {
-			vscroll_left += offset;
-		}
-		view->OffsetLineOffset(offset);
-		this->Invalidate();
 	}
 	BasicTextField::Update();
 }
@@ -1025,15 +1011,15 @@ void TextField::ClearSearchBox(Control * searchbox) {
 void TextField::MouseWheel(int x, int y, double hdistance, double distance, PGModifier modifier) {
 	if (modifier == PGModifierNone) {
 		if (distance != 0) {
-			double offset = -distance / GetTextHeight(textfield_font);
-			vscroll_left -= offset;
-			vscroll_speed += std::abs(offset / 5.0);
-			//textfile->OffsetLineOffset(-distance / GetTextHeight(textfield_font));
+			//double offset = -distance / GetTextHeight(textfield_font);
+			//vscroll_left -= offset;
+			//vscroll_speed += std::abs(offset / 5.0);
+			view->OffsetLineOffset(-distance / GetTextHeight(textfield_font));
 			this->Invalidate();
 		}
 	}
 	if (hdistance != 0) {
-		view->SetXOffset(view->GetXOffset() - hdistance);
+		view->SetXOffset(std::max(0.0, view->GetXOffset() - hdistance / 10.0));
 		this->Invalidate();
 	}
 }
@@ -1061,8 +1047,6 @@ void TextField::InvalidateMinimap() {
 
 void TextField::SetTextView(std::shared_ptr<TextView> view) {
 	this->prev_loaded = false;
-	vscroll_left = 0;
-	vscroll_speed = 0;
 	if (this->view != view && this->view) {
 		this->view->file->last_modified_deletion = false;
 		this->view->file->last_modified_notification = this->view->file->last_modified_time;

@@ -101,7 +101,7 @@ public:
 
 	lng GetMaxYScroll();
 	PGScalar GetXOffset() { return (PGScalar)xoffset; }
-	void SetXOffset(lng offset) { xoffset = offset; }
+	void SetXOffset(lng offset);
 	PGVerticalScroll GetLineOffset();
 	double GetScrollPercentage(PGVerticalScroll scroll);
 	double GetScrollPercentage();

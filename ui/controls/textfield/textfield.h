@@ -107,10 +107,6 @@ private:
 
 	bool is_minimap_dirty = true;
 
-	double vscroll_left = 0;
-	double vscroll_speed = 0;
-	double hscroll_left = 0;
-
 	std::unique_ptr<DecoratedScrollbar> scrollbar;
 	std::unique_ptr<Scrollbar> horizontal_scrollbar;
 

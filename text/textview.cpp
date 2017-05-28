@@ -74,6 +74,11 @@ void TextView::SetLineOffset(PGVerticalScroll scroll) {
 	yoffset.inner_line = scroll.inner_line;
 }
 
+void TextView::SetXOffset(lng offset) {
+	this->xoffset = offset;
+}
+
+
 void TextView::SetScrollOffset(lng offset) {
 	if (!wordwrap) {
 		SetLineOffset(offset);
