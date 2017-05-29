@@ -16,11 +16,13 @@ public:
 
 	PGVerticalScroll GetCurrentScrollOffset();
 
-	WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width);
+	WrappedTextLineIterator(TextView* view, PGFontHandle font, TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width);
 protected:
 	void PrevLine();
 	void NextLine();
 
+
+	TextView* view;
 	PGFontHandle font;
 	PGScalar wrap_width;
 	lng start_wrap = 0;

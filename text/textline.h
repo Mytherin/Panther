@@ -10,17 +10,17 @@ public:
 	TextLine() : line(nullptr), length(0) { }
 	TextLine(char* line, lng length) : line(line), length(length), syntax(nullptr) { }
 	TextLine(char* line, lng length, PGSyntax* syntax) : line(line), length(length), syntax(syntax) { }
-	TextLine(PGTextBuffer* buffer, lng line, lng max_line);
+	TextLine(PGTextBuffer* buffer, lng line);
 
 	lng GetLength(void) { return length; }
 	char* GetLine(void) { return line; }
 	bool IsValid() { return line != nullptr; }
 
-	lng* WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, PGFontHandle font, PGScalar wrap_width);
-	lng RenderedLines(PGTextBuffer* buffer, lng linenr, lng total_lines, PGFontHandle font, PGScalar wrap_width);
+	lng* WrapLine(TextView* view, lng linenr, PGFontHandle font, PGScalar wrap_width);
+	lng RenderedLines(TextView* view, lng linenr, PGFontHandle font, PGScalar wrap_width);
 
-	static lng* WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, char* line, lng length, PGFontHandle font, PGScalar wrap_width);
-	static lng RenderedLines(PGTextBuffer* buffer, lng linenr, lng total_lines, char* line, lng length, PGFontHandle font, PGScalar wrap_width);
+	static lng* WrapLine(TextView* view, lng linenr, char* line, lng length, PGFontHandle font, PGScalar wrap_width);
+	static lng RenderedLines(TextView* view, lng linenr, char* line, lng length, PGFontHandle font, PGScalar wrap_width);
 
 	PGSyntax* syntax;
 

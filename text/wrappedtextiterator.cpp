@@ -5,8 +5,9 @@
 #include "unicode.h"
 #include "wrappedtextiterator.h"
 
-WrappedTextLineIterator::WrappedTextLineIterator(PGFontHandle font, TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width) :
-	font(font), wrap_width(wrap_width), start_wrap(0) {
+WrappedTextLineIterator::WrappedTextLineIterator(TextView* view, PGFontHandle font, 
+	TextFile* textfile, PGVerticalScroll scroll, PGScalar wrap_width) :
+	view(view), font(font), wrap_width(wrap_width), start_wrap(0) {
 	lng current_line = scroll.linenumber;
 	this->Initialize(textfile, current_line);
 
@@ -23,9 +24,9 @@ void WrappedTextLineIterator::PrevLine() {
 		} else {
 			// have to get the previous line
 			TextLineIterator::PrevLine();
-			max_inner_line = textline.RenderedLines(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+			max_inner_line = textline.RenderedLines(view, this->current_line, font, wrap_width);
 			inner_line = max_inner_line - 1;
-			this->wrap_positions = textline.WrapLine(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+			this->wrap_positions = textline.WrapLine(view, this->current_line, font, wrap_width);
 			start_wrap = inner_line > 0 ? wrap_positions[inner_line - 1] : 0;
 			end_wrap = wrap_positions[inner_line];
 		}
@@ -48,10 +49,10 @@ void WrappedTextLineIterator::NextLine() {
 			wrapped_line.length = 0;
 		} else {
 			start_wrap = 0;
-			this->wrap_positions = textline.WrapLine(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+			this->wrap_positions = textline.WrapLine(view, this->current_line, font, wrap_width);
 			end_wrap = wrap_positions[0];
 			inner_line = 0;
-			max_inner_line = textline.RenderedLines(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+			max_inner_line = textline.RenderedLines(view, this->current_line, font, wrap_width);
 		}
 	}
 	this->SetLineFromOffsets();
@@ -66,13 +67,13 @@ PGVerticalScroll WrappedTextLineIterator::GetCurrentScrollOffset() {
 }
 
 void WrappedTextLineIterator::SetCurrentScrollOffset(PGVerticalScroll scroll) {
-	max_inner_line = textline.RenderedLines(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+	max_inner_line = textline.RenderedLines(view, this->current_line, font, wrap_width);
 	if (scroll.inner_line >= max_inner_line) {
 		scroll.inner_line = max_inner_line - 1;
 	}
 	inner_line = scroll.inner_line;
 	assert(scroll.inner_line >= 0 && scroll.inner_line < max_inner_line);
-	this->wrap_positions = textline.WrapLine(this->buffer, this->current_line, textfile->GetLineCount(), font, wrap_width);
+	this->wrap_positions = textline.WrapLine(view, this->current_line, font, wrap_width);
 	start_wrap = inner_line >= 1 ? wrap_positions[inner_line - 1] : 0;
 	end_wrap = wrap_positions[inner_line];
 	SetLineFromOffsets();

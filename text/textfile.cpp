@@ -401,7 +401,7 @@ void TextFile::RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile) {
 				PGParserState oldstate = buffer->state;
 				PGParserState state = current_block == 0 ? textfile->highlighter->GetDefaultState() : textfile->buffers[current_block - 1]->state;
 
-				lng linecount = buffer->GetLineCount(textfile->GetLineCount());
+				lng linecount = buffer->GetLineCount();
 				assert(linecount > 0);
 
 				buffer->syntax.clear();
@@ -462,7 +462,6 @@ void TextFile::InvalidateBuffers(TextView* responsible_view) {
 			// we don't know the length of this buffer
 			// get the current length
 			double new_width = 0;
-			buffer->ClearWrappedLines();
 			lng linenr = 0;
 
 			char* ptr = buffer->buffer;
@@ -805,7 +804,7 @@ TextLine TextFile::GetLine(lng linenumber) {
 	if (!is_loaded) return TextLine();
 	if (linenumber < 0 || linenumber >= linecount)
 		return TextLine();
-	return TextLine(GetBuffer(linenumber), linenumber, linecount);
+	return TextLine(GetBuffer(linenumber), linenumber);
 }
 
 void TextFile::SetTabWidth(int tabwidth) {
@@ -917,7 +916,7 @@ void TextFile::DeleteSelection(std::vector<Cursor>& cursors, size_t i) {
 			if (buffer == max_line_length.buffer) {
 				max_line_length.buffer = nullptr;
 			}
-			lines_deleted += buffer->GetLineCount(this->GetLineCount());
+			lines_deleted += buffer->GetLineCount();
 			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
 			PGTextBuffer* next = buffer->next;
@@ -986,7 +985,7 @@ void TextFile::DeleteSelection(std::vector<Cursor>& cursors, size_t i) {
 			if (end.buffer == max_line_length.buffer) {
 				max_line_length.buffer = nullptr;
 			}
-			lines_deleted += end.buffer->GetLineCount(this->GetLineCount());
+			lines_deleted += end.buffer->GetLineCount();
 			begin.buffer->next = end.buffer->next;
 			if (begin.buffer->next) begin.buffer->next->prev = begin.buffer;
 			buffers_deleted++;
@@ -1599,7 +1598,7 @@ void TextFile::DeleteText(std::vector<Cursor>& cursors, PGTextRange range) {
 			if (buffer == max_line_length.buffer) {
 				max_line_length.buffer = nullptr;
 			}
-			lines_deleted += buffer->GetLineCount(this->GetLineCount());
+			lines_deleted += buffer->GetLineCount();
 			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
 			PGTextBuffer* next = buffer->next;
@@ -1648,7 +1647,7 @@ void TextFile::DeleteText(std::vector<Cursor>& cursors, PGTextRange range) {
 			if (end.buffer == max_line_length.buffer) {
 				max_line_length.buffer = nullptr;
 			}
-			lines_deleted += end.buffer->GetLineCount(this->GetLineCount());
+			lines_deleted += end.buffer->GetLineCount();
 			begin.buffer->next = end.buffer->next;
 			if (begin.buffer->next) begin.buffer->next->prev = begin.buffer;
 			buffers_deleted++;
@@ -1886,7 +1885,8 @@ void TextFile::VerifyTextfile() {
 	for (size_t i = 0; i < buffers.size(); i++) {
 		PGTextBuffer* buffer = buffers[i];
 		buffer->VerifyBuffer();
-		assert(panther::epsilon_equals(measured_width, buffer->cumulative_width));
+		assert(panther::epsilon_equals(measured_width, buffer->cumulative_width, std::max(0.0001, measured_width / 1000000)));
+		measured_width = buffer->cumulative_width;
 		assert(buffers[i]->index == i);
 		lng current_lines = 0;
 		char* ptr = buffer->buffer;

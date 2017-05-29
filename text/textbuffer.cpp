@@ -10,13 +10,13 @@ lng TEXT_BUFFER_SIZE = 4096;
 PGTextBuffer::PGTextBuffer() : 
 	buffer(nullptr), buffer_size(0), current_size(0), start_line(0), 
 	state(nullptr), cumulative_width(0), syntax(),
-	width(0), line_count(0), index(0), wrap_width(0) {
+	width(0), line_count(0), index(0) {
 
 }
 
 PGTextBuffer::PGTextBuffer(const char* text, lng size, lng start_line) :
 	current_size(size), start_line(start_line), state(nullptr), syntax(), 
-	cumulative_width(0), width(0), line_count(0), index(0), wrap_width(0) {
+	cumulative_width(0), width(0), line_count(0), index(0) {
 	if (size + 1 < TEXT_BUFFER_SIZE) {
 		buffer_size = TEXT_BUFFER_SIZE;
 	} else {
@@ -34,7 +34,7 @@ PGTextBuffer::~PGTextBuffer() {
 	}
 }
 
-lng PGTextBuffer::GetLineCount(lng total_lines) {
+lng PGTextBuffer::GetLineCount() {
 	return line_count;
 }
 
@@ -369,11 +369,6 @@ lng PGTextBuffer::GetStartLine(lng position) {
 		}
 	}
 	return line_start.size();
-}
-
-void PGTextBuffer::ClearWrappedLines() {
-	line_wraps.clear();
-	cached_positions.clear();
 }
 
 void PGTextBuffer::VerifyBuffer() {

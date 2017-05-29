@@ -22,7 +22,7 @@ void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 	end_position = buffer->current_size - 1;
 
 	lng current_line = buffer->start_line;
-	lng last_line = current_line + buffer->GetLineCount(textfile->GetLineCount());
+	lng last_line = current_line + buffer->GetLineCount();
 	assert(line >= current_line);
 	textline.line = buffer->buffer;
 	textline.length = buffer->current_size - 1;

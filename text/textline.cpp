@@ -1,11 +1,12 @@
 
 #include "textline.h"
 #include "unicode.h"
+#include "textview.h"
 
-TextLine::TextLine(PGTextBuffer* buffer, lng line, lng max_line) {
+TextLine::TextLine(PGTextBuffer* buffer, lng line) {
 	assert(line >= buffer->start_line);
 	lng current_line = buffer->start_line;
-	lng maximum_line = current_line + buffer->GetLineCount(max_line);
+	lng maximum_line = current_line + buffer->GetLineCount();
 	this->line = buffer->buffer;
 	this->length = std::max((lng) buffer->current_size - 1, (lng) 0);
 	// check if there is more than one line in the buffer
@@ -36,43 +37,34 @@ TextLine::TextLine(PGTextBuffer* buffer, lng line, lng max_line) {
 	}
 }
 
-lng TextLine::RenderedLines(PGTextBuffer* buffer, lng linenr, lng total_lines, char* line, lng length, PGFontHandle font, PGScalar wrap_width) {
+lng TextLine::RenderedLines(TextView* buffer, lng linenr, char* line, lng length, PGFontHandle font, PGScalar wrap_width) {
 	// first wrap the line, if it has not already been wrapped
-	WrapLine(buffer, linenr, total_lines, line, length, font, wrap_width);
+	WrapLine(buffer, linenr, line, length, font, wrap_width);
 
 	// then search until we find the end of the line
-	return buffer->line_wraps[linenr - buffer->start_line].lines.size();
+	return buffer->line_wraps[linenr].lines.size();
 }
 
-lng TextLine::RenderedLines(PGTextBuffer* buffer, lng linenr, lng total_lines, PGFontHandle font, PGScalar wrap_width) {
-	return TextLine::RenderedLines(buffer, linenr, total_lines, line, length, font, wrap_width);
+lng TextLine::RenderedLines(TextView* buffer, lng linenr, PGFontHandle font, PGScalar wrap_width) {
+	return TextLine::RenderedLines(buffer, linenr, line, length, font, wrap_width);
 }
 
-lng* TextLine::WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, PGFontHandle font, PGScalar wrap_width) {
-	return WrapLine(buffer, linenr, total_lines, line, length, font, wrap_width);
+lng* TextLine::WrapLine(TextView* buffer, lng linenr, PGFontHandle font, PGScalar wrap_width) {
+	return WrapLine(buffer, linenr, line, length, font, wrap_width);
 }
 
-lng* TextLine::WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, char* line, lng length, PGFontHandle font, PGScalar wrap_width) {
-	lng buffer_lines = buffer->GetLineCount(total_lines);
-	assert(linenr >= buffer->start_line && linenr < buffer->start_line + buffer->line_count);
+lng* TextLine::WrapLine(TextView* buffer, lng linenr, char* line, lng length, PGFontHandle font, PGScalar wrap_width) {
 	if (!panther::epsilon_equals(buffer->wrap_width, wrap_width)) {
 		// cache is invalidated: wrap width is different
 		buffer->line_wraps.clear();
 		buffer->wrap_width = wrap_width;
-	} else if (buffer->line_wraps.size() == buffer_lines) {
-		// check if the cache exists
-		if (buffer->line_wraps[linenr - buffer->start_line].lines.size() != 0) {
-			// line wrap already cached
-			return (lng*) (&buffer->line_wraps[linenr - buffer->start_line].lines[0]);
+	} else {
+		auto entry = buffer->line_wraps.find(linenr);
+		if (entry != buffer->line_wraps.end()) {
+			return (lng*) (& (entry->second.lines[0]));
 		}
 	}
-	assert(linenr >= buffer->start_line);
-	assert(!buffer->next || linenr < buffer->next->start_line);
-	if (buffer->line_wraps.size() != buffer_lines) {
-		buffer->line_wraps.resize(buffer_lines);
-	}
-
-	lng index = linenr - buffer->start_line;
+	lng index = linenr;
 	lng start_wrap = 0;
 	lng end_wrap = -1;
 	std::vector<lng> wrap_positions;
@@ -82,7 +74,7 @@ lng* TextLine::WrapLine(PGTextBuffer* buffer, lng linenr, lng total_lines, char*
 	}
 	wrap_positions.push_back(length);
 	buffer->line_wraps[index].lines = wrap_positions;
-	return (lng*) (&buffer->line_wraps[linenr - buffer->start_line].lines[0]);
+	return (lng*) (&buffer->line_wraps[linenr].lines[0]);
 }
 
 

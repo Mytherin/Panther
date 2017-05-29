@@ -84,8 +84,8 @@ namespace panther {
 		}
 	}
 
-	bool epsilon_equals(double a, double b) {
-		return abs(a - b) < 0.00001;
+	bool epsilon_equals(double a, double b, double epsilon) {
+		return abs(a - b) <= epsilon;
 	}
 
 	lng strtolng(const char* text, char**end, size_t length) {

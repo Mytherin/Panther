@@ -35,13 +35,15 @@ public:
 	lng xoffset = 0;
 	PGVerticalScroll yoffset;
 
-	bool wordwrap = false;
-	PGScalar wordwrap_width;
-
 	std::vector<Cursor> cursors;
 	lng active_cursor;
 
 	std::unique_ptr<PGMutex> lock;
+
+	bool wordwrap = false;
+	PGScalar wrap_width;
+	std::map<lng, PGLineWrap> line_wraps;
+
 
 	BasicTextField* textfield;
 

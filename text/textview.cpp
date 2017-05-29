@@ -5,7 +5,7 @@
 
 TextView::TextView(BasicTextField* textfield, std::shared_ptr<TextFile> file) :
 	textfield(textfield), file(file), wordwrap(false),
-	xoffset(0), yoffset(0, 0) {
+	xoffset(0), yoffset(0, 0), wrap_width(0) {
 	lock = std::unique_ptr<PGMutex>(CreateMutex());
 }
 
@@ -22,16 +22,16 @@ void TextView::Initialize() {
 
 TextLineIterator* TextView::GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll) {
 	if (wordwrap) {
-		return new WrappedTextLineIterator(textfield->GetTextfieldFont(), file.get(),
-			scroll, wordwrap_width);
+		return new WrappedTextLineIterator(this, textfield->GetTextfieldFont(), file.get(),
+			scroll, wrap_width);
 	}
 	return new TextLineIterator(file.get(), scroll.linenumber);
 }
 
 TextLineIterator* TextView::GetLineIterator(BasicTextField* textfield, lng linenumber) {
 	if (wordwrap) {
-		return new WrappedTextLineIterator(textfield->GetTextfieldFont(), file.get(),
-			PGVerticalScroll(linenumber, 0), wordwrap_width);
+		return new WrappedTextLineIterator(this, textfield->GetTextfieldFont(), file.get(),
+			PGVerticalScroll(linenumber, 0), wrap_width);
 	}
 	return new TextLineIterator(file.get(), linenumber);
 }
@@ -45,7 +45,7 @@ double TextView::GetScrollPercentage(PGVerticalScroll scroll) {
 			width += buffer->line_lengths[i - buffer->start_line];
 
 		TextLine textline = file->GetLine(scroll.linenumber);
-		lng inner_lines = textline.RenderedLines(buffer, scroll.linenumber, file->GetLineCount(), textfield->GetTextfieldFont(), wordwrap_width);
+		lng inner_lines = textline.RenderedLines(this, scroll.linenumber, textfield->GetTextfieldFont(), wrap_width);
 		width += ((double)scroll.inner_line / (double)inner_lines) * buffer->line_lengths[scroll.linenumber - buffer->start_line];
 		return file->total_width == 0 ? 0 : width / file->total_width;
 	} else {
@@ -88,7 +88,7 @@ void TextView::SetScrollOffset(lng offset) {
 		auto buffer = file->buffers[PGTextBuffer::GetBufferFromWidth(file->buffers, width)];
 		double start_width = buffer->cumulative_width;
 		lng line = 0;
-		lng max_line = buffer->GetLineCount(file->GetLineCount());
+		lng max_line = buffer->GetLineCount();
 		while (line < max_line) {
 			double next_width = start_width + buffer->line_lengths[line];
 			if (next_width >= width) {
@@ -100,7 +100,7 @@ void TextView::SetScrollOffset(lng offset) {
 		line += buffer->start_line;
 		// find position within buffer
 		TextLine textline = file->GetLine(line);
-		lng inner_lines = textline.RenderedLines(buffer, line, file->GetLineCount(), textfield->GetTextfieldFont(), wordwrap_width);
+		lng inner_lines = textline.RenderedLines(this, line, textfield->GetTextfieldFont(), wrap_width);
 		percentage = buffer->line_lengths[line - buffer->start_line] == 0 ? 0 : (width - start_width) / buffer->line_lengths[line - buffer->start_line];
 		percentage = std::max(0.0, std::min(1.0, percentage));
 		PGVerticalScroll scroll;
@@ -114,7 +114,7 @@ lng TextView::GetMaxYScroll() {
 	if (!wordwrap) {
 		return file->GetLineCount() - 1;
 	} else {
-		return std::max((lng)(file->total_width / wordwrap_width), file->GetLineCount() - 1);
+		return std::max((lng)(file->total_width / wrap_width), file->GetLineCount() - 1);
 	}
 }
 
@@ -478,21 +478,26 @@ void TextView::ActuallyApplySettings(PGTextViewSettings& settings) {
 	}
 	if (settings.wordwrap) {
 		this->wordwrap = settings.wordwrap;
-		this->wordwrap_width = -1;
+		this->wrap_width = -1;
 		settings.wordwrap = false;
 	}
+	LockMutex(lock.get());
 	if (settings.cursor_data.size() > 0) {
-		LockMutex(lock.get());
 		this->ClearCursors();
 		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
 			it->start_line = std::max((lng)0, std::min(file->linecount - 1, it->start_line));
 			it->end_line = std::max((lng)0, std::min(file->linecount - 1, it->end_line));
 			this->cursors.push_back(Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
 		}
+		if (cursors.size() == 0) {
+			cursors.push_back(Cursor(this, 0, 0));
+		}
 		std::sort(cursors.begin(), cursors.end(), Cursor::CursorOccursFirst);
 		Cursor::NormalizeCursors(this, this->cursors, false);
-		UnlockMutex(lock.get());
+	} else if (cursors.size() == 0) {
+		cursors.push_back(Cursor(this, 0, 0));
 	}
+	UnlockMutex(lock.get());
 }
 
 bool TextView::IsLastFileView() {
@@ -501,11 +506,10 @@ bool TextView::IsLastFileView() {
 }
 
 void TextView::InvalidateTextView(bool scroll) {
-	// FIXME: invalidate TextView can be called from a different thread (when scroll == false)
-	// this can cause concurrency conflicts
 	yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, yoffset.linenumber));
 
 	matches.clear();
+	line_wraps.clear();
 
 	LockMutex(lock.get());
 	Cursor::NormalizeCursors(this, cursors, scroll);
@@ -518,13 +522,13 @@ void TextView::InvalidateTextView(bool scroll) {
 
 void TextView::SetWordWrap(bool wordwrap, PGScalar wrap_width) {
 	this->wordwrap = wordwrap;
-	if (this->wordwrap && !panther::epsilon_equals(this->wordwrap_width, wrap_width)) {
+	if (this->wordwrap && !panther::epsilon_equals(this->wrap_width, wrap_width)) {
 		// heuristic to determine new scroll position in current line after resize
-		this->yoffset.inner_line = (wordwrap_width / wrap_width) * this->yoffset.inner_line;
-		this->wordwrap_width = wrap_width;
+		this->yoffset.inner_line = (this->wrap_width / wrap_width) * this->yoffset.inner_line;
+		this->wrap_width = wrap_width;
 		this->xoffset = 0;
 	} else if (!this->wordwrap) {
-		this->wordwrap_width = -1;
+		this->wrap_width = -1;
 	}
 }
 

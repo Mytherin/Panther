@@ -73,15 +73,10 @@ public:
 
 	double width = 0;
 	double cumulative_width = -1;
-	PGScalar wrap_width;
 
 	std::vector<PGSyntax> syntax;
 	std::vector<lng> line_start;
 	std::vector<PGScalar> line_lengths;
-	std::vector<PGLineWrap> line_wraps;
-	std::vector<PGCharacterPosition> cached_positions;
-
-	void ClearWrappedLines();
 
 	void Extend(ulng new_size);
 
@@ -110,7 +105,7 @@ public:
 	lng DeleteLines(ulng start);
 
 	// gets the total amount of lines in the buffer, parameter should be total amount of lines in the text file
-	lng GetLineCount(lng total_lines);
+	lng GetLineCount();
 	// gets the total width in the buffer; parameter should be total width of the text file
 	double GetTotalWidth(double total_width);
 	// gets all the lines in the buffer as TextLines

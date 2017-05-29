@@ -69,7 +69,7 @@ namespace panther {
 
 	void replace(std::string& source, std::string from, std::string to);
 
-	bool epsilon_equals(double a, double b);
+	bool epsilon_equals(double a, double b, double epsilon = 0.00001);
 
 	lng strtolng(const char* text, char** end, size_t length);
 	inline lng strtolng(const char* text, size_t length) {
