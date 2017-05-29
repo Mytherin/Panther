@@ -172,7 +172,8 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 			lng current_start_position = line_iterator->GetCurrentCharacterNumber();
 
 			if (!minimap) {
-				rendered_lines.push_back(RenderedLine(current_line, current_start_line, current_start_position, line_iterator->GetInnerLine()));
+				rendered_lines.push_back(RenderedLine(current_line, current_start_line,
+					current_start_position, line_iterator->GetInnerLine(), view->wordwrap ? *current_line.syntax : PGSyntax()));
 			}
 
 			// render the linenumber of the current line if it is not wrapped
@@ -462,7 +463,7 @@ next_line:
 
 			PGScalar bitmap_x = position_x_text + character_widths[0];
 			PGScalar bitmap_y = position_y;
-			PGSyntax* syntax = it2->tline.syntax;
+			PGSyntax* syntax = view->wordwrap ? &it2->syntax : it2->tline.syntax;
 			if (syntax) {
 				for (auto it = syntax->syntax.begin(); it != syntax->syntax.end(); it++) {
 					bool squiggles = false;
