@@ -159,6 +159,9 @@ void FileManager::_WriteWorkspace(nlohmann::json& j) {
 			case PGLineEndingMacOS:
 				endings = "MacOS";
 				break;
+			default:
+				endings = "Mixed";
+				break;
 		}
 		auto language = file->GetLanguage();
 		if (language) {
