@@ -173,7 +173,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 
 			if (!minimap) {
 				rendered_lines.push_back(RenderedLine(current_line, current_start_line,
-					current_start_position, line_iterator->GetInnerLine(), view->wordwrap ? *current_line.syntax : PGSyntax()));
+					current_start_position, line_iterator->GetInnerLine(), view->wordwrap && current_line.syntax ? *current_line.syntax : PGSyntax()));
 			}
 
 			// render the linenumber of the current line if it is not wrapped
