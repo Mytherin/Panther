@@ -45,7 +45,7 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextView> view) :
 		return ((TextField*)tf)->MinimapMouseEvent(mouse_enter);
 	});
 
-   	textfield_font = PGCreateFont(PGFontTypeTextField);
+	textfield_font = PGCreateFont(PGFontTypeTextField);
 	minimap_font = PGCreateFont(PGFontTypeTextField);
 
 	int size = 0;
@@ -61,7 +61,7 @@ TextField::TextField(PGWindowHandle window, std::shared_ptr<TextView> view) :
 TextField::~TextField() {
 	ControlManager* manager = GetControlManager(this);
 	if (manager) {
-		manager->UnregisterMouseRegion(&minimap_region);	
+		manager->UnregisterMouseRegion(&minimap_region);
 	}
 }
 
@@ -345,7 +345,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 				}
 				break;
 			}
-			
+
 			// render the actual text
 			if (!minimap) {
 				// for the main textfield we render the actual text later
@@ -353,7 +353,7 @@ void TextField::DrawTextField(PGRendererHandle renderer, PGFontHandle font, bool
 			}
 
 			lng position = 0;
-			
+
 			PGScalar bitmap_x = position_x_text + character_widths[0];
 			PGScalar bitmap_y = position_y;
 			PGSyntax* syntax = current_line.syntax;
@@ -504,6 +504,7 @@ next_line:
 						} else if (it->type == PGSyntaxClass6) {
 							color = PGStyleManager::GetColor(PGColorSyntaxClass6);
 						}
+
 						if (it->transparent) {
 							color.a = 128;
 						}
@@ -630,7 +631,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 			}
 			if (!view->GetWordWrap()) {
 				// render the minimap gradient between the minimap and the textfield
-				RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));	
+				RenderGradient(renderer, shadow_rect, PGColor(0, 0, 0, 0), PGColor(0, 0, 0, 128));
 			}
 		}
 
@@ -949,6 +950,16 @@ bool TextField::KeyboardCharacter(char character, PGModifier modifier) {
 				view->SetWordWrap(!view->GetWordWrap(), GetTextfieldWidth());
 				this->Invalidate();
 				return true;
+			case 'P':
+			{
+				std::vector<CodeSuggestion> suggestions;
+				suggestions.push_back(CodeSuggestion("this", PGSuggestionTypeKeyword));
+				suggestions.push_back(CodeSuggestion("x", PGSuggestionTypeVariable));
+				suggestions.push_back(CodeSuggestion("y", PGSuggestionTypeVariable));
+				suggestions.push_back(CodeSuggestion("function", PGSuggestionTypeFunction));
+				DisplayCodeCompletion(suggestions);
+				return true;
+			}
 			default:
 				break;
 		}
@@ -1085,7 +1096,7 @@ void TextField::SelectionChanged() {
 				if (view->file->last_modified_notification < 0) {
 					view->file->last_modified_notification = stats.modification_time;
 				} else if (view->file->last_modified_notification < stats.modification_time &&
-						view->file->reload_on_changed) {
+					view->file->reload_on_changed) {
 					// however, it has been modified by an external program since we last touched it
 					// notify the user and prompt to reload the file
 					lng threshold = 0;
@@ -1184,7 +1195,7 @@ void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, 
 		lng line_offset = (lng)(y / line_height);
 		PGVerticalScroll scroll = PGVerticalScroll(rendered_lines.front().line, rendered_lines.front().inner_line);
 		auto iterator = view->GetScrollIterator(this, scroll);
-		while(line_offset < 0 && iterator->GetLine().IsValid()) {
+		while (line_offset < 0 && iterator->GetLine().IsValid()) {
 			(*iterator)--;
 			line_offset++;
 		}
@@ -1194,7 +1205,7 @@ void TextField::GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, 
 		lng line_offset = (lng)((y - this->height) / line_height);
 		PGVerticalScroll scroll = PGVerticalScroll(rendered_lines.back().line, rendered_lines.back().inner_line);
 		auto iterator = view->GetScrollIterator(this, scroll);
-		while(line_offset > 0 && iterator->GetLine().IsValid()) {
+		while (line_offset > 0 && iterator->GetLine().IsValid()) {
 			(*iterator)++;
 			line_offset--;
 		}
@@ -1395,6 +1406,17 @@ void TextField::ClearNotification() {
 		dynamic_cast<PGContainer*>(this->parent.lock().get())->RemoveControl(this->notification);
 		this->notification = nullptr;
 	}
+}
+
+void TextField::DisplayCodeCompletion(std::vector<CodeSuggestion> suggestions) {
+	auto completion = std::make_shared<CodeCompletion>(window, suggestions);
+	Cursor c = view->GetActiveCursor();
+	PGScalar x, y;
+	auto pos = c.BeginPosition();
+	this->GetPositionFromLineCharacter(pos.line, pos.position + 1, x, y);
+	completion->SetPosition(PGPoint(this->x + x, this->y + y));
+	completion->SetSize(PGSize(300, std::min(suggestions.size() * GetTextHeight(completion->font), 200.0f)));
+	dynamic_cast<PGContainer*>(this->parent.lock().get())->AddControl(completion);
 }
 
 void TextField::DisplayNotification(PGFileError error) {

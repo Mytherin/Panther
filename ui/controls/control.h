@@ -29,7 +29,8 @@ enum PGControlType {
 	PGControlTypeTabControl,
 	PGControlTypeTextField,
 	PGControlTypeTextFieldContainer,
-	PGControlTypeLabel
+	PGControlTypeLabel,
+	PGControlCodeCompletion
 };
 
 class Control : public std::enable_shared_from_this<Control> {

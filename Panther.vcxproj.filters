@@ -408,6 +408,9 @@
     <ClInclude Include="settings\default-styles.h">
       <Filter>Header Files\settings</Filter>
     </ClInclude>
+    <ClInclude Include="ui\controls\textfield\codecompletion.h">
+      <Filter>Header Files\ui\controls\textfield</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="files\directory.cpp">
@@ -658,6 +661,9 @@
     </ClCompile>
     <ClCompile Include="text\textview.cpp">
       <Filter>Source Files\text</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\controls\textfield\codecompletion.cpp">
+      <Filter>Source Files\ui\controls\textfield</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -102,6 +102,7 @@
     <ClInclude Include="ui\controls\main\toolbar.h" />
     <ClInclude Include="ui\controls\notification.h" />
     <ClInclude Include="ui\controls\textfield\basictextfield.h" />
+    <ClInclude Include="ui\controls\textfield\codecompletion.h" />
     <ClInclude Include="ui\controls\textfield\simpletextfield.h" />
     <ClInclude Include="ui\controls\textfield\tabcontrol.h" />
     <ClInclude Include="ui\controls\textfield\textfield.h" />
@@ -188,6 +189,7 @@
     <ClCompile Include="ui\controls\main\toolbar.cpp" />
     <ClCompile Include="ui\controls\notification.cpp" />
     <ClCompile Include="ui\controls\textfield\basictextfield.cpp" />
+    <ClCompile Include="ui\controls\textfield\codecompletion.cpp" />
     <ClCompile Include="ui\controls\textfield\simpletextfield.cpp" />
     <ClCompile Include="ui\controls\textfield\tabcontrol.cpp" />
     <ClCompile Include="ui\controls\textfield\textfield.cpp" />

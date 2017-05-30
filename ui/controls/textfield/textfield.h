@@ -9,6 +9,8 @@
 #include "notification.h"
 #include "decoratedscrollbar.h"
 
+#include "codecompletion.h"
+
 #include <map>
 
 class TabControl;
@@ -87,6 +89,7 @@ public:
 
 	void IncreaseFontSize(int modifier);
 
+	void DisplayCodeCompletion(std::vector<CodeSuggestion> suggestions);
 	void DisplayNotification(PGFileError error);
 	void DisplayGotoDialog(PGGotoType goto_type);
 	void DisplaySearchBox(std::vector<SearchEntry>& entries, SearchBoxCloseFunction close_function, void* close_data);
@@ -149,4 +152,5 @@ private:
 
 	PGNotification* notification = nullptr;
 	Control* active_searchbox = nullptr;
+	Control* active_codecompletion = nullptr;
 };
