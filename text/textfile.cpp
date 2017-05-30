@@ -273,16 +273,15 @@ void TextFile::AddTextView(std::shared_ptr<TextView> view) {
 }
 
 void TextFile::SetLanguage(PGLanguage* language) {
+	if (!this->is_loaded) return;
+	this->Lock(PGWriteLock);
 	this->language = language;
 	this->highlighter = this->language ? std::unique_ptr<SyntaxHighlighter>(this->language->CreateHighlighter()) : nullptr;
-	if (this->is_loaded) {
-		this->Lock(PGWriteLock);
-		for (auto it = buffers.begin(); it != buffers.end(); it++) {
-			(*it)->parsed = false;
-		}
-		this->Unlock(PGWriteLock);
-		this->InvalidateParsing();
+	for (auto it = buffers.begin(); it != buffers.end(); it++) {
+		(*it)->parsed = false;
 	}
+	this->Unlock(PGWriteLock);
+	this->InvalidateParsing();
 }
 
 bool TextFile::Reload(PGFileError& error) {
