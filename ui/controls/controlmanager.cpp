@@ -206,15 +206,21 @@ ControlManager* GetControlManager(Control* c) {
 	return GetWindowManager(c->window);
 }
 
-void ControlManager::ShowFindReplace(PGFindTextType type) {
+void ControlManager::ShowFindReplace(PGFindTextType type, std::string text) {
 	// Find text
 	if (active_findtext) {
 		active_findtext->SetType(type);
+		if (text.size() > 0) {
+			active_findtext->SetText(text);
+		}
 		SetFocusedControl(active_findtext);
 		this->Invalidate();
 		return;
 	}
 	auto view = make_shared_control<PGFindText>(this->window, type);
+	if (text.size() > 0) {
+		view->SetText(text);
+	}
 	this->active_findtext = view.get();
 	view->SetAnchor(PGAnchorBottom | PGAnchorLeft);
 	view->bottom_anchor = statusbar;

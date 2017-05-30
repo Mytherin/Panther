@@ -111,7 +111,6 @@ void TextFile::ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, boo
 }
 
 #define PANTHER_BUFSIZ 8192
-//lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_size, char** output, lng* output_size, char** intermediate_buffer, lng* intermediate_size) {
 
 void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_binary) {
 	PGFileHandle handle = panther::OpenFile(file->path, PGFileReadOnly, this->error);
@@ -228,43 +227,6 @@ wrapup:
 		free(intermediate_buffer);
 	}
 	panther::CloseFile(handle);
-
-	/*
-	lng size = 0;
-	char* base = (char*)panther::ReadFile(file->path, size, error);
-	if (!base || size < 0) {
-		// FIXME: proper error message
-		bytes = -1;
-		return;
-	}
-	if (file->pending_delete) {
-		panther::DestroyFileContents(base);
-		return;
-	}
-	char* output_text = nullptr;
-	lng output_size = 0;
-	PGFileEncoding result_encoding;
-	if (!PGTryConvertToUTF8(base, size, &output_text, &output_size, &result_encoding, ignore_binary) || !output_text) {
-		error = PGFileEncodingFailure;
-		bytes = -1;
-		return;
-	}
-	if (output_text != base) {
-		panther::DestroyFileContents(base);
-		base = output_text;
-		size = output_size;
-	}
-	if (file->pending_delete) {
-		panther::DestroyFileContents(base);
-		return;
-	}
-	auto stats = PGGetFileFlags(file->path);
-	file->encoding = result_encoding;
-	if (stats.flags == PGFileFlagsEmpty) {
-		file->last_modified_time = stats.modification_time;
-		file->last_modified_notification = stats.modification_time;
-	}
-	OpenFile(base, size, true);*/
 }
 
 
@@ -1800,6 +1762,7 @@ std::string TextFile::CutText(std::vector<Cursor>& cursors) {
 std::string TextFile::CopyText(std::vector<Cursor>& cursors) {
 	std::string text = "";
 	if (!is_loaded) return text;
+	// FIXME: read lock?
 	if (Cursor::CursorsContainSelection(cursors)) {
 		bool first_copy = true;
 		for (auto it = cursors.begin(); it != cursors.end(); it++) {

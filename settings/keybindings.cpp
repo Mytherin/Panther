@@ -425,3 +425,50 @@ void PGPopupMenuInsertCommand(PGPopupMenuHandle menu,
 		((PGKeyFunction)info->pdata)(control);
 	}, flags);
 }
+
+struct PGArgsInformation {
+	PGKeyFunctionArgs command;
+	std::map<std::string, std::string> args;
+};
+
+void PGPopupMenuInsertCommandWithArgs(PGPopupMenuHandle menu,
+	std::string command_text,
+	std::string command_name,
+	std::map<std::string, PGKeyFunctionArgs>& keybindings_args,
+	std::map<PGKeyPress, PGKeyFunctionCall>& keybindings,
+	std::map<std::string, PGBitmapHandle>& images,
+	std::map<std::string, std::string> args,
+	PGPopupMenuFlags flags,
+	PGPopupCallback callback,
+	PGPopupMenuHandle main_menu) {
+	// look for the command
+	if (keybindings_args.count(command_name) <= 0) return; // command not found
+	PGKeyFunctionArgs command = keybindings_args[command_name];
+	// look for the hotkey
+	std::string hotkey = "";
+	for (auto it = keybindings.begin(); it != keybindings.end(); it++) {
+		if ((PGKeyFunctionArgs) it->second.function == command) {
+			hotkey = it->first.ToString();
+			break;
+		}
+	}
+	PGBitmapHandle image = nullptr;
+	if (images.count(command_name) > 0) {
+		image = images[command_name];
+	}
+	PGArgsInformation* args_info = new PGArgsInformation();
+	args_info->command = command;
+	args_info->args = args;
+
+	auto info = PGPopupInformation(menu, command_text, hotkey, image, (void*) args_info);
+	info.menu_handle = main_menu;
+
+	// FIXME: this leaks PGArgsInformation
+	PGPopupMenuInsertEntry(menu, info,
+		callback ? callback : 
+	[](Control* control, PGPopupInformation* info) {
+		PGArgsInformation* args_info = (PGArgsInformation*)info->pdata;
+		args_info->command(control, args_info->args);
+	}, flags);
+}
+

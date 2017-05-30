@@ -32,6 +32,7 @@ public:
 	void ReplaceAll(bool in_selection = false);
 
 	void SetType(PGFindTextType type);
+	void SetText(std::string text);
 
 	void ResolveSize(PGSize new_size);
 

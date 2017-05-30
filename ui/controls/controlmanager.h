@@ -64,7 +64,7 @@ public:
 	virtual bool CloseControlManager();
 	bool IsDragging() { return is_dragging; }
 
-	void ShowFindReplace(PGFindTextType type);
+	void ShowFindReplace(PGFindTextType type, std::string text = "");
 	void CreateNewWindow();
 
 	virtual void LosesFocus(void);

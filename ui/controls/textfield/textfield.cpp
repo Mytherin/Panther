@@ -805,6 +805,7 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		PGPopupMenuInsertCommand(menu, "Cut", "cut", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
 		PGPopupMenuInsertCommand(menu, "Paste", "paste", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
 		PGPopupMenuInsertSeparator(menu);
+		PGPopupMenuInsertCommand(menu, "Find In File", "show_find", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images);
 		PGPopupMenuInsertCommand(menu, "Select Everything", "select_all", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuFlags flags = view->file->FileInMemory() ? PGPopupMenuGrayed : PGPopupMenuFlagsNone;
@@ -1291,6 +1292,12 @@ void TextField::InitializeKeybindings() {
 	noargs["swap_line_down"] = [](Control* c) {
 		TextField* tf = (TextField*)c;
 		assert(0);
+	};
+	noargs["show_find"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		ControlManager* cm = GetControlManager(tf);
+		std::string text = tf->view->CopyText();
+		cm->ShowFindReplace(PGFindSingleFile, text);
 	};
 	noargs["insert_newline_before"] = [](Control* c) {
 		TextField* tf = (TextField*)c;

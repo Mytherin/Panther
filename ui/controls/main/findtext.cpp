@@ -173,6 +173,10 @@ void PGFindText::Initialize() {
 	this->SetType(this->type);
 }
 
+void PGFindText::SetText(std::string text) {
+	this->field->SetText(text);
+}
+
 void PGFindText::SetType(PGFindTextType type) {
 	this->type = type;
 
