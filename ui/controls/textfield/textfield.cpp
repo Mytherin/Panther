@@ -806,6 +806,7 @@ void TextField::MouseUp(int x, int y, PGMouseButton button, PGModifier modifier)
 		PGPopupMenuInsertCommand(menu, "Paste", "paste", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuInsertCommand(menu, "Find In File", "show_find", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images);
+		PGPopupMenuInsertCommand(menu, "Select This Word", "select_current_word", TextField::keybindings_noargs, TextField::keybindings, TextField::keybindings_images);
 		PGPopupMenuInsertCommand(menu, "Select Everything", "select_all", BasicTextField::keybindings_noargs, BasicTextField::keybindings, BasicTextField::keybindings_images);
 		PGPopupMenuInsertSeparator(menu);
 		PGPopupMenuFlags flags = view->file->FileInMemory() ? PGPopupMenuGrayed : PGPopupMenuFlagsNone;
@@ -1298,6 +1299,14 @@ void TextField::InitializeKeybindings() {
 		ControlManager* cm = GetControlManager(tf);
 		std::string text = tf->view->CopyText();
 		cm->ShowFindReplace(PGFindSingleFile, text);
+	};
+	noargs["select_current_word"] = [](Control* c) {
+		TextField* tf = (TextField*)c;
+		ControlManager* cm = GetControlManager(tf);
+		std::string text = tf->view->CopyText();
+		auto regex = PGCompileRegex(text, false, PGRegexFlagsNone);
+		tf->view->FindAllMatches(regex, false, 0, 0, 0, 0, true);
+		tf->view->SelectMatches(false);
 	};
 	noargs["insert_newline_before"] = [](Control* c) {
 		TextField* tf = (TextField*)c;
