@@ -743,6 +743,7 @@ bool TextView::FindMatch(PGRegexHandle handle, PGDirection direction, bool wrap,
 bool TextView::SelectMatches(bool in_selection) {
 	if (matches.size() == 0) return false;
 
+	LockMutex(lock.get());
 	if (in_selection) {
 		std::vector<Cursor> backup = cursors;
 		std::vector<PGTextRange> selections;
@@ -753,21 +754,24 @@ bool TextView::SelectMatches(bool in_selection) {
 		for (auto it = matches.begin(); it != matches.end(); it++) {
 			for (auto it2 = selections.begin(); it2 != selections.end(); it2++) {
 				if (!(*it < *it2 || *it > *it2)) {
-					cursors.push_back(Cursor(this, *it));
+					cursors.push_back(Cursor(this, it->Invert()));
 					break;
 				}
 			}
 		}
 		if (cursors.size() == 0) {
 			cursors = backup;
+			UnlockMutex(lock.get());
 			return false;
 		}
 	} else {
 		ClearCursors();
 		for (auto it = matches.begin(); it != matches.end(); it++) {
-			cursors.push_back(Cursor(this, *it));
+			cursors.push_back(Cursor(this, it->Invert()));
 		}
 	}
+	UnlockMutex(lock.get());
+	matches.clear();
 	active_cursor = 0;
 	VerifyTextView();
 	if (textfield) textfield->SelectionChanged();

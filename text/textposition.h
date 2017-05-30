@@ -90,6 +90,8 @@ struct PGTextRange {
 	}
 	char* end() const { return end_buffer->buffer + end_position; }
 
+	PGTextRange Invert() { return PGTextRange(endpos(), startpos()); }
+
 	void remove_prefix(size_t length);
 private:
 	template<void* T(const void *s, int c, size_t n)>
