@@ -20,7 +20,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 # FIXME: check if CMAKE_BUILD_TYPE is set correctly as well
 
-include_directories(files os rust/include settings syntax syntax/languages text testing third_party third_party/concurrent_queue third_party/json third_party/re2 ui ui/controls ui/controls/basic ui/controls/main ui/controls/textfield utils)
+include_directories(files os rust/include settings syntax syntax/languages text testing third_party third_party/concurrent_queue third_party/json ui ui/controls ui/controls/basic ui/controls/main ui/controls/textfield utils)
 
 if (WIN32)
 	include_directories(os/windows)
@@ -30,6 +30,11 @@ if (APPLE)
 	include_directories(os/macos)
 endif(APPLE)
 
+# RE2 include directories
+include_directories(third_party/re2)
+
+# ICU include directories
+include_directories(third_party/icu/common third_party/icu/i18n third_party/icu/io)
 
 add_subdirectory(files)
 add_subdirectory(os)
@@ -66,7 +71,7 @@ target_link_libraries(panther
     optimized "${CMAKE_SOURCE_DIR}/rust/target/release/libpgrust.a"
     )#ws2_32 userenv advapi32)
 #icu libraries
-target_link_libraries(panther ${ICU_BUILD_DIR}/lib/libicudata.a	${ICU_BUILD_DIR}/lib/libicuio.a	${ICU_BUILD_DIR}/lib/libicutu.a ${ICU_BUILD_DIR}/lib/libicui18n.a ${ICU_BUILD_DIR}/lib/libicuuc.a)
+target_link_libraries(panther panther_icu_library)
 #skia
 target_link_libraries(panther ${SKIA_BUILD_DIR}/libskia.a)
 if (APPLE)
