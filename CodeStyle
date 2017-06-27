@@ -1,0 +1,6 @@
+
+General code style:
+
+- Use tabs for indentation, not spaces.
+- Global functions, variables, structs, classes and typedefs should start with the 'PG' prefix.
+- Class and function names should be CamelCased, variables should be lower_cased.

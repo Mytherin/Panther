@@ -1,0 +1,21 @@
+
+
+Libraries used by Panther:
+
+
+- Skia (https://skia.org/)
+A cross-platform rendering library created by Google and used by Chromium. This library is used to do all the rendering.
+
+Build instructions: https://skia.org/user/download
+
+- International Components for Unicode (http://site.icu-project.org/)
+A library for converting between a wide variety of different text encodings. This library is used to parse files from different encodings and convert them to UTF-8 (the internal text representation of Panther).
+
+- RE2 (https://github.com/google/re2)
+An efficient regex library implemented in C++. We have modified RE2 so it supports running on text that is split into separate buffers. This way it can directly search in Panther's internal string structures. The modified RE2 library is included in the repository (third_party/re2). A standalone version of the modified RE2 library (with tests) can be found at https://github.com/Mytherin/re2.
+
+- moodycamel::ConcurrentQueue (https://github.com/cameron314/concurrentqueue)
+A concurrent lock-free queue, used for scheduling tasks on different threads.
+
+- JSON for Modern C++ (https://github.com/nlohmann/json)
+A fast and efficient JSON parser for C++. Used for parsing settings/keybindings files.

@@ -1,0 +1,2 @@
+add_library(panther_re2_re2 OBJECT bitmap256.h bitstate.cc compile.cc dfa.cc filtered_re2.cc filtered_re2.h mimics_pcre.cc nfa.cc onepass.cc parse.cc perl_groups.cc prefilter.cc prefilter.h prefilter_tree.cc prefilter_tree.h prog.cc prog.h re2.cc re2.h regexp.cc regexp.h set.cc set.h simplify.cc stringpiece.cc stringpiece.h tostring.cc unicode_casefold.cc unicode_casefold.h unicode_groups.cc unicode_groups.h walker-inl.h)
+set(ALL_OBJECT_FILES ${ALL_OBJECT_FILES} $<TARGET_OBJECTS:panther_re2_re2> PARENT_SCOPE)
