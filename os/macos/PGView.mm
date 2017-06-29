@@ -44,7 +44,15 @@ struct PGWindow {
 	PGRendererHandle renderer;
 	PGWorkspace* workspace;
 
-	PGWindow(PGWorkspace* workspace) : workspace(workspace) { }
+	PGWindow(PGWorkspace* workspace) : workspace(workspace), event(nullptr) { }
+
+	void SetEvent(NSEvent* event) {
+		if (this->event) {
+			[this->event release];
+		}
+		this->event = event;
+		[event retain];
+	}
 };
 
 struct PGTooltip {
@@ -219,40 +227,40 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 	return YES;
 }
 
-- (void)mouseDown:(NSEvent *)event { 
-	handle->event = event;
+- (void)mouseDown:(NSEvent *)event {
+	handle->SetEvent(event);
 	PGMouseFlags flags = [self getMouseFlags:event];
 	handle->manager->MouseDown(flags.x, flags.y, PGLeftMouseButton, flags.modifiers, 0);
 }
 
 - (void)mouseUp:(NSEvent *)event {
-	handle->event = event;
+	handle->SetEvent(event);
 	PGMouseFlags flags = [self getMouseFlags:event];
 	handle->manager->MouseUp(flags.x, flags.y, PGLeftMouseButton, flags.modifiers);
 }
 
 - (void)rightMouseDown:(NSEvent *)event {
-	handle->event = event;
+	handle->SetEvent(event);
 	PGMouseFlags flags = [self getMouseFlags:event];
 	handle->manager->MouseDown(flags.x, flags.y, PGRightMouseButton, flags.modifiers, 0);
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-	handle->event = event;
+	handle->SetEvent(event);
 	PGMouseFlags flags = [self getMouseFlags:event];
 	handle->manager->MouseUp(flags.x, flags.y, PGRightMouseButton, flags.modifiers);
 }
 
 - (void)otherMouseDown:(NSEvent *)event {
+	handle->SetEvent(event);
 	// FIXME: not just middle mouse button
-	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	handle->manager->MouseDown(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers, 0);
 }
 
 - (void)otherMouseUp:(NSEvent *)event {
+	handle->SetEvent(event);
 	// FIXME: not just middle mouse button
-	handle->event = event;
 	PGMouseFlags flags = [self getMouseFlags:event];
 	handle->manager->MouseUp(flags.x, flags.y, PGMiddleMouseButton, flags.modifiers);
 }
@@ -264,7 +272,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 	if (![event hasPreciseScrollingDeltas]) {
 		yscroll *= 20;
 	}
-	handle->event = event;
+	handle->SetEvent(event);
 	PGMouseFlags flags = [self getMouseFlags:event];
 	handle->manager->MouseWheel(flags.x, flags.y, [event scrollingDeltaX] * 10, yscroll, flags.modifiers);
 }
