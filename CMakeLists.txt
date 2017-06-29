@@ -51,9 +51,6 @@ add_executable(panther ${ALL_OBJECT_FILES})
 # Enable ExternalProject CMake module
 include(ExternalProject)
 
-# Set default ExternalProject root directory
-set_directory_properties(PROPERTIES EP_PREFIX ${CMAKE_BINARY_DIR}/Rust)
-
 # Add rust_example as a CMake target
 ExternalProject_Add(
     panther_rust

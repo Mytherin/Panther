@@ -309,6 +309,8 @@ std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, st
 
 	manager->SetTextFieldLayout(1, 1, initial_files);
 
+	manager->ShowProjectExplorer(false);
+
 	auto menu = PGCreateMenu(handle, manager.get());
 	auto file = PGCreatePopupMenu(handle, manager.get());
 	PGPopupMenuInsertCommand(file, "New File", "new_tab", TabControl::keybindings_noargs, TabControl::keybindings, TabControl::keybindings_images, PGPopupMenuFlagsNone,
