@@ -13,6 +13,8 @@
 #include "workspace.h"
 #include "globalsettings.h"
 
+#include <unistd.h>
+
 // Compilation: clang++ -framework Cocoa -fobjc-arc -lobjc test.mm AppDelegate.mm -o test
 
 // clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm -o main
@@ -26,11 +28,19 @@ void PGInitialize() {
 }
 
 int main(int argc, const char *argv[]) {
+    // handle command line arguments
+    PGCommandLineSettings settings = PGHandleCommandLineArguments(argc, argv);
+    if (settings.exit_code >= 0) {
+        return settings.exit_code;
+    }
+    if (!settings.wait) {
+        daemon(false, true);   
+    }
+
     PGInitializeEncodings();
     NSApplication *application = [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
     //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
-            
 
 
     PGInitialize();
@@ -49,7 +59,7 @@ int main(int argc, const char *argv[]) {
     //ShowWindow(window);
 
     
-    [NSApp activateIgnoringOtherApps:YES];
+    [NSApp activateIgnoringOtherApps:NO];
     [NSApp run];                                                  // Call the Apps Run method
 
     return 0;       // App Never gets here.*/

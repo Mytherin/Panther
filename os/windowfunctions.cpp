@@ -404,6 +404,7 @@ std::shared_ptr<ControlManager> PGCreateControlManager(PGWindowHandle handle, st
 	PGSetWindowMenu(handle, menu);
 	return manager;
 }
+
 PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, void* glob) {
 	if (PGGlobalReplayManager::running_replay) {
 		return PGGlobalReplayManager::GetDirectoryFiles(directory, directories, files);
@@ -413,4 +414,49 @@ PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>&
 		PGGlobalReplayManager::RecordGetDirectoryFiles(directory, directories, files, flags);
 	}
 	return flags;
+}
+
+static void
+print_help() {
+	std::cout << "Usage:" << std::endl;
+	std::cout << "  panther [options] [files]       Open the given files." << std::endl;
+	std::cout << "  panther [options] [directory]   Open the given directories." << std::endl;
+	std::cout << "  panther --version               Print version and exit." << std::endl;
+	std::cout << "  panther --help                  Print help and exit." << std::endl;
+
+	std::cout << std::endl;
+	std::cout << "Possible options:" << std::endl;
+	std::cout << "  --new-window, -n                Open a new window." << std::endl;
+	std::cout << "  --wait, -w                      Wait for files to be closed before returning." << std::endl;
+	std::cout << "  --background, -b                Don't activate the application." << std::endl;
+}
+
+static void
+print_version() {
+	std::cout << "Panther 0.1" << std::endl;
+}
+
+PGCommandLineSettings PGHandleCommandLineArguments(int argc, const char** argv) {
+	PGCommandLineSettings settings;
+	for(int i = 1; i < argc; i++) {
+		std::string arg = std::string(argv[i]);
+		if (arg == "--help" || arg == "-help" || arg == "-h") {
+			print_help();
+			settings.exit_code = 0;
+			return settings;
+		} else if (arg == "--version" || arg == "-version" || arg == "-v") {
+			print_version();
+			settings.exit_code = 0;
+			return settings;
+		} else if (arg == "-n" || arg == "--new-window") {
+			settings.new_window = true;
+		} else if (arg == "-w" || arg == "--wait") {
+			settings.wait = true;
+		} else if (arg == "-b" || arg == "--background") {
+			settings.background = true;
+		} else {
+			settings.files.push_back(arg);
+		}
+	}
+	return settings;
 }

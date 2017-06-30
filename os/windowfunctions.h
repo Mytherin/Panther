@@ -644,3 +644,15 @@ void PGUpdateTooltipRegion(PGTooltipHandle, PGRect rect);
 void PGDestroyTooltip(PGTooltipHandle);
 
 std::string PGApplicationPath();
+
+struct PGCommandLineSettings {
+	int exit_code = -1;
+	bool new_window = false;
+	bool wait = false;
+	bool background = false;
+	std::vector<std::string> files;
+
+	PGCommandLineSettings() : exit_code(-1), new_window(false), wait(false), background(false) { }
+};
+
+PGCommandLineSettings PGHandleCommandLineArguments(int argc, const char** argv);

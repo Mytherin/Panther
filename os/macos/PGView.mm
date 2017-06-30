@@ -499,7 +499,8 @@ PGMouseButton GetMouseState(PGWindowHandle window) {
 PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vector<std::shared_ptr<TextView>> textfiles) {
 	PGNSWindow *window;
 	NSRect contentSize = NSMakeRect(0, 0, 1000.0, 700.0);
-	NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
+	NSUInteger windowStyleMask = NSTitledWindowMask | NSResizableWindowMask |
+			NSClosableWindowMask | NSMiniaturizableWindowMask;
 
 	window = [[PGNSWindow alloc] initWithContentRect:contentSize styleMask:windowStyleMask backing:NSBackingStoreBuffered defer:YES];
 	window.backgroundColor = [NSColor whiteColor];
