@@ -59,7 +59,7 @@ int main(int argc, const char *argv[]) {
     //ShowWindow(window);
 
     
-    [NSApp activateIgnoringOtherApps:NO];
+    [NSApp activateIgnoringOtherApps:YES];
     [NSApp run];                                                  // Call the Apps Run method
 
     return 0;       // App Never gets here.*/
