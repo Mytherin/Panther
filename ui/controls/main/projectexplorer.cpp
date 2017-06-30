@@ -391,6 +391,7 @@ void ProjectExplorer::DrawDirectory(PGRendererHandle renderer, PGDirectory& dire
 }
 
 void ProjectExplorer::Draw(PGRendererHandle renderer) {
+	if (this->width == 0) return;
 	PGScalar x = X();
 	PGScalar y = Y();
 
