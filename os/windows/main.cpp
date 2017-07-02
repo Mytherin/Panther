@@ -183,6 +183,40 @@ std::string UTF8toUCS2(std::string text) {
 	return res;
 }
 
+bool copyTo(SkBitmap* src, SkBitmap* dst) {
+	SkPixmap srcPM;
+	if (!src->peekPixels(&srcPM)) {
+		return false;
+	}
+
+	SkBitmap tmpDst;
+	SkImageInfo dstInfo = src->info();
+	if (!tmpDst.setInfo(dstInfo)) {
+		return false;
+	}
+
+	// allocate colortable if srcConfig == kIndex8_Config
+	sk_sp<SkColorTable> ctable;
+	if (dstInfo.colorType() == kIndex_8_SkColorType) {
+		ctable.reset(SkRef(srcPM.ctable()));
+	}
+	if (!tmpDst.tryAllocPixels(ctable.get())) {
+		return false;
+	}
+
+	SkPixmap dstPM;
+	if (!tmpDst.peekPixels(&dstPM)) {
+		return false;
+	}
+
+	if (!srcPM.readPixels(dstPM)) {
+		return false;
+	}
+
+	dst->swap(tmpDst);
+	return true;
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	PGWindowHandle handle = GetHWNDHandle(hWnd);
 	if (!handle) {
@@ -210,13 +244,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				r.fBottom = ps.rcPaint.bottom;
 
 				SkBitmap subset;
-				if (!handle->bitmap.extractSubset(&subset_bitmap, r)) {
+				if (!handle->bitmap.extractSubset(&subset, r)) {
 					EndPaint(hWnd, &ps);
 					break;
 				}
+				// we have to create a copy of the bitmap subset
+				// because otherwise the pixels are not aligned correctly for the SetDIBitsToDevice
+				copyTo(&subset, &subset_bitmap);
 				bitmap = &subset_bitmap;
-			} else {
-
 			}
 			BITMAPINFO bmi;
 			memset(&bmi, 0, sizeof(bmi));
