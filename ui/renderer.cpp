@@ -963,9 +963,9 @@ PGBitmapHandle PGLoadImage(std::string path) {
 	handle->bitmap = new SkBitmap();
 	auto info = codec->getInfo();
 	handle->bitmap->allocPixels(info);
-	handle->bitmap->lockPixels();
+	//handle->bitmap->lockPixels();
 	codec->getPixels(info, handle->bitmap->getPixels(), handle->bitmap->rowBytes());
-	handle->bitmap->unlockPixels();
+	//handle->bitmap->unlockPixels();
 	delete codec;
 	return handle;
 }

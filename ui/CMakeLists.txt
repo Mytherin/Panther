@@ -1,5 +1,5 @@
 
-include_directories(${SKIA_SOURCE_DIR}/include/core ${SKIA_SOURCE_DIR}/include/config ${SKIA_SOURCE_DIR}/include/codec ${SKIA_SOURCE_DIR}/include/effects)
+include_directories(${SKIA_SOURCE_DIR}/include/core ${SKIA_SOURCE_DIR}/include/config ${SKIA_SOURCE_DIR}/include/codec ${SKIA_SOURCE_DIR}/include/effects ${SKIA_SOURCE_DIR}/src/core)
 
 
 add_subdirectory(controls)

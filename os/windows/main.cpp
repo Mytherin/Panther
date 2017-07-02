@@ -67,14 +67,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
 	wcex.hIcon = (HICON)LoadImageW( // returns a HANDLE so we have to cast to HICON
-		nullptr,             // hInstance must be NULL when loading from a file
-		(LPCWSTR)UTF8toUCS2("data/icons/logo.ico").c_str(),       // the icon file name
-		IMAGE_ICON,       // specifies that the file is an icon
-		0,                // width of the image (we'll specify default later on)
-		0,                // height of the image
-		LR_LOADFROMFILE |  // we want to load a file (as opposed to a resource)
-		LR_DEFAULTSIZE |   // default metrics based on the type (IMAGE_ICON, 32x32)
-		LR_SHARED         // let the system release the handle when it's no longer used
+								   nullptr,             // hInstance must be NULL when loading from a file
+								   (LPCWSTR)UTF8toUCS2("data/icons/logo.ico").c_str(),       // the icon file name
+								   IMAGE_ICON,       // specifies that the file is an icon
+								   0,                // width of the image (we'll specify default later on)
+								   0,                // height of the image
+								   LR_LOADFROMFILE |  // we want to load a file (as opposed to a resource)
+								   LR_DEFAULTSIZE |   // default metrics based on the type (IMAGE_ICON, 32x32)
+								   LR_SHARED         // let the system release the handle when it's no longer used
 	);
 	wcex.hCursor = NULL;
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
@@ -84,9 +84,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	if (!RegisterClassEx(&wcex)) {
 		MessageBox(nullptr,
-			_T("Call to RegisterClassEx failed!"),
-			_T("Win32 Guided Tour"),
-			0);
+				   _T("Call to RegisterClassEx failed!"),
+				   _T("Win32 Guided Tour"),
+				   0);
 
 		return 1;
 	}
@@ -210,15 +210,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				r.fBottom = ps.rcPaint.bottom;
 
 				SkBitmap subset;
-				if (!handle->bitmap.extractSubset(&subset, r)) {
-					EndPaint(hWnd, &ps);
-					break;
-				}
-				if (!subset.deepCopyTo(&subset_bitmap)) {
+				if (!handle->bitmap.extractSubset(&subset_bitmap, r)) {
 					EndPaint(hWnd, &ps);
 					break;
 				}
 				bitmap = &subset_bitmap;
+			} else {
+
 			}
 			BITMAPINFO bmi;
 			memset(&bmi, 0, sizeof(bmi));
@@ -230,17 +228,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			bmi.bmiHeader.biCompression = BI_RGB;
 			bmi.bmiHeader.biSizeImage = 0;
 
-			bitmap->lockPixels();
+			//bitmap->lockPixels();
 			int ret = SetDIBitsToDevice(hdc,
-				ps.rcPaint.left, ps.rcPaint.top,
-				bitmap->width(), bitmap->height(),
-				0, 0,
-				0, bitmap->height(),
-				bitmap->getPixels(),
-				&bmi,
-				DIB_RGB_COLORS);
+										ps.rcPaint.left, ps.rcPaint.top,
+										bitmap->width(), bitmap->height(),
+										0, 0,
+										0, bitmap->height(),
+										bitmap->getPixels(),
+										&bmi,
+										DIB_RGB_COLORS);
 			(void)ret; // we're ignoring potential failures for now.
-			bitmap->unlockPixels();
+			//bitmap->unlockPixels();
 			EndPaint(hWnd, &ps);
 			break;
 		}
@@ -292,17 +290,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			bmi.bmiHeader.biSizeImage = 0;
 
 			assert(bitmap.width() * bitmap.bytesPerPixel() == bitmap.rowBytes());
-			bitmap.lockPixels();
+			//bitmap.lockPixels();
 			int ret = SetDIBitsToDevice(render_item->hDC,
-				rect.x, rect.y,
-				bitmap.width(), bitmap.height(),
-				0, 0,
-				0, bitmap.height(),
-				bitmap.getPixels(),
-				&bmi,
-				DIB_RGB_COLORS);
+										rect.x, rect.y,
+										bitmap.width(), bitmap.height(),
+										0, 0,
+										0, bitmap.height(),
+										bitmap.getPixels(),
+										&bmi,
+										DIB_RGB_COLORS);
 			(void)ret; // we're ignoring potential failures for now.
-			bitmap.unlockPixels();
+			//bitmap.unlockPixels();
 			break;
 		}
 		case WM_SETFOCUS:
@@ -603,11 +601,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				while (handle->pending_confirmation_box) {
 					handle->pending_confirmation_box = false;
 					PGResponse response = PGResponseCancel;
-					int retval = MessageBoxW(handle->hwnd, 
-						(LPCWSTR)UTF8toUCS2(handle->confirmation_box_data.message).c_str(), 
-						(LPCWSTR)UTF8toUCS2(handle->confirmation_box_data.title).c_str(),
-						(handle->confirmation_box_data.type == PGConfirmationBoxYesNoCancel ? 
-							MB_YESNOCANCEL : MB_YESNO) | MB_ICONWARNING);
+					int retval = MessageBoxW(handle->hwnd,
+						(LPCWSTR)UTF8toUCS2(handle->confirmation_box_data.message).c_str(),
+											 (LPCWSTR)UTF8toUCS2(handle->confirmation_box_data.title).c_str(),
+											 (handle->confirmation_box_data.type == PGConfirmationBoxYesNoCancel ?
+											  MB_YESNOCANCEL : MB_YESNO) | MB_ICONWARNING);
 					if (retval == IDNO) {
 						response = PGResponseNo;
 					} else if (retval == IDYES) {
@@ -968,7 +966,7 @@ void PGPopupMenuInsertEntry(PGPopupMenuHandle handle, PGPopupInformation informa
 	int append_flags = MF_OWNERDRAW;
 	if (flags & PGPopupMenuChecked) append_flags |= MF_CHECKED;
 	if (flags & PGPopupMenuGrayed) append_flags |= MF_GRAYED;
-	
+
 	handle->text_size = max(MeasureTextWidth(handle->font, information.text), handle->text_size);
 	handle->hotkey_size = max(MeasureTextWidth(handle->font, information.hotkey), handle->hotkey_size);
 
@@ -1108,7 +1106,7 @@ std::vector<std::string> ShowOpenFileDialog(bool allow_files, bool allow_directo
 
 	// Create the FileOpenDialog object.
 	hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
-		IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+						  IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
 
 	if (SUCCEEDED(hr)) {
 		// Set the options on the dialog.
@@ -1178,7 +1176,7 @@ std::string ShowSaveFileDialog() {
 
 	// Create the FileOpenDialog object.
 	hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL,
-		IID_IFileSaveDialog, reinterpret_cast<void**>(&pFileSave));
+						  IID_IFileSaveDialog, reinterpret_cast<void**>(&pFileSave));
 
 	if (SUCCEEDED(hr)) {
 		// Set the options on the dialog.
@@ -1439,9 +1437,9 @@ PGTooltipHandle PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string 
 	handle->window = window;
 	// create the actual tooltip.
 	handle->tooltip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
-		WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		window->hwnd, NULL, wcex.hInstance, NULL);
+									 WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+									 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+									 window->hwnd, NULL, wcex.hInstance, NULL);
 	if (!handle->tooltip) {
 		return nullptr;
 	}
@@ -1449,7 +1447,7 @@ PGTooltipHandle PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string 
 	handle->tooltip_text = text;
 
 	SetWindowPos(handle->tooltip, HWND_TOPMOST, 0, 0, 0, 0,
-		SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+				 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
 	// set up tooltip information 
 	TOOLINFOW ti = { 0 };
