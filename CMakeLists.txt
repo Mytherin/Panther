@@ -38,6 +38,10 @@ if (NOT CMAKE_BUILD_TYPE)
     message(FATAL_ERROR "Choose the type of build by setting -DCMAKE_BUILD_TYPE=<type>, options are: Debug Release RelWithDebInfo MinSizeRel.")
 endif()
 
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    add_definitions(-DPANTHER_DEBUG)
+endif()
+
 # FIXME: check if CMAKE_BUILD_TYPE is set correctly as well
 
 include_directories(files os rust/include settings syntax syntax/languages text testing third_party third_party/concurrent_queue third_party/json ui ui/controls ui/controls/basic ui/controls/main ui/controls/textfield utils)
@@ -103,8 +107,6 @@ else(WIN32)
     target_link_libraries(panther ${ICU_BUILD_DIR}/lib/libicudata.a   ${ICU_BUILD_DIR}/lib/libicuio.a ${ICU_BUILD_DIR}/lib/libicutu.a ${ICU_BUILD_DIR}/lib/libicui18n.a ${ICU_BUILD_DIR}/lib/libicuuc.a)
 endif(WIN32)
 
-
-
 #skia
 if (WIN32)
     target_link_libraries(panther ${SKIA_BUILD_DIR}/skia.lib)
@@ -115,3 +117,8 @@ endif(WIN32)
 if (APPLE)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework AppKit -lobjc")
 endif(APPLE)
+
+# copy data files
+add_custom_command(TARGET panther POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  ${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:panther>/data)

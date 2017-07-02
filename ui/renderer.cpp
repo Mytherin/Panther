@@ -57,6 +57,7 @@ SkPaint* CreateTextPaint() {
 
 std::map<std::string, sk_sp<SkTypeface>> loaded_fonts;
 static sk_sp<SkTypeface> CreateFontFromFile(std::string path) {
+	path = PGPathJoin(PGApplicationPath(), path);
 	if (loaded_fonts.count(path) == 0) {
 		if (PGGlobalReplayManager::running_replay) {
 			lng result_size = 0;
@@ -131,11 +132,7 @@ static sk_sp<SkTypeface> CreateFontFromName(std::string name, SkiaFontFace fontf
 
 static void CreateFallbackFonts(PGFontHandle font) {
 	SkPaint* fallback_paint = CreateTextPaint();
-#ifdef WIN32
 	auto fallback_font = CreateFontFromFile("data/fonts/NotoSansHans-Regular.otf");
-#else
-	auto fallback_font = CreateFontFromFile("/Users/myth/Programs/Panther/data/fonts/NotoSansHans-Regular.otf");
-#endif
 	assert(fallback_font);
 	fallback_paint->setTypeface(fallback_font);
 	font->fallback_paints.push_back(fallback_paint);
