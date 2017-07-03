@@ -25,4 +25,5 @@
 -(void)draggingExited:(id<NSDraggingInfo>)sender;
 -(void)draggingEnded:(id<NSDraggingInfo>)sender;
 -(BOOL)performDragOperation:(id<NSDraggingInfo>)sender;
+
 @end

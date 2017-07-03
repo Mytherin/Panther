@@ -509,6 +509,7 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 	window.contentView = view;
 	[window makeFirstResponder:view];
 	[window registerPGView:view];
+	window.sharingType = NSWindowSharingReadWrite;
 
 	[window cascadeTopLeftFromPoint:NSMakePoint(position.x, position.y)];
 	[window setTitle:@"Panther"];

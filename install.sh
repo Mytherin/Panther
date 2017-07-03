@@ -1,8 +1,10 @@
 #!/opt/local/bin/bash
 APPNAME=Panther
-DIR=/Applications/${APPNAME}.app/Contents/MacOS
+APPDIR=/Applications/${APPNAME}.app
+DIR=${APPDIR}/Contents/MacOS
 mkdir -p ${DIR}
 cp build/panther ${DIR}/${APPNAME}
-cp -r data ${DIR}/data
+cp -r data ${APPDIR}/data
+cp os/macos/Info.plist ${DIR}/../Info.plist
 chmod +x ${DIR}/${APPNAME}
 echo ${DIR}/${APPNAME}
