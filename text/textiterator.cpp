@@ -14,7 +14,6 @@ TextLineIterator::TextLineIterator() :
 }
 
 void TextLineIterator::Initialize(TextFile* textfile, lng line) {
-	this->textfile = textfile;
 	this->current_line = line;
 	this->start_position = 0;
 	
@@ -58,8 +57,7 @@ void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 	}
 }
 
-TextLineIterator::TextLineIterator(TextFile* textfile, PGTextBuffer* buffer) :
-	textfile(textfile) {
+TextLineIterator::TextLineIterator(PGTextBuffer* buffer) {
 	this->buffer = buffer;
 	this->current_line = (lng) buffer->start_line - 1;
 	this->end_position = -1;
@@ -92,8 +90,6 @@ void TextLineIterator::PrevLine() {
 			textline.line = buffer->buffer + start_position;
 			textline.length = end_position - start_position;
 			textline.syntax = buffer->parsed ? &buffer->syntax[current_line - buffer->start_line] : nullptr;
-			assert(textfile->GetLine(current_line).GetLine() == textline.line);
-			assert(textfile->GetLine(current_line).GetLength() == textline.length);
 			return;
 		}
 	}
@@ -102,16 +98,13 @@ void TextLineIterator::PrevLine() {
 	textline.line = buffer->buffer + start_position;
 	textline.length = end_position - start_position;
 	textline.syntax = buffer->parsed ? &buffer->syntax[current_line - buffer->start_line] : nullptr;
-
-	assert(textfile->GetLine(current_line).GetLine() == textline.line);
-	assert(textfile->GetLine(current_line).GetLength() == textline.length);
 	// no newline in the buffer
 	//assert(0);
 }
 
 void TextLineIterator::NextLine() {
 	current_line++;
-	if (current_line >= textfile->GetLineCount()) {
+	if (!buffer->next && current_line >= buffer->start_line + buffer->line_count) {
 		current_line--;
 		textline = TextLine();
 		return;

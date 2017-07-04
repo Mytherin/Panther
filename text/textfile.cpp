@@ -36,19 +36,6 @@ struct OpenFileInformation {
 	OpenFileInformation(std::shared_ptr<TextFile> file, char* base, lng size, bool delete_file) : file(file), base(base), size(size), delete_file(delete_file) {}
 };
 
-struct HighlighterData {
-	std::shared_ptr<TextFile> textfile;
-
-	HighlighterData(std::shared_ptr<TextFile> textfile) : textfile(textfile) {}
-};
-
-void TextFile::RunHighlighterWrapped(std::shared_ptr<Task> task, void* d) {
-	HighlighterData* data = (HighlighterData*)d;
-	std::shared_ptr<TextFile> ptr = data->textfile;
-	delete data;
-	ptr->RunHighlighter(task, ptr);
-}
-
 TextFile::TextFile() :
 	highlighter(nullptr), bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
 	last_modified_deletion(false), saved_undo_count(0), read_only(false), reload_on_changed(true),
@@ -93,13 +80,13 @@ void TextFile::OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding,
 	file->encoding = encoding;
 	if (!immediate_load) {
 		OpenFileInformation* info = new OpenFileInformation(file, base, size, false);
-		this->current_task = std::shared_ptr<Task>(new Task(
+		this->current_task = std::make_shared<Task>(
 			[](std::shared_ptr<Task> task, void* inp) {
 				OpenFileInformation* info = (OpenFileInformation*)inp;
 				info->file->OpenFile(info->base, info->size, info->delete_file);
 				delete info;
 			}
-			, info));
+			, info);
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
 		OpenFile(base, size, false);
@@ -109,13 +96,13 @@ void TextFile::OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding,
 void TextFile::ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, bool ignore_binary) {
 	if (!immediate_load) {
 		OpenFileInformation* info = new OpenFileInformation(file, nullptr, 0, ignore_binary);
-		this->current_task = std::shared_ptr<Task>(new Task(
+		this->current_task = std::make_shared<Task>(
 			[](std::shared_ptr<Task> task, void* inp) {
 				OpenFileInformation* info = (OpenFileInformation*)inp;
 				info->file->ActuallyReadFile(info->file, info->delete_file);
 				delete info;
 			}
-			, info));
+			, info);
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
 		ActuallyReadFile(file, ignore_binary);
@@ -203,32 +190,7 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 	VerifyTextfile();
 
 	if (highlighter) {
-		// we parse the first 10 blocks before opening the textfield for viewing
-		// (heuristic: probably should be dependent on highlight speed/amount of text/etc)
-		// anything else we schedule for highlighting in a separate thread
-		// first create all the textblocks
-		lng current_line = 0;
-		// parse the first 10 blocks
-		PGParseErrors errors;
-		PGParserState state = highlighter->GetDefaultState();
-		for (lng i = 0; i < (lng)std::min((size_t)10, buffers.size()); i++) {
-			auto lines = buffers[i]->GetLines();
-			buffers[i]->syntax.clear();
-			int index = 0;
-			for (auto it = lines.begin(); it != lines.end(); it++) {
-				PGSyntax syntax;
-				state = highlighter->IncrementalParseLine(*it, i, state, errors, syntax);
-				buffers[i]->syntax.push_back(syntax);
-			}
-			buffers[i]->state = highlighter->CopyParserState(state);
-			buffers[i]->parsed = true;
-		}
-		highlighter->DeleteParserState(state);
-		if (buffers.size() > 10) {
-			is_loaded = true;
-			this->current_task = std::make_shared<Task>(RunHighlighterWrapped, new HighlighterData(shared_from_this()));
-			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
-		}
+		HighlightText();
 	}
 
 	ApplySettings(this->settings);
@@ -360,23 +322,16 @@ PGTextBuffer* TextFile::GetBuffer(lng line) {
 	return buffers[PGTextBuffer::GetBuffer(buffers, line)];
 }
 
-void TextFile::RunHighlighter(std::shared_ptr<Task> task, std::shared_ptr<TextFile> textfile) {
-	for (lng i = 0; i < (lng)textfile->buffers.size(); i++) {
-		if (!textfile->buffers[i]->parsed) {
+void TextFile::HighlightText() {
+	for (lng i = 0; i < (lng)this->buffers.size(); i++) {
+		if (!this->buffers[i]->parsed) {
 			// if we encounter a non-parsed block, parse it and any subsequent blocks that have to be parsed
 			lng current_block = i;
-			while (current_block < (lng)textfile->buffers.size()) {
-				if (textfile->current_task != task) {
-					// a new syntax highlighting task has been activated
-					// stop parsing with possibly outdated information
-					textfile->buffers[current_block]->parsed = false;
-					return;
-				}
-				textfile->Lock(PGWriteLock);
-				PGTextBuffer* buffer = textfile->buffers[current_block];
+			while (current_block < (lng)this->buffers.size()) {
+				PGTextBuffer* buffer = this->buffers[current_block];
 				PGParseErrors errors;
 				PGParserState oldstate = buffer->state;
-				PGParserState state = current_block == 0 ? textfile->highlighter->GetDefaultState() : textfile->buffers[current_block - 1]->state;
+				PGParserState state = current_block == 0 ? this->highlighter->GetDefaultState() : this->buffers[current_block - 1]->state;
 
 				lng linecount = buffer->GetLineCount();
 				assert(linecount > 0);
@@ -384,29 +339,28 @@ void TextFile::RunHighlighter(std::shared_ptr<Task> task, std::shared_ptr<TextFi
 				buffer->syntax.clear();
 
 				int index = 0;
-				for (auto it = TextLineIterator(textfile.get(), textfile->buffers[current_block]); ; it++) {
+				for (auto it = TextLineIterator(this->buffers[current_block]); ; it++) {
 					TextLine line = it.GetLine();
 					PGSyntax syntax;
-					state = textfile->highlighter->IncrementalParseLine(line, i, state, errors, syntax);
+					state = this->highlighter->IncrementalParseLine(line, i, state, errors, syntax);
 					buffer->syntax.push_back(syntax);
 					index++;
 					if (index == linecount) break;
 				}
 				buffer->parsed = true;
-				buffer->state = textfile->highlighter->CopyParserState(state);
-				bool equivalent = !oldstate ? false : textfile->highlighter->StateEquivalent(textfile->buffers[current_block]->state, oldstate);
+				buffer->state = this->highlighter->CopyParserState(state);
+				bool equivalent = !oldstate ? false : this->highlighter->StateEquivalent(this->buffers[current_block]->state, oldstate);
 				if (oldstate) {
-					textfile->highlighter->DeleteParserState(oldstate);
+					this->highlighter->DeleteParserState(oldstate);
 				}
-				textfile->Unlock(PGWriteLock);
+				current_block++;
 				if (equivalent) {
 					break;
 				}
-				current_block++;
 			}
+			i = current_block;
 		}
 	}
-	textfile->current_task = nullptr;
 }
 
 void TextFile::InvalidateBuffer(PGTextBuffer* buffer) {
@@ -499,8 +453,9 @@ void TextFile::InvalidateParsing() {
 
 	if (!highlighter) return;
 
-	this->current_task = std::make_shared<Task>(RunHighlighterWrapped, new HighlighterData(shared_from_this()));
-	Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
+	Lock(PGWriteLock);
+	this->HighlightText();
+	Unlock(PGWriteLock);
 }
 
 void TextFile::Lock(PGLockType type) {
@@ -537,8 +492,8 @@ void TextFile::Unlock(PGLockType type) {
 	}
 }
 
-void TextFile::_InsertLine(char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
-	char* line_start = ptr + prev;
+void TextFile::_InsertLine(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+	const char* line_start = ptr + prev;
 	lng line_size = (lng)(current - prev);
 	if (current_buffer == nullptr ||
 		(current_buffer->current_size > TEXT_BUFFER_SIZE) ||
@@ -576,7 +531,7 @@ void TextFile::_InsertLine(char* ptr, size_t current, size_t prev, PGScalar& max
 	linenr++;
 }
 
-void TextFile::_InsertText(char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+void TextFile::_InsertText(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
 	if (current_buffer == nullptr) {
 		_InsertLine(ptr, current, prev, max_length, current_width, current_buffer, linenr);
 		return;
@@ -584,7 +539,7 @@ void TextFile::_InsertText(char* ptr, size_t current, size_t prev, PGScalar& max
 	if (current == prev) {
 		return;
 	}
-	char* line_start = ptr + prev;
+	const char* line_start = ptr + prev;
 	lng line_size = (lng)(current - prev);
 
 	// add text to the last line of the buffer
@@ -617,7 +572,7 @@ void TextFile::_InsertText(char* ptr, size_t current, size_t prev, PGScalar& max
 	current_width += added_length;
 }
 
-void TextFile::ConsumeBytes(char* buffer, size_t buffer_size,
+void TextFile::ConsumeBytes(const char* buffer, size_t buffer_size,
 	PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr, char& prev_character) {
 	size_t prev = 0;
 	for (size_t i = 0; i < buffer_size; i++) {
@@ -644,7 +599,7 @@ void TextFile::ConsumeBytes(char* buffer, size_t buffer_size,
 	}
 }
 
-void TextFile::ConsumeBytes(char* buffer, size_t buffer_size, size_t& prev, int& offset,
+void TextFile::ConsumeBytes(const char* buffer, size_t buffer_size, size_t& prev, int& offset,
 	PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
 	size_t i = 0;
 	while (i < buffer_size) {
@@ -744,32 +699,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	VerifyTextfile();
 
 	if (highlighter) {
-		// we parse the first 10 blocks before opening the textfield for viewing
-		// (heuristic: probably should be dependent on highlight speed/amount of text/etc)
-		// anything else we schedule for highlighting in a separate thread
-		// first create all the textblocks
-		lng current_line = 0;
-		// parse the first 10 blocks
-		PGParseErrors errors;
-		PGParserState state = highlighter->GetDefaultState();
-		for (lng i = 0; i < (lng)std::min((size_t)10, buffers.size()); i++) {
-			auto lines = buffers[i]->GetLines();
-			buffers[i]->syntax.clear();
-			int index = 0;
-			for (auto it = lines.begin(); it != lines.end(); it++) {
-				PGSyntax syntax;
-				state = highlighter->IncrementalParseLine(*it, i, state, errors, syntax);
-				buffers[i]->syntax.push_back(syntax);
-			}
-			buffers[i]->state = highlighter->CopyParserState(state);
-			buffers[i]->parsed = true;
-		}
-		highlighter->DeleteParserState(state);
-		if (buffers.size() > 10) {
-			is_loaded = true;
-			this->current_task = std::make_shared<Task>(RunHighlighterWrapped, new HighlighterData(shared_from_this()));
-			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
-		}
+		HighlightText();
 	}
 
 	ApplySettings(this->settings);

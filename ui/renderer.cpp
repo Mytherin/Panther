@@ -160,7 +160,7 @@ PGFontHandle PGCreateFont() {
 #endif
 }
 
-PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
+PGFontHandle PGCreateFont(const char* fontname, bool italic, bool bold) {
 	PGFontHandle font = new PGFont();
 
 	font->normaltext = CreateTextPaint();
@@ -183,7 +183,7 @@ PGFontHandle PGCreateFont(char* fontname, bool italic, bool bold) {
 	return font;
 }
 
-PGFontHandle PGCreateFont(char* filename) {
+PGFontHandle PGCreateFont(const char* filename) {
 	PGFontHandle font = new PGFont();
 
 	auto main_font = CreateFontFromFile(filename);

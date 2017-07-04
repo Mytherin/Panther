@@ -31,7 +31,7 @@ public:
 	virtual PGTextRange GetCurrentRange() { return PGTextRange(buffer, start_position, buffer, end_position); }
 
 	PGTextBuffer* CurrentBuffer() { return buffer; }
-	TextLineIterator(TextFile* textfile, PGTextBuffer* buffer);
+	TextLineIterator(PGTextBuffer* buffer);
 protected:
 	TextLineIterator(TextFile* textfile, lng current_line);
 	TextLineIterator();
@@ -43,7 +43,6 @@ protected:
 
 	PGTextBuffer* buffer;
 	lng start_position = 0, end_position;
-	TextFile* textfile;
 	lng current_line;
 	TextLine textline;
 };

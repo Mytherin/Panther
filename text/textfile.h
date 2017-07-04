@@ -228,8 +228,8 @@ private:
 
 	void OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding, char* base, size_t size, bool immediate_load);
 
-	void ConsumeBytes(char* buffer, size_t buffer_size, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr, char& prev_character);
-	void ConsumeBytes(char* buffer, size_t buffer_size, size_t& prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
+	void ConsumeBytes(const char* buffer, size_t buffer_size, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr, char& prev_character);
+	void ConsumeBytes(const char* buffer, size_t buffer_size, size_t& prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 	void OpenFile(char* base_data, lng size, bool delete_file);
 	void ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, bool ignore_binary);
 	void ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_binary);
@@ -246,8 +246,7 @@ private:
 	std::vector<Interval> GetCursorIntervals(std::vector<Cursor>& cursors);
 
 	std::shared_ptr<Task> current_task = nullptr;
-	static void RunHighlighterWrapped(std::shared_ptr<Task> task, void* data);
-	static void RunHighlighter(std::shared_ptr<Task> task, std::shared_ptr<TextFile> textfile);
+	void HighlightText();
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateBuffers(TextView* responsible_view);
@@ -281,6 +280,6 @@ private:
 	void ApplySettings(PGTextFileSettings& settings);
 	PGTextFileSettings settings;
 	
-	void _InsertLine(char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
-	void _InsertText(char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
+	void _InsertLine(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
+	void _InsertText(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 };

@@ -3,7 +3,6 @@
 
 
 Scheduler::Scheduler() {
-
 }
 
 void Scheduler::RunThread() {
