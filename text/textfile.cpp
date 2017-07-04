@@ -36,6 +36,18 @@ struct OpenFileInformation {
 	OpenFileInformation(std::shared_ptr<TextFile> file, char* base, lng size, bool delete_file) : file(file), base(base), size(size), delete_file(delete_file) {}
 };
 
+struct HighlighterData {
+	std::shared_ptr<TextFile> textfile;
+
+	HighlighterData(std::shared_ptr<TextFile> textfile) : textfile(textfile) {}
+};
+
+void TextFile::RunHighlighterWrapped(std::shared_ptr<Task> task, void* d) {
+	HighlighterData* data = (HighlighterData*)d;
+	std::shared_ptr<TextFile> ptr = data->textfile;
+	delete data;
+	ptr->RunHighlighter(task, ptr);
+}
 
 TextFile::TextFile() :
 	highlighter(nullptr), bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
@@ -214,7 +226,7 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 		highlighter->DeleteParserState(state);
 		if (buffers.size() > 10) {
 			is_loaded = true;
-			this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)RunHighlighter, (void*) this));
+			this->current_task = std::make_shared<Task>(RunHighlighterWrapped, new HighlighterData(shared_from_this()));
 			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 		}
 	}
@@ -348,7 +360,7 @@ PGTextBuffer* TextFile::GetBuffer(lng line) {
 	return buffers[PGTextBuffer::GetBuffer(buffers, line)];
 }
 
-void TextFile::RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile) {
+void TextFile::RunHighlighter(std::shared_ptr<Task> task, std::shared_ptr<TextFile> textfile) {
 	for (lng i = 0; i < (lng)textfile->buffers.size(); i++) {
 		if (!textfile->buffers[i]->parsed) {
 			// if we encounter a non-parsed block, parse it and any subsequent blocks that have to be parsed
@@ -372,7 +384,7 @@ void TextFile::RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile) {
 				buffer->syntax.clear();
 
 				int index = 0;
-				for (auto it = TextLineIterator(textfile, textfile->buffers[current_block]); ; it++) {
+				for (auto it = TextLineIterator(textfile.get(), textfile->buffers[current_block]); ; it++) {
 					TextLine line = it.GetLine();
 					PGSyntax syntax;
 					state = textfile->highlighter->IncrementalParseLine(line, i, state, errors, syntax);
@@ -487,7 +499,7 @@ void TextFile::InvalidateParsing() {
 
 	if (!highlighter) return;
 
-	this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)RunHighlighter, (void*) this));
+	this->current_task = std::make_shared<Task>(RunHighlighterWrapped, new HighlighterData(shared_from_this()));
 	Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 }
 
@@ -755,7 +767,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		highlighter->DeleteParserState(state);
 		if (buffers.size() > 10) {
 			is_loaded = true;
-			this->current_task = std::shared_ptr<Task>(new Task((PGThreadFunctionParams)RunHighlighter, (void*) this));
+			this->current_task = std::make_shared<Task>(RunHighlighterWrapped, new HighlighterData(shared_from_this()));
 			Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 		}
 	}

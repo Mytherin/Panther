@@ -63,7 +63,7 @@ struct PGTextFileSettings {
 
 struct FindAllInformation;
 
-class TextFile {
+class TextFile : public std::enable_shared_from_this<TextFile> {
 	friend class Cursor;
 	friend class FileManager;
 	friend class TextLineIterator;
@@ -246,7 +246,8 @@ private:
 	std::vector<Interval> GetCursorIntervals(std::vector<Cursor>& cursors);
 
 	std::shared_ptr<Task> current_task = nullptr;
-	static void RunHighlighter(std::shared_ptr<Task> task, TextFile* textfile);
+	static void RunHighlighterWrapped(std::shared_ptr<Task> task, void* data);
+	static void RunHighlighter(std::shared_ptr<Task> task, std::shared_ptr<TextFile> textfile);
 
 	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateBuffers(TextView* responsible_view);
