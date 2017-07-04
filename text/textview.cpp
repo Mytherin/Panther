@@ -66,6 +66,7 @@ void TextView::SetLineOffset(lng offset) {
 	assert(offset >= 0 && offset < file->linecount);
 	yoffset.linenumber = offset;
 	yoffset.inner_line = 0;
+	yoffset.line_fraction = 0;
 }
 
 void TextView::SetLineOffset(PGVerticalScroll scroll) {
