@@ -414,13 +414,13 @@ void RenderString(PGRendererHandle renderer, PGFontHandle font, const std::strin
 
 void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, int x, int y) {
 	if (PGGlobalReplayManager::running_replay) return;
-	renderer->canvas->drawBitmap(*image->bitmap, x, y, renderer->paint);
+	renderer->canvas->drawBitmap(*image->bitmap, x, y);
 }
 
 void RenderImage(PGRendererHandle renderer, PGBitmapHandle image, PGRect rect) {
 	if (PGGlobalReplayManager::running_replay) return;
 	renderer->paint->setColor(CreateSkColor(PGColor(255, 255, 255, 255)));
-	renderer->canvas->drawBitmapRect(*image->bitmap, CreateSkRect(rect), renderer->paint);
+	renderer->canvas->drawBitmapRect(*image->bitmap, CreateSkRect(rect), NULL);
 }
 
 
@@ -960,9 +960,11 @@ PGBitmapHandle PGLoadImage(std::string path) {
 	handle->bitmap = new SkBitmap();
 	auto info = codec->getInfo();
 	handle->bitmap->allocPixels(info);
-	//handle->bitmap->lockPixels();
-	codec->getPixels(info, handle->bitmap->getPixels(), handle->bitmap->rowBytes());
-	//handle->bitmap->unlockPixels();
+	auto result = codec->getPixels(info, handle->bitmap->getPixels(), handle->bitmap->rowBytes());
 	delete codec;
+	if (result != SkCodec::kSuccess) {
+		delete handle;
+		return nullptr;
+	}
 	return handle;
 }

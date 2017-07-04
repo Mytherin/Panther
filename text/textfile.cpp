@@ -174,6 +174,10 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 			goto wrapup;
 		}
 	}
+	if (total_bytes == 0) {
+		ConsumeBytes("", 0, max_length, current_width, current_buffer, linenr, prev_character);
+		this->encoding = PGEncodingUTF8;
+	}
 	linecount = linenr;
 	total_width = current_width;
 
