@@ -12,7 +12,7 @@ class PGWorkspace {
 public:
 	PGWorkspace();
 	void LoadWorkspace(std::string filename);
-	void WriteWorkspace();
+	std::string WriteWorkspace();
 
 	std::vector<PGWindowHandle>& GetWindows() { return windows; }
 	std::string GetName() { return workspace_name; }

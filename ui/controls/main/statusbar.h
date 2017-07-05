@@ -20,6 +20,7 @@ public:
 
 	void SelectionChanged();
 
+	void Update();
 	void Draw(PGRendererHandle);
 
 	void Invalidate() {
@@ -27,6 +28,7 @@ public:
 		RefreshWindow(this->window, rect);
 	}
 
+	void AddTimedNotification(PGStatusType type, std::string text, std::string tooltip, int id, double time);
 	std::shared_ptr<PGStatusNotification> AddNotification(PGStatusType type, std::string text, std::string tooltip, bool progress_bar);
 	void RemoveNotification(std::shared_ptr<PGStatusNotification> notification);
 
@@ -40,6 +42,8 @@ private:
 	Button* language_button;
 	Button* lineending_button;
 	Button* tabwidth_button;
+
+	std::vector<std::weak_ptr<PGStatusNotification>> timed_notifications;
 
 	PGStatusNotification* notifications = nullptr;
 

@@ -60,7 +60,10 @@ void ControlManager::Update(void) {
 	if (write_workspace_counter > 0) {
 		write_workspace_counter--;
 		if (write_workspace_counter == 0) {
-			PGGetWorkspace(window)->WriteWorkspace();
+			std::string msg = PGGetWorkspace(window)->WriteWorkspace();
+			if (msg.size() != 0) {
+				statusbar->AddTimedNotification(PGStatusError, "Failed to save workspace.", "Failed to save workspace: " + msg, 1, 15);
+			}
 		}
 	}
 }

@@ -59,7 +59,21 @@ struct PGTooltip {
 	PGWindowHandle window;
 	NSToolTipTag tooltip;
 	PGRect region;
-	NSString* text;
+	NSString *text = nullptr;
+
+	PGTooltip() : text(nullptr) { }
+	~PGTooltip() {
+		if (this->text) {
+			[this->text release];
+		}
+	}
+	void SetText(NSString* text) {
+		if (this->text) {
+			[this->text release];
+		}
+		this->text = text;
+		[text retain];
+	}
 };
 
 
@@ -106,7 +120,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 	if (handle->pending_destroy) {
 		handle->workspace->RemoveWindow(handle);
 		[handle->window performClose:handle->window];
-		handle->workspace->WriteWorkspace();
+		std::string msg = handle->workspace->WriteWorkspace();
 	}
 }
 
@@ -924,7 +938,7 @@ PGTooltipHandle PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string 
 	PGTooltipHandle handle = new PGTooltip();
 	handle->region = rect;
 	handle->window = window;
-	handle->text = [NSString stringWithUTF8String:text.c_str()];
+	handle->SetText([NSString stringWithUTF8String:text.c_str()]);
 	NSRect r = NSMakeRect(rect.x, rect.y, rect.width, rect.height);
 	handle->tooltip = [window->view addToolTipRect:r
 				owner:handle->text
@@ -997,5 +1011,5 @@ PGDirectoryFlags PGGetDirectoryFilesOS(std::string directory, std::vector<PGFile
 }
 
 std::string PGApplicationPath() {
-	return std::string([[[NSBundle mainBundle] bundlePath] UTF8String]);
+	return std::string([[[NSBundle mainBundle] bundlePath] UTF8String]) ;
 }

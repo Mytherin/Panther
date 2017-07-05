@@ -5,8 +5,11 @@
 PGStatusNotification::PGStatusNotification(PGWindowHandle window, PGFontHandle font, PGStatusType type,
 	std::string display_text, std::string tooltip, bool progress_bar) :
 	Control(window), font(font), type(type), text(display_text), 
-	tooltip(tooltip), completion_percentage(progress_bar ? 0 : -1) {
-	
+	completion_percentage(progress_bar ? 0 : -1),
+	remaining_time(0) {
+	if (tooltip.size() > 0) {
+		SetTooltip(tooltip);
+	}
 }
 
 void PGStatusNotification::SetText(std::string text) {
@@ -30,6 +33,7 @@ void PGStatusNotification::ResolveSize(PGSize new_size) {
 	}
 	Control::ResolveSize(new_size);
 }
+
 void PGStatusNotification::Draw(PGRendererHandle renderer) {
 	PGColor edge_color;
 	PGColor fill_color;

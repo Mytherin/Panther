@@ -22,10 +22,12 @@ public:
 	PGControlType GetControlType() { return PGControlTypeStatusNotification; }
 
 	void Draw(PGRendererHandle);
+
+	double remaining_time;
+	int id;
 private:
 	PGFontHandle font;
 	std::string text;
-	std::string tooltip;
 	PGStatusType type;
 	double completion_percentage;
 };

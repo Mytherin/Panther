@@ -255,8 +255,8 @@ TextField* StatusBar::GetActiveTextField() {
 }
 
 std::shared_ptr<PGStatusNotification> StatusBar::AddNotification(PGStatusType type, std::string text, std::string tooltip, bool progress_bar) {
-	PGStatusNotification* notification = new PGStatusNotification(window, font, type, text, tooltip, progress_bar);
-
+	auto n = std::make_shared<PGStatusNotification>(window, font, type, text, tooltip, progress_bar);
+	PGStatusNotification* notification = n.get();
 	notification->SetAnchor(PGAnchorTop | PGAnchorRight);
 	notification->margin.top = 1;
 	notification->margin.bottom = 1;
@@ -265,7 +265,6 @@ std::shared_ptr<PGStatusNotification> StatusBar::AddNotification(PGStatusType ty
 	notification->percentage_height = 1;
 	notification->right_anchor = notifications ? (Control*)notifications : (Control*)tabwidth_button;
 	notifications = notification;
-	auto n = std::shared_ptr<PGStatusNotification>(notification);
 	this->AddControl(n);
 	this->TriggerResize();
 	return n;
@@ -290,5 +289,39 @@ void StatusBar::RemoveNotification(std::shared_ptr<PGStatusNotification> notific
 		n = (PGStatusNotification*)n->right_anchor;
 	}
 	assert(0);
-
 }
+
+void StatusBar::AddTimedNotification(PGStatusType type, std::string text, std::string tooltip, int id, double time) {
+	for(size_t i = 0; i < timed_notifications.size(); i++) {
+		auto ptr = timed_notifications[i].lock();
+		if (ptr) {
+			if (ptr->id == id) {
+				ptr->SetText(text);
+				ptr->remaining_time = time;
+				return;
+			}
+		}
+	}
+	auto n = this->AddNotification(type, text, tooltip, false);
+
+	n->id = id;
+	n->remaining_time = time;
+	this->timed_notifications.push_back(std::weak_ptr<PGStatusNotification>(n));
+}
+
+void StatusBar::Update(/* double t */) {
+	for(size_t i = 0; i < timed_notifications.size(); i++) {
+		auto ptr = timed_notifications[i].lock();
+		if (ptr) {
+			ptr->remaining_time -= 1.0 / 60.0;
+			if (ptr->remaining_time <= 0) {
+				RemoveNotification(ptr);
+			} else {
+				continue;
+			}
+		}
+		timed_notifications.erase(timed_notifications.begin() + i);
+		i--;
+	}
+}
+

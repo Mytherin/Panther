@@ -51,11 +51,11 @@ default_workspace:
 	auto window = PGCreateWindow(this, std::vector<std::shared_ptr<TextView>>());
 }
 
-void PGWorkspace::WriteWorkspace() {
-	if (PGGlobalReplayManager::running_replay) return;
+std::string PGWorkspace::WriteWorkspace() {
+	if (PGGlobalReplayManager::running_replay) return "";
 
 	std::string errmsg;
-	if (filename.size() == 0) return;
+	if (filename.size() == 0) return "File not found.";
 
 	json j = settings;
 	findtext.WriteWorkspace(j);
@@ -75,7 +75,7 @@ void PGWorkspace::WriteWorkspace() {
 
 	std::ofstream out(temp_filename);
 	if (!out) {
-		return;
+		return "Could not open file \"" + temp_filename + "\"";
 	}
 	if (!(out << std::setw(4) << j)) {
 		out.close();
@@ -87,9 +87,10 @@ void PGWorkspace::WriteWorkspace() {
 		// after writing to the temporary file, we move it over the old workspace file 
 		auto ret = PGRenameFile(temp_filename, filename);
 		if (ret == PGIOSuccess) {
-			return;
+			return "";
 		}
 	}
 cleanup:
 	PGRemoveFile(temp_filename);
+	return "I/O error.";
 }
