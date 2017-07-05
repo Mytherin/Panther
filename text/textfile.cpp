@@ -2596,7 +2596,7 @@ void TextFile::ApplySettings(PGTextFileSettings& settings) {
 			for (auto it = buffers.begin(); it != buffers.end(); it++) {
 				(*it)->parsed = false;
 			}
-			this->InvalidateParsing();
+			this->HighlightText();
 		}
 	}
 	if (settings.encoding != PGEncodingUnknown) {
