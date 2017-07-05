@@ -30,6 +30,8 @@
 #include "windows_structs.h"
 
 #include "dirent.h"
+#include <direct.h>
+
 
 #include "replaymanager.h"
 
@@ -60,6 +62,66 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	OleInitialize(nullptr);
 	cmdshow = nCmdShow;
 
+	PGCommandLineSettings settings;
+	// do some command line parsing
+	{
+		int argc;
+		LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+		if (!argv) {
+			return 1;
+		}
+
+		std::vector<std::string> strings;
+		const char** data = (const char**)malloc(argc * sizeof(char*));
+		if (!data) {
+			return 1;
+		}
+		// UCS2 -> UTF8
+		for (int i = 0; i < argc; i++) {
+			strings.push_back(UCS2toUTF8(argv[i]));
+			data[i] = strings.back().c_str();
+		}
+
+		settings = PGHandleCommandLineArguments(argc, data);
+		free(data);
+	}
+	if (settings.exit_code >= 0) {
+		return settings.exit_code;
+	}
+
+	// we limit Panther to one active application using a mutex
+	// try to open the mutex
+	HANDLE hMutex = OpenMutex(MUTEX_ALL_ACCESS, 0, "PantherMutex1.0");
+
+	if (!hMutex) {
+		// mutex does not exist: create it
+		hMutex = CreateMutex(0, 0, "PantherMutex1.0");
+	} else {
+		// The mutex exists so this is the the second instance so return.
+		// find the original instance
+		HWND hWnd = FindWindow(szWindowClass, NULL);
+		if (!hWnd) {
+			// could not find original instance?
+			return 0;
+		}
+
+		// bring original instance to the top, if background is not set
+		if (!settings.background) {
+			SetForegroundWindow(hWnd);
+		}
+		std::string current_directory = PGCurrentDirectory();
+		// send a list of all to-be-opened files to the original program
+		for (auto it = settings.files.begin(); it != settings.files.end(); it++) {
+			std::string file = PGPathJoin(current_directory, *it);
+			COPYDATASTRUCT cds;
+			cds.cbData = file.size();
+			cds.lpData = (void*)file.c_str();
+			SendMessage(hWnd, WM_COPYDATA, 0, (LPARAM)&cds);
+		}
+		// finally exit this instance
+		return 0;
+	}
+
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc = WndProc;
@@ -87,7 +149,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				   _T("Call to RegisterClassEx failed!"),
 				   _T("Win32 Guided Tour"),
 				   0);
-
 		return 1;
 	}
 
@@ -661,6 +722,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				}
 			}
 			break;
+		}
+		case WM_COPYDATA:
+		{
+			// attempt to open the file
+			COPYDATASTRUCT* data = (COPYDATASTRUCT*)lParam;
+			if (data) {
+				handle->manager->DropFile(std::string((const char*)data->lpData, data->cbData));
+			}
+			return 0;
 		}
 		case WM_CLOSE:
 			if (!handle->manager->CloseControlManager())
@@ -1525,4 +1595,9 @@ std::string PGApplicationPath() {
 	GetModuleFileNameW(NULL, szFileName, MAX_PATH + 1);
 	std::string path = PGRootPath(UCS2toUTF8(szFileName));
 	return path;
+}
+
+std::string PGCurrentDirectory() {
+	char temp[8192];
+	return (_getcwd(temp, 8192) ? std::string(temp) : std::string(""));
 }

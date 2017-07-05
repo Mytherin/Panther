@@ -594,6 +594,7 @@ enum PGDirectoryFlags {
 PGDirectoryFlags PGGetDirectoryFiles(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, void* glob = nullptr);
 PGDirectoryFlags PGGetDirectoryFilesOS(std::string directory, std::vector<PGFile>& directories, std::vector<PGFile>& files, void* glob = nullptr);
 
+std::string PGCurrentDirectory();
 std::string PGPathJoin(std::string path_one, std::string path_two);
 std::string PGRootPath(std::string path);
 
@@ -656,3 +657,4 @@ struct PGCommandLineSettings {
 };
 
 PGCommandLineSettings PGHandleCommandLineArguments(int argc, const char** argv);
+
