@@ -10,13 +10,9 @@ TextView::TextView(BasicTextField* textfield, std::shared_ptr<TextFile> file) :
 }
 
 void TextView::Initialize() {
-	LockMutex(lock.get());
-	if (file->IsLoaded()) {
-		cursors.push_back(Cursor(this));
-	} else {
-		settings.cursor_data.push_back(PGCursorRange(0, 0, 0, 0));
-	}
-	UnlockMutex(lock.get());
+	PGTextViewSettings settings;
+	settings.cursor_data.push_back(PGCursorRange(0, 0, 0, 0));
+	this->ApplySettings(settings);
 	file->AddTextView(shared_from_this());
 }
 
@@ -460,11 +456,26 @@ PGTextViewSettings TextView::GetSettings() {
 	return settings;
 }
 
+struct TextViewApplySettings {
+	std::weak_ptr<TextView> view;
+	PGTextViewSettings settings;
+};
+
 void TextView::ApplySettings(PGTextViewSettings& settings) {
-	this->settings = settings;
-	if (file->is_loaded) {
-		ActuallyApplySettings(settings);
-	}
+	TextViewApplySettings* s = new TextViewApplySettings();
+	s->settings = settings;
+	s->view = std::weak_ptr<TextView>(shared_from_this());
+
+	file->OnLoaded([](std::shared_ptr<TextFile> textfile, void* data) {
+		TextViewApplySettings* s = (TextViewApplySettings*)data;
+		auto view = s->view.lock();
+		if (view) {
+			view->ActuallyApplySettings(s->settings);
+		}
+	}, [](void* data) {
+		TextViewApplySettings* s = (TextViewApplySettings*)data;
+		delete s;
+	}, s);
 }
 
 void TextView::ActuallyApplySettings(PGTextViewSettings& settings) {

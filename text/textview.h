@@ -47,8 +47,6 @@ public:
 
 	BasicTextField* textfield;
 
-	PGTextViewSettings settings;
-
 	TextLineIterator* GetScrollIterator(BasicTextField* textfield, PGVerticalScroll scroll);
 	TextLineIterator* GetLineIterator(BasicTextField* textfield, lng linenumber);
 

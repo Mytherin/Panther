@@ -363,7 +363,7 @@ void Cursor::SelectWord() {
 }
 
 std::string Cursor::GetSelectedWord() const {
-	std::string word = "";
+	std::string word;
 	if (start_buffer != end_buffer) return word;
 	if (start_buffer_position == end_buffer_position) return word;
 	lng minpos = std::min(start_buffer_position, end_buffer_position);

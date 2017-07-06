@@ -63,6 +63,9 @@ struct PGTextFileSettings {
 
 struct FindAllInformation;
 
+typedef void (*PGTextFileLoadedCallback)(std::shared_ptr<TextFile> file, void* data);
+typedef void (*PGTextFileDestructorCallback)(void* data);
+
 class TextFile : public std::enable_shared_from_this<TextFile> {
 	friend class Cursor;
 	friend class FileManager;
@@ -185,9 +188,11 @@ public:
 
 	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary);
 
-	void PendDelete();
-private:
 
+	void PendDelete();
+
+	void OnLoaded(PGTextFileLoadedCallback callback, PGTextFileDestructorCallback destructor, void* data);
+private:
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 
 	void InsertLines(std::vector<Cursor>& cursors, std::string text, size_t cursor);
@@ -276,9 +281,24 @@ private:
 
 	std::unique_ptr<PGMutex> text_lock;
 	int shared_counter = 0;
+	
+	std::unique_ptr<PGMutex> loading_lock;
+	struct LoadCallbackData {
+		PGTextFileLoadedCallback callback = nullptr;
+		PGTextFileDestructorCallback destructor = nullptr;
+		void* data = nullptr;
 
-	void ApplySettings(PGTextFileSettings& settings);
-	PGTextFileSettings settings;
+		LoadCallbackData() : callback(nullptr), destructor(nullptr), data(nullptr) { }
+		~LoadCallbackData() {
+			if (data && destructor) {
+				destructor(data);
+			}
+		}
+	};
+	std::vector<std::unique_ptr<LoadCallbackData>> loading_data;
+
+	void FinalizeLoading();
+	void ApplySettings(PGTextFileSettings settings);
 	
 	void _InsertLine(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 	void _InsertText(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);

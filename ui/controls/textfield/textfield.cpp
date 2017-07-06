@@ -579,6 +579,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 
 	if (view->file->IsLoaded()) {
 		view->file->Lock(PGReadLock);
+		assert(view->GetCursors().size() > 0);
 		// determine the width of the line numbers
 		lng line_count = view->GetMaxYScroll();
 		text_offset = 0;

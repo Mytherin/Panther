@@ -43,6 +43,7 @@ TextFile::TextFile() :
 	this->path = "";
 	this->name = std::string("untitled");
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
+	this->loading_lock = std::unique_ptr<PGMutex>(CreateMutex());
 	this->indentation = PGIndentionTabs;
 	this->tabwidth = 4;
 	this->encoding = PGEncodingUTF8;
@@ -68,6 +69,7 @@ TextFile::TextFile(std::string path)  :
 	this->ext = pos == std::string::npos ? std::string("") : path.substr(pos + 1);
 	this->current_task = nullptr;
 	this->text_lock = std::unique_ptr<PGMutex>(CreateMutex());
+	this->loading_lock = std::unique_ptr<PGMutex>(CreateMutex());
 
 	this->language = PGLanguageManager::GetLanguage(ext);
 	if (this->language) {
@@ -87,9 +89,9 @@ void TextFile::OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding,
 				delete info;
 			}
 			, info);
-		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
+Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
-		OpenFile(base, size, false);
+	OpenFile(base, size, false);
 	}
 }
 
@@ -98,11 +100,11 @@ void TextFile::ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, boo
 		OpenFileInformation* info = new OpenFileInformation(file, nullptr, 0, ignore_binary);
 		this->current_task = std::make_shared<Task>(
 			[](std::shared_ptr<Task> task, void* inp) {
-				OpenFileInformation* info = (OpenFileInformation*)inp;
-				info->file->ActuallyReadFile(info->file, info->delete_file);
-				delete info;
-			}
-			, info);
+			OpenFileInformation* info = (OpenFileInformation*)inp;
+			info->file->ActuallyReadFile(info->file, info->delete_file);
+			delete info;
+		}
+		, info);
 		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
 	} else {
 		ActuallyReadFile(file, ignore_binary);
@@ -140,7 +142,7 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 	char* intermediate_buffer = nullptr;
 	lng intermediate_size = 0;
 	while (bytes < total_bytes) {
-		size_t bytes_read = std::min((size_t) PANTHER_BUFSIZ, bytes_to_read);
+		size_t bytes_read = std::min((size_t)PANTHER_BUFSIZ, bytes_to_read);
 		panther::ReadFromFile(handle, buffer, bytes_read);
 		bytes_to_read -= bytes_read;
 		size_t bufsiz = bytes_read;
@@ -180,21 +182,13 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 	linecount = linenr;
 	total_width = current_width;
 
-	for (auto it = views.begin(); it != views.end(); it++) {
-		auto view = it->lock();
-		if (view) {
-			view->ActuallyApplySettings(view->settings);
-		}
-	}
-
 	VerifyTextfile();
 
 	if (highlighter) {
 		HighlightText();
 	}
 
-	ApplySettings(this->settings);
-	is_loaded = true;
+	FinalizeLoading();
 wrapup:
 	UnlockMutex(text_lock.get());
 
@@ -685,14 +679,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	}
 	linecount = linenr;
 	total_width = current_width;
-
-	for (auto it = views.begin(); it != views.end(); it++) {
-		auto view = it->lock();
-		if (view) {
-			view->cursors.push_back(Cursor(view.get()));
-		}
-	}
-
+	
 	if (delete_file) {
 		panther::DestroyFileContents(base);
 	}
@@ -702,8 +689,7 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 		HighlightText();
 	}
 
-	ApplySettings(this->settings);
-	is_loaded = true;
+	FinalizeLoading();
 	UnlockMutex(text_lock.get());
 }
 
@@ -2575,19 +2561,31 @@ TextFile::PGStoreFileType TextFile::WorkspaceFileStorage() {
 	return PGFileTooLarge;
 }
 
+struct TextFileApplySettings {
+	std::weak_ptr<TextFile> file;
+	PGTextFileSettings settings;
+};
+
 void TextFile::SetSettings(PGTextFileSettings settings) {
-	this->settings = settings;
-	if (is_loaded) {
-		Lock(PGWriteLock);
-		ApplySettings(settings);
-		Unlock(PGWriteLock);
-	}
+	TextFileApplySettings* s = new TextFileApplySettings();
+	s->settings = settings;
+	s->file = std::weak_ptr<TextFile>(shared_from_this());
+
+	this->OnLoaded([](std::shared_ptr<TextFile> textfile, void* data) {
+		TextFileApplySettings* s = (TextFileApplySettings*)data;
+		auto file = s->file.lock();
+		if (file) {
+			file->ApplySettings(s->settings);
+		}
+	}, [](void* data) {
+		TextFileApplySettings* s = (TextFileApplySettings*)data;
+		delete s;
+	}, s);
 }
 
-void TextFile::ApplySettings(PGTextFileSettings& settings) {
+void TextFile::ApplySettings(PGTextFileSettings settings) {
 	if (settings.line_ending != PGLineEndingUnknown) {
 		this->lineending = settings.line_ending;
-		settings.line_ending = PGLineEndingUnknown;
 	}
 	if (settings.language && settings.language != this->language) {
 		this->language = settings.language;
@@ -2785,4 +2783,33 @@ PGTextFileSettings TextFile::GetSettings() {
 	settings.line_ending = GetLineEnding();
 	settings.name = FileInMemory() ? this->name : "";
 	return settings;
+}
+
+void TextFile::OnLoaded(PGTextFileLoadedCallback callback, PGTextFileDestructorCallback destructor, void* data) {
+	LockMutex(loading_lock.get());
+	if (is_loaded) {
+		this->Lock(PGWriteLock);
+		callback(shared_from_this(), data);
+		this->Unlock(PGWriteLock);
+		if (data && destructor) {
+			destructor(data);
+		}
+	} else {
+		auto d = std::make_unique<LoadCallbackData>();
+		d->callback = callback;
+		d->destructor = destructor;
+		d->data = data;
+		loading_data.push_back(std::move(d));
+	}
+	UnlockMutex(loading_lock.get());
+}
+
+void TextFile::FinalizeLoading() {
+	LockMutex(loading_lock.get());
+	for (auto it = loading_data.begin(); it != loading_data.end(); it++) {
+		(*it)->callback(shared_from_this(), (*it)->data);
+	}
+	loading_data.clear();
+	is_loaded = true;
+	UnlockMutex(loading_lock.get());
 }
