@@ -1013,3 +1013,9 @@ PGDirectoryFlags PGGetDirectoryFilesOS(std::string directory, std::vector<PGFile
 std::string PGApplicationPath() {
 	return std::string([[[NSBundle mainBundle] bundlePath] UTF8String]) ;
 }
+
+std::string PGCurrentDirectory() {
+	char temp[8192];
+	return (getcwd(temp, 8192) ? std::string(temp) : std::string(""));
+}
+

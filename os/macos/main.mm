@@ -5,10 +5,6 @@
 
 #include <unistd.h>
 
-// Compilation: clang++ -framework Cocoa -fobjc-arc -lobjc test.mm AppDelegate.mm -o test
-
-// clang++ -framework Cocoa -fobjc-arc -lobjc -I/Users/myth/Sources/skia/skia/include/core -I/Users/myth/Sources/skia/skia/include/config -L/Users/myth/Sources/skia/skia/out/Static -lskia -std=c++11 main.mm AppDelegate.mm PGView.mm -o main
-
 int main(int argc, const char *argv[]) {
     NSArray* tl;
 
@@ -17,8 +13,24 @@ int main(int argc, const char *argv[]) {
     if (settings.exit_code >= 0) {
         return settings.exit_code;
     }
+    NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.panther.text"];
+    if ([apps count] > 0) {
+        // app is already running
+        // bring it to the top
+        NSRunningApplication* app = [apps objectAtIndex:0];
+        for(size_t i = 0; i < settings.files.size(); i++) {
+            std::string path = PGPathJoin(PGCurrentDirectory(), settings.files[i]);
+            [[NSDistributedNotificationCenter defaultCenter] 
+                postNotificationName:@"pantherOpenFile" 
+                object:[NSString stringWithUTF8String:path.c_str()]
+                userInfo:nil
+                deliverImmediately:YES];
+        }
+        [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+        return 0;
+    }
     if (!settings.wait) {
-        daemon(false, true);   
+        daemon(false, true);
     }
 
     @autoreleasepool {

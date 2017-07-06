@@ -43,13 +43,37 @@ void PGInitialize() {
 
         PGWorkspace* workspace = open_workspaces.back();
 
-        auto windows = workspace->GetWindows();
+        auto& windows = workspace->GetWindows();
         for (auto it = windows.begin(); it != windows.end(); it++) {
             ShowWindow(*it);
         }
+
+        [[NSDistributedNotificationCenter defaultCenter]
+            addObserver:self
+            selector:@selector(notificationEvent:)
+            name:@"pantherOpenFile"
+            object:nil];
     }
     return self;
  }
+
+-(void)dealloc
+{
+    [[NSDistributedNotificationCenter defaultCenter]
+        removeObserver:self
+        name:@"pantherOpenFile"
+        object:nil];
+    [super dealloc];
+}
+
+-(void)notificationEvent:(NSNotification*)notification {
+    if (open_workspaces.size() == 0) return;
+    PGWorkspace* workspace = open_workspaces[0];
+    auto& windows = workspace->GetWindows();
+    if (windows.size() == 0) return;
+    std::string file = std::string([[notification object] UTF8String]);
+    GetWindowManager(windows[0])->DropFile(file);
+}
 
 -(void)applicationWillFinishLaunching:(NSNotification *)notification
 {
@@ -57,6 +81,6 @@ void PGInitialize() {
 
 -(void)applicationDidFinishLaunching:(NSNotification *)notification
 {
-} 
+}
 
 @end

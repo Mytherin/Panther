@@ -10,6 +10,8 @@
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
+-(void)notificationEvent:(NSNotification*)notification;
+
 
 @end
 
