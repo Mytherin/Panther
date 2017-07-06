@@ -13,6 +13,16 @@ int main(int argc, const char *argv[]) {
     if (settings.exit_code >= 0) {
         return settings.exit_code;
     }
+    if (!settings.wait) {
+        int pid = fork();
+        if (pid < 0) {
+            // failed to fork
+            return 1;
+        } else if (pid != 0) {
+            // parent process: succeeded in forking
+            return 0;
+        }
+     }
     NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.panther.text"];
     if ([apps count] > 0) {
         // app is already running
@@ -28,9 +38,6 @@ int main(int argc, const char *argv[]) {
         }
         [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
         return 0;
-    }
-    if (!settings.wait) {
-        daemon(false, true);
     }
 
     @autoreleasepool {
