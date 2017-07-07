@@ -446,7 +446,13 @@ void PGFindText::UpdateFieldHeight(bool force_update) {
 }
 
 bool PGFindText::Find(PGDirection direction, bool include_selection) {
+	if (this->type == PGFindReplaceManyFiles) {
+		this->FindInFiles();
+		return false;
+	}
+
 	ControlManager* manager = GetControlManager(this);
+
 	auto view = manager->active_textfield->GetTextView();
 	if (!view->file->IsLoaded()) return false;
 	char* error_message = nullptr;
@@ -631,6 +637,9 @@ set_notification:
 
 void PGFindText::Replace() {
 	if (!replace_field) return;
+
+	assert(this->type != PGFindReplaceManyFiles);
+
 	std::string replacement = replace_field->GetText();
 	if (this->Find(PGDirectionRight, true)) {
 		ControlManager* manager = GetControlManager(this);
@@ -645,6 +654,9 @@ void PGFindText::Replace() {
 
 void PGFindText::ReplaceAll(bool in_selection) {
 	if (!replace_field) return;
+
+	assert(this->type != PGFindReplaceManyFiles);
+
 	std::string replacement = replace_field->GetText();
 	ControlManager* manager = GetControlManager(this);
 	auto view = manager->active_textfield->GetTextView();
