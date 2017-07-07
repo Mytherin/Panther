@@ -284,14 +284,36 @@ bool TextFile::Reload(PGFileError& error) {
 	return true;
 }
 
-std::shared_ptr<TextFile> TextFile::OpenTextFile(std::string filename, PGFileError& error, bool immediate_load, bool ignore_binary) {
+bool LoadFileImmediately(std::string filename, PGFileError& error, bool& immediate_load) {
 	error = PGFileSuccess;
+	PGFileHandle handle = panther::OpenFile(filename, PGFileReadOnly, error);
+	if (!handle) {
+		return false;
+	}
+	size_t total_bytes = panther::GetFileSize(handle);
+	if (total_bytes < 8192) {
+		immediate_load = true;
+	}
+	panther::CloseFile(handle);
+	return true;
+}
+
+
+std::shared_ptr<TextFile> TextFile::OpenTextFile(std::string filename, PGFileError& error, bool immediate_load, bool ignore_binary) {
+	if (!LoadFileImmediately(filename, error, immediate_load)) {
+		return nullptr;
+	}
 	auto file = std::make_shared<TextFile>(filename);
 	file->ReadFile(file, immediate_load, ignore_binary);
 	return file;
 }
 
 std::shared_ptr<TextFile> TextFile::OpenTextFile(PGFileEncoding encoding, std::string path, char* buffer, size_t buffer_size, bool immediate_load) {
+	PGFileError error = PGFileSuccess;
+	if (!LoadFileImmediately(path, error, immediate_load)) {
+		return nullptr;
+	}
+
 	auto file = std::make_shared<TextFile>(path);
 	file->OpenFile(file, encoding, buffer, buffer_size, immediate_load);
 	return file;
