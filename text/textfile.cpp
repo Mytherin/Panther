@@ -279,8 +279,7 @@ bool TextFile::Reload(PGFileError& error) {
 		assert(i < views.size());
 		auto ptr = views[i].lock();
 		ptr->ApplySettings(settings[i]);
-	} 
-	//this->ApplySettings(settings);
+	}
 	return true;
 }
 
@@ -291,7 +290,7 @@ bool LoadFileImmediately(std::string filename, PGFileError& error, bool& immedia
 		return false;
 	}
 	size_t total_bytes = panther::GetFileSize(handle);
-	if (total_bytes < 8192) {
+	if (total_bytes < 1024 * 50) { // threshold for immediately loading files is 50KB
 		immediate_load = true;
 	}
 	panther::CloseFile(handle);

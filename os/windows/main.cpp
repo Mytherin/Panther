@@ -1560,7 +1560,7 @@ PGTooltipHandle PGCreateTooltip(PGWindowHandle window, PGRect rect, std::string 
 	ti.uFlags = TTF_SUBCLASS;
 	ti.hwnd = window->hwnd;
 	ti.hinst = wcex.hInstance;
-	ti.lpszText = (LPWSTR)UTF8toUCS2(handle->tooltip_text).c_str();
+	ti.lpszText = (LPWSTR)handle->tooltip_text.c_str();
 	ti.rect.left = rect.x; ti.rect.right = rect.x + rect.width;
 	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
 
@@ -1575,7 +1575,7 @@ void PGUpdateTooltipRegion(PGTooltipHandle handle, PGRect rect) {
 	ti.uFlags = TTF_SUBCLASS;
 	ti.hwnd = handle->window->hwnd;
 	ti.hinst = wcex.hInstance;
-	ti.lpszText = (LPWSTR)UTF8toUCS2(handle->tooltip_text).c_str();
+	ti.lpszText = (LPWSTR)handle->tooltip_text.c_str();
 	ti.rect.left = rect.x; ti.rect.right = rect.x + rect.width;
 	ti.rect.top = rect.y; ti.rect.bottom = rect.y + rect.height;
 

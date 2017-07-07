@@ -154,6 +154,9 @@ PGRegexMatch PGTextSearch(PGRegexHandle handle, PGTextRange context, PGDirection
 	assert(!handle->is_regex);
 	PGRegexMatch match;
 	match.matched = false;
+	if (handle->original_pattern.size() == 0) {
+		return match;
+	}
 
 	bool case_insensitive = handle->flags & PGRegexCaseInsensitive;
 
