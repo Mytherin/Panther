@@ -308,11 +308,6 @@ std::shared_ptr<TextFile> TextFile::OpenTextFile(std::string filename, PGFileErr
 }
 
 std::shared_ptr<TextFile> TextFile::OpenTextFile(PGFileEncoding encoding, std::string path, char* buffer, size_t buffer_size, bool immediate_load) {
-	PGFileError error = PGFileSuccess;
-	if (!LoadFileImmediately(path, error, immediate_load)) {
-		return nullptr;
-	}
-
 	auto file = std::make_shared<TextFile>(path);
 	file->OpenFile(file, encoding, buffer, buffer_size, immediate_load);
 	return file;
@@ -373,7 +368,7 @@ void TextFile::HighlightText() {
 					break;
 				}
 			}
-			i = current_block;
+			i = current_block - 1;
 		}
 	}
 }
