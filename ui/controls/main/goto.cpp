@@ -230,6 +230,9 @@ void PGGotoAnything::SetType(PGGotoType type) {
 			box->OnSelectionChanged([](SearchBox* searchbox, SearchEntry& entry, void* data) {
 				PGGotoAnything* g = (PGGotoAnything*)data;
 				TabControl* tabs = g->textfield->GetTabControl();
+				if (entry.data == nullptr && tabs->SwitchToTab(entry.text)) {
+					return;
+				}
 				if (g->preview) {
 					g->preview = nullptr;
 					tabs->CloseTemporaryFile();

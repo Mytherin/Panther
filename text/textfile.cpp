@@ -182,13 +182,13 @@ void TextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_bina
 	linecount = linenr;
 	total_width = current_width;
 
-	VerifyTextfile();
-
 	if (highlighter) {
 		HighlightText();
 	}
 
 	FinalizeLoading();
+
+	VerifyTextfile();
 wrapup:
 	UnlockMutex(text_lock.get());
 
@@ -683,13 +683,14 @@ void TextFile::OpenFile(char* base, lng size, bool delete_file) {
 	if (delete_file) {
 		panther::DestroyFileContents(base);
 	}
-	VerifyTextfile();
-
 	if (highlighter) {
 		HighlightText();
 	}
 
 	FinalizeLoading();
+
+	VerifyTextfile();
+
 	UnlockMutex(text_lock.get());
 }
 
