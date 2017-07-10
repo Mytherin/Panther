@@ -96,8 +96,14 @@ cleanup:
 }
 
 void PGWorkspace::RemoveWindow(PGWindowHandle window) {
+	bool close_workspace = windows.size() == 1;
+	if (close_workspace) {
+		WriteWorkspace();
+	}
 	windows.erase(std::find(windows.begin(), windows.end(), window));
-	if (windows.size() == 0) {
+	if (close_workspace) {
 		PGCloseWorkspace(this);
+	} else {
+		WriteWorkspace();
 	}
 }

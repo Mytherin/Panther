@@ -167,6 +167,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	PGGlobalReplayManager::RunReplay();
 	return 0;*/
 
+	PGInitializeGlobals();
 	PGInitialize();
 
 	PGWorkspace* workspace = open_workspaces.back();
@@ -824,25 +825,18 @@ PGWindowHandle PGCreateWindow(PGWorkspace* workspace, PGPoint position, std::vec
 }
 
 void DestroyWindow(PGWindowHandle window) {
-	auto windows = window->workspace->GetWindows();
-	bool destroy_workspace = windows.size() == 1;
-	if (destroy_workspace) {
-		assert(windows[0] == window);
-		window->workspace->WriteWorkspace();
-	}
 	window->workspace->RemoveWindow(window);
-	if (destroy_workspace) {
-		open_workspaces.erase(std::find(open_workspaces.begin(), open_workspaces.end(), window->workspace));
-		delete window->workspace;
-	} else {
-		window->workspace->WriteWorkspace();
-	}
 	DeleteRenderer(window->renderer);
 	DeleteTimer(window->timer);
 	UnregisterDropWindow(window, window->drop_target);
 	handle_map.erase(window->hwnd);
 	DestroyWindow(window->hwnd);
 	free(window);
+}
+
+
+void PGCloseWorkspace(PGWorkspace* workspace) {
+	open_workspaces.erase(std::find(open_workspaces.begin(), open_workspaces.end(), workspace));
 }
 
 void PGCloseWindow(PGWindowHandle window) {
