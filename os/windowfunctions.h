@@ -396,9 +396,11 @@ PGPoint GetMousePosition(PGWindowHandle window, Control* c);
 void SetWindowTitle(PGWindowHandle window, std::string title);
 
 class PGWorkspace;
+void PGInitializeGlobals();
 void PGInitialize();
 PGWorkspace* PGInitializeFirstWorkspace();
 PGWorkspace* PGGetWorkspace(PGWindowHandle window);
+void PGCloseWorkspace(PGWorkspace* workspace);
 void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j);
 void PGWriteWorkspace(PGWindowHandle window, nlohmann::json& j);
 

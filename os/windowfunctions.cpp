@@ -130,18 +130,21 @@ std::string GetMouseButtonName(PGMouseButton modifier) {
 	return std::string("UnknownModifier");
 }
 
-PGWorkspace* PGInitializeFirstWorkspace() {
+void PGInitializeGlobals() {
 	PGLanguageManager::AddLanguage(new CLanguage());
 	PGLanguageManager::AddLanguage(new XMLLanguage());
 	PGLanguageManager::AddLanguage(new FindResultsLanguage());
 
 	PGSettingsManager::Initialize();
 	PGKeyBindingsManager::Initialize();
-	PGGlobalSettings::Initialize("globalsettings.json");
 
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(2);
+}
 
+PGWorkspace* PGInitializeFirstWorkspace() {
+	PGGlobalSettings::Initialize("globalsettings.json");
+	
 	// load a workspace
 	nlohmann::json& settings = PGGlobalSettings::GetSettings();
 	if (settings.count("workspaces") == 0 || !settings["workspaces"].is_array()) {

@@ -22,21 +22,26 @@ int main(int argc, const char *argv[]) {
             // parent process: succeeded in forking
             return 0;
         }
-     }
+    }
     NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.panther.text"];
     if ([apps count] > 0) {
         // app is already running
         // bring it to the top
         NSRunningApplication* app = [apps objectAtIndex:0];
+        [[NSDistributedNotificationCenter defaultCenter] 
+            postNotificationName:PANTHER_ACTIVATE_NOTIFICATION
+            object:nil
+            userInfo:nil
+            deliverImmediately:YES];
         for(size_t i = 0; i < settings.files.size(); i++) {
             std::string path = PGPathJoin(PGCurrentDirectory(), settings.files[i]);
             [[NSDistributedNotificationCenter defaultCenter] 
-                postNotificationName:@"pantherOpenFile" 
+                postNotificationName:PANTHER_OPENFILE_NOTIFICATION
                 object:[NSString stringWithUTF8String:path.c_str()]
                 userInfo:nil
                 deliverImmediately:YES];
         }
-        [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+        //[app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
         return 0;
     }
 

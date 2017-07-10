@@ -8,10 +8,13 @@
 
 #import <Cocoa/Cocoa.h>
 
+#define PANTHER_ACTIVATE_NOTIFICATION @"pantherActivate"
+#define PANTHER_OPENFILE_NOTIFICATION @"pantherOpenFile"
+
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
--(void)notificationEvent:(NSNotification*)notification;
 
-
+-(void)activateNotification:(NSNotification*)notification;
+-(void)openFileNotification:(NSNotification*)notification;
 @end
 

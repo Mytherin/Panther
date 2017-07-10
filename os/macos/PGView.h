@@ -21,7 +21,7 @@
 	SkBitmap bitmap;
 }
 
--(void)performClose;
+-(void)closeWindow;
 -(ControlManager*)getManager;
 -(PGWindowHandle)getHandle;
 - (instancetype)initWithFrame:(NSRect)frameRect :(NSWindow*)window :(PGWorkspace*)workspace :(std::vector<std::shared_ptr<TextView>>)textfiles;

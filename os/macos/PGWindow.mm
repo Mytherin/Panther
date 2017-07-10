@@ -4,11 +4,6 @@
 
 @implementation PGNSWindow : NSWindow
 
--(void)close{
-	[pgview performClose];
-	[super close];
-}
-
 - (instancetype)initWithContentRect:(NSRect)contentRect 
                           styleMask:(NSUInteger)style 
                             backing:(NSBackingStoreType)bufferingType 
@@ -16,8 +11,16 @@
 	if (self = [super initWithContentRect:contentRect styleMask:style backing:bufferingType defer:flag]) {
         NSArray *types = @[NSFilenamesPboardType, @"com.panther.draggingobject"];
     	[self registerForDraggedTypes:types];
+        [self setReleasedWhenClosed:YES];
 	}
 	return self;
+}
+
+-(void)close {
+    [pgview closeWindow];
+    pgview = nullptr;
+    manager = nullptr;
+    [super close];
 }
 
 -(void)registerPGView:(PGView*)view {

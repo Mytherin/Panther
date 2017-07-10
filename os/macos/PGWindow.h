@@ -18,8 +18,8 @@
                             backing:(NSBackingStoreType)bufferingType 
                               defer:(BOOL)flag;
 
--(void)registerPGView:(PGView*)view;
 -(void)close;
+-(void)registerPGView:(PGView*)view;
 -(NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender;
 -(NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)sender;
 -(void)draggingExited:(id<NSDraggingInfo>)sender;

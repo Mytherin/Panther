@@ -118,9 +118,7 @@ NSDraggingSession* active_session = nullptr;
 void PeriodicWindowRedraw(PGWindowHandle handle) {
 	handle->manager->Update();
 	if (handle->pending_destroy) {
-		handle->workspace->RemoveWindow(handle);
 		[handle->window performClose:handle->window];
-		std::string msg = handle->workspace->WriteWorkspace();
 	}
 }
 
@@ -188,12 +186,18 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 	SkCGDrawBitmap(context, bitmap, rect, [self scaleFactor]);
 }
 
--(void)performClose {
+-(void)closeWindow {
 	handle->workspace->WriteWorkspace();
 	DeleteTimer(timer);
 	DeleteRenderer(handle->renderer);
 	handle->renderer = nullptr;
 	handle->manager = nullptr;
+	handle->window = nullptr;
+	handle->view = nullptr;
+	handle->event = nullptr;
+	handle->workspace->RemoveWindow(handle);
+	delete handle;
+	handle = nullptr;
 }
 
 -(NSRect)getBounds {
@@ -476,13 +480,13 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 - (void)windowDidResignKey:(NSNotification *)notification {
-	if (handle->manager) {
+	if (handle && handle->manager) {
 		handle->manager->LosesFocus();	
 	}
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification {
-	if (handle->manager) {
+	if (handle && handle->manager) {
 		handle->manager->GainsFocus();	
 	}
 }

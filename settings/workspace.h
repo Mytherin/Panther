@@ -18,7 +18,7 @@ public:
 	std::string GetName() { return workspace_name; }
 
 	void AddWindow(PGWindowHandle window) { windows.push_back(window); }
-	void RemoveWindow(PGWindowHandle window) { windows.erase(std::find(windows.begin(), windows.end(), window)); }
+	void RemoveWindow(PGWindowHandle window);
 	
 	FindTextManager& GetFindTextManager() { return findtext; }
 

@@ -94,3 +94,10 @@ cleanup:
 	PGRemoveFile(temp_filename);
 	return "I/O error.";
 }
+
+void PGWorkspace::RemoveWindow(PGWindowHandle window) {
+	windows.erase(std::find(windows.begin(), windows.end(), window));
+	if (windows.size() == 0) {
+		PGCloseWorkspace(this);
+	}
+}
