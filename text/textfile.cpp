@@ -2812,7 +2812,7 @@ void TextFile::OnLoaded(PGTextFileLoadedCallback callback, PGTextFileDestructorC
 			destructor(data);
 		}
 	} else {
-		auto d = std::make_unique<LoadCallbackData>();
+		auto d = std::unique_ptr<LoadCallbackData>(new LoadCallbackData());
 		d->callback = callback;
 		d->destructor = destructor;
 		d->data = data;
