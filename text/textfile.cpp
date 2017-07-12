@@ -332,6 +332,18 @@ PGTextBuffer* TextFile::GetBuffer(lng line) {
 	return buffers[PGTextBuffer::GetBuffer(buffers, line)];
 }
 
+PGTextBuffer* TextFile::GetBufferFromWidth(double width) {
+	return buffers[PGTextBuffer::GetBufferFromWidth(buffers, width)];
+}
+
+PGTextBuffer* TextFile::GetFirstBuffer() {
+	return buffers.front();
+}
+
+PGTextBuffer* TextFile::GetLastBuffer() {
+	return buffers.back();
+}
+
 void TextFile::HighlightText() {
 	for (lng i = 0; i < (lng)this->buffers.size(); i++) {
 		if (!this->buffers[i]->parsed) {

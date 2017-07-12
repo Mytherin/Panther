@@ -43,9 +43,9 @@ double TextView::GetScrollPercentage(PGVerticalScroll scroll) {
 		TextLine textline = file->GetLine(scroll.linenumber);
 		lng inner_lines = textline.RenderedLines(this, scroll.linenumber, textfield->GetTextfieldFont(), wrap_width);
 		width += ((double)scroll.inner_line / (double)inner_lines) * buffer->line_lengths[scroll.linenumber - buffer->start_line];
-		return file->total_width == 0 ? 0 : width / file->total_width;
+		return file->GetTotalWidth() == 0 ? 0 : width / file->GetTotalWidth();
 	} else {
-		return file->linecount == 0 ? 0 : (double)scroll.linenumber / file->linecount;
+		return file->GetLineCount() == 0 ? 0 : (double)scroll.linenumber / file->GetLineCount();
 	}
 }
 
@@ -54,19 +54,19 @@ double TextView::GetScrollPercentage() {
 }
 
 PGVerticalScroll TextView::GetLineOffset() {
-	assert(yoffset.linenumber >= 0 && yoffset.linenumber < file->linecount);
+	assert(yoffset.linenumber >= 0 && yoffset.linenumber < file->GetLineCount());
 	return yoffset;
 }
 
 void TextView::SetLineOffset(lng offset) {
-	assert(offset >= 0 && offset < file->linecount);
+	assert(offset >= 0 && offset < file->GetLineCount());
 	yoffset.linenumber = offset;
 	yoffset.inner_line = 0;
 	yoffset.line_fraction = 0;
 }
 
 void TextView::SetLineOffset(PGVerticalScroll scroll) {
-	assert(scroll.linenumber >= 0 && scroll.linenumber < file->linecount);
+	assert(scroll.linenumber >= 0 && scroll.linenumber < file->GetLineCount());
 	yoffset.linenumber = scroll.linenumber;
 	yoffset.inner_line = scroll.inner_line;
 }
@@ -81,8 +81,8 @@ void TextView::SetScrollOffset(lng offset) {
 		SetLineOffset(offset);
 	} else {
 		double percentage = (double)offset / (double)GetMaxYScroll();
-		double width = percentage * file->total_width;
-		auto buffer = file->buffers[PGTextBuffer::GetBufferFromWidth(file->buffers, width)];
+		double width = percentage * file->GetTotalWidth();
+		auto buffer = file->GetBufferFromWidth(width);
 		double start_width = buffer->cumulative_width;
 		lng line = 0;
 		lng max_line = buffer->GetLineCount();
@@ -111,7 +111,7 @@ lng TextView::GetMaxYScroll() {
 	if (!wordwrap) {
 		return file->GetLineCount() - 1;
 	} else {
-		return std::max((lng)(file->total_width / wrap_width), file->GetLineCount() - 1);
+		return std::max((lng)(file->GetTotalWidth() / wrap_width), file->GetLineCount() - 1);
 	}
 }
 
@@ -438,7 +438,7 @@ Cursor& TextView::GetActiveCursor() {
 
 void TextView::SelectEverything() {
 	ClearCursors();
-	this->cursors.push_back(Cursor(this, file->linecount - 1, file->GetLine(file->linecount - 1).GetLength(), 0, 0));
+	this->cursors.push_back(Cursor(this, file->GetLineCount() - 1, file->GetLine(file->GetLineCount() - 1).GetLength(), 0, 0));
 	if (this->textfield) textfield->SelectionChanged();
 }
 
@@ -485,7 +485,7 @@ void TextView::ActuallyApplySettings(PGTextViewSettings& settings) {
 	}
 	if (settings.yoffset.linenumber >= 0) {
 		this->yoffset = settings.yoffset;
-		this->yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, this->yoffset.linenumber));
+		this->yoffset.linenumber = std::min(file->GetLineCount() - 1, std::max((lng)0, this->yoffset.linenumber));
 		settings.yoffset.linenumber = -1;
 	}
 	if (settings.wordwrap) {
@@ -497,8 +497,8 @@ void TextView::ActuallyApplySettings(PGTextViewSettings& settings) {
 	if (settings.cursor_data.size() > 0) {
 		this->ClearCursors();
 		for (auto it = settings.cursor_data.begin(); it != settings.cursor_data.end(); it++) {
-			it->start_line = std::max((lng)0, std::min(file->linecount - 1, it->start_line));
-			it->end_line = std::max((lng)0, std::min(file->linecount - 1, it->end_line));
+			it->start_line = std::max((lng)0, std::min(file->GetLineCount() - 1, it->start_line));
+			it->end_line = std::max((lng)0, std::min(file->GetLineCount() - 1, it->end_line));
 			this->cursors.push_back(Cursor(this, it->start_line, it->start_position, it->end_line, it->end_position));
 		}
 		if (cursors.size() == 0) {
@@ -518,7 +518,7 @@ bool TextView::IsLastFileView() {
 }
 
 void TextView::InvalidateTextView(bool scroll) {
-	yoffset.linenumber = std::min(file->linecount - 1, std::max((lng)0, yoffset.linenumber));
+	yoffset.linenumber = std::min(file->GetLineCount() - 1, std::max((lng)0, yoffset.linenumber));
 
 	matches.clear();
 	line_wraps.clear();
@@ -561,8 +561,8 @@ void TextView::VerifyTextView() {
 		}
 		assert(c.start_buffer_position >= 0 && c.start_buffer_position < c.start_buffer->current_size);
 		assert(c.end_buffer_position >= 0 && c.end_buffer_position < c.end_buffer->current_size);
-		assert(std::find(file->buffers.begin(), file->buffers.end(), c.start_buffer) != file->buffers.end());
-		assert(std::find(file->buffers.begin(), file->buffers.end(), c.end_buffer) != file->buffers.end());
+		//assert(std::find(file->buffers.begin(), file->buffers.end(), c.start_buffer) != file->buffers.end());
+		//assert(std::find(file->buffers.begin(), file->buffers.end(), c.end_buffer) != file->buffers.end());
 	}
 #endif
 }
@@ -582,15 +582,15 @@ void TextView::RunTextFinder(std::shared_ptr<Task> task, TextView* view, PGRegex
 
 	view->file->Lock(PGReadLock);
 	bool found_initial_match = !select_first_match;
-	PGTextBuffer* selection_buffer = view->file->buffers[PGTextBuffer::GetBuffer(view->file->buffers, current_line)];
+	PGTextBuffer* selection_buffer = view->file->GetBuffer(current_line);
 	lng selection_position = selection_buffer->GetBufferLocationFromCursor(current_line, current_character);
 	PGTextPosition position = PGTextPosition(selection_buffer, selection_position);
 
 
 	PGTextRange bounds;
-	bounds.start_buffer = view->file->buffers.front();
+	bounds.start_buffer = view->file->GetFirstBuffer();
 	bounds.start_position = 0;
-	bounds.end_buffer = view->file->buffers.back();
+	bounds.end_buffer = view->file->GetLastBuffer();
 	bounds.end_position = bounds.end_buffer->current_size - 1;
 	while (true) {
 		/*if (textfile->find_task != task) {
@@ -655,7 +655,7 @@ void TextView::ClearMatches() {
 }
 
 void TextView::FindAllMatches(PGRegexHandle handle, bool select_first_match, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap) {
-	if (!file->is_loaded) return;
+	if (!file->IsLoaded()) return;
 	if (!handle) {
 		matches.clear();
 		if (textfield) {
@@ -686,7 +686,7 @@ void TextView::FindAllMatches(PGRegexHandle handle, bool select_first_match, lng
 }
 
 bool TextView::FindMatch(PGRegexHandle handle, PGDirection direction, bool wrap, bool include_selection) {
-	if (!file->is_loaded) return false;
+	if (!file->IsLoaded()) return false;
 	PGTextRange match;
 	if (selected_match >= 0) {
 		// if FindAll has been performed, we should already have all the matches

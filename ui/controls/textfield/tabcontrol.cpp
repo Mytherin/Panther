@@ -484,7 +484,7 @@ void TabControl::NewTab() {
 }
 
 void TabControl::OpenFile(std::string path) {
-	if (temporary_textfile && temporary_textfile->file->path == path) {
+	if (temporary_textfile && temporary_textfile->file->GetFullPath() == path) {
 		// if the file is currently opened as temporary file
 		// open the temporary file as permanent file
 		OpenTemporaryFileAsActualFile();
@@ -887,7 +887,7 @@ void TabControl::ActuallyCloseTab(int tab) {
 			SwitchToFile(tabs[1].view);
 		}
 	}
-	if (tabs[tab].view->file->path.size() > 0) {
+	if (!tabs[tab].view->file->FileInMemory()) {
 		closed_tabs.push_back(PGClosedTab(tabs[tab], tab == 0 ? -1 : tabs[tab - 1].id, tabs[tab].view->GetSettings()));
 	}
 	FileManager::CloseFile(tabs[tab].view->file);
@@ -968,11 +968,11 @@ void TabControl::SwitchToTab(std::shared_ptr<TextView> view) {
 }
 
 bool TabControl::SwitchToTab(std::string path) {
-	if (temporary_textfile && temporary_textfile->file->path == path) {
+	if (temporary_textfile && temporary_textfile->file->GetFullPath() == path) {
 		return true;
 	}
 	for (int i = 0; i < tabs.size(); i++) {
-		if (tabs[i].view->file->path == path) {
+		if (tabs[i].view->file->GetFullPath() == path) {
 			SetActiveTab(i);
 			this->Invalidate();
 			return true;

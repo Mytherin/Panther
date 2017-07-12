@@ -419,12 +419,12 @@ void Cursor::OffsetEndOfFile() {
 }
 
 void Cursor::SelectStartOfFile() {
-	start_buffer = file->file->buffers.front();
+	start_buffer = file->file->GetFirstBuffer();
 	start_buffer_position = 0;
 }
 
 void Cursor::SelectEndOfFile() {
-	start_buffer = file->file->buffers.back();
+	start_buffer = file->file->GetLastBuffer();
 	start_buffer_position = start_buffer->current_size - 1;
 }
 

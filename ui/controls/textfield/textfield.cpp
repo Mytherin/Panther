@@ -84,7 +84,7 @@ void TextField::Initialize() {
 }
 
 void TextField::Update() {
-	if (view && !view->file->IsLoaded() && view->file->bytes < 0) {
+	if (view && !view->file->IsLoaded() && view->file->FileHasErrors()) {
 		// error loading file
 		if (!notification) {
 			CreateNotification(PGNotificationTypeError, std::string("Error loading file."));
@@ -655,7 +655,7 @@ void TextField::Draw(PGRendererHandle renderer) {
 		// render the background
 		RenderRectangle(renderer, PGIRect(x, y, this->width, this->height), PGStyleManager::GetColor(PGColorTextFieldBackground), PGDrawStyleFill);
 
-		if (view->file->bytes >= 0) {
+		if (!view->file->FileHasErrors()) {
 			// file is currently being loaded, display the progress bar
 			PGScalar offset = this->width / 10;
 			PGScalar width = this->width - offset * 2;
@@ -1075,15 +1075,15 @@ void TextField::SetTextView(std::shared_ptr<TextView> view) {
 }
 
 void TextField::SelectionChanged() {
-	if (view->file->path.size() > 0) {
+	if (!view->file->FileInMemory()) {
 		if (!notification) {
-			auto stats = PGGetFileFlags(view->file->path);
+			auto stats = PGGetFileFlags(view->file->GetFullPath());
 			if (stats.flags == PGFileFlagsFileNotFound) {
 				// the current file has been deleted
 				// notify the user if they have not been notified before
 				if (!view->file->last_modified_deletion) {
 					view->file->last_modified_deletion = true;
-					CreateNotification(PGNotificationTypeWarning, std::string("File \"") + PGFile(view->file->path).Filename() + std::string("\" appears to have been moved or deleted."));
+					CreateNotification(PGNotificationTypeWarning, std::string("File \"") + PGFile(view->file->GetFullPath()).Filename() + std::string("\" appears to have been moved or deleted."));
 					assert(notification);
 					notification->AddButton([](Control* control, void* data) {
 						((TextField*)control)->ClearNotification();
@@ -1114,7 +1114,7 @@ void TextField::SelectionChanged() {
 					} else {
 						// file is too large for automatic reload: prompt the user
 						view->file->last_modified_notification = stats.modification_time;
-						CreateNotification(PGNotificationTypeWarning, std::string("File \"") + PGFile(view->file->path).Filename() + std::string("\" has been modified."));
+						CreateNotification(PGNotificationTypeWarning, std::string("File \"") + PGFile(view->file->GetFullPath()).Filename() + std::string("\" has been modified."));
 						assert(notification);
 						notification->AddButton([](Control* control, void* data) {
 							TextField* tf = (TextField*)control;
@@ -1161,7 +1161,7 @@ PGCursorType TextField::GetCursor(PGPoint mouse) {
 	mouse.x -= this->x;
 	mouse.y -= this->y;
 	if (!view->file->IsLoaded()) {
-		if (view->file->bytes < 0) {
+		if (view->file->FileHasErrors()) {
 			return PGCursorStandard;
 		}
 		return PGCursorWait;

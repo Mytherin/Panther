@@ -67,14 +67,6 @@ typedef void (*PGTextFileLoadedCallback)(std::shared_ptr<TextFile> file, void* d
 typedef void (*PGTextFileDestructorCallback)(void* data);
 
 class TextFile : public std::enable_shared_from_this<TextFile> {
-	friend class Cursor;
-	friend class FileManager;
-	friend class TextLineIterator;
-	friend class WrappedTextLineIterator;
-	friend class TextField;
-	friend class TextFile;
-	friend class TabControl;
-	friend class TextView;
 public:
 	// create an in-memory textfile with currently unspecified path
 	TextFile();
@@ -82,7 +74,6 @@ public:
 	TextFile(std::string filename);
 	~TextFile();
 
-	static std::shared_ptr<TextFile> OpenTextFile();
 	static std::shared_ptr<TextFile> OpenTextFile(std::string filename, PGFileError& error, bool immediate_load = false, bool ignore_binary = false);
 	static std::shared_ptr<TextFile> OpenTextFile(PGFileEncoding encoding, std::string path, char* buffer, size_t buffer_size, bool immediate_load = false);
 
@@ -192,6 +183,22 @@ public:
 	void PendDelete();
 
 	void OnLoaded(PGTextFileLoadedCallback callback, PGTextFileDestructorCallback destructor, void* data);
+
+	PGTextBuffer* GetBuffer(lng line);
+	PGTextBuffer* GetBufferFromWidth(double width);
+	PGTextBuffer* GetFirstBuffer();
+	PGTextBuffer* GetLastBuffer();
+
+	double GetTotalWidth() { return total_width; }
+
+	void SetUnsavedChanges(bool changes);
+
+	bool FileHasErrors() { return bytes < 0; }
+
+	lng last_modified_time = -1;
+	lng last_modified_notification = -1;
+	bool last_modified_deletion = false;
+	bool reload_on_changed = true;
 private:
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 
@@ -211,14 +218,8 @@ private:
 
 	bool read_only = false;
 
-	void SetUnsavedChanges(bool changes);
-
 	bool unsaved_changes = false;
 	bool pending_delete = false;
-
-	lng last_modified_time = -1;
-	lng last_modified_notification = -1;
-	bool last_modified_deletion = false;
 
 	lng saved_undo_count = 0;
 
@@ -257,12 +258,9 @@ private:
 	void InvalidateBuffers(TextView* responsible_view);
 	void InvalidateParsing();
 
-	bool reload_on_changed = true;
 	bool is_loaded;
 	lng bytes = 0;
 	lng total_bytes = 1;
-
-	PGTextBuffer* GetBuffer(lng line);
 
 	lng linecount = 0;
 	PGTextPosition max_line_length;

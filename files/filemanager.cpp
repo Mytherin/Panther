@@ -72,7 +72,7 @@ void FileManager::_LoadWorkspace(nlohmann::json& j) {
 			file = TextFile::OpenTextFile(PGEncodingUTF8, path, (char*)buffer.c_str(), buffer.size(), true);
 			//file = std::shared_ptr<TextFile>(new TextFile(PGEncodingUTF8, path.c_str(), (char*)buffer.c_str(), buffer.size(), true, false));
 			if (path.size() == 0) {
-				file->name = "untitled";
+				file->SetName("untitled");
 			}
 			file->SetUnsavedChanges(true);
 			FileManager::OpenFile(file);
