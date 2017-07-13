@@ -9,6 +9,8 @@
 #include "toolbar.h"
 #include "replaymanager.h"
 
+#include "inmemorytextfile.h"
+
 PG_CONTROL_INITIALIZE_KEYBINDINGS(ControlManager);
 
 ControlManager::ControlManager(PGWindowHandle window) :
@@ -250,7 +252,7 @@ void ControlManager::SetFocusedControl(Control* c) {
 
 void ControlManager::SetTextFieldLayout(int columns, int rows) {
 	std::vector<std::shared_ptr<TextView>> textfiles;
-	textfiles.push_back(make_shared_control<TextView>(nullptr, std::make_shared<TextFile>()));
+	textfiles.push_back(make_shared_control<TextView>(nullptr, std::make_shared<InMemoryTextFile>()));
 	SetTextFieldLayout(columns, rows, textfiles);
 }
 

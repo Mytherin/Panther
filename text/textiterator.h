@@ -5,6 +5,7 @@
 #include "textposition.h"
 
 class TextLineIterator {
+	friend class InMemoryTextFile;
 	friend class TextFile;
 	friend class TextView;
 public:

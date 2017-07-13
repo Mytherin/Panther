@@ -3,11 +3,12 @@
 #include "style.h"
 
 #include "container.h"
+#include "inmemorytextfile.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(SimpleTextField);
 
 SimpleTextField::SimpleTextField(PGWindowHandle window, bool multiline) :
-	BasicTextField(window, make_shared_control<TextView>(this, std::make_shared<TextFile>())), valid_input(true),
+	BasicTextField(window, make_shared_control<TextView>(this, std::make_shared<InMemoryTextFile>())), valid_input(true),
 	on_user_cancel(), on_user_confirm(), on_prev_entry(), on_next_entry(), render_background(true) {
 	this->support_multiple_lines = multiline;
 	this->height = std::ceil(GetTextHeight(textfield_font)) + 6;

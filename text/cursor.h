@@ -12,6 +12,7 @@ class TextView;
 class TextField;
 
 class Cursor {
+	friend class InMemoryTextFile;
 	friend class TextFile;
 	friend class TextView;
 public:

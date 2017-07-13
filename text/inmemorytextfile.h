@@ -62,13 +62,19 @@ public:
 
 	void ConvertToIndentation(PGLineIndentation indentation);
 
+	void FindMatchesWithContext(FindAllInformation* info, PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data);
 	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary);
 
 	PGTextBuffer* GetBuffer(lng line);
 	PGTextBuffer* GetBufferFromWidth(double width);
 	PGTextBuffer* GetFirstBuffer();
 	PGTextBuffer* GetLastBuffer();
+protected:
+	void ApplySettings(PGTextFileSettings settings);
 private:
+	lng linecount = 0;
+	PGTextPosition max_line_length;
+
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 
 	void InsertLines(std::vector<Cursor>& cursors, std::string text, size_t cursor);
@@ -104,17 +110,15 @@ private:
 	bool PerformOperation(std::vector<Cursor>& cursors, TextDelta* delta, bool redo);
 
 	void HighlightText();
+	
+	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
 
-	void InvalidateBuffer(PGTextBuffer* buffer);
 	void InvalidateBuffers(TextView* responsible_view);
 	void InvalidateParsing();
 
 	std::vector<PGTextBuffer*> buffers;
 	std::vector<std::unique_ptr<TextDelta>> deltas;
 	std::vector<RedoStruct> redos;
-
-	void FinalizeLoading();
-	void ApplySettings(PGTextFileSettings settings);
 
 	void _InsertLine(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 	void _InsertText(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);

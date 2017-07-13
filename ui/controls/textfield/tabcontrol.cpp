@@ -4,6 +4,7 @@
 #include "style.h"
 #include "settings.h"
 #include "controlmanager.h"
+#include "inmemorytextfile.h"
 
 PG_CONTROL_INITIALIZE_KEYBINDINGS(TabControl);
 
@@ -39,7 +40,7 @@ TabControl::TabControl(PGWindowHandle window, TextField* textfield, std::vector<
 	}
 	if (files.size() == 0) {
 		is_empty = true;
-		files.push_back(make_shared_control<TextView>(textfield, std::make_shared<TextFile>()));
+		files.push_back(make_shared_control<TextView>(textfield, std::make_shared<InMemoryTextFile>()));
 	}
 	
 	for (auto it = files.begin(); it != files.end(); it++) {
@@ -426,7 +427,7 @@ void TabControl::LoadWorkspace(nlohmann::json& j) {
 		}
 		if (tabs.size() == 0) {
 			is_empty = true;
-			auto textfile = std::make_shared<TextFile>();
+			auto textfile = std::make_shared<InMemoryTextFile>();
 			FileManager::OpenFile(textfile);
 			tabs.push_back(OpenTab(make_shared_control<TextView>(textfield, textfile)));
 		}
@@ -878,7 +879,7 @@ void TabControl::ActuallyCloseTab(int tab) {
 			if (is_empty) {
 				close_window = true;
 			} else {
-				auto ptr = FileManager::OpenFile(std::shared_ptr<TextFile>(new TextFile()));
+				auto ptr = FileManager::OpenFile(std::shared_ptr<TextFile>(new InMemoryTextFile()));
 				tabs.push_back(OpenTab(make_shared_control<TextView>(textfield, ptr)));
 				SwitchToFile(tabs[1].view);
 				is_empty = true;

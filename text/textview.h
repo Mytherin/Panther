@@ -20,6 +20,7 @@ struct PGTextViewSettings {
 // edit information (cursors)
 // visual information (wordwrap, displayed search matches)
 class TextView : public std::enable_shared_from_this<TextView> {
+	friend class InMemoryTextFile;
 	friend class TextFile;
 public:
 	TextView(BasicTextField* field, std::shared_ptr<TextFile> file);

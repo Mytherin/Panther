@@ -4,6 +4,8 @@
 #include "style.h"
 #include "workspace.h"
 
+#include "inmemorytextfile.h"
+
 #include "findresults.h"
 #include "globalsettings.h"
 
@@ -543,7 +545,7 @@ void PGFindText::FindInFiles() {
 	// create a textfile for us to store the search results
 	ControlManager* manager = GetControlManager(this);
 	TextField* textfield = manager->active_textfield;
-	auto textfile = std::make_shared<TextFile>();
+	auto textfile = std::make_shared<InMemoryTextFile>();
 	auto view = make_shared_control<TextView>(nullptr, textfile);
 
 	textfile->SetReadOnly(true);

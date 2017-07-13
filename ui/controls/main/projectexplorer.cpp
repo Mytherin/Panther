@@ -4,6 +4,8 @@
 #include "style.h"
 #include "togglebutton.h"
 
+#include "inmemorytextfile.h"
+
 #include "settings.h"
 
 #include "toolbar.h"
@@ -753,7 +755,7 @@ void ProjectExplorer::SelectFile(lng selected_file, PGSelectFileType type, bool 
 				} else {
 					PGFileError error;
 					if (!(t->SwitchToTab(file.path))) {
-						auto ptr = std::shared_ptr<TextFile>(TextFile::OpenTextFile(file.path, error));
+						auto ptr = std::shared_ptr<TextFile>(InMemoryTextFile::OpenTextFile(file.path, error));
 						if (error == PGFileSuccess) {
 							assert(ptr);
 							t->OpenTemporaryFile(make_shared_control<TextView>(t->GetTextField(), ptr));

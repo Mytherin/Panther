@@ -1,5 +1,6 @@
 
 #include "filemanager.h"
+#include "inmemorytextfile.h"
 
 FileManager::FileManager() {
 	this->lock = std::unique_ptr<PGMutex>(CreateMutex());
@@ -9,12 +10,12 @@ FileManager::~FileManager() {
 }
 
 std::shared_ptr<TextFile> FileManager::_OpenFile() {
-	TextFile* textfile = new TextFile();
+	TextFile* textfile = new InMemoryTextFile();
 	return _OpenFile(textfile);
 }
 
 std::shared_ptr<TextFile> FileManager::_OpenFile(std::string path, PGFileError& error) {
-	return _OpenFile(TextFile::OpenTextFile(path, error, false));
+	return _OpenFile(InMemoryTextFile::OpenTextFile(path, error, false));
 }
 
 std::shared_ptr<TextFile> FileManager::_OpenFile(TextFile* textfile) {
@@ -69,7 +70,7 @@ void FileManager::_LoadWorkspace(nlohmann::json& j) {
 			// if we have the text stored in a buffer
 			// we load the text from the buffer, rather than from the file
 			std::string buffer = (*it)["buffer"];
-			file = TextFile::OpenTextFile(PGEncodingUTF8, path, (char*)buffer.c_str(), buffer.size(), true);
+			file = InMemoryTextFile::OpenTextFile(PGEncodingUTF8, path, (char*)buffer.c_str(), buffer.size(), true);
 			//file = std::shared_ptr<TextFile>(new TextFile(PGEncodingUTF8, path.c_str(), (char*)buffer.c_str(), buffer.size(), true, false));
 			if (path.size() == 0) {
 				file->SetName("untitled");

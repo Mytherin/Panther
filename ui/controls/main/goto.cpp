@@ -6,6 +6,8 @@
 #include "togglebutton.h"
 #include "projectexplorer.h"
 
+#include "inmemorytextfile.h"
+
 #include <unordered_set>
 
 #define HPADDING 35
@@ -241,7 +243,7 @@ void PGGotoAnything::SetType(PGGotoType type) {
 					tabs->SwitchToTab(entry.data);
 				} else {
 					PGFileError error;
-					auto file = std::shared_ptr<TextFile>(TextFile::OpenTextFile(entry.text, error));
+					auto file = std::shared_ptr<TextFile>(InMemoryTextFile::OpenTextFile(entry.text, error));
 					if (file) {
 						g->preview = make_shared_control<TextView>(g->textfield, file);
 						tabs->OpenTemporaryFile(g->preview);

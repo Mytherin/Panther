@@ -166,7 +166,7 @@ void PeriodicWindowRedraw(PGWindowHandle handle) {
 }
 
 - (void)drawRect:(NSRect)invalidateRect {
-	if (!handle->manager) return;
+	if (!handle || !handle->manager) return;
 	NSRect window_size = [self getBounds];
 	if (handle->manager->width != window_size.size.width || 
 		handle->manager->height != window_size.size.height) {

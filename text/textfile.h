@@ -45,7 +45,6 @@ typedef enum {
 } PGLineIndentation;
 
 class ProjectExplorer;
-struct Interval;
 
 enum PGLockType {
 	PGReadLock,
@@ -61,12 +60,21 @@ struct PGTextFileSettings {
 	PGTextFileSettings() : line_ending(PGLineEndingUnknown), language(nullptr), encoding(PGEncodingUnknown), name("") { }
 };
 
+struct Interval {
+	lng start_line;
+	lng end_line;
+	std::vector<Cursor*> cursors;
+	Interval(lng start, lng end, Cursor* cursor) : start_line(start), end_line(end) { cursors.push_back(cursor); }
+};
+
 struct FindAllInformation;
 
 typedef void (*PGTextFileLoadedCallback)(std::shared_ptr<TextFile> file, void* data);
 typedef void (*PGTextFileDestructorCallback)(void* data);
 
 class TextFile : public std::enable_shared_from_this<TextFile> {
+	friend class InMemoryTextFile;
+	friend class StreamingTextFile;
 public:
 	// create an in-memory textfile with currently unspecified path
 	TextFile();
@@ -83,6 +91,7 @@ public:
 	static std::vector<Interval> GetCursorIntervals(std::vector<Cursor>& cursors);
 	static bool SplitLines(const std::string& text, std::vector<std::string>&);
 	static std::vector<std::string> SplitLines(const std::string& text);
+	static void InvalidateBuffer(PGTextBuffer* buffer);
 
 	virtual void DeleteCharacter(std::vector<Cursor>& cursors, PGDirection direction) = 0;
 	virtual void DeleteWord(std::vector<Cursor>& cursors, PGDirection direction) = 0;
@@ -101,8 +110,8 @@ public:
 
 	virtual bool Reload(PGFileError& error) = 0;
 
-	virtual void ChangeLineEnding(PGLineEnding lineending) = 0;
-	virtual void ChangeFileEncoding(PGFileEncoding encoding) = 0;
+	void ChangeLineEnding(PGLineEnding lineending);
+	void ChangeFileEncoding(PGFileEncoding encoding);
 	virtual void ChangeIndentation(PGLineIndentation indentation) = 0;
 	virtual void RemoveTrailingWhitespace() = 0;
 
@@ -112,7 +121,7 @@ public:
 	void AddTextView(std::shared_ptr<TextView> view);
 
 	virtual void SaveChanges() = 0;
-	virtual void SaveAs(std::string path) = 0;
+	void SaveAs(std::string path);
 
 	PGFileEncoding GetFileEncoding() { return encoding; }
 	PGLineEnding GetLineEnding() { return lineending; }
@@ -170,7 +179,6 @@ public:
 	// only used for "Find Results"
 	// FIXME: this should not be in the TextFile class
 	virtual void FindMatchesWithContext(FindAllInformation* info, PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data) = 0;
-	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
 
 	virtual void ConvertToIndentation(PGLineIndentation indentation) = 0;
 
@@ -217,9 +225,6 @@ protected:
 	lng bytes = 0;
 	lng total_bytes = 1;
 
-	lng linecount = 0;
-	PGTextPosition max_line_length;
-
 	PGLanguage* language = nullptr;
 	std::unique_ptr<SyntaxHighlighter> highlighter = nullptr;
 
@@ -240,6 +245,9 @@ protected:
 		}
 	};
 	std::vector<std::unique_ptr<LoadCallbackData>> loading_data;
+
+	void FinalizeLoading();
+	virtual void ApplySettings(PGTextFileSettings settings);
 
 	std::vector<std::weak_ptr<TextView>> views;
 
