@@ -15,26 +15,7 @@
 
 #include "style.h"
 
-struct FindAllInformation {
-	ProjectExplorer* explorer;
-	std::shared_ptr<PGStatusNotification> notification;
-	TextFile* textfile;
-	PGRegexHandle regex_handle;
-	PGGlobSet whitelist;
-	std::vector<PGFile> files;
-	bool ignore_binary;
-	int context_lines;
-	std::shared_ptr<Task> task;
-};
-
-struct OpenFileInformation {
-	std::shared_ptr<TextFile> file;
-	char* base;
-	lng size;
-	bool delete_file;
-
-	OpenFileInformation(std::shared_ptr<TextFile> file, char* base, lng size, bool delete_file) : file(file), base(base), size(size), delete_file(delete_file) {}
-};
+#include "inmemorytextfile.h"
 
 TextFile::TextFile() :
 	highlighter(nullptr), bytes(0), total_bytes(1), last_modified_time(-1), last_modified_notification(-1),
@@ -78,37 +59,8 @@ TextFile::TextFile(std::string path)  :
 	unsaved_changes = false;
 }
 
-void TextFile::OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding, char* base, size_t size, bool immediate_load) {
-	file->encoding = encoding;
-	if (!immediate_load) {
-		OpenFileInformation* info = new OpenFileInformation(file, base, size, false);
-		this->current_task = std::make_shared<Task>(
-			[](std::shared_ptr<Task> task, void* inp) {
-				OpenFileInformation* info = (OpenFileInformation*)inp;
-				info->file->OpenFile(info->base, info->size, info->delete_file);
-				delete info;
-			}
-			, info);
-Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
-	} else {
-	OpenFile(base, size, false);
-	}
-}
-
-void TextFile::ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, bool ignore_binary) {
-	if (!immediate_load) {
-		OpenFileInformation* info = new OpenFileInformation(file, nullptr, 0, ignore_binary);
-		this->current_task = std::make_shared<Task>(
-			[](std::shared_ptr<Task> task, void* inp) {
-			OpenFileInformation* info = (OpenFileInformation*)inp;
-			info->file->ActuallyReadFile(info->file, info->delete_file);
-			delete info;
-		}
-		, info);
-		Scheduler::RegisterTask(this->current_task, PGTaskUrgent);
-	} else {
-		ActuallyReadFile(file, ignore_binary);
-	}
+void TextFile::AddTextView(std::shared_ptr<TextView> view) {
+	views.push_back(std::weak_ptr<TextView>(view));
 }
 
 #define PANTHER_BUFSIZ 8192
@@ -201,10 +153,6 @@ wrapup:
 	panther::CloseFile(handle);
 }
 
-
-void TextFile::AddTextView(std::shared_ptr<TextView> view) {
-	views.push_back(std::weak_ptr<TextView>(view));
-}
 
 void TextFile::SetLanguage(PGLanguage* language) {
 	if (!this->is_loaded) return;
@@ -730,6 +678,7 @@ TextLine TextFile::GetLine(lng linenumber) {
 }
 
 void TextFile::SetTabWidth(int tabwidth) {
+	// FIXME: have to recompute line widths?
 	this->tabwidth = tabwidth;
 }
 
@@ -2572,6 +2521,7 @@ TextFile::PGStoreFileType TextFile::WorkspaceFileStorage() {
 		return PGFileTooLarge;
 	}
 	return PGFileTooLarge;
+	/*
 
 	// FIXME: writing deltas not supported yet
 
@@ -2587,7 +2537,7 @@ TextFile::PGStoreFileType TextFile::WorkspaceFileStorage() {
 		return PGStoreFileDeltas;
 	}
 	// both deltas and buffer are too big; can't store file
-	return PGFileTooLarge;
+	return PGFileTooLarge;*/
 }
 
 struct TextFileApplySettings {
@@ -2776,7 +2726,7 @@ void TextFile::FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explore
 			lng size;
 			PGFileError error = PGFileSuccess;
 			// FIXME: use streaming textfile instead
-			auto file = TextFile::OpenTextFile(f.path, error, true, info->ignore_binary);
+			auto file = InMemoryTextFile::OpenTextFile(f.path, error, true, info->ignore_binary);
 			if (!file) {
 				return true;
 			}
