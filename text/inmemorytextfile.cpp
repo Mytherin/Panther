@@ -257,7 +257,7 @@ void InMemoryTextFile::RemoveTrailingWhitespace() {
 	PerformOperation(cursors, remove);
 }
 
-PGTextRange InMemoryTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap, std::shared_ptr<Task> current_task) {
+PGTextRange InMemoryTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap) {
 	PGTextBuffer* start_buffer = buffers[PGTextBuffer::GetBuffer(buffers, start_line)];
 	PGTextBuffer* end_buffer = buffers[PGTextBuffer::GetBuffer(buffers, end_line)];
 	lng start_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
@@ -265,7 +265,7 @@ PGTextRange InMemoryTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection 
 	return FindMatch(regex_handle, direction, start_buffer, start_position, end_buffer, end_position, wrap, current_task);
 }
 
-PGTextRange InMemoryTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap, std::shared_ptr<Task> current_task) {
+PGTextRange InMemoryTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap) {
 	// we start "outside" of the current selection
 	// e.g. if we go right, we start at the end and continue right
 	// if we go left, we start at the beginning and go left

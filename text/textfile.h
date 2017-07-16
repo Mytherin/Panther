@@ -170,8 +170,8 @@ public:
 	bool HasUnsavedChanges() { return FileInMemory() || unsaved_changes; }
 	bool FileInMemory() { return path.size() == 0; }
 
-	virtual PGTextRange FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap, std::shared_ptr<Task> current_task) = 0;
-	virtual PGTextRange FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap, std::shared_ptr<Task> current_task) = 0;
+	virtual PGTextRange FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap) = 0;
+	virtual PGTextRange FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap) = 0;
 
 	void SetSettings(PGTextFileSettings settings);
 	PGTextFileSettings GetSettings();
@@ -181,9 +181,6 @@ public:
 	virtual void FindMatchesWithContext(FindAllInformation* info, PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data) = 0;
 
 	virtual void ConvertToIndentation(PGLineIndentation indentation) = 0;
-
-	virtual void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary) = 0;
-
 
 	void PendDelete();
 
