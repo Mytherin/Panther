@@ -222,6 +222,8 @@ protected:
 	lng bytes = 0;
 	lng total_bytes = 1;
 
+	std::vector<PGTextBuffer*> buffers;
+
 	PGLanguage* language = nullptr;
 	std::unique_ptr<SyntaxHighlighter> highlighter = nullptr;
 
@@ -254,7 +256,16 @@ protected:
 	int tabwidth = 0;
 
 	std::shared_ptr<Task> current_task = nullptr;
+
+	lng linecount = 0;
+	PGTextPosition max_line_length;
+
+	void ConsumeBytes(const char* buffer, size_t buffer_size, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr, char& prev_character);
+	void ConsumeBytes(const char* buffer, size_t buffer_size, size_t& prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 private:
 	std::shared_ptr<Task> find_task = nullptr;
 	std::string current_find_file;
+
+	void _InsertLine(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
+	void _InsertText(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 };

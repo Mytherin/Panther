@@ -60,6 +60,7 @@ namespace panther {
 	}
 
 	void CloseFile(PGFileHandle handle) {
+		if (!handle) return;
 		fclose(handle->f);
 	}
 

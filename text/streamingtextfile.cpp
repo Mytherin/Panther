@@ -2,25 +2,83 @@
 #include "streamingtextfile.h"
 
 StreamingTextFile::StreamingTextFile(PGFileHandle handle, std::string filename) :
-	handle(handle), TextFile(filename) {
-
+	handle(handle), TextFile(filename), decoder(nullptr),
+	output(nullptr), intermediate_buffer(nullptr),
+	linenr(0), current_buffer(nullptr), max_length(-1), 
+	current_width(0), prev_character('\0') {
+	read_only = true;
+	ReadBlock();
+	is_loaded = true;
 }
 
 StreamingTextFile::~StreamingTextFile() {
+	if (output) {
+		free(output);
+	}
+	if (intermediate_buffer) {
+		free(intermediate_buffer);
+	}
 	panther::CloseFile(handle);
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		delete *it;
 	}
 }
 
-std::shared_ptr<TextFile> StreamingTextFile::OpenTextFile(std::string filename, PGFileError& error, bool ignore_binary = false) {
-	auto file = std::make_shared<StreamingTextFile>(path);
-	file->OpenFile(file, encoding, buffer, buffer_size, immediate_load);
-	return file;
+bool StreamingTextFile::ReadBlock() {
+	if (!handle) return false;
+	Lock(PGWriteLock);
+	char buffer[PANTHER_BUFSIZ + 1];
+	size_t bufsiz = panther::ReadFromFile(handle, buffer, PANTHER_BUFSIZ);
+	char* buf = buffer;
+	if (bufsiz == 0) {
+		if (buffers.size() == 0) {
+			ConsumeBytes("", 0, max_length, current_width, current_buffer, linenr, prev_character);
+			this->encoding = PGEncodingUTF8;
+		}
+		panther::CloseFile(handle);
+		handle = nullptr;
+		return false;
+	}
+	if (encoding == PGEncodingUnknown) {
+		// guess encoding from the buffer
+		this->encoding = PGGuessEncoding((unsigned char*)buffer, std::min((size_t)1024, bufsiz));
+		if (encoding != PGEncodingUTF8 || encoding != PGEncodingUTF8BOM) {
+			decoder = PGCreateEncoder(this->encoding, PGEncodingUTF8);
+		} else {
+			if (((unsigned char*)buffer)[0] == 0xEF &&
+				((unsigned char*)buffer)[1] == 0xBB &&
+				((unsigned char*)buffer)[2] == 0xBF) {
+				// skip UTF-8 BOM byte order mark
+				buf += 3;
+				bufsiz -= 3;
+			}
+		}
+	}
+	if (decoder) {
+		bufsiz = PGConvertText(decoder, buf, bufsiz, &output, &output_size, &intermediate_buffer, &intermediate_size);
+		buf = output;
+	}
+	ConsumeBytes(buf, bufsiz, max_length, current_width, current_buffer, linenr, prev_character);
+
+	linecount = linenr;
+	total_width = current_width;
+
+	Unlock(PGWriteLock);
+	return true;
+}
+
+std::shared_ptr<TextFile> StreamingTextFile::OpenTextFile(std::string filename, PGFileError& error, bool ignore_binary) {
+	PGFileHandle handle = panther::OpenFile(filename, PGFileReadOnly, error);
+	if (!handle) {
+		return nullptr;
+	}
+	return std::shared_ptr<StreamingTextFile>(new StreamingTextFile(handle, filename));
 }
 
 TextLine StreamingTextFile::GetLine(lng linenumber) {
-	return TextLine();
+	if (linenumber < 0)
+		return TextLine();
+	return TextLine(GetBuffer(linenumber), linenumber);
 }
 
 void StreamingTextFile::InsertText(std::vector<Cursor>& cursors, char character) {
@@ -139,8 +197,8 @@ void StreamingTextFile::SetLanguage(PGLanguage* language) {
 }
 
 lng StreamingTextFile::GetLineCount() {
-	assert(0);
-	return 0;
+	//assert(0);
+	return linecount;
 }
 
 void StreamingTextFile::IndentText(std::vector<Cursor>& cursors, PGDirection direction) {
@@ -156,8 +214,9 @@ void StreamingTextFile::VerifyTextfile() {
 }
 
 PGScalar StreamingTextFile::GetMaxLineWidth(PGFontHandle font) {
-	assert(0);
-	return -1;
+	if (!is_loaded) return 0;
+	assert(max_line_length.buffer);
+	return GetTextFontSize(font) / 10.0 * max_line_length.buffer->line_lengths[max_line_length.position];
 }
 
 TextFile::PGStoreFileType StreamingTextFile::WorkspaceFileStorage() {
@@ -165,8 +224,11 @@ TextFile::PGStoreFileType StreamingTextFile::WorkspaceFileStorage() {
 }
 
 PGTextRange StreamingTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, lng start_line, lng start_character, lng end_line, lng end_character, bool wrap) {
-	assert(0);
-	return PGTextRange();
+	PGTextBuffer* start_buffer = GetBuffer(start_line);
+	PGTextBuffer* end_buffer = GetBuffer(end_line);
+	lng start_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
+	lng end_position = end_buffer->GetBufferLocationFromCursor(end_line, end_character);
+	return FindMatch(regex_handle, direction, start_buffer, start_position, end_buffer, end_position, wrap);
 }
 
 PGTextRange StreamingTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap) {
@@ -183,21 +245,23 @@ void StreamingTextFile::ConvertToIndentation(PGLineIndentation indentation) {
 }
 
 PGTextBuffer* StreamingTextFile::GetBuffer(lng line) {
-	assert(0);
-	return nullptr;
+	while (line > linecount && handle) {
+		ReadBlock();
+	}
+	return buffers[PGTextBuffer::GetBuffer(buffers, line)];
 }
 
 PGTextBuffer* StreamingTextFile::GetBufferFromWidth(double width) {
-	assert(0);
-	return nullptr;
+	while (width > total_width && handle) {
+		ReadBlock();
+	}
+	return buffers[PGTextBuffer::GetBufferFromWidth(buffers, width)];
 }
 
 PGTextBuffer* StreamingTextFile::GetFirstBuffer() {
-	assert(0);
-	return nullptr;
+	return buffers.front();
 }
 
 PGTextBuffer* StreamingTextFile::GetLastBuffer() {
-	assert(0);
-	return nullptr;
+	return buffers.back();
 }

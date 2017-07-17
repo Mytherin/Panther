@@ -57,7 +57,6 @@ public:
 
 	void FindMatchesWithContext(FindAllInformation* info, PGRegexHandle regex_handle, int context_lines, PGMatchCallback callback, void* data);
 	void ConvertToIndentation(PGLineIndentation indentation);
-	void FindAllMatchesAsync(PGGlobSet whitelist, ProjectExplorer* explorer, PGRegexHandle regex_handle, int context_lines, bool ignore_binary);
 
 	PGTextBuffer* GetBuffer(lng line);
 
@@ -65,12 +64,23 @@ public:
 	PGTextBuffer* GetFirstBuffer();
 	PGTextBuffer* GetLastBuffer();
 private:
+	PGEncoderHandle decoder = nullptr;
+
+	char* output = nullptr;
+	lng output_size = 0;
+	char* intermediate_buffer = nullptr;
+	lng intermediate_size = 0;
+
+	lng linenr = 0;
+	PGTextBuffer* current_buffer = nullptr;
+	PGScalar max_length = -1;
+	double current_width = 0;
+	char prev_character = '\0';
+
+
 	StreamingTextFile(PGFileHandle handle, std::string filename);
 
-	lng linecount = 0;
-	PGTextPosition max_line_length;
+	bool ReadBlock();
 
 	PGFileHandle handle;
-
-	std::vector<PGTextBuffer*> buffers;
 };

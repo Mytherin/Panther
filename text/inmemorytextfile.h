@@ -72,9 +72,6 @@ public:
 protected:
 	void ApplySettings(PGTextFileSettings settings);
 private:
-	lng linecount = 0;
-	PGTextPosition max_line_length;
-
 	bool WriteToFile(PGFileHandle file, PGEncoderHandle encoder, const char* text, lng size, char** output_text, lng* output_size, char** intermediate_buffer, lng* intermediate_size);
 
 	void InsertLines(std::vector<Cursor>& cursors, std::string text, size_t cursor);
@@ -92,9 +89,6 @@ private:
 	void DeleteText(std::vector<Cursor>& cursors, PGTextRange);
 
 	void OpenFile(std::shared_ptr<TextFile> file, PGFileEncoding encoding, char* base, size_t size, bool immediate_load);
-
-	void ConsumeBytes(const char* buffer, size_t buffer_size, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr, char& prev_character);
-	void ConsumeBytes(const char* buffer, size_t buffer_size, size_t& prev, int& offset, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 	void OpenFile(char* base_data, lng size, bool delete_file);
 	void ReadFile(std::shared_ptr<TextFile> file, bool immediate_load, bool ignore_binary);
 	void ActuallyReadFile(std::shared_ptr<TextFile> file, bool ignore_binary);
@@ -116,11 +110,6 @@ private:
 	void InvalidateBuffers(TextView* responsible_view);
 	void InvalidateParsing();
 
-	std::vector<PGTextBuffer*> buffers;
 	std::vector<std::unique_ptr<TextDelta>> deltas;
 	std::vector<RedoStruct> redos;
-
-	void _InsertLine(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
-	void _InsertText(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
-
 };

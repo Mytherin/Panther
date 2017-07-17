@@ -35,6 +35,8 @@ struct PGUTF8Character {
 
 #define DOUBLE_CLICK_TIME 400
 
+#define PANTHER_BUFSIZ 8192
+
 namespace panther {
 	template<class T>
 	T abs(T t1) {

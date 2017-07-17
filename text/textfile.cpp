@@ -290,3 +290,157 @@ void TextFile::FinalizeLoading() {
 	is_loaded = true;
 	UnlockMutex(loading_lock.get());
 }
+
+
+void TextFile::_InsertLine(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+	const char* line_start = ptr + prev;
+	lng line_size = (lng)(current - prev);
+	if (current_buffer == nullptr ||
+		(current_buffer->current_size > TEXT_BUFFER_SIZE) ||
+		(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
+		// create a new buffer
+		PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
+		if (current_buffer) current_buffer->next = new_buffer;
+		new_buffer->prev = current_buffer;
+		current_buffer = new_buffer;
+		current_buffer->cumulative_width = current_width;
+		current_buffer->buffer[current_buffer->current_size++] = '\n';
+		current_buffer->index = buffers.size();
+		buffers.push_back(current_buffer);
+	} else {
+		//add line to the current buffer
+		memcpy(current_buffer->buffer + current_buffer->current_size, line_start, line_size);
+		current_buffer->line_start.push_back(current_buffer->current_size);
+		assert(current_buffer->line_start.size() == 1 ||
+			   current_buffer->line_start.back() > current_buffer->line_start[current_buffer->line_start.size() - 2]);
+		current_buffer->current_size += line_size;
+		current_buffer->buffer[current_buffer->current_size++] = '\n';
+	}
+	assert(current_buffer->current_size < current_buffer->buffer_size);
+	PGScalar length = MeasureTextWidth(PGStyleManager::default_font, line_start, line_size);
+	if (length > max_length) {
+		max_line_length.buffer = current_buffer;
+		max_line_length.position = current_buffer->line_lengths.size();
+		max_length = length;
+	}
+	current_buffer->line_lengths.push_back(length);
+	current_buffer->line_count++;
+	current_buffer->width += length;
+	current_width += length;
+
+	linenr++;
+}
+
+void TextFile::_InsertText(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+	if (current_buffer == nullptr) {
+		_InsertLine(ptr, current, prev, max_length, current_width, current_buffer, linenr);
+		return;
+	}
+	if (current == prev) {
+		return;
+	}
+	const char* line_start = ptr + prev;
+	lng line_size = (lng)(current - prev);
+
+	// add text to the last line of the buffer
+	auto update = current_buffer->InsertText(buffers, current_buffer, current_buffer->current_size - 1, std::string(line_start, line_size));
+	PGTextBuffer* new_buffer = update.new_buffer ? update.new_buffer : current_buffer;
+	// measure the new line width
+	PGScalar prev_length = current_buffer->line_lengths.back();
+	lng new_line_begin = new_buffer->line_start.size() == 0 ? 0 : new_buffer->line_start.back();
+	PGScalar line_length = MeasureTextWidth(PGStyleManager::default_font, new_buffer->buffer + new_line_begin, new_buffer->current_size - 1 - new_line_begin);
+	PGScalar added_length = line_length - prev_length;
+	if (line_length > max_length) {
+		max_line_length.buffer = new_buffer;
+		max_line_length.position = new_buffer->line_count - 1;
+		max_length = line_length;
+	}
+	current_buffer->line_lengths.back() = line_length;
+	current_buffer->width += added_length;
+	if (update.new_buffer) {
+		size_t start = current_buffer->line_count;
+		for (size_t i = 0; i < update.new_buffer->line_count; i++) {
+			current_buffer->width -= current_buffer->line_lengths[start + i];
+			update.new_buffer->width += current_buffer->line_lengths[start + i];
+			update.new_buffer->line_lengths.push_back(current_buffer->line_lengths[start + i]);
+		}
+		current_buffer->line_lengths.erase(current_buffer->line_lengths.begin() + start, current_buffer->line_lengths.end());
+		update.new_buffer->index = current_buffer->index + 1;
+		update.new_buffer->cumulative_width = current_buffer->cumulative_width + current_buffer->width;
+		current_buffer = update.new_buffer;
+	}
+	current_width += added_length;
+}
+
+void TextFile::ConsumeBytes(const char* buffer, size_t buffer_size,
+									PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr, char& prev_character) {
+	size_t prev = 0;
+	for (size_t i = 0; i < buffer_size; i++) {
+		if (buffer[i] == '\r' || buffer[i] == '\n') {
+			// if this is the first character of this buffer, and the last character of the previous
+			// buffer was \r, we skip this character as well
+			if (!(i == 0 && prev_character == '\r' && buffer[i] == '\n')) {
+				if (prev == 0) {
+					_InsertText(buffer, i, prev, max_length, current_width, current_buffer, linenr);
+				} else {
+					_InsertLine(buffer, i, prev, max_length, current_width, current_buffer, linenr);
+				}
+				if (i + 1 < buffer_size && buffer[i] == '\r' && buffer[i + 1] == '\n') {
+					// skip \n in \r\n newline sequence
+					i++;
+				}
+			}
+			prev = i + 1;
+		}
+	}
+	_InsertLine(buffer, buffer_size, prev, max_length, current_width, current_buffer, linenr);
+	if (buffer_size > 0) {
+		prev_character = buffer[buffer_size - 1];
+	}
+}
+
+void TextFile::ConsumeBytes(const char* buffer, size_t buffer_size, size_t& prev, int& offset,
+									PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr) {
+	size_t i = 0;
+	while (i < buffer_size) {
+		int character_offset = utf8_character_length(buffer[i]);
+		if (character_offset <= 0) {
+			character_offset = 1;
+		}
+		if (buffer[i] == '\n') {
+			// Unix line ending: \n
+			if (this->lineending == PGLineEndingUnknown) {
+				this->lineending = PGLineEndingUnix;
+			} else if (this->lineending != PGLineEndingUnix) {
+				this->lineending = PGLineEndingMixed;
+			}
+		}
+		if (buffer[i] == '\r') {
+			if (buffer[i + 1] == '\n') {
+				offset = 1;
+				i++;
+				// Windows line ending: \r\n
+				if (this->lineending == PGLineEndingUnknown) {
+					this->lineending = PGLineEndingWindows;
+				} else if (this->lineending != PGLineEndingWindows) {
+					this->lineending = PGLineEndingMixed;
+				}
+			} else {
+				// OSX line ending: \r
+				if (this->lineending == PGLineEndingUnknown) {
+					this->lineending = PGLineEndingMacOS;
+				} else if (this->lineending != PGLineEndingMacOS) {
+					this->lineending = PGLineEndingMixed;
+				}
+			}
+		}
+		if (buffer[i] == '\r' || buffer[i] == '\n') {
+			_InsertLine(buffer, i - offset, prev, max_length, current_width, current_buffer, linenr);
+
+			prev = i + 1;
+			offset = 0;
+		}
+		i += character_offset;
+	}
+	bytes = i;
+}
