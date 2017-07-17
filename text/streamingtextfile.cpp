@@ -1,17 +1,22 @@
 
 #include "streamingtextfile.h"
 
-StreamingTextFile::StreamingTextFile() {
-
-}
-
-StreamingTextFile::StreamingTextFile(std::string filename) :
-	TextFile(filename) {
+StreamingTextFile::StreamingTextFile(PGFileHandle handle, std::string filename) :
+	handle(handle), TextFile(filename) {
 
 }
 
 StreamingTextFile::~StreamingTextFile() {
+	panther::CloseFile(handle);
+	for (auto it = buffers.begin(); it != buffers.end(); it++) {
+		delete *it;
+	}
+}
 
+std::shared_ptr<TextFile> StreamingTextFile::OpenTextFile(std::string filename, PGFileError& error, bool ignore_binary = false) {
+	auto file = std::make_shared<StreamingTextFile>(path);
+	file->OpenFile(file, encoding, buffer, buffer_size, immediate_load);
+	return file;
 }
 
 TextLine StreamingTextFile::GetLine(lng linenumber) {

@@ -4,9 +4,9 @@
 
 class StreamingTextFile : public TextFile {
 public:
-	StreamingTextFile();
-	StreamingTextFile(std::string filename);
 	~StreamingTextFile();
+
+	static std::shared_ptr<TextFile> OpenTextFile(std::string filename, PGFileError& error, bool ignore_binary = false);
 
 	TextLine GetLine(lng linenumber);
 
@@ -64,4 +64,13 @@ public:
 	PGTextBuffer* GetBufferFromWidth(double width);
 	PGTextBuffer* GetFirstBuffer();
 	PGTextBuffer* GetLastBuffer();
+private:
+	StreamingTextFile(PGFileHandle handle, std::string filename);
+
+	lng linecount = 0;
+	PGTextPosition max_line_length;
+
+	PGFileHandle handle;
+
+	std::vector<PGTextBuffer*> buffers;
 };
