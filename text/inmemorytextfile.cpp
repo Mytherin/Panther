@@ -262,7 +262,7 @@ PGTextRange InMemoryTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection 
 	PGTextBuffer* end_buffer = buffers[PGTextBuffer::GetBuffer(buffers, end_line)];
 	lng start_position = start_buffer->GetBufferLocationFromCursor(start_line, start_character);
 	lng end_position = end_buffer->GetBufferLocationFromCursor(end_line, end_character);
-	return FindMatch(regex_handle, direction, start_buffer, start_position, end_buffer, end_position, wrap, current_task);
+	return FindMatch(regex_handle, direction, start_buffer, start_position, end_buffer, end_position, wrap);
 }
 
 PGTextRange InMemoryTextFile::FindMatch(PGRegexHandle regex_handle, PGDirection direction, PGTextBuffer* start_buffer, lng start_position, PGTextBuffer* end_buffer, lng end_position, bool wrap) {
@@ -2405,7 +2405,7 @@ void InMemoryTextFile::FindMatchesWithContext(FindAllInformation* info, PGRegexH
 	lng start_line = -1;
 	lng end_line = -1;
 	while (true) {
-		PGTextRange match = FindMatch(regex_handle, PGDirectionRight, current_buffer, current_position, current_buffer, current_position, false, nullptr);
+		PGTextRange match = FindMatch(regex_handle, PGDirectionRight, current_buffer, current_position, current_buffer, current_position, false);
 		if (!info->task->active) {
 			// task is no longer active, cancel the search
 			return;

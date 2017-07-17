@@ -15,7 +15,7 @@ StreamingTextFile::~StreamingTextFile() {
 }
 
 TextLine StreamingTextFile::GetLine(lng linenumber) {
-
+	return TextLine();
 }
 
 void StreamingTextFile::InsertText(std::vector<Cursor>& cursors, char character) {
@@ -63,11 +63,12 @@ void StreamingTextFile::MoveLines(std::vector<Cursor>& cursors, int offset) {
 }
 
 std::string StreamingTextFile::GetText() {
-
+	assert(0);
+	return "";
 }
 
 std::string StreamingTextFile::CutText(std::vector<Cursor>& cursors) {
-	return CopyText();
+	return CopyText(cursors);
 }
 
 std::string StreamingTextFile::CopyText(std::vector<Cursor>& cursors) {
@@ -104,7 +105,7 @@ void StreamingTextFile::RegexReplace(std::vector<Cursor>& cursors, PGRegexHandle
 	return;
 }
 
-bool StreamingTextFile::FileReload(PGFileError& error) {
+bool StreamingTextFile::Reload(PGFileError& error) {
 	return false;
 }
 
@@ -154,7 +155,7 @@ PGScalar StreamingTextFile::GetMaxLineWidth(PGFontHandle font) {
 	return -1;
 }
 
-PGStoreFileType StreamingTextFile::WorkspaceFileStorage() {
+TextFile::PGStoreFileType StreamingTextFile::WorkspaceFileStorage() {
 	return PGFileTooLarge;
 }
 
@@ -177,17 +178,21 @@ void StreamingTextFile::ConvertToIndentation(PGLineIndentation indentation) {
 }
 
 PGTextBuffer* StreamingTextFile::GetBuffer(lng line) {
-
+	assert(0);
+	return nullptr;
 }
 
 PGTextBuffer* StreamingTextFile::GetBufferFromWidth(double width) {
-
+	assert(0);
+	return nullptr;
 }
 
 PGTextBuffer* StreamingTextFile::GetFirstBuffer() {
-
+	assert(0);
+	return nullptr;
 }
 
 PGTextBuffer* StreamingTextFile::GetLastBuffer() {
-
+	assert(0);
+	return nullptr;
 }

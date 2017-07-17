@@ -734,7 +734,7 @@ bool TextView::FindMatch(PGRegexHandle handle, PGDirection direction, bool wrap,
 		include_selection ? end.buffer : begin.buffer,
 		include_selection ? end.position : begin.position,
 		include_selection ? begin.buffer : end.buffer,
-		include_selection ? begin.position : end.position, wrap, nullptr);
+		include_selection ? begin.position : end.position, wrap);
 	file->Unlock(PGReadLock);
 
 	if (match.start_buffer != nullptr) {
