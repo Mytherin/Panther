@@ -51,6 +51,8 @@ struct PGBufferUpdate {
 	PGBufferUpdate(lng split_point, PGTextBuffer* new_buffer) : split_point(split_point), new_buffer(new_buffer) { }
 };
 
+typedef void (*PGTextBufferCallback)(PGTextBuffer* buffer, void* data);
+
 struct PGTextBuffer {
 public:
 	PGTextBuffer();
@@ -68,8 +70,29 @@ public:
 	PGParserState state = nullptr;
 	bool parsed = false;
 
-	PGTextBuffer* prev = nullptr;
-	PGTextBuffer* next = nullptr;
+	PGTextBuffer* prev() {
+		if (prev_callback) {
+			if (!_prev) prev_callback(this, callback_data);
+			prev_callback = nullptr;
+		}
+		return _prev;
+	}
+
+	PGTextBuffer* next() {
+		if (next_callback) {
+			if (!_next) next_callback(this, callback_data);
+			next_callback = nullptr;
+		}
+		return _next;
+	}
+
+
+	PGTextBufferCallback prev_callback = nullptr;
+	PGTextBufferCallback next_callback = nullptr;
+	void* callback_data = nullptr;
+
+	PGTextBuffer* _prev = nullptr;
+	PGTextBuffer* _next = nullptr;
 
 	double width = 0;
 	double cumulative_width = -1;
@@ -80,7 +103,7 @@ public:
 
 	void Extend(ulng new_size);
 
-	std::string GetString() { return std::string(buffer, next ? current_size : current_size - 1); }
+	//std::string GetString() { return std::string(buffer, next ? current_size : current_size - 1); }
 
 	static lng GetBufferFromWidth(std::vector<PGTextBuffer*>& buffers, double percentage);
 	static lng GetBuffer(std::vector<PGTextBuffer*>& buffers, lng line);

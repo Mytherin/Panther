@@ -95,8 +95,8 @@ PGRegexMatch PGMatchRegex(PGRegexHandle handle, const char* data, lng size, PGDi
 	buffer.current_size = size;
 	buffer.buffer_size = size;
 	buffer.start_line = 0;
-	buffer.prev = nullptr;
-	buffer.next = nullptr;
+	buffer._prev = nullptr;
+	buffer._next = nullptr;
 
 	PGTextRange text;
 	text.start_buffer = &buffer;

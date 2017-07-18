@@ -6,7 +6,7 @@ lng PGTextPosition::GetPosition(PGTextBuffer* start_buffer) {
 	PGTextBuffer* current_buffer = start_buffer;
 	while (current_buffer != buffer) {
 		current_position += current_buffer->current_size;
-		current_buffer = current_buffer->next;
+		current_buffer = current_buffer->next();
 	}
 	current_position += position;
 	return current_position;
@@ -14,8 +14,8 @@ lng PGTextPosition::GetPosition(PGTextBuffer* start_buffer) {
 
 PGTextRange::PGTextRange(std::string text) : owned_data(nullptr) {
 	PGTextBuffer* buffer = new PGTextBuffer(text.data(), text.size(), 0);
-	buffer->prev = nullptr;
-	buffer->next = nullptr;
+	buffer->_prev = nullptr;
+	buffer->_next = nullptr;
 	buffer->buffer = (char*)text.data();
 	buffer->current_size = text.size();
 	owned_data.reset(buffer);
@@ -56,7 +56,7 @@ std::string PGTextRange::GetString() const {
 	while (buffer != end_buffer) {
 		size += buffer->current_size - position;
 		position = 0;
-		buffer = buffer->next;
+		buffer = buffer->next();
 	}
 	size += end_position - position;
 	char* data = (char*)malloc(size * sizeof(char) + 1);
@@ -71,7 +71,7 @@ std::string PGTextRange::GetString() const {
 		memcpy(current_data, buffer->buffer + position, size);
 		current_data += size;
 		position = 0;
-		buffer = buffer->next;
+		buffer = buffer->next();
 	}
 	memcpy(current_data, buffer->buffer + position, end_position - position);
 	std::string result = std::string(data, size);
@@ -84,7 +84,7 @@ void PGTextRange::remove_prefix(size_t length) {
 		size_t buffer_left = start_buffer->current_size - start_position;
 		if (length > buffer_left) {
 			length -= buffer_left;
-			start_buffer = start_buffer->next;
+			start_buffer = start_buffer->next();
 			start_position = 0;
 		} else {
 			start_position += length;
@@ -137,7 +137,7 @@ int PGTextRange::_buffer_comparison(const char* data, size_t length) const {
     if (buffer == end_buffer) {
       break;
     }
-    buffer = buffer->next;
+    buffer = buffer->next();
     start = 0;
   }
   /* we ran out of text */
@@ -185,7 +185,7 @@ PGTextPosition PGTextRange::_reverse_buffer_lookup(int value) const {
 		if (buffer == start_buffer) {
 			break;
 		}
-		buffer = buffer->next;
+		buffer = buffer->next();
 		end = buffer ? buffer->current_size : 0;
 	}
 	return PGTextPosition(nullptr, (lng)0);
@@ -212,7 +212,7 @@ PGTextPosition PGTextRange::_memchr(int value) const {
 		if (buffer == end_buffer) {
 			break;
 		}
-		buffer = buffer->next;
+		buffer = buffer->next();
 		start = 0;
 	}
 	return PGTextPosition(nullptr, (lng)0);
@@ -232,7 +232,7 @@ PGTextPosition PGTextRange::_memcasechr(int value) const {
 		if (buffer == end_buffer) {
 			break;
 		}
-		buffer = buffer->next;
+		buffer = buffer->next();
 		start = 0;
 	}
 	return PGTextPosition(nullptr, (lng)0);

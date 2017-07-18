@@ -326,7 +326,7 @@ bool Prog::SearchOnePass(const PGTextRange& text,
     if (p != ep) break;
     if (current_buffer == text.end_buffer) break;
     PGTextBuffer* next_buffer;
-    next_buffer = current_buffer->next;
+    next_buffer = current_buffer->next();
     if (!next_buffer) break;
     current_buffer = next_buffer;
     bp = current_buffer->buffer;

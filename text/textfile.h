@@ -265,7 +265,7 @@ protected:
 private:
 	std::shared_ptr<Task> find_task = nullptr;
 	std::string current_find_file;
-
+	
 	void _InsertLine(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 	void _InsertText(const char* ptr, size_t current, size_t prev, PGScalar& max_length, double& current_width, PGTextBuffer*& current_buffer, lng& linenr);
 };

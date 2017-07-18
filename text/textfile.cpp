@@ -300,8 +300,8 @@ void TextFile::_InsertLine(const char* ptr, size_t current, size_t prev, PGScala
 		(current_buffer->current_size + line_size + 1 >= (current_buffer->buffer_size - current_buffer->buffer_size / 10))) {
 		// create a new buffer
 		PGTextBuffer* new_buffer = new PGTextBuffer(line_start, line_size, linenr);
-		if (current_buffer) current_buffer->next = new_buffer;
-		new_buffer->prev = current_buffer;
+		if (current_buffer) current_buffer->_next = new_buffer;
+		new_buffer->_prev = current_buffer;
 		current_buffer = new_buffer;
 		current_buffer->cumulative_width = current_width;
 		current_buffer->buffer[current_buffer->current_size++] = '\n';

@@ -26,6 +26,7 @@ StreamingTextFile::~StreamingTextFile() {
 
 bool StreamingTextFile::ReadBlock() {
 	if (!handle) return false;
+
 	Lock(PGWriteLock);
 	char buffer[PANTHER_BUFSIZ + 1];
 	size_t bufsiz = panther::ReadFromFile(handle, buffer, PANTHER_BUFSIZ);
@@ -39,6 +40,14 @@ bool StreamingTextFile::ReadBlock() {
 		handle = nullptr;
 		return false;
 	}
+
+	// FIXME: we should consume bytes until we fill one complete buffer, always
+	// how do we do this? 
+	// don't use ConsumeBytes, instead, read X bytes where X = BUFSIZ
+	// read until last newline character, and add all that to a new buffer
+	// remaining text gets cached in the StreamingTextFile and will be used next time
+	// if no newline: add all text to a new buffer and read next block (repeat until newline is found)
+
 	if (encoding == PGEncodingUnknown) {
 		// guess encoding from the buffer
 		this->encoding = PGGuessEncoding((unsigned char*)buffer, std::min((size_t)1024, bufsiz));

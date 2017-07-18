@@ -506,7 +506,7 @@ void InMemoryTextFile::InvalidateBuffers(TextView* responsible_view) {
 		//buffer->start_line = current_lines;
 		current_width += buffer->width;
 		current_lines += buffer->line_count;
-		buffer = buffer->next;
+		buffer = buffer->next();
 	}
 	total_width = current_width;
 	linecount = current_lines;
@@ -692,7 +692,7 @@ void InMemoryTextFile::DeleteSelection(std::vector<Cursor>& cursors, size_t i) {
 		lines_deleted += begin.buffer->DeleteLines(begin.position);
 		begin.buffer->line_count -= lines_deleted;
 
-		buffer = buffer->next;
+		buffer = buffer->next();
 
 		lng buffer_position = PGTextBuffer::GetBuffer(buffers, begin.buffer);
 		while (buffer != end.buffer) {
@@ -702,7 +702,7 @@ void InMemoryTextFile::DeleteSelection(std::vector<Cursor>& cursors, size_t i) {
 			lines_deleted += buffer->GetLineCount();
 			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
-			PGTextBuffer* next = buffer->next;
+			PGTextBuffer* next = buffer->next();
 			delete buffer;
 			buffer = next;
 		}
@@ -737,8 +737,8 @@ void InMemoryTextFile::DeleteSelection(std::vector<Cursor>& cursors, size_t i) {
 			end.buffer->line_count -= deleted_lines_in_end_buffer;
 			// set the index, in case there were any deleted buffers
 			end.buffer->index = begin.buffer->index + 1;
-			begin.buffer->next = end.buffer;
-			end.buffer->prev = begin.buffer;
+			begin.buffer->_next = end.buffer;
+			end.buffer->_prev = begin.buffer;
 			start_index = end.buffer->index + 1;
 			InvalidateBuffer(end.buffer);
 
@@ -769,8 +769,8 @@ void InMemoryTextFile::DeleteSelection(std::vector<Cursor>& cursors, size_t i) {
 				max_line_length.buffer = nullptr;
 			}
 			lines_deleted += end.buffer->GetLineCount();
-			begin.buffer->next = end.buffer->next;
-			if (begin.buffer->next) begin.buffer->next->prev = begin.buffer;
+			begin.buffer->_next = end.buffer->_next;
+			if (begin.buffer->_next) begin.buffer->_next->_prev = begin.buffer;
 			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
 			delete end.buffer;
@@ -893,7 +893,7 @@ void InMemoryTextFile::ReplaceText(std::vector<Cursor>& cursors, std::string rep
 		if (buffer == endpos.buffer) {
 			break;
 		}
-		buffer = buffer->next;
+		buffer = buffer->next();
 	}
 	if (inserted_lines != 0) {
 		buffer = beginpos.buffer;
@@ -901,7 +901,7 @@ void InMemoryTextFile::ReplaceText(std::vector<Cursor>& cursors, std::string rep
 		while (buffer) {
 			buffer->start_line = lines;
 			lines += buffer->line_count;
-			buffer = buffer->next;
+			buffer = buffer->next();
 		}
 		linecount += inserted_lines;
 	}
@@ -1009,13 +1009,13 @@ void InMemoryTextFile::InsertLines(std::vector<Cursor>& cursors, std::string tex
 		if ((*it).size() + 1 >= buffer->buffer_size - buffer->current_size) {
 			// line does not fit within the current buffer: have to make a new buffer
 			PGTextBuffer* new_buffer = new PGTextBuffer((*it).c_str(), (*it).size(), -1);
-			new_buffer->next = buffer->next;
-			if (new_buffer->next) new_buffer->next->prev = new_buffer;
-			new_buffer->prev = buffer;
+			new_buffer->_next = buffer->_next;
+			if (new_buffer->_next) new_buffer->_next->_prev = new_buffer;
+			new_buffer->_prev = buffer;
 			new_buffer->cumulative_width = -1;
 			new_buffer->line_count = 1;
 			new_buffer->start_line = buffer->start_line + buffer->line_count;
-			buffer->next = new_buffer;
+			buffer->_next = new_buffer;
 			buffer = new_buffer;
 			buffer->buffer[buffer->current_size++] = '\n';
 			position = buffer->current_size;
@@ -1040,10 +1040,10 @@ void InMemoryTextFile::InsertLines(std::vector<Cursor>& cursors, std::string tex
 	cursor.end_buffer_position = cursor.start_buffer_position;
 	if (extra_buffer) {
 		// insert the extra buffer, if we have it
-		extra_buffer->next = buffer->next;
-		if (extra_buffer->next) extra_buffer->next->prev = extra_buffer;
-		buffer->next = extra_buffer;
-		extra_buffer->prev = buffer;
+		extra_buffer->_next = buffer->_next;
+		if (extra_buffer->_next) extra_buffer->_next->_prev = extra_buffer;
+		buffer->_next = extra_buffer;
+		extra_buffer->_prev = buffer;
 		extra_buffer->cumulative_width = -1;
 		extra_buffer->start_line = buffer->start_line + buffer->line_count;
 		extra_buffer->parsed = false;
@@ -1077,10 +1077,10 @@ void InMemoryTextFile::InsertLines(std::vector<Cursor>& cursors, std::string tex
 		extra_buffer->VerifyBuffer();
 	}
 
-	buffer = buffer->next;
+	buffer = buffer->_next;
 	while (buffer) {
 		buffer->start_line += added_lines;
-		buffer = buffer->next;
+		buffer = buffer->_next;
 	}
 	linecount += added_lines;
 
@@ -1299,7 +1299,7 @@ void InMemoryTextFile::DeleteText(std::vector<Cursor>& cursors, PGTextRange rang
 		lines_deleted += begin.buffer->DeleteLines(begin.position);
 		begin.buffer->line_count -= lines_deleted;
 
-		buffer = buffer->next;
+		buffer = buffer->_next;
 
 		lng buffer_position = PGTextBuffer::GetBuffer(buffers, begin.buffer);
 		while (buffer != end.buffer) {
@@ -1309,7 +1309,7 @@ void InMemoryTextFile::DeleteText(std::vector<Cursor>& cursors, PGTextRange rang
 			lines_deleted += buffer->GetLineCount();
 			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
-			PGTextBuffer* next = buffer->next;
+			PGTextBuffer* next = buffer->_next;
 			deleted_buffers.push_back(std::unique_ptr<PGTextBuffer>(buffer));
 			buffer = next;
 		}
@@ -1344,8 +1344,8 @@ void InMemoryTextFile::DeleteText(std::vector<Cursor>& cursors, PGTextRange rang
 			end.buffer->line_count -= deleted_lines_in_end_buffer;
 			// set the index, in case there were any deleted buffers
 			end.buffer->index = begin.buffer->index + 1;
-			begin.buffer->next = end.buffer;
-			end.buffer->prev = begin.buffer;
+			begin.buffer->_next = end.buffer;
+			end.buffer->_prev = begin.buffer;
 			start_index = end.buffer->index + 1;
 			InvalidateBuffer(end.buffer);
 
@@ -1356,8 +1356,8 @@ void InMemoryTextFile::DeleteText(std::vector<Cursor>& cursors, PGTextRange rang
 				max_line_length.buffer = nullptr;
 			}
 			lines_deleted += end.buffer->GetLineCount();
-			begin.buffer->next = end.buffer->next;
-			if (begin.buffer->next) begin.buffer->next->prev = begin.buffer;
+			begin.buffer->_next = end.buffer->_next;
+			if (begin.buffer->_next) begin.buffer->_next->_prev = begin.buffer;
 			buffers_deleted++;
 			buffers.erase(buffers.begin() + buffer_position + 1);
 			deleted_buffers.push_back(std::unique_ptr<PGTextBuffer>(end.buffer));
@@ -1457,7 +1457,7 @@ void InMemoryTextFile::ReplaceText(std::vector<Cursor>& cursors, PGTextRange ran
 		if (buffer == endpos.buffer) {
 			break;
 		}
-		buffer = buffer->next;
+		buffer = buffer->_next;
 	}
 	if (inserted_lines != 0) {
 		buffer = beginpos.buffer;
@@ -1465,7 +1465,7 @@ void InMemoryTextFile::ReplaceText(std::vector<Cursor>& cursors, PGTextRange ran
 		while (buffer) {
 			buffer->start_line = lines;
 			lines += buffer->line_count;
-			buffer = buffer->next;
+			buffer = buffer->_next;
 		}
 		linecount += inserted_lines;
 	}
@@ -1564,12 +1564,12 @@ void InMemoryTextFile::VerifyPartialTextfile() {
 		total_lines += current_lines;
 		if (i < buffers.size() - 1) {
 			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
-			assert(buffers[i]->next == buffers[i + 1]);
+			assert(buffers[i]->_next == buffers[i + 1]);
 			// only the final buffer can end with a non-newline character
 			assert(buffers[i]->buffer[buffers[i]->current_size - 1] == '\n');
 		}
 		if (i > 0) {
-			assert(buffers[i]->prev == buffers[i - 1]);
+			assert(buffers[i]->_prev == buffers[i - 1]);
 		}
 		assert(buffers[i]->current_size < buffers[i]->buffer_size);
 	}
@@ -1619,12 +1619,12 @@ void InMemoryTextFile::VerifyTextfile() {
 		total_lines += current_lines;
 		if (i < buffers.size() - 1) {
 			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
-			assert(buffers[i]->next == buffers[i + 1]);
+			assert(buffers[i]->_next == buffers[i + 1]);
 			// only the final buffer can end with a non-newline character
 			assert(buffers[i]->buffer[buffers[i]->current_size - 1] == '\n');
 		}
 		if (i > 0) {
-			assert(buffers[i]->prev == buffers[i - 1]);
+			assert(buffers[i]->_prev == buffers[i - 1]);
 		}
 		assert(buffers[i]->current_size < buffers[i]->buffer_size);
 	}

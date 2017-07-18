@@ -244,8 +244,8 @@ void Cursor::OffsetSelectionCharacter(PGDirection direction) {
 	if (direction == PGDirectionLeft) {
 		if (start_buffer_position <= 0) {
 			// select previous buffer
-			if (start_buffer->prev != nullptr) {
-				start_buffer = start_buffer->prev;
+			if (start_buffer->prev()) {
+				start_buffer = start_buffer->prev();
 				start_buffer_position = start_buffer->current_size - 1;
 			}
 		} else {
@@ -255,8 +255,8 @@ void Cursor::OffsetSelectionCharacter(PGDirection direction) {
 		start_buffer_position += utf8_character_length(start_buffer->buffer[start_buffer_position]);
 		if (start_buffer_position >= start_buffer->current_size) {
 			// select next buffer
-			if (start_buffer->next != nullptr) {
-				start_buffer = start_buffer->next;
+			if (start_buffer->next()) {
+				start_buffer = start_buffer->next();
 				start_buffer_position = 0;
 			} else {
 				start_buffer_position--;
@@ -276,17 +276,17 @@ void Cursor::OffsetPosition(lng offset) {
 void Cursor::OffsetSelectionPosition(lng offset) {
 	start_buffer_position += offset;
 	while (start_buffer_position < 0) {
-		if (start_buffer->prev) {
-			start_buffer = start_buffer->prev;
+		if (start_buffer->prev()) {
+			start_buffer = start_buffer->prev();
 			start_buffer_position += start_buffer->current_size;
 		} else {
 			start_buffer_position = 0;
 		}
 	}
 	while (start_buffer_position >= start_buffer->current_size) {
-		if (start_buffer->next) {
+		if (start_buffer->next()) {
 			start_buffer_position -= start_buffer->current_size - 1;
-			start_buffer = start_buffer->next;
+			start_buffer = start_buffer->next();
 		} else {
 			start_buffer_position = start_buffer->current_size - 1;
 		}
@@ -534,10 +534,10 @@ std::string Cursor::GetText() {
 		text = text + std::string(begin_buffer->buffer + begin_pos, final_pos - begin_pos);
 	} else {
 		text += std::string(begin_buffer->buffer + begin_pos, begin_buffer->current_size - begin_pos);
-		begin_buffer = begin_buffer->next;
+		begin_buffer = begin_buffer->next();
 		while (begin_buffer != final_buffer) {
 			text += std::string(begin_buffer->buffer, begin_buffer->current_size);
-			begin_buffer = begin_buffer->next;
+			begin_buffer = begin_buffer->next();
 		}
 		text += std::string(final_buffer->buffer, final_pos);
 	}

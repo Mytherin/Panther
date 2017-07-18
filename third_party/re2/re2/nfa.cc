@@ -479,13 +479,13 @@ bool NFA::Search(const PGTextRange& text, const PGTextRange& const_context,
   for (;; prev = PGTextPosition(current_buffer, p), p++) {
     if (p >= ep) {
       // attempt to move to next buffer
-      if (!(current_buffer->next == nullptr)) {
+      if (current_buffer->next()) {
         if (current_buffer == text.end_buffer) {
-          current_buffer = current_buffer->next;
+          current_buffer = current_buffer->next();
           p = current_buffer->buffer;
           ep = p - 1;
         } else {
-          current_buffer = current_buffer->next;
+          current_buffer = current_buffer->next();
           p = current_buffer->buffer;
           ep = current_buffer->buffer + (current_buffer == text.end_buffer ? 
             text.end_position : 

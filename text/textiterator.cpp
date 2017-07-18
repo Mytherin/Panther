@@ -75,7 +75,7 @@ void TextLineIterator::PrevLine() {
 	}
 	if (current_line < buffer->start_line) {
 		// have to look into previous buffer
-		buffer = buffer->prev;
+		buffer = buffer->prev();
 		assert(buffer);
 		start_position = buffer->current_size - 1;
 		end_position = buffer->current_size - 1;
@@ -104,16 +104,19 @@ void TextLineIterator::PrevLine() {
 
 void TextLineIterator::NextLine() {
 	current_line++;
-	if (!buffer->next && current_line >= buffer->start_line + buffer->line_count) {
-		current_line--;
-		textline = TextLine();
-		return;
-	}
-	if (buffer->next && current_line >= buffer->next->start_line) {
+	if (current_line >= buffer->start_line + buffer->line_count) {
 		// have to look into next buffer
-		buffer = buffer->next;
-		start_position = 0;
-		end_position = 0;
+		if (!buffer->next()) {
+			// if there is none, return
+			current_line--;
+			textline = TextLine();
+			return;
+		} else {
+			// otherwise move to the next buffer
+			buffer = buffer->next();
+			start_position = 0;
+			end_position = 0;
+		}
 	} else {
 		end_position++;
 		start_position = end_position;

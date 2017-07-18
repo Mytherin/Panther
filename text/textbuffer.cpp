@@ -71,11 +71,11 @@ TextLine PGTextBuffer::GetLineFromPosition(ulng pos) {
 
 void PGTextBuffer::GetCursorFromBufferLocation(lng position, lng& line, lng& character) {
 	if (position >= current_size) {
-		assert(this->next);
-		return this->next->GetCursorFromBufferLocation(position - current_size, line, character);
+		assert(this->next());
+		return this->next()->GetCursorFromBufferLocation(position - current_size, line, character);
 	} else if (position < 0) {
-		assert(this->prev);
-		return this->prev->GetCursorFromBufferLocation(position + this->prev->current_size, line, character);
+		assert(this->prev());
+		return this->prev()->GetCursorFromBufferLocation(position + this->prev()->current_size, line, character);
 	}
 	auto pos = GetCursorFromPosition(position);
 	line = pos.line;
@@ -179,14 +179,14 @@ PGBufferUpdate PGTextBuffer::InsertText(std::vector<PGTextBuffer*>& buffers, PGT
 						// current_line is the amount of lines that will be in the new buffer
 						// and hence also the amount of lines that will be removed from the current buffer
 						PGTextBuffer* new_buffer = new PGTextBuffer(buffer->buffer + split_point, buffer->current_size - split_point, -1);
-						if (buffer->next != nullptr) buffer->next->prev = new_buffer;
-						new_buffer->next = buffer->next;
-						new_buffer->prev = buffer;
+						if (buffer->_next != nullptr) buffer->_next->_prev = new_buffer;
+						new_buffer->_next = buffer->_next;
+						new_buffer->_prev = buffer;
 						new_buffer->line_count = current_line;
 						new_buffer->cumulative_width = -1;
 						buffer->line_count -= current_line;
 						buffer->current_size = split_point;
-						buffer->next = new_buffer;
+						buffer->_next = new_buffer;
 						buffers.insert(buffers.begin() + buffer_position + 1, new_buffer);
 						new_buffer->start_line = buffer->start_line + buffer->line_count;
 						for (lng k = buffer->line_count; k < buffer->line_start.size(); k++) {
@@ -232,16 +232,16 @@ PGBufferUpdate PGTextBuffer::DeleteText(std::vector<PGTextBuffer*>& buffers, PGT
 	// now check if we want to merge this buffer to any adjacent buffers
 	// we only merge forwards for simplicity when dealing with cursors
 	PGTextBuffer* merge_buffer = nullptr;
-	if (buffer->next && (buffer->current_size + buffer->next->current_size <= buffer->buffer_size / 2)) {
-		merge_buffer = buffer->next;
+	if (buffer->_next && (buffer->current_size + buffer->_next->current_size <= buffer->buffer_size / 2)) {
+		merge_buffer = buffer->_next;
 	}
 	if (merge_buffer) {
 		assert(merge_buffer->start_line > buffer->start_line);
 		assert(merge_buffer->current_size + buffer->current_size < buffer->buffer_size);
 		// merge the next buffer into this buffer
 		// update next/prev pointers
-		buffer->next = merge_buffer->next;
-		if (buffer->next) buffer->next->prev = buffer;
+		buffer->_next = merge_buffer->_next;
+		if (buffer->_next) buffer->_next->_prev = buffer;
 		// store the old buffer size for cursor updates
 		lng old_size = buffer->current_size;
 		// copy the content of merge_buffer into this buffer and update the size

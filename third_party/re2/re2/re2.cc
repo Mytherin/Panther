@@ -630,7 +630,7 @@ bool RE2::Match(const PGTextRange& context,
     ncap = nsubmatch;
 
   // If the regexp is anchored explicitly, must not be in middle of text.
-  if (prog_->anchor_start() && (subtext.start_position > 0 || subtext.start_buffer->prev != nullptr))
+  if (prog_->anchor_start() && (subtext.start_position > 0 || subtext.start_buffer->prev() != nullptr))
     return false;
 
   // If the regexp is anchored explicitly, update re_anchor
@@ -644,7 +644,7 @@ bool RE2::Match(const PGTextRange& context,
   // Check for the required prefix, if any.
   size_t prefixlen = 0;
   if (!prefix_.empty()) {
-    if (subtext.start_position > 0 || subtext.start_buffer->prev != nullptr) {
+    if (subtext.start_position > 0 || subtext.start_buffer->prev() != nullptr) {
       return false;
     }
     prefixlen = prefix_.size();

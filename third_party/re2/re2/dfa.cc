@@ -1453,8 +1453,8 @@ inline bool DFA::InlinedSearchLoop(SearchParams* params,
           lastmatch.position = (char*) p - current_buffer->buffer;
           lastmatch = lastmatch + 1;
         }
-        assert(lastmatch.position >= 0 && ((lastmatch.position < (lng) lastmatch.buffer->current_size && lastmatch.buffer->next) || 
-                                         (lastmatch.position <= (lng) lastmatch.buffer->current_size && !lastmatch.buffer->next)));
+        assert(lastmatch.position >= 0 && ((lastmatch.position < (lng) lastmatch.buffer->current_size && lastmatch.buffer->next()) || 
+                                         (lastmatch.position <= (lng) lastmatch.buffer->current_size && !lastmatch.buffer->next())));
 
         if (want_earliest_match) {
           params->ep = lastmatch;
@@ -1466,10 +1466,10 @@ inline bool DFA::InlinedSearchLoop(SearchParams* params,
     PGTextBuffer* next_buffer;
     if (run_forward) {
       if (current_buffer == piece->end_buffer) break;
-      next_buffer = current_buffer->next;
+      next_buffer = current_buffer->next();
     } else {
       if (current_buffer == piece->start_buffer) break;
-      next_buffer = current_buffer->prev;
+      next_buffer = current_buffer->prev();
     }
     if (!next_buffer) break;
     current_buffer = next_buffer;

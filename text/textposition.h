@@ -24,12 +24,12 @@ struct PGTextPosition {
 		}
 		position += offset;
 		while (position >= (lng)buffer->current_size) {
-			if (!buffer->next) return false;
+			if (!buffer->next()) return false;
 			position -= buffer->current_size;
-			buffer = buffer->next;
+			buffer = buffer->next();
 		}
 		while (position < 0) {
-			buffer = buffer->prev;
+			buffer = buffer->prev();
 			if (!buffer) return false;
 			position += buffer->current_size;
 		}
