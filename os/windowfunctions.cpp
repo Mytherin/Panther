@@ -18,6 +18,7 @@
 #include "splitter.h"
 #include "statusbar.h"
 #include "toolbar.h"
+#include "style.h"
 
 PGScalar PGMarginAuto = INFINITY;
 
@@ -137,6 +138,7 @@ void PGInitializeGlobals() {
 
 	PGSettingsManager::Initialize();
 	PGKeyBindingsManager::Initialize();
+	PGStyleManager::Initialize();
 
 	Scheduler::Initialize();
 	Scheduler::SetThreadCount(2);

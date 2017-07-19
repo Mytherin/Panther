@@ -444,3 +444,88 @@ void TextFile::ConsumeBytes(const char* buffer, size_t buffer_size, size_t& prev
 	}
 	bytes = i;
 }
+
+void TextFile::VerifyPartialTextfile() {
+#ifdef PANTHER_DEBUG
+	lng total_lines = 0;
+	for (size_t i = 0; i < buffers.size(); i++) {
+		PGTextBuffer* buffer = buffers[i];
+		buffer->VerifyBuffer();
+		assert(buffers[i]->index == i);
+		lng current_lines = 0;
+		for (lng j = 0; j < buffer->current_size; j++) {
+			if (buffer->buffer[j] == '\n') {
+				current_lines++;
+			}
+		}
+		assert(buffers[i]->start_line == total_lines);
+		assert(buffers[i]->line_count == current_lines);
+		total_lines += current_lines;
+		if (i < buffers.size() - 1) {
+			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
+			assert(buffers[i]->_next == buffers[i + 1]);
+			// only the final buffer can end with a non-newline character
+			assert(buffers[i]->buffer[buffers[i]->current_size - 1] == '\n');
+		}
+		if (i > 0) {
+			assert(buffers[i]->_prev == buffers[i - 1]);
+		}
+		assert(buffers[i]->current_size < buffers[i]->buffer_size);
+	}
+	assert(linecount == total_lines);
+	for (lng i = 0; i < views.size(); i++) {
+		auto ptr = views[i].lock();
+		if (ptr) {
+			ptr->VerifyTextView();
+		} else {
+			views.erase(views.begin() + i);
+			i--;
+		}
+	}
+#endif
+}
+
+void TextFile::VerifyTextfile() {
+#ifdef PANTHER_DEBUG
+	VerifyPartialTextfile();
+	lng total_lines = 0;
+	double measured_width = 0;
+	for (size_t i = 0; i < buffers.size(); i++) {
+		PGTextBuffer* buffer = buffers[i];
+		buffer->VerifyBuffer();
+		assert(panther::epsilon_equals(measured_width, buffer->cumulative_width, std::max(0.0001, measured_width / 1000000)));
+		measured_width = buffer->cumulative_width;
+		assert(buffers[i]->index == i);
+		lng current_lines = 0;
+		char* ptr = buffer->buffer;
+		for (lng j = 0; j < buffer->current_size; j++) {
+			if (buffer->buffer[j] == '\n') {
+				char* current_ptr = buffer->buffer + j;
+				TextLine line = TextLine(ptr, current_ptr - ptr);
+
+				ptr = buffer->buffer + j + 1;
+
+				assert(current_lines < buffer->line_lengths.size());
+				PGScalar current_length = buffer->line_lengths[current_lines];
+				PGScalar measured_length = MeasureTextWidth(PGStyleManager::default_font, line.GetLine(), line.GetLength());
+				assert(panther::epsilon_equals(current_length, measured_length));
+				measured_width += measured_length;
+				current_lines++;
+			}
+		}
+		assert(buffers[i]->start_line == total_lines);
+		assert(buffers[i]->line_count == current_lines);
+		total_lines += current_lines;
+		if (i < buffers.size() - 1) {
+			assert(buffers[i]->start_line < buffers[i + 1]->start_line);
+			assert(buffers[i]->_next == buffers[i + 1]);
+			// only the final buffer can end with a non-newline character
+			assert(buffers[i]->buffer[buffers[i]->current_size - 1] == '\n');
+		}
+		if (i > 0) {
+			assert(buffers[i]->_prev == buffers[i - 1]);
+		}
+		assert(buffers[i]->current_size < buffers[i]->buffer_size);
+	}
+#endif
+}

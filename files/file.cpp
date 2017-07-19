@@ -80,7 +80,7 @@ namespace panther {
 	}
 
 	size_t ReadFromFile(PGFileHandle handle, char* buffer, size_t buffer_size) {
-		return fread(buffer, buffer_size, 1, handle->f);
+		return fread(buffer, 1, buffer_size, handle->f);
 	}
 
 	void* ReadFile(PGFileHandle handle, lng& result_size, PGFileError& error) {

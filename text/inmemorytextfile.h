@@ -50,9 +50,6 @@ public:
 
 	void IndentText(std::vector<Cursor>& cursors, PGDirection direction);
 
-	void VerifyPartialTextfile();
-	void VerifyTextfile();
-
 	PGScalar GetMaxLineWidth(PGFontHandle font);
 
 	PGStoreFileType WorkspaceFileStorage();

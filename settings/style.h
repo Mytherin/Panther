@@ -71,6 +71,8 @@ public:
 		return &style;
 	}
 
+	static void Initialize() { GetInstance(); }
+
 	static PGFontHandle default_font;
 
 	static PGBitmapHandle GetImage(std::string path) { return GetInstance()->_GetImage(path); }

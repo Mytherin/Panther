@@ -1,6 +1,7 @@
 
 #include "filemanager.h"
 #include "inmemorytextfile.h"
+#include "streamingtextfile.h"
 
 FileManager::FileManager() {
 	this->lock = std::unique_ptr<PGMutex>(CreateMutex());
@@ -15,7 +16,7 @@ std::shared_ptr<TextFile> FileManager::_OpenFile() {
 }
 
 std::shared_ptr<TextFile> FileManager::_OpenFile(std::string path, PGFileError& error) {
-	return _OpenFile(InMemoryTextFile::OpenTextFile(path, error, false));
+	return _OpenFile(StreamingTextFile::OpenTextFile(path, error, false));
 }
 
 std::shared_ptr<TextFile> FileManager::_OpenFile(TextFile* textfile) {

@@ -120,6 +120,8 @@ PGStyleManager::PGStyleManager() {
 	menu_font = PGCreateFont(PGFontTypeUI);
 	popup_font = PGCreateFont(PGFontTypePopup);
 
+	SetTextFontSize(default_font, 10);
+
 	enum_color_map["toggle_button_toggled"] = PGColorToggleButtonToggled;
 	enum_color_map["notification_background"] = PGColorNotificationBackground;
 	enum_color_map["notification_text"] = PGColorNotificationText;

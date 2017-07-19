@@ -140,8 +140,8 @@ public:
 
 	virtual void IndentText(std::vector<Cursor>& cursors, PGDirection direction) = 0;
 
-	virtual void VerifyPartialTextfile() = 0;
-	virtual void VerifyTextfile() = 0;
+	void VerifyPartialTextfile();
+	void VerifyTextfile();
 
 	virtual PGScalar GetMaxLineWidth(PGFontHandle font) = 0;
 

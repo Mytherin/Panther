@@ -1,11 +1,11 @@
 
 #include "streamingtextfile.h"
+#include "style.h"
 
 StreamingTextFile::StreamingTextFile(PGFileHandle handle, std::string filename) :
 	handle(handle), TextFile(filename), decoder(nullptr),
-	output(nullptr), intermediate_buffer(nullptr),
-	linenr(0), current_buffer(nullptr), max_length(-1), 
-	current_width(0), prev_character('\0') {
+	output(nullptr), intermediate_buffer(nullptr) {
+	is_loaded = true;
 	read_only = true;
 	ReadBlock();
 	is_loaded = true;
@@ -24,10 +24,16 @@ StreamingTextFile::~StreamingTextFile() {
 	}
 }
 
+struct BufferData {
+	char* data;
+	size_t length;
+
+	BufferData(char* data, size_t length) : data(data), length(length) { }
+};
+
 bool StreamingTextFile::ReadBlock() {
 	if (!handle) return false;
 
-	Lock(PGWriteLock);
 	char* buffer = new char[TEXT_BUFFER_SIZE + 1];
 	size_t bufsiz = panther::ReadFromFile(handle, buffer, TEXT_BUFFER_SIZE - cached_size);
 	char* buf = buffer;
@@ -35,6 +41,7 @@ bool StreamingTextFile::ReadBlock() {
 		if (buffers.size() == 0) {
 			// FIXME: add initial buffer
 			//ConsumeBytes("", 0, max_length, current_width, current_buffer, linenr, prev_character);
+			assert(0);
 			this->encoding = PGEncodingUTF8;
 		}
 		panther::CloseFile(handle);
@@ -70,30 +77,30 @@ bool StreamingTextFile::ReadBlock() {
 
 	// look for the last newline in the buffer
 	size_t total_size = cached_size;
-	std::vector<char*> buffers;
-	lng i, cp = 0;
+	std::vector<BufferData> buffers;
+	lng p, cp = 0;
 	while (bufsiz > 0) {
-		for (i = bufsiz - 1; i >= 0; i--) {
-			if (buffer[i] == '\n') {
-				cp = i + 1;
-				if (i > 0 && buffer[i - 1] == '\r') {
-					i--;
+		for (p = bufsiz - 1; p >= 0; p--) {
+			if (buffer[p] == '\n' || buffer[p] == '\r') {
+				cp = p + 1;
+				if (buffer[p] == '\n' && p > 0 && buffer[p - 1] == '\r') {
+					p--;
 				}
-				i--;
+				p--;
 				break;
 			}
 		}
-		if (i < 0) {
+		if (p < 0) {
 			// no newline found
 			// we need to read until we find a newline, or until nothing is left in the buffer
-			buffers.push_back(buffer);
+			buffers.push_back(BufferData(buffer, bufsiz));
 			total_size += bufsiz;
 
 			buffer = new char[TEXT_BUFFER_SIZE + 1];
 			bufsiz = panther::ReadFromFile(handle, buffer, TEXT_BUFFER_SIZE);
 		} else {
 			// found a newline
-			total_size += i;
+			total_size += p;
 			break;
 		}
 	}
@@ -101,11 +108,64 @@ bool StreamingTextFile::ReadBlock() {
 	// note: we only need to search the last buffer for new line characters
 	PGTextBuffer* last_buffer = this->buffers.size() > 0 ? this->buffers.back() : nullptr;
 	PGTextBuffer* new_buffer = new PGTextBuffer(nullptr, total_size, last_buffer ? last_buffer->start_line + last_buffer->line_count : 0);
-	if (buffers.size() > 0) {
-		//
+
+	if (last_buffer) {
+		last_buffer->_next = new_buffer;
+		new_buffer->_prev = last_buffer;
+		new_buffer->cumulative_width = last_buffer->cumulative_width + last_buffer->width;
+		new_buffer->start_line = last_buffer->start_line + last_buffer->line_count;
+		new_buffer->index = last_buffer->index + 1;
 	}
 
+	// first copy the cached data into the buffer
+	size_t position = 0;
+	memcpy(new_buffer->buffer, cached_buffer + cached_index, cached_size);
+	// now copy any previous buffers into the array
+	position += cached_size;
+	for (auto it = buffers.begin(); it != buffers.end(); it++) {
+		memcpy(new_buffer->buffer + position, it->data, it->length);
+		position += it->length;
+		free(it->data);
+	}
+	// now move onto the last buffer
+	// this buffer we have to scan for newline characters
+	size_t prev_position = 0;
+	size_t prev_buffer_position = 0;
+	for (size_t i = 0; i < p; i++) {
+		if (buffer[i] == '\n' || buffer[i] == '\r' || i + 1 == bufsiz) {
+			memcpy(new_buffer->buffer + position, buffer + prev_position, i - prev_position);
+			position += i - prev_position;
+			new_buffer->buffer[position++] = '\n';
+			size_t cp = i;
+			if (buffer[i] == '\r' && i + 1 < bufsiz && buffer[i + 1] == '\n') {
+				i++;
+			}
+			// newline
+			new_buffer->line_start.push_back(position);
+			PGScalar length = MeasureTextWidth(PGStyleManager::default_font, new_buffer->buffer + prev_buffer_position, position - prev_buffer_position - 1);
+			if (max_line_length.buffer == nullptr || length > max_line_length.buffer->line_lengths[max_line_length.position]) {
+				max_line_length.buffer = new_buffer;
+				max_line_length.position = new_buffer->line_count;
+			}
+			new_buffer->line_lengths.push_back(length);
+			prev_position = i + 1;
+			prev_buffer_position = position;
+
+			linecount++;
+			new_buffer->width += length;
+			new_buffer->line_count++;
+			total_width += length;
+		}
+	}
+	new_buffer->current_size = position;
+
+	new_buffer->next_callback = [](PGTextBuffer* buffer, void* data) {
+		StreamingTextFile* file = (StreamingTextFile*)data;
+		file->ReadBlock();
+	};
+	new_buffer->callback_data = this;
 	new_buffer->VerifyBuffer();
+	this->buffers.push_back(new_buffer);
 
 	// delete the old cache, as it has been placed into a buffer now
 	if (cached_buffer) {
@@ -116,27 +176,13 @@ bool StreamingTextFile::ReadBlock() {
 	// move the remainder of the data into the cached buffer, if there is any
 	if (cp < bufsiz) {
 		cached_buffer = buffer;
-		cached_size = bufsiz;
+		cached_size = bufsiz - cp;
 		cached_index = cp;
 	} else {
 		// no data remaining in the current buffer; simply delete it
 		delete buffer;
 	}
-
-
-	// FIXME: we should consume bytes until we fill one complete buffer, always
-	// how do we do this? 
-	// don't use ConsumeBytes, instead, read X bytes where X = BUFSIZ
-	// read until last newline character, and add all that to a new buffer
-	// remaining text gets cached in the StreamingTextFile and will be used next time
-	// if no newline: add all text to a new buffer and read next block (repeat until newline is found)
-
-	//ConsumeBytes(buf, bufsiz, max_length, current_width, current_buffer, linenr, prev_character);
-
-	linecount = linenr;
-	total_width = current_width;
-
-	Unlock(PGWriteLock);
+	VerifyTextfile();
 	return true;
 }
 
@@ -275,14 +321,6 @@ lng StreamingTextFile::GetLineCount() {
 }
 
 void StreamingTextFile::IndentText(std::vector<Cursor>& cursors, PGDirection direction) {
-	return;
-}
-
-void StreamingTextFile::VerifyPartialTextfile() {
-	return;
-}
-
-void StreamingTextFile::VerifyTextfile() {
 	return;
 }
 
