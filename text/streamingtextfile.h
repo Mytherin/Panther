@@ -71,13 +71,10 @@ private:
 	char* intermediate_buffer = nullptr;
 	lng intermediate_size = 0;
 
-	lng linenr = 0;
-	PGTextBuffer* current_buffer = nullptr;
-	PGScalar max_length = -1;
-	double current_width = 0;
-	char prev_character = '\0';
-
-
+	char* cached_buffer = nullptr;
+	size_t cached_index = 0;
+	size_t cached_size = 0;
+	
 	StreamingTextFile(PGFileHandle handle, std::string filename);
 
 	bool ReadBlock();

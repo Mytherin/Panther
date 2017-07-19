@@ -28,26 +28,20 @@ bool StreamingTextFile::ReadBlock() {
 	if (!handle) return false;
 
 	Lock(PGWriteLock);
-	char buffer[PANTHER_BUFSIZ + 1];
-	size_t bufsiz = panther::ReadFromFile(handle, buffer, PANTHER_BUFSIZ);
+	char* buffer = new char[TEXT_BUFFER_SIZE + 1];
+	size_t bufsiz = panther::ReadFromFile(handle, buffer, TEXT_BUFFER_SIZE - cached_size);
 	char* buf = buffer;
 	if (bufsiz == 0) {
 		if (buffers.size() == 0) {
-			ConsumeBytes("", 0, max_length, current_width, current_buffer, linenr, prev_character);
+			// FIXME: add initial buffer
+			//ConsumeBytes("", 0, max_length, current_width, current_buffer, linenr, prev_character);
 			this->encoding = PGEncodingUTF8;
 		}
 		panther::CloseFile(handle);
 		handle = nullptr;
+		delete buffer;
 		return false;
 	}
-
-	// FIXME: we should consume bytes until we fill one complete buffer, always
-	// how do we do this? 
-	// don't use ConsumeBytes, instead, read X bytes where X = BUFSIZ
-	// read until last newline character, and add all that to a new buffer
-	// remaining text gets cached in the StreamingTextFile and will be used next time
-	// if no newline: add all text to a new buffer and read next block (repeat until newline is found)
-
 	if (encoding == PGEncodingUnknown) {
 		// guess encoding from the buffer
 		this->encoding = PGGuessEncoding((unsigned char*)buffer, std::min((size_t)1024, bufsiz));
@@ -67,7 +61,77 @@ bool StreamingTextFile::ReadBlock() {
 		bufsiz = PGConvertText(decoder, buf, bufsiz, &output, &output_size, &intermediate_buffer, &intermediate_size);
 		buf = output;
 	}
-	ConsumeBytes(buf, bufsiz, max_length, current_width, current_buffer, linenr, prev_character);
+#ifdef PANTHER_DEBUG
+	for (size_t i = cached_index; i < cached_size; i++) {
+		// there should be no more newlines remaining in the cached buffer
+		assert(cached_buffer[i] != '\n' && cached_buffer[i] != '\r');
+	}
+#endif
+
+	// look for the last newline in the buffer
+	size_t total_size = cached_size;
+	std::vector<char*> buffers;
+	lng i, cp = 0;
+	while (bufsiz > 0) {
+		for (i = bufsiz - 1; i >= 0; i--) {
+			if (buffer[i] == '\n') {
+				cp = i + 1;
+				if (i > 0 && buffer[i - 1] == '\r') {
+					i--;
+				}
+				i--;
+				break;
+			}
+		}
+		if (i < 0) {
+			// no newline found
+			// we need to read until we find a newline, or until nothing is left in the buffer
+			buffers.push_back(buffer);
+			total_size += bufsiz;
+
+			buffer = new char[TEXT_BUFFER_SIZE + 1];
+			bufsiz = panther::ReadFromFile(handle, buffer, TEXT_BUFFER_SIZE);
+		} else {
+			// found a newline
+			total_size += i;
+			break;
+		}
+	}
+	// create a new buffer holding the data
+	// note: we only need to search the last buffer for new line characters
+	PGTextBuffer* last_buffer = this->buffers.size() > 0 ? this->buffers.back() : nullptr;
+	PGTextBuffer* new_buffer = new PGTextBuffer(nullptr, total_size, last_buffer ? last_buffer->start_line + last_buffer->line_count : 0);
+	if (buffers.size() > 0) {
+		//
+	}
+
+	new_buffer->VerifyBuffer();
+
+	// delete the old cache, as it has been placed into a buffer now
+	if (cached_buffer) {
+		delete cached_buffer;
+		cached_buffer = nullptr;
+		cached_size = cached_index = 0;
+	}
+	// move the remainder of the data into the cached buffer, if there is any
+	if (cp < bufsiz) {
+		cached_buffer = buffer;
+		cached_size = bufsiz;
+		cached_index = cp;
+	} else {
+		// no data remaining in the current buffer; simply delete it
+		delete buffer;
+	}
+
+
+	// FIXME: we should consume bytes until we fill one complete buffer, always
+	// how do we do this? 
+	// don't use ConsumeBytes, instead, read X bytes where X = BUFSIZ
+	// read until last newline character, and add all that to a new buffer
+	// remaining text gets cached in the StreamingTextFile and will be used next time
+	// if no newline: add all text to a new buffer and read next block (repeat until newline is found)
+
+	//ConsumeBytes(buf, bufsiz, max_length, current_width, current_buffer, linenr, prev_character);
 
 	linecount = linenr;
 	total_width = current_width;
