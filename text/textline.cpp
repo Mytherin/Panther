@@ -7,6 +7,22 @@ TextLine::TextLine(PGTextBuffer* buffer, lng line) {
 	assert(line >= buffer->start_line);
 	lng current_line = buffer->start_line;
 	lng maximum_line = current_line + buffer->GetLineCount();
+	lng start_position, end_position;
+	if (line == buffer->start_line) {
+		start_position = 0;
+	} else {
+		start_position = buffer->line_start[line - buffer->start_line - 1];
+	}
+	if (line == buffer->start_line + buffer->line_count - 1) {
+		end_position = buffer->current_size - 1;
+	} else {
+		end_position = buffer->line_start[line - buffer->start_line] - 1;
+	}
+
+	this->line = buffer->buffer + start_position;
+	this->length = end_position - start_position;
+
+	/*
 	this->line = buffer->buffer;
 	this->length = std::max((lng) buffer->current_size - 1, (lng) 0);
 	// check if there is more than one line in the buffer
@@ -28,7 +44,7 @@ TextLine::TextLine(PGTextBuffer* buffer, lng line) {
 			}
 			i += offset;
 		}
-	}
+	}*/
 	if (buffer->syntax.size() > 0 && buffer->parsed) {
 		assert(buffer->syntax.size() > line - buffer->start_line);
 		this->syntax = &buffer->syntax[line - buffer->start_line];

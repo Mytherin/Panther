@@ -22,6 +22,7 @@ struct PGEncoder {
 	PGFileEncoding target_encoding;
 	UConverter* source = nullptr;
 	UConverter* target = nullptr;
+	lng position = 0;
 };
 
 
@@ -189,9 +190,9 @@ lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_
 			for (lng i = 0; i < input_size; i++) {
 				output_buffer[++pos] = hex[(input_text[i] >> 4) & 0xF];
 				output_buffer[++pos] = hex[input_text[i] & 0xF];
-				output_buffer[++pos] = (i + 1) % 16 == 0 ? '\n' : ' ';
+				output_buffer[++pos] = (encoder->position++ + 1) % 16 == 0 ? '\n' : ' ';
 			}
-			output_buffer[pos] = '\0';
+			output_buffer[++pos] = '\0';
 			assert(pos < output_buffer_size);
 			*output = output_buffer;
 			*output_size = output_buffer_size;

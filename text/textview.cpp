@@ -12,6 +12,11 @@ TextView::TextView(BasicTextField* textfield, std::shared_ptr<TextFile> file) :
 void TextView::Initialize() {
 	PGTextViewSettings settings;
 	settings.cursor_data.push_back(PGCursorRange(0, 0, 0, 0));
+	settings.yoffset.linenumber = 0;
+	settings.yoffset.inner_line = 0;
+	settings.yoffset.line_fraction = 0;
+	settings.xoffset = 0;
+	settings.wordwrap = false;
 	this->ApplySettings(settings);
 	file->AddTextView(shared_from_this());
 }
@@ -479,13 +484,14 @@ void TextView::ApplySettings(PGTextViewSettings& settings) {
 }
 
 void TextView::ActuallyApplySettings(PGTextViewSettings& settings) {
+	assert(file->IsLoaded());
 	if (settings.xoffset >= 0) {
 		this->xoffset = settings.xoffset;
 		settings.xoffset = -1;
 	}
 	if (settings.yoffset.linenumber >= 0) {
 		this->yoffset = settings.yoffset;
-		this->yoffset.linenumber = std::min(file->GetLineCount() - 1, std::max((lng)0, this->yoffset.linenumber));
+		this->yoffset.linenumber = std::max((lng)0, std::min(file->GetLineCount() - 1, this->yoffset.linenumber));
 		settings.yoffset.linenumber = -1;
 	}
 	if (settings.wordwrap) {

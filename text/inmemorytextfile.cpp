@@ -152,6 +152,8 @@ void InMemoryTextFile::ActuallyReadFile(std::shared_ptr<TextFile> file, bool ign
 	linecount = linenr;
 	total_width = current_width;
 
+	assert(linecount > 0);
+
 	if (highlighter) {
 		HighlightText();
 	}

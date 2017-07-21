@@ -20,11 +20,25 @@ void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 	buffer = textfile->GetBuffer(line);
 	end_position = buffer->current_size - 1;
 
-	lng current_line = buffer->start_line;
-	lng last_line = current_line + buffer->GetLineCount();
 	assert(line >= current_line);
-	textline.line = buffer->buffer;
-	textline.length = buffer->current_size - 1;
+
+	if (line == buffer->start_line) {
+		start_position = 0;
+	} else {
+		start_position = buffer->line_start[line - buffer->start_line - 1];
+	}
+	if (line == buffer->start_line + buffer->line_count - 1) {
+		end_position = buffer->current_size - 1;
+	} else {
+		end_position = buffer->line_start[line - buffer->start_line] - 1;
+	}
+
+	textline.line = buffer->buffer + start_position;
+	textline.length = end_position - start_position;
+	
+	/*
+	
+
 	// check if the buffer holds more than one line
 	// FIXME: use buffer->start_line
 	if (!(line == current_line && current_line + 1 == last_line)) {
@@ -49,7 +63,7 @@ void TextLineIterator::Initialize(TextFile* textfile, lng line) {
 			}
 			i += offset;
 		}
-	}
+	}*/
 	if (buffer->syntax.size() > 0 && buffer->parsed) {
 		textline.syntax = &buffer->syntax[line - buffer->start_line];
 	} else {

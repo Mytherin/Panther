@@ -282,12 +282,12 @@ void TextFile::OnLoaded(PGTextFileLoadedCallback callback, PGTextFileDestructorC
 }
 
 void TextFile::FinalizeLoading() {
+	is_loaded = true;
 	LockMutex(loading_lock.get());
 	for (auto it = loading_data.begin(); it != loading_data.end(); it++) {
 		(*it)->callback(shared_from_this(), (*it)->data);
 	}
 	loading_data.clear();
-	is_loaded = true;
 	UnlockMutex(loading_lock.get());
 }
 
