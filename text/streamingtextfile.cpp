@@ -7,6 +7,7 @@ StreamingTextFile::StreamingTextFile(PGFileHandle handle, std::string filename) 
 	output(nullptr), intermediate_buffer(nullptr) {
 	is_loaded = true;
 	read_only = true;
+	this->encoding = PGEncodingUnknown;
 	ReadBlock();
 	is_loaded = true;
 }
@@ -34,9 +35,9 @@ struct BufferData {
 bool StreamingTextFile::ReadBlock() {
 	if (!handle) return false;
 
-	char* buffer = new char[TEXT_BUFFER_SIZE + 1];
-	size_t bufsiz = panther::ReadFromFile(handle, buffer, TEXT_BUFFER_SIZE - cached_size);
-	char* buf = buffer;
+	char* buf = new char[TEXT_BUFFER_SIZE + 1];
+	size_t bufsiz = panther::ReadFromFile(handle, buf, TEXT_BUFFER_SIZE - cached_size);
+	char* buffer = buf;
 	if (bufsiz == 0) {
 		if (buffers.size() == 0) {
 			// FIXME: add initial buffer
@@ -59,14 +60,14 @@ bool StreamingTextFile::ReadBlock() {
 				((unsigned char*)buffer)[1] == 0xBB &&
 				((unsigned char*)buffer)[2] == 0xBF) {
 				// skip UTF-8 BOM byte order mark
-				buf += 3;
+				buffer += 3;
 				bufsiz -= 3;
 			}
 		}
 	}
 	if (decoder) {
-		bufsiz = PGConvertText(decoder, buf, bufsiz, &output, &output_size, &intermediate_buffer, &intermediate_size);
-		buf = output;
+		bufsiz = PGConvertText(decoder, buffer, bufsiz, &output, &output_size, &intermediate_buffer, &intermediate_size);
+		buffer = output;
 	}
 #ifdef PANTHER_DEBUG
 	for (size_t i = cached_index; i < cached_size; i++) {
@@ -117,11 +118,14 @@ bool StreamingTextFile::ReadBlock() {
 		new_buffer->index = last_buffer->index + 1;
 	}
 
-	// first copy the cached data into the buffer
 	size_t position = 0;
-	memcpy(new_buffer->buffer, cached_buffer + cached_index, cached_size);
+	// first copy the cached data into the buffer
+	if (cached_buffer) {
+		assert(memchr(cached_buffer + cached_index, '\n', cached_size) == nullptr);
+		memcpy(new_buffer->buffer, cached_buffer + cached_index, cached_size);
+		position += cached_size;
+	}
 	// now copy any previous buffers into the array
-	position += cached_size;
 	for (auto it = buffers.begin(); it != buffers.end(); it++) {
 		memcpy(new_buffer->buffer + position, it->data, it->length);
 		position += it->length;
@@ -169,7 +173,7 @@ bool StreamingTextFile::ReadBlock() {
 
 	// delete the old cache, as it has been placed into a buffer now
 	if (cached_buffer) {
-		delete cached_buffer;
+		delete [] cached_buffer;
 		cached_buffer = nullptr;
 		cached_size = cached_index = 0;
 	}
