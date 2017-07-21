@@ -539,6 +539,7 @@ void TextView::SetWordWrap(bool wordwrap, PGScalar wrap_width) {
 		this->yoffset.inner_line = (this->wrap_width / wrap_width) * this->yoffset.inner_line;
 		this->wrap_width = wrap_width;
 		this->xoffset = 0;
+		line_wraps.clear();
 	} else if (!this->wordwrap) {
 		this->wrap_width = -1;
 	}

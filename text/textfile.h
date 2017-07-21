@@ -143,6 +143,8 @@ public:
 	void VerifyPartialTextfile();
 	void VerifyTextfile();
 
+	void HighlightText();
+
 	virtual PGScalar GetMaxLineWidth(PGFontHandle font) = 0;
 
 	void SetFilePath(std::string path);

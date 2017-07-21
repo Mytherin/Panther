@@ -100,8 +100,6 @@ private:
 	void PerformOperation(std::vector<Cursor>& cursors, TextDelta* delta);
 	bool PerformOperation(std::vector<Cursor>& cursors, TextDelta* delta, bool redo);
 
-	void HighlightText();
-	
 	void AddFindMatches(std::string filename, const std::vector<std::string>& lines, const std::vector<PGCursorRange>& matches, lng start_line);
 
 	void InvalidateBuffers(TextView* responsible_view);

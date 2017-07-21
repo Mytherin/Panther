@@ -183,6 +183,10 @@ bool StreamingTextFile::ReadBlock() {
 		delete buffer;
 	}
 	VerifyTextfile();
+
+	if (highlighter) {
+		HighlightText();
+	}
 	return true;
 }
 

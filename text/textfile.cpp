@@ -37,7 +37,7 @@ TextFile::TextFile(std::string path)  :
 	highlighter(nullptr), path(path),
 	bytes(0), total_bytes(1), is_loaded(false), last_modified_time(-1),
 	last_modified_notification(-1), last_modified_deletion(false), saved_undo_count(0), read_only(false),
-	encoding(PGEncodingUTF8), reload_on_changed(true), error(PGFileSuccess) {
+	encoding(PGEncodingUTF8), reload_on_changed(true), error(PGFileSuccess), tabwidth(4) {
 
 	this->name = path.substr(path.find_last_of(GetSystemPathSeparator()) + 1);
 	lng pos = path.find_last_of('.');
@@ -528,4 +528,45 @@ void TextFile::VerifyTextfile() {
 		assert(buffers[i]->current_size < buffers[i]->buffer_size);
 	}
 #endif
+}
+
+void TextFile::HighlightText() {
+	for (lng i = 0; i < (lng)this->buffers.size(); i++) {
+		if (!this->buffers[i]->parsed) {
+			// if we encounter a non-parsed block, parse it and any subsequent blocks that have to be parsed
+			lng current_block = i;
+			while (current_block < (lng)this->buffers.size()) {
+				PGTextBuffer* buffer = this->buffers[current_block];
+				PGParseErrors errors;
+				PGParserState oldstate = buffer->state;
+				PGParserState state = current_block == 0 ? this->highlighter->GetDefaultState() : this->buffers[current_block - 1]->state;
+
+				lng linecount = buffer->GetLineCount();
+				assert(linecount > 0);
+
+				buffer->syntax.clear();
+
+				int index = 0;
+				for (auto it = TextLineIterator(this->buffers[current_block]); ; it++) {
+					TextLine line = it.GetLine();
+					PGSyntax syntax;
+					state = this->highlighter->IncrementalParseLine(line, i, state, errors, syntax);
+					buffer->syntax.push_back(syntax);
+					index++;
+					if (index == linecount) break;
+				}
+				buffer->parsed = true;
+				buffer->state = this->highlighter->CopyParserState(state);
+				bool equivalent = !oldstate ? false : this->highlighter->StateEquivalent(this->buffers[current_block]->state, oldstate);
+				if (oldstate) {
+					this->highlighter->DeleteParserState(oldstate);
+				}
+				current_block++;
+				if (equivalent) {
+					break;
+				}
+			}
+			i = current_block - 1;
+		}
+	}
 }
