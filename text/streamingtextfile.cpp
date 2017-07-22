@@ -4,7 +4,8 @@
 
 StreamingTextFile::StreamingTextFile(PGFileHandle handle, std::string filename) :
 	handle(handle), TextFile(filename), decoder(nullptr),
-	output(nullptr), intermediate_buffer(nullptr) {
+	output(nullptr), intermediate_buffer(nullptr),
+	cached_buffer(nullptr), cached_index(0), cached_size(0) {
 	is_loaded = true;
 	read_only = true;
 	this->encoding = PGEncodingUnknown;
@@ -184,7 +185,7 @@ bool StreamingTextFile::ReadBlock() {
 		cached_index = cp;
 	} else {
 		// no data remaining in the current buffer; simply delete it
-		delete buffer;
+		delete [] buffer;
 	}
 	VerifyTextfile();
 
