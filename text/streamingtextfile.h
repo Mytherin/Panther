@@ -74,6 +74,7 @@ private:
 	
 	StreamingTextFile(PGFileHandle handle, std::string filename);
 
+	lng ReadIntoBuffer(char*& buffer, lng& start_index);
 	bool ReadBlock();
 
 	PGFileHandle handle;

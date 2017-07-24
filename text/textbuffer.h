@@ -86,7 +86,6 @@ public:
 		return _next;
 	}
 
-
 	PGTextBufferCallback prev_callback = nullptr;
 	PGTextBufferCallback next_callback = nullptr;
 	void* callback_data = nullptr;

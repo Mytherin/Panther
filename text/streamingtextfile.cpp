@@ -32,12 +32,15 @@ struct BufferData {
 	BufferData(char* data, size_t length) : data(data), length(length) { }
 };
 
-bool StreamingTextFile::ReadBlock() {
-	if (!handle) return false;
-
-	char* buf = new char[TEXT_BUFFER_SIZE + 1];
-	size_t bufsiz = panther::ReadFromFile(handle, buf, TEXT_BUFFER_SIZE - cached_size);
-	char* buffer = buf;
+lng StreamingTextFile::ReadIntoBuffer(char*& buffer, lng& start_index) {
+	if (!buffer) {
+		free(buffer);
+		buffer = nullptr;
+	}
+	start_index = 0;
+	lng bufsiz = TEXT_BUFFER_SIZE + 1;
+	buffer = (char*)malloc(sizeof(char) * (TEXT_BUFFER_SIZE + 1));
+	bufsiz = panther::ReadFromFile(handle, buffer, TEXT_BUFFER_SIZE - cached_size);
 	if (bufsiz == 0) {
 		if (buffers.size() == 0) {
 			// FIXME: add initial buffer
@@ -47,27 +50,48 @@ bool StreamingTextFile::ReadBlock() {
 		}
 		panther::CloseFile(handle);
 		handle = nullptr;
-		delete buffer;
-		return false;
+		free(buffer);
+		buffer = nullptr;
+		return 0;
 	}
 	if (encoding == PGEncodingUnknown) {
 		// guess encoding from the buffer
-		this->encoding = PGGuessEncoding((unsigned char*)buffer, std::min((size_t)1024, bufsiz));
-		if (encoding != PGEncodingUTF8 || encoding != PGEncodingUTF8BOM) {
+		this->encoding = PGGuessEncoding((unsigned char*)buffer, std::min((lng)1024, bufsiz));
+		if (encoding != PGEncodingUTF8 && encoding != PGEncodingUTF8BOM) {
 			decoder = PGCreateEncoder(this->encoding, PGEncodingUTF8);
 		} else {
 			if (((unsigned char*)buffer)[0] == 0xEF &&
 				((unsigned char*)buffer)[1] == 0xBB &&
 				((unsigned char*)buffer)[2] == 0xBF) {
 				// skip UTF-8 BOM byte order mark
-				buffer += 3;
-				bufsiz -= 3;
+				start_index = 3;
 			}
 		}
 	}
 	if (decoder) {
 		bufsiz = PGConvertText(decoder, buffer, bufsiz, &output, &output_size, &intermediate_buffer, &intermediate_size);
-		buffer = output;
+		free(buffer);
+		buffer = nullptr;
+		start_index = 0;
+		if (bufsiz >= 0) {
+			buffer = output;
+			output = nullptr;
+		}
+	}
+	return bufsiz;
+}
+
+bool StreamingTextFile::ReadBlock() {
+	if (!handle) return false;
+
+	LockMutex(text_lock.get());
+
+	lng start_index = 0;
+	char* buf = nullptr;
+	lng bufsiz = ReadIntoBuffer(buf, start_index);
+	if (bufsiz <= start_index) {
+		UnlockMutex(text_lock.get());
+		return false;
 	}
 #ifdef PANTHER_DEBUG
 	for (size_t i = cached_index; i < cached_size; i++) {
@@ -80,25 +104,27 @@ bool StreamingTextFile::ReadBlock() {
 	size_t total_size = cached_size;
 	std::vector<BufferData> buffers;
 	lng p, cp = 0;
-	while (bufsiz > 0) {
-		for (p = bufsiz - 1; p >= 0; p--) {
-			if (buffer[p] == '\n' || buffer[p] == '\r') {
+	while (bufsiz > start_index) {
+		for (p = bufsiz - 1; p >= start_index; p--) {
+			if (buf[p] == '\n' || buf[p] == '\r') {
 				cp = p + 1;
-				if (buffer[p] == '\n' && p > 0 && buffer[p - 1] == '\r') {
+				if (buf[p] == '\n' && p > 0 && buf[p - 1] == '\r') {
 					p--;
 				}
 				p--;
 				break;
 			}
 		}
-		if (p < 0) {
+		if (p < start_index) {
 			// no newline found
 			// we need to read until we find a newline, or until nothing is left in the buffer
-			buffers.push_back(BufferData(buffer, bufsiz));
+			buffers.push_back(BufferData(buf, bufsiz));
 			total_size += bufsiz;
 
-			buffer = new char[TEXT_BUFFER_SIZE + 1];
-			bufsiz = panther::ReadFromFile(handle, buffer, TEXT_BUFFER_SIZE);
+			bufsiz = ReadIntoBuffer(buf, start_index);
+			if (bufsiz <= start_index) {
+				break;
+			}
 		} else {
 			// found a newline
 			total_size += p;
@@ -135,13 +161,13 @@ bool StreamingTextFile::ReadBlock() {
 	// this buffer we have to scan for newline characters
 	size_t prev_position = 0;
 	size_t prev_buffer_position = 0;
-	for (size_t i = 0; i < p; i++) {
-		if (buffer[i] == '\n' || buffer[i] == '\r' || i + 1 == bufsiz) {
-			memcpy(new_buffer->buffer + position, buffer + prev_position, i - prev_position);
+	for (size_t i = start_index; i < p; i++) {
+		if (buf[i] == '\n' || buf[i] == '\r' || i + 1 == bufsiz) {
+			memcpy(new_buffer->buffer + position, buf + prev_position, i - prev_position);
 			position += i - prev_position;
 			new_buffer->buffer[position++] = '\n';
 			size_t cp = i;
-			if (buffer[i] == '\r' && i + 1 < bufsiz && buffer[i + 1] == '\n') {
+			if (buf[i] == '\r' && i + 1 < bufsiz && buf[i + 1] == '\n') {
 				i++;
 			}
 			// newline
@@ -173,24 +199,25 @@ bool StreamingTextFile::ReadBlock() {
 
 	// delete the old cache, as it has been placed into a buffer now
 	if (cached_buffer) {
-		delete [] cached_buffer;
+		free(cached_buffer);
 		cached_buffer = nullptr;
 		cached_size = cached_index = 0;
 	}
 	// move the remainder of the data into the cached buffer, if there is any
 	if (cp < bufsiz) {
-		cached_buffer = buffer;
+		cached_buffer = buf;
 		cached_size = bufsiz - cp;
 		cached_index = cp;
 	} else {
 		// no data remaining in the current buffer; simply delete it
-		delete [] buffer;
+		free(buf);
 	}
 	VerifyTextfile();
 
 	if (highlighter) {
 		HighlightText();
 	}
+	UnlockMutex(text_lock.get());
 	return true;
 }
 
