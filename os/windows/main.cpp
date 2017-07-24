@@ -658,6 +658,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			if (wParam != SIZE_MINIMIZED) {
 				int width = LOWORD(lParam);
 				int height = HIWORD(lParam);
+				
+				width = max(width, 100);
+				height = max(height, 100);
+
 				PGSize old_size = GetWindowSize(handle);
 				handle->manager->SetSize(PGSize(width, height));
 				RedrawWindow(handle);
@@ -1374,6 +1378,25 @@ void PGLoadWorkspace(PGWindowHandle window, nlohmann::json& j) {
 			int y = dim["y"];
 			int width = dim["width"];
 			int height = dim["height"];
+
+			width = max(width, 100);
+			height = max(height, 100);
+
+			// check if the window intersects any monitors
+			RECT rect;
+			rect.left = x;
+			rect.top = y;
+			rect.right = x + width;
+			rect.bottom = y + height;
+			HMONITOR monitor = MonitorFromRect(&rect, MONITOR_DEFAULTTONULL);
+			if (!monitor) {
+				// the window does not intersect any monitor
+				// move it to the default size/position
+				x = 0;
+				y = 0;
+				width = 1000;
+				height = 700;
+			}
 
 			SetWindowPos(window->hwnd, 0, x, y, width, height, SWP_NOZORDER);
 		}
