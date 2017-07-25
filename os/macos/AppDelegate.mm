@@ -45,6 +45,7 @@ void PGInitialize() {
     if(self = [super init]) {
         PGInitializeEncodings();
 
+        PGInitializeCursors();
         PGInitializeGlobals();
         PGInitialize();
 

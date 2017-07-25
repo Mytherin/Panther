@@ -40,3 +40,5 @@
 -(void)draggingSession:(NSDraggingSession *)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation;
 -(void)draggingSession:(NSDraggingSession *)session movedToPoint:(NSPoint)screenPoint;
 @end
+
+void PGInitializeCursors();

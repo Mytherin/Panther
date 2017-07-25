@@ -614,6 +614,18 @@ bool WindowHasFocus(PGWindowHandle window) {
 	return true;
 }
 
+NSCursor* ibeam = nullptr;
+
+void PGInitializeCursors() {
+	auto path = PGPathJoin(PGApplicationPath(), "data/cursors/ibeamosx.png");
+
+	NSImage *picture =  [[NSImage alloc] initWithContentsOfFile:[NSString stringWithUTF8String:path.c_str()]];
+	NSPoint hotspot;
+	hotspot.x = [picture size].width / 2;
+	hotspot.y = [picture size].height / 2;
+	ibeam = [[NSCursor alloc] initWithImage:picture hotSpot:hotspot];
+}
+
 void SetCursor(PGWindowHandle window, PGCursorType type) {
 	switch (type) {
 		case PGCursorStandard:
@@ -626,7 +638,7 @@ void SetCursor(PGWindowHandle window, PGCursorType type) {
 			[[NSCursor pointingHandCursor] set];
 			break;
 		case PGCursorIBeam:
-			[[NSCursor IBeamCursor] set];
+			[ibeam set];
 			break;
 		case PGCursorWait:
 			[[NSCursor arrowCursor] set];
