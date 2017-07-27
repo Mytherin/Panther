@@ -60,6 +60,10 @@ const PGPopupMenuFlags PGPopupMenuSelected = 0x04;
 const PGPopupMenuFlags PGPopupMenuSubmenu = 0x08;
 const PGPopupMenuFlags PGPopupMenuHighlighted = 0x10;
 
+double PGPoint::GetDistance(PGPoint b) {
+	return sqrt(pow((x - b.x), 2) + pow((y - b.y), 2));
+}
+
 std::string GetButtonName(PGButton button) {
 	switch (button) {
 		case PGButtonNone: return std::string("PGButtonNone");

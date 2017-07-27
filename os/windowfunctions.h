@@ -54,7 +54,11 @@ struct PGPoint {
 	}
 	PGPoint() : x(0), y(0) { }
 	PGPoint(PGScalar x, PGScalar y) : x(x), y(y) { }
+
+	double GetDistance(PGPoint b);
 };
+
+
 
 struct PGSize {
 	PGScalar width;

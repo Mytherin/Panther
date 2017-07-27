@@ -1383,7 +1383,7 @@ void TextField::InitializeKeybindings() {
 	mouse_bindings["drag_region"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		TextField* tf = (TextField*)c;
 		if (tf->drag_type != PGDragNone) return;
-		tf->StartDragging(PGMiddleMouseButton, PGDragSelectionCursors);
+		tf->StartDragging(mouse, PGMiddleMouseButton, PGDragSelectionCursors);
 		tf->drag_offset = mouse.x;
 		tf->view->SetCursorLocation(line, character);
 	};

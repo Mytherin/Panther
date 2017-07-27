@@ -199,8 +199,15 @@ void BasicTextField::MouseDown(int x, int y, PGMouseButton button, PGModifier mo
 void BasicTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 	PGPoint mouse(x - this->x, y - this->y);
 	if (this->drag_type != PGDragNone) {
-		if (buttons & drag_button) {
+		if (IsDragging(mouse, buttons)) {
 			if (drag_type == PGDragSelection) {
+				if (!(drag_point.x == -1 && drag_point.y == -1) &&
+					mouse.GetDistance(drag_point) <= 1) {
+					return;
+				} else {
+					drag_point.x = -1;
+					drag_point.y = -1;
+				}
 				// FIXME: when having multiple cursors and we are altering the active cursor,
 				// the active cursor can never "consume" the other selections (they should always stay)
 				// FIXME: this should be done in the textview
@@ -224,8 +231,9 @@ void BasicTextField::MouseMove(int x, int y, PGMouseButton buttons) {
 	}
 }
 
-void BasicTextField::StartDragging(PGMouseButton button, PGDragType drag_type) {
+void BasicTextField::StartDragging(PGPoint initial_point, PGMouseButton button, PGDragType drag_type) {
 	if (this->drag_type == PGDragNone) {
+		this->drag_point = initial_point;
 		this->drag_button = button;
 		this->drag_type = drag_type;
 		auto cursors = view->GetCursors();
@@ -239,6 +247,10 @@ void BasicTextField::StartDragging(PGMouseButton button, PGDragType drag_type) {
 void BasicTextField::ClearDragging() {
 	minimal_selections.clear();
 	drag_type = PGDragNone;
+}
+
+bool BasicTextField::IsDragging(PGPoint point, PGMouseButton buttons) {
+	return buttons & drag_button;
 }
 
 void BasicTextField::InitializeKeybindings() {
@@ -406,33 +418,33 @@ void BasicTextField::InitializeKeybindings() {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
 		tf->view->AddNewCursor(line, character);
-		tf->StartDragging(button, PGDragSelection);
+		tf->StartDragging(mouse, button, PGDragSelection);
 	};
 	mouse_bindings["set_cursor_location"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
 		tf->view->SetCursorLocation(line, character);
-		tf->StartDragging(button, PGDragSelection);
+		tf->StartDragging(mouse, button, PGDragSelection);
 	};
 	mouse_bindings["set_cursor_selection"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
 		tf->view->GetActiveCursor().SetCursorStartLocation(line, character);
-		tf->StartDragging(button, PGDragSelection);
+		tf->StartDragging(mouse, button, PGDragSelection);
 	};
 	mouse_bindings["select_word"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
 		tf->view->SetCursorLocation(line, character);
 		tf->view->GetActiveCursor().SelectWord();
-		tf->StartDragging(button, PGDragSelection);
+		tf->StartDragging(mouse, button, PGDragSelection);
 	};
 	mouse_bindings["select_line"] = [](Control* c, PGMouseButton button, PGPoint mouse, lng line, lng character) {
 		BasicTextField* tf = (BasicTextField*)c;
 		if (tf->drag_type != PGDragNone) return;
 		tf->view->SetCursorLocation(line, character);
 		tf->view->GetActiveCursor().SelectLine();
-		tf->StartDragging(button, PGDragSelection);
+		tf->StartDragging(mouse, button, PGDragSelection);
 	};
 }
 

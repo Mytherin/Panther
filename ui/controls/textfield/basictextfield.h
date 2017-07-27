@@ -44,8 +44,9 @@ public:
 	virtual void MouseUp(int x, int y, PGMouseButton button, PGModifier modifier);
 	virtual void MouseMove(int x, int y, PGMouseButton buttons);
 
-	void StartDragging(PGMouseButton button, PGDragType drag_type);
+	void StartDragging(PGPoint initial_point, PGMouseButton button, PGDragType drag_type);
 	void ClearDragging();
+	bool IsDragging(PGPoint point, PGMouseButton buttons);
 
 	virtual bool ControlTakesFocus() { return true; }
 	
@@ -97,6 +98,7 @@ protected:
 	std::map<lng, PGTextRange> minimal_selections;
 	PGMouseButton drag_button = PGButtonNone;
 	PGDragType drag_type = PGDragNone;
+	PGPoint drag_point;
 
 	virtual void GetLineCharacterFromPosition(PGScalar x, PGScalar y, lng& line, lng& character);
 	virtual void GetLineFromPosition(PGScalar y, lng& line);
