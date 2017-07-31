@@ -76,6 +76,7 @@ lng StreamingTextFile::ReadIntoBuffer(char*& buffer, lng& start_index) {
 		if (bufsiz >= 0) {
 			buffer = output;
 			output = nullptr;
+			output_size = 0;
 		}
 	}
 	return bufsiz;

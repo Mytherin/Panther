@@ -222,20 +222,23 @@ lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_
 	// first we convert the source encoding to the internal ICU representation (UChars)
 	size_t targetsize = *intermediate_size;
 	buffer = *((UChar**)intermediate_buffer);
-	targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input_text, input_size, &error);
+	ucnv_toUnicode(encoder->source, &buffer, (UChar*)((char*) buffer + targetsize), &input_text, input_text + input_size, nullptr, false, &error);
 	if (error == U_BUFFER_OVERFLOW_ERROR) {
 		error = U_ZERO_ERROR;
 		if (buffer)
 			free(buffer);
+		targetsize = input_size * 4;
 		buffer = (UChar*)malloc(targetsize * sizeof(UChar));
 		*intermediate_buffer = (char*)buffer;
 		*intermediate_size = targetsize;
-		targetsize = ucnv_toUChars(encoder->source, buffer, targetsize, input_text, input_size, &error);
+		ucnv_toUnicode(encoder->source, &buffer, (UChar*)((char*)buffer + targetsize), &input_text, input_text + input_size, nullptr, false, &error);
 	}
 	if (U_FAILURE(error)) {
 		// failed source conversion
 		return -1;
 	}
+	assert((size_t)buffer >= (size_t)*intermediate_buffer);
+	targetsize = (size_t) buffer - (size_t) *intermediate_buffer;
 	// now convert the source to the target encoding
 	size_t result_size = targetsize * 4;
 	if (*output_size < result_size) {
@@ -245,12 +248,14 @@ lng PGConvertText(PGEncoderHandle encoder, const char* input_text, size_t input_
 	} else {
 		result_buffer = *output;
 	}
-	result_size = ucnv_fromUChars(encoder->target, result_buffer, result_size, buffer, targetsize, &error);
+	const UChar* output_buffer = (const UChar*) *intermediate_buffer;
+	ucnv_fromUnicode(encoder->target, &result_buffer, result_buffer + result_size, &output_buffer, buffer, nullptr, 0, &error);
 	if (U_FAILURE(error)) {
 		// failed source conversion
 		return -1;
 	}
-	return result_size;
+	assert((size_t)result_buffer >= (size_t)*output);
+	return (size_t)result_buffer - (size_t)*output;
 }
 
 

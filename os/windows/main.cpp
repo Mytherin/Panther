@@ -223,7 +223,7 @@ std::string UCS2toUTF8(PWSTR data) {
 	std::string text = std::string(((char*)data), UCS2Length((char*)data));
 	char* result;
 	// on Windows we assume the text on the clipboard is encoded in UTF16: convert to UTF8
-	size_t length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
+	lng length = PGConvertText(text, &result, PGEncodingUTF16Platform, PGEncodingUTF8);
 	assert(length > 0);
 	text = std::string(result, length);
 	free(result);
