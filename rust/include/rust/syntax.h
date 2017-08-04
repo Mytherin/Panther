@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "rust/syntax.h"
+
 extern "C" {
 	typedef void* PGSyntaxState;
 	typedef void* PGSyntaxParser;
