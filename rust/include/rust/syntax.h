@@ -4,9 +4,12 @@
 extern "C" {
 	typedef void* PGSyntaxState;
 	typedef void* PGSyntaxParser;
+	typedef void* PGSyntaxSet;
 
+	extern PGSyntaxSet PGLoadSyntaxSet(const char* directory);
+	extern void PGDestroySyntaxSet(PGSyntaxSet);
 
-	extern PGSyntaxParser PGCreateParser();
+	extern PGSyntaxParser PGCreateParser(PGSyntaxSet, const char* name);
 	extern void PGDestroyParser(PGSyntaxParser parser);
 
 	extern PGSyntaxState PGGetDefaultState(PGSyntaxParser parser);
